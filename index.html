@@ -41,6 +41,26 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             z-index: 100;
         }
+        .tweet-embed {
+            margin: 16px 0;
+            max-width: 100%;
+        }
+        .author-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+        .author-tero {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+}
+.author-el {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -64,6 +84,13 @@
         <div id="addSection" class="hidden bg-white rounded-3xl shadow-2xl p-8 mb-8">
             <h2 class="text-3xl font-bold text-gray-800 mb-6">Add a New Post</h2>
             <div class="space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Who's posting?</label>
+                    <select id="authorSelect" class="w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg">
+                        <option value="El">El 💜</option>
+                        <option value="Tero">Tero 💙</option>
+                    </select>
+                </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Post URL</label>
                     <input type="url" id="postUrl" placeholder="https://..." class="w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg">
@@ -91,23 +118,24 @@
         </div>
     </div>
 
+    <!-- Twitter Widget Script -->
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
         import { getDatabase, ref, push, onValue, remove, update } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 
-        // Firebase configuration - YOU NEED TO REPLACE THIS WITH YOUR OWN
-        // See instructions below on how to get your own config
-    const firebaseConfig = {
-  apiKey: "AIzaSyB0O3pcsHOt5eMYUFZqnb8okY3Z9d8k304",
-  authDomain: "personal-feed-149ce.firebaseapp.com",
-  databaseURL: "https://personal-feed-149ce-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "personal-feed-149ce",
-  storageBucket: "personal-feed-149ce.firebasestorage.app",
-  messagingSenderId: "857956584960",
-  appId: "1:857956584960:web:010afc00c44371f19a52e5"
-};
-
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB0O3pcsHQt5mWVUFZqnbB0kY3Z9d8k304",
+            authDomain: "personal-feed-149ce.firebaseapp.com",
+            databaseURL: "https://personal-feed-149ce-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "personal-feed-149ce",
+            storageBucket: "personal-feed-149ce.firebasestorage.app",
+            messagingSenderId: "687986584760",
+            appId: "1:687986584760:web:016afc08C44371f1985285"
+        };
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -170,6 +198,7 @@
         window.addPost = async function() {
             const url = document.getElementById('postUrl').value.trim();
             const note = document.getElementById('postNote').value.trim();
+            const author = document.getElementById('authorSelect').value;
 
             if (!url) {
                 alert('Please enter a URL');
@@ -179,6 +208,7 @@
             const post = {
                 url: url,
                 note: note,
+                author: author,
                 timestamp: Date.now(),
                 read: false
             };
@@ -195,6 +225,22 @@
                 console.error('Error adding post:', error);
                 alert('Failed to add post. Check your internet connection.');
             }
+        }
+
+        function getTweetId(url) {
+            // Extract tweet ID from various Twitter/X URL formats
+            const patterns = [
+                /twitter\.com\/.*\/status\/(\d+)/,
+                /x\.com\/.*\/status\/(\d+)/,
+                /twitter\.com\/.*\/statuses\/(\d+)/,
+                /x\.com\/.*\/statuses\/(\d+)/
+            ];
+            
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) return match[1];
+            }
+            return null;
         }
 
         function loadPosts() {
@@ -214,6 +260,11 @@
 
             emptyState.classList.add('hidden');
             container.innerHTML = posts.map(post => createPostCard(post)).join('');
+            
+            // Load Twitter embeds after DOM is updated
+            if (window.twttr && window.twttr.widgets) {
+                window.twttr.widgets.load();
+            }
         }
 
         function createPostCard(post) {
@@ -229,18 +280,30 @@
                 domain = new URL(post.url).hostname.replace('www.', '');
             } catch (e) {}
 
+            const tweetId = getTweetId(post.url);
+            const authorClass = post.author === 'El' ? 'author-el' : 'author-tero';
+            const authorEmoji = post.author === 'El' ? '💜' : '💙';
+
             return `
                 <div class="post-card ${post.read ? 'read' : ''} rounded-3xl shadow-xl p-8 transition-all hover:shadow-2xl hover:-translate-y-1 fade-in">
                     <div class="flex justify-between items-start mb-5">
                         <div class="flex-1">
-                            <div class="flex items-center gap-3 text-sm text-gray-600 mb-3 font-medium">
+                            <div class="flex items-center gap-3 text-sm text-gray-600 mb-3 font-medium flex-wrap">
                                 <span>🔗 ${domain}</span>
                                 <span>•</span>
                                 <span>${date}</span>
+                                <span class="author-badge ${authorClass}">From ${post.author} ${authorEmoji}</span>
                             </div>
                             ${post.note ? `
                                 <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-lg mb-4">
                                     <p class="text-gray-800 text-lg italic font-medium">"${post.note}"</p>
+                                </div>
+                            ` : ''}
+                            ${tweetId ? `
+                                <div class="tweet-embed" id="tweet-${post.id}">
+                                    <blockquote class="twitter-tweet" data-dnt="true" data-theme="light">
+                                        <a href="${post.url}"></a>
+                                    </blockquote>
                                 </div>
                             ` : ''}
                         </div>
@@ -251,7 +314,7 @@
                         </button>
                     </div>
                     <a href="${post.url}" target="_blank" onclick="markAsRead('${post.id}')" class="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl hover:scale-105">
-                        View Post
+                        View Original Post
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
