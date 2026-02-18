@@ -957,6 +957,32 @@ body.dark-mode .btn-secondary {
     box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
+/* Multi-collection picker pills (Add Post modal) */
+.coll-pick-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(168, 85, 247, 0.25);
+    background: rgba(168, 85, 247, 0.06);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 900;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.coll-pick-btn:hover {
+    background: rgba(168, 85, 247, 0.13);
+    border-color: rgba(168, 85, 247, 0.45);
+    color: var(--text-primary);
+}
+.coll-pick-btn.selected {
+    background: rgba(168, 85, 247, 0.18);
+    border-color: #a855f7;
+    color: #a855f7;
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.15);
+}
+body.dark-mode .coll-pick-btn.selected { color: #c084fc; }
+
 .empty-state {
     background: var(--card-bg);
     border-radius: 22px;
