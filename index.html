@@ -6,7 +6,7 @@
     <title>Your Personal Feed 💜</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -24,10 +24,10 @@
         }
 
         body.dark-mode {
-            --bg-gradient-start: #0f0820;
-            --bg-gradient-mid1: #1a0b3e;
-            --bg-gradient-mid2: #2d1b69;
-            --bg-gradient-end: #1a0b3e;
+            --bg-gradient-start: #0a0518;
+            --bg-gradient-mid1: #140936;
+            --bg-gradient-mid2: #1e1060;
+            --bg-gradient-end: #0f0628;
             --card-bg: rgba(20, 11, 46, 0.97);
             --card-border: rgba(139, 92, 246, 0.35);
             --section-bg: rgba(30, 17, 65, 0.6);
@@ -37,15 +37,23 @@
             --input-border: rgba(139, 92, 246, 0.4);
         }
 
+        /* In dark mode use a dimmer dot so the star sparkles stay prominent */
+        body.dark-mode {
+            background-image:
+                radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px),
+                linear-gradient(170deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid1) 30%, var(--bg-gradient-mid2) 60%, var(--bg-gradient-end) 100%);
+        }
+
         * { box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid1) 25%, var(--bg-gradient-mid2) 50%, var(--bg-gradient-end) 75%, var(--bg-gradient-mid1) 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
+            font-family: 'Nunito', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background:
+                radial-gradient(circle, rgba(255,255,255,0.09) 1px, transparent 1px),
+                linear-gradient(170deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid1) 30%, var(--bg-gradient-mid2) 60%, var(--bg-gradient-end) 100%);
+            background-size: 22px 22px, 200% 200%;
+            animation: gradientShift 20s ease infinite;
             min-height: 100vh;
-            cursor: none;
             overflow-x: hidden;
             transition: background 0.5s ease;
         }
@@ -75,8 +83,9 @@
         }
 
         @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+            0%   { background-position: 0% 0%,   0% 50%; }
+            50%  { background-position: 0% 0%, 100% 50%; }
+            100% { background-position: 0% 0%,   0% 50%; }
         }
 
         /* ---- CURSOR ---- */
@@ -90,7 +99,7 @@
         }
 
         .star-trail {
-            position: fixed;
+            position: absolute;
             pointer-events: none;
             z-index: 9998;
             font-family: monospace;
@@ -242,17 +251,17 @@
         .post-card {
             transition: transform 0.25s ease, box-shadow 0.25s ease;
             background: var(--card-bg);
-            border-radius: 20px;
+            border-radius: 22px;
             overflow: hidden;
-            box-shadow: 0 2px 16px rgba(109, 40, 217, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
-            border: 1px solid var(--card-border);
+            box-shadow: 0 2px 20px rgba(109, 40, 217, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+            border: 1.5px solid var(--card-border);
             position: relative;
             z-index: 10;
         }
 
         .post-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 32px rgba(109, 40, 217, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 36px rgba(109, 40, 217, 0.2), 0 3px 10px rgba(0, 0, 0, 0.1);
         }
 
         .post-header {
@@ -274,23 +283,27 @@
 
         /* ---- NOTE BLOCK ---- */
         .post-note {
-            padding: 14px 18px;
-            background: linear-gradient(to right, rgba(168, 85, 247, 0.07), rgba(236, 72, 153, 0.07));
-            border-left: 3px solid #a855f7;
-            display: flex;
-            gap: 10px;
-            align-items: flex-start;
+            padding: 10px 18px 12px;
+            border-top: 1px solid var(--card-border);
         }
 
-        .post-note-quote {
-            font-size: 30px;
-            line-height: 0.8;
+        .post-note-author {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             color: #a855f7;
-            opacity: 0.45;
-            font-family: Georgia, serif;
-            flex-shrink: 0;
-            margin-top: 4px;
+            margin-bottom: 3px;
         }
+
+        .post-note-text {
+            font-size: 14px;
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        body.dark-mode .post-note-author { color: #c084fc; }
 
         /* ---- LINK PREVIEW ---- */
         .link-preview {
@@ -476,6 +489,26 @@
             background: rgba(192, 132, 252, 0.04);
         }
 
+        .show-more-replies-btn {
+            display: block;
+            width: 100%;
+            margin-top: 6px;
+            padding: 6px 0;
+            background: none;
+            border: none;
+            font-size: 12px;
+            font-weight: 700;
+            color: #9333ea;
+            cursor: pointer;
+            text-align: left;
+            letter-spacing: 0.01em;
+            opacity: 0.75;
+            transition: opacity 0.15s;
+            font-family: 'Inter', sans-serif;
+        }
+        .show-more-replies-btn:hover { opacity: 1; }
+        body.dark-mode .show-more-replies-btn { color: #c084fc; }
+
         .inline-reply-form {
             margin-left: 16px;
             margin-top: 4px;
@@ -510,7 +543,8 @@
             box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
         }
 
-        .reply-input::placeholder { color: rgba(147, 51, 234, 0.3); }
+        .reply-input::placeholder { color: rgba(147, 51, 234, 0.35); }
+        .reply-input { font-family: 'Nunito', 'Inter', sans-serif; }
 
         .reply-send-btn {
             width: 36px;
@@ -658,8 +692,8 @@
             color: white;
             border: none;
             border-radius: 12px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-family: 'Nunito', 'Inter', sans-serif;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -675,8 +709,8 @@
             color: #7c3aed;
             border: 1.5px solid rgba(147, 51, 234, 0.22);
             border-radius: 12px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-family: 'Nunito', 'Inter', sans-serif;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -691,7 +725,43 @@
             background: rgba(147, 51, 234, 0.13);
         }
 
-        /* ---- DELETE BTN ---- */
+        /* ---- POST ACTION BTNS (header edit/delete) ---- */
+        .post-action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px 6px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            line-height: 1;
+        }
+
+        .post-action-btn:hover { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+        .post-action-btn.delete-btn:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+        /* ---- COMMENT ACTION BTNS ---- */
+        .comment-action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            opacity: 0.6;
+            transition: all 0.15s;
+            font-family: 'Nunito', 'Inter', sans-serif;
+            font-weight: 600;
+        }
+
+        .comment-action-btn:hover { opacity: 1; background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+        .comment-action-btn.del:hover { background: rgba(239, 68, 68, 0.08); color: #ef4444; }
+
+        /* ---- DELETE BTN (legacy, keep for compat) ---- */
         .delete-btn {
             background: none;
             border: none;
@@ -707,6 +777,75 @@
         .delete-btn:hover {
             color: #ef4444;
             background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* ---- CUTE CONFIRM MODAL ---- */
+        .cute-confirm-inner {
+            text-align: center;
+            padding: 8px 4px 4px;
+        }
+
+        .cute-confirm-inner .cute-icon { font-size: 42px; margin-bottom: 12px; }
+
+        .cute-confirm-inner h3 {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0 0 8px;
+            line-height: 1.35;
+            font-family: 'Nunito', 'Inter', sans-serif;
+        }
+
+        .cute-confirm-inner p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0 0 22px;
+        }
+
+        .cute-confirm-btns {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-delete-confirm {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 22px;
+            font-weight: 700;
+            font-size: 14px;
+            font-family: 'Nunito', 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-delete-confirm:hover {
+            box-shadow: 0 6px 18px rgba(239, 68, 68, 0.35);
+            transform: translateY(-1px);
+        }
+
+        /* ---- EDIT MODAL TEXTAREA ---- */
+        .edit-modal-textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid var(--input-border);
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: 'Nunito', 'Inter', sans-serif;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            outline: none;
+            resize: vertical;
+            min-height: 90px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            margin-top: 12px;
+        }
+
+        .edit-modal-textarea:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
         }
 
         /* ---- ADD POST FORM ---- */
@@ -902,7 +1041,7 @@
                     <div id="categoryName" style="font-size: 27px; font-weight: 800; color: white; letter-spacing: -0.02em; font-family: 'Inter', sans-serif; line-height: 1.1;"></div>
                     <div style="font-size: 13px; color: rgba(255,255,255,0.52); font-family: 'Inter', sans-serif; margin-top: 4px;">Viewing all posts in this category</div>
                 </div>
-                <button onclick="filterByCollection(null)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; width: 34px; height: 34px; color: rgba(255,255,255,0.8); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</button>
+                <button onclick="filterByCollection(null)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; width: 34px; height: 34px; color: rgba(255,255,255,0.8); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; line-height: 1; font-weight: 600;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</button>
             </div>
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.35); text-align: center; margin-top: 16px; margin-bottom: 4px; font-family: 'Inter', sans-serif;">← back to everything</div>
         </div>
@@ -1003,6 +1142,34 @@
             <button onclick="closeCollectionsModal()" class="btn-primary w-full mt-5 py-3 text-sm font-semibold rounded-xl">
                 Done
             </button>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content">
+            <div class="cute-confirm-inner">
+                <div class="cute-icon">🖤✨</div>
+                <h3>are you sure you want to<br>delete this, babe?!</h3>
+                <p>once it's gone, it's gone forever~</p>
+                <div class="cute-confirm-btns">
+                    <button onclick="cancelDelete()" class="btn-secondary" style="padding:10px 22px;font-size:14px;">nope, keep it 💜</button>
+                    <button onclick="confirmDelete()" class="btn-delete-confirm">yes, delete 🖤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Note / Comment Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h2 style="font-size:18px;font-weight:800;color:var(--text-primary);margin:0 0 4px;font-family:'Nunito','Inter',sans-serif;" id="editModalTitle">edit ✏️</h2>
+            <p style="font-size:13px;color:var(--text-secondary);margin:0;" id="editModalSub"></p>
+            <textarea class="edit-modal-textarea" id="editModalInput" rows="3"></textarea>
+            <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+                <button onclick="cancelEdit()" class="btn-secondary" style="padding:10px 20px;font-size:14px;">cancel</button>
+                <button onclick="confirmEdit()" class="btn-primary" style="padding:10px 22px;font-size:14px;">save ✨</button>
+            </div>
         </div>
     </div>
 
@@ -1167,8 +1334,8 @@
             const trail = document.createElement('div');
             trail.className = 'star-trail';
             trail.textContent = starChars[Math.floor(Math.random() * starChars.length)];
-            trail.style.left = (x - 7) + 'px';
-            trail.style.top = (y - 7) + 'px';
+            trail.style.left = (x + window.scrollX - 7) + 'px';
+            trail.style.top = (y + window.scrollY - 7) + 'px';
             const colors = ['#c084fc', '#e879f9', '#f0abfc', '#fae8ff', '#fff'];
             trail.style.color = colors[Math.floor(Math.random() * colors.length)];
             document.body.appendChild(trail);
@@ -1436,7 +1603,13 @@
                                 <span style="font-size:11px;font-weight:700;color:var(--text-secondary);">${reply.author} ${ae}</span>
                                 ${ts ? `<span style="font-size:10px;color:var(--text-secondary);opacity:0.55;">${ts}</span>` : ''}
                             </div>
-                            <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}','${reply.author}')">↩ Reply</button>
+                            <div style="display:flex;align-items:center;gap:2px;">
+                                <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}','${reply.author}')">↩ Reply</button>
+                                ${reply.author === currentUser ? `
+                                <button class="comment-action-btn" onclick="editComment('${postId}','${reply.id}',\`${reply.text.replace(/`/g,'\\`')}\`)">✏️</button>
+                                <button class="comment-action-btn del" onclick="askDeleteComment('${postId}','${reply.id}')">✕</button>
+                                ` : ''}
+                            </div>
                         </div>
                         <div style="font-size:13px;color:var(--text-primary);line-height:1.55;">${reply.text}</div>
                         <div class="comment-reactions">
@@ -1462,12 +1635,37 @@
                 `;
             };
 
+            const COLLAPSE_AT = 3;
+            const needsCollapse = topLevel.length >= COLLAPSE_AT;
+            const visible = needsCollapse ? topLevel.slice(0, 2) : topLevel;
+            const hidden  = needsCollapse ? topLevel.slice(2)    : [];
+
             return `
                 <div class="reply-section">
                     <div class="divider-text">💬 Replies</div>
-                    ${topLevel.map(r => renderItem(r, false)).join('')}
+                    ${visible.map(r => renderItem(r, false)).join('')}
+                    ${needsCollapse ? `
+                        <div id="extra-replies-${postId}" class="hidden">
+                            ${hidden.map(r => renderItem(r, false)).join('')}
+                        </div>
+                        <button class="show-more-replies-btn" id="toggle-replies-btn-${postId}"
+                            onclick="toggleExtraReplies('${postId}', ${hidden.length})">
+                            ↓ Show ${hidden.length} more comment${hidden.length === 1 ? '' : 's'}
+                        </button>
+                    ` : ''}
                 </div>
             `;
+        }
+
+        window.toggleExtraReplies = function(postId, hiddenCount) {
+            const container = document.getElementById(`extra-replies-${postId}`);
+            const btn       = document.getElementById(`toggle-replies-btn-${postId}`);
+            if (!container || !btn) return;
+            const isHidden = container.classList.contains('hidden');
+            container.classList.toggle('hidden');
+            btn.textContent = isHidden
+                ? '↑ Show less'
+                : `↓ Show ${hiddenCount} more comment${hiddenCount === 1 ? '' : 's'}`;
         }
 
         window.openInlineReply = function(postId, replyId, replyToAuthor) {
@@ -1528,18 +1726,16 @@
                             ${post.collection ? `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '${post.collection}')" title="Click to change category">${getCollectionEmoji(post.collection)} ${post.collection}</button>` : `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '')" title="Click to add category">+ Add category</button>`}
                             ${isRead(post) ? '<span class="seen-dot" title="Seen"></span>' : ''}
                         </div>
-                        <button class="delete-btn" onclick="deletePost('${post.id}')" title="Delete">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
+                        ${author === currentUser ? `
+                        <div style="display:flex;gap:4px;">
+                            <button class="post-action-btn" onclick="editPostNote('${post.id}', \`${(post.note||'').replace(/`/g,'\\`')}\`)" title="Edit note">✏️</button>
+                            <button class="post-action-btn delete-btn" onclick="askDeletePost('${post.id}')" title="Delete">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>` : ''}
                     </div>
-
-                    ${post.note ? `
-                    <div class="post-note">
-                        <span class="post-note-quote">"</span>
-                        <p style="font-size: 14px; font-style: italic; color: var(--text-primary); line-height: 1.65; margin: 0;">${post.note}</p>
-                    </div>` : ''}
 
                     <div class="post-content">
                         ${tweetId ? `
@@ -1562,6 +1758,12 @@
                         `}
                     </div>
 
+                    ${post.note ? `
+                    <div class="post-note">
+                        <div class="post-note-author">${author}</div>
+                        <p class="post-note-text">${post.note}</p>
+                    </div>` : ''}
+
                     <div class="reactions-bar">
                         ${reactionEmojis.map(e => {
                             const count    = reactions[e] || 0;
@@ -1583,16 +1785,12 @@
                         </div>
                     </div>
 
+                    ${!isRead(post) ? `
                     <div class="post-actions">
-                        <a href="${post.url}" target="_blank" class="btn-primary flex-1 px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                            Open Link
-                        </a>
-                        ${!isRead(post) ? `
                         <button onclick="markSeen('${post.id}')" class="btn-secondary px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
                             <span class="seen-dot"></span> Mark Seen
-                        </button>` : ''}
-                    </div>
+                        </button>
+                    </div>` : ''}
                 </div>
             `;
         }
@@ -1641,11 +1839,90 @@
             showToast('Marked as seen! 💜');
         }
 
+        // ---- cute delete / edit modal logic ----
+        let _pendingDeleteFn = null;
+        let _pendingEditFn   = null;
+
+        window.askDeletePost = function(id) {
+            _pendingDeleteFn = async () => {
+                await remove(ref(database, `posts/${id}`));
+                showToast('Post deleted 🖤');
+            };
+            document.getElementById('deleteConfirmModal').classList.add('show');
+        };
+
+        window.askDeleteComment = function(postId, replyId) {
+            _pendingDeleteFn = async () => {
+                const post    = allPosts[postId];
+                const replies = (post.replies || []).filter(r => r.id !== replyId);
+                await update(ref(database, `posts/${postId}`), { replies });
+                showToast('Comment deleted 🖤');
+            };
+            document.getElementById('deleteConfirmModal').classList.add('show');
+        };
+
+        window.confirmDelete = async function() {
+            document.getElementById('deleteConfirmModal').classList.remove('show');
+            if (_pendingDeleteFn) await _pendingDeleteFn();
+            _pendingDeleteFn = null;
+        };
+
+        window.cancelDelete = function() {
+            document.getElementById('deleteConfirmModal').classList.remove('show');
+            _pendingDeleteFn = null;
+        };
+
+        window.editPostNote = function(postId, currentNote) {
+            document.getElementById('editModalTitle').textContent = 'edit your note ✏️';
+            document.getElementById('editModalSub').textContent   = 'update the caption shown below the post';
+            document.getElementById('editModalInput').value       = currentNote;
+            _pendingEditFn = async (newText) => {
+                await update(ref(database, `posts/${postId}`), { note: newText });
+                showToast('Note updated ✨');
+            };
+            document.getElementById('editModal').classList.add('show');
+            setTimeout(() => document.getElementById('editModalInput').focus(), 80);
+        };
+
+        window.editComment = function(postId, replyId, currentText) {
+            document.getElementById('editModalTitle').textContent = 'edit your comment ✏️';
+            document.getElementById('editModalSub').textContent   = '';
+            document.getElementById('editModalInput').value       = currentText;
+            _pendingEditFn = async (newText) => {
+                const post    = allPosts[postId];
+                const replies = (post.replies || []).map(r => r.id === replyId ? { ...r, text: newText } : r);
+                await update(ref(database, `posts/${postId}`), { replies });
+                showToast('Comment updated ✨');
+            };
+            document.getElementById('editModal').classList.add('show');
+            setTimeout(() => document.getElementById('editModalInput').focus(), 80);
+        };
+
+        window.confirmEdit = async function() {
+            const newText = document.getElementById('editModalInput').value.trim();
+            if (!newText) return;
+            document.getElementById('editModal').classList.remove('show');
+            if (_pendingEditFn) await _pendingEditFn(newText);
+            _pendingEditFn = null;
+        };
+
+        window.cancelEdit = function() {
+            document.getElementById('editModal').classList.remove('show');
+            _pendingEditFn = null;
+        };
+
+        // close modals on backdrop click
+        document.getElementById('deleteConfirmModal').addEventListener('click', e => {
+            if (e.target === e.currentTarget) window.cancelDelete();
+        });
+        document.getElementById('editModal').addEventListener('click', e => {
+            if (e.target === e.currentTarget) window.cancelEdit();
+        });
+
         window.deletePost = async function(id) {
-            if (!confirm('Delete this post?')) return;
             await remove(ref(database, `posts/${id}`));
-            showToast('Post deleted');
-        }
+            showToast('Post deleted 🖤');
+        };
 
         function showToast(msg) {
             const toast = document.createElement('div');
@@ -1655,8 +1932,8 @@
                 color: #ede9fe;
                 padding: 12px 20px;
                 border-radius: 14px;
-                font-size: 14px; font-weight: 600;
-                font-family: 'Inter', sans-serif;
+                font-size: 14px; font-weight: 700;
+                font-family: 'Nunito', 'Inter', sans-serif;
                 box-shadow: 0 8px 32px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(139,92,246,0.35);
                 z-index: 9999;
                 backdrop-filter: blur(14px);
