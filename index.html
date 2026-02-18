@@ -6,7 +6,7 @@
     <title>Your Personal Feed 💜</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
@@ -41,7 +41,7 @@
         * { box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid1) 25%, var(--bg-gradient-mid2) 50%, var(--bg-gradient-end) 75%, var(--bg-gradient-mid1) 100%);
             background-size: 400% 400%;
             animation: gradientShift 15s ease infinite;
@@ -134,8 +134,8 @@
             padding: 10px 22px;
             border-radius: 50px;
             font-size: 14px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-family: 'Nunito', sans-serif;
             color: rgba(255, 255, 255, 0.88);
             border: none;
             background: transparent;
@@ -171,8 +171,8 @@
             padding: 7px 18px;
             border-radius: 50px;
             font-size: 13px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-family: 'Nunito', sans-serif;
             color: rgba(255, 255, 255, 0.82);
             border: none;
             background: transparent;
@@ -224,8 +224,8 @@
             padding: 7px 16px;
             border-radius: 50px;
             font-size: 13px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-family: 'Nunito', sans-serif;
             background: rgba(34, 197, 94, 0.18);
             color: #dcfce7;
             border: 1px solid rgba(34, 197, 94, 0.35);
@@ -274,18 +274,26 @@
             background: linear-gradient(to right, rgba(168, 85, 247, 0.07), rgba(236, 72, 153, 0.07));
             border-left: 3px solid #a855f7;
             display: flex;
-            gap: 10px;
-            align-items: flex-start;
+            flex-direction: column;
+            gap: 6px;
         }
 
-        .post-note-quote {
-            font-size: 30px;
-            line-height: 0.8;
+        .note-author {
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
             color: #a855f7;
-            opacity: 0.45;
-            font-family: Georgia, serif;
-            flex-shrink: 0;
-            margin-top: 4px;
+            opacity: 0.95;
+        }
+
+        .note-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.65;
+            margin: 0;
+            white-space: pre-wrap;
         }
 
         .link-preview {
@@ -324,7 +332,7 @@
 
         .link-domain {
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 900;
             color: #7c3aed;
             white-space: nowrap;
             overflow: hidden;
@@ -365,8 +373,8 @@
             font-size: 14px;
             background: rgba(147, 51, 234, 0.05);
             line-height: 1.2;
-            font-weight: 700;
-            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            font-family: 'Nunito', sans-serif;
             color: var(--text-secondary);
             display: inline-flex;
             align-items: center;
@@ -389,7 +397,7 @@
 
         .reaction-people {
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 900;
             opacity: 0.75;
         }
 
@@ -411,9 +419,9 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Nunito', sans-serif;
             color: var(--text-secondary);
-            font-weight: 700;
+            font-weight: 900;
         }
 
         .comment-reaction-btn:hover {
@@ -454,14 +462,14 @@
 
         .reply-btn {
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 900;
             color: var(--text-secondary);
             background: none;
             border: none;
             cursor: pointer;
             padding: 2px 8px;
             border-radius: 8px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Nunito', sans-serif;
             transition: all 0.15s;
             opacity: 0.75;
             flex-shrink: 0;
@@ -499,7 +507,7 @@
             flex: 1;
             padding: 9px 14px;
             font-size: 13px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Nunito', sans-serif;
             border: 1.5px solid var(--input-border);
             border-radius: 20px;
             background: var(--input-bg);
@@ -548,7 +556,7 @@
             padding: 3px 11px;
             border-radius: 20px;
             font-size: 11px;
-            font-weight: 800;
+            font-weight: 900;
             letter-spacing: 0.02em;
             box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
             display: inline-block;
@@ -560,7 +568,7 @@
             padding: 3px 11px;
             border-radius: 20px;
             font-size: 11px;
-            font-weight: 800;
+            font-weight: 900;
             letter-spacing: 0.02em;
             box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
             display: inline-block;
@@ -573,10 +581,10 @@
             padding: 2px 9px;
             border-radius: 999px;
             font-size: 11px;
-            font-weight: 800;
+            font-weight: 900;
             cursor: pointer;
             transition: all 0.15s ease;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Nunito', sans-serif;
         }
 
         .collection-badge:hover {
@@ -602,7 +610,7 @@
             padding: 1px 7px;
             border-radius: 20px;
             font-size: 11px;
-            font-weight: 800;
+            font-weight: 900;
             animation: badgePulse 2s ease-in-out infinite;
         }
 
@@ -635,8 +643,8 @@
             background: rgba(255, 255, 255, 0.92);
             border-radius: 20px;
             font-size: 12px;
-            font-weight: 700;
-            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            font-family: 'Nunito', sans-serif;
             box-shadow: 0 4px 16px rgba(109, 40, 217, 0.18);
             z-index: 100;
             backdrop-filter: blur(14px);
@@ -656,8 +664,8 @@
             color: white;
             border: none;
             border-radius: 12px;
-            font-weight: 800;
-            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            font-family: 'Nunito', sans-serif;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -673,8 +681,8 @@
             color: #7c3aed;
             border: 1.5px solid rgba(147, 51, 234, 0.22);
             border-radius: 12px;
-            font-weight: 800;
-            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            font-family: 'Nunito', sans-serif;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -699,6 +707,8 @@
             transition: all 0.15s;
             display: flex;
             align-items: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
         }
 
         .delete-btn:hover {
@@ -717,7 +727,7 @@
         .form-label {
             display: block;
             font-size: 11px;
-            font-weight: 800;
+            font-weight: 900;
             margin-bottom: 6px;
             color: var(--text-secondary);
             letter-spacing: 0.06em;
@@ -732,7 +742,7 @@
             border: 1.5px solid var(--input-border);
             border-radius: 12px;
             font-size: 15px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Nunito', sans-serif;
             background: var(--input-bg);
             color: var(--text-primary);
             outline: none;
@@ -799,6 +809,8 @@
             align-items: center;
             justify-content: center;
             transition: all 0.15s;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
         }
 
         .modal-x:hover {
@@ -844,7 +856,7 @@
 
         .divider-text {
             font-size: 11px;
-            font-weight: 800;
+            font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.06em;
             color: var(--text-secondary);
@@ -870,6 +882,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            font-family: 'Nunito', sans-serif;
         }
 
         body.dark-mode .chat-fab {
@@ -910,6 +923,7 @@
             font-weight: 900;
             color: var(--text-primary);
             letter-spacing: -0.01em;
+            font-family: 'Nunito', sans-serif;
         }
 
         .chat-body {
@@ -945,12 +959,14 @@
             font-size: 11px;
             font-weight: 900;
             color: var(--text-secondary);
+            font-family: 'Nunito', sans-serif;
         }
 
         .chat-time {
             font-size: 10px;
             color: var(--text-secondary);
             opacity: 0.7;
+            font-family: 'Nunito', sans-serif;
         }
 
         .chat-text {
@@ -959,6 +975,8 @@
             line-height: 1.5;
             white-space: pre-wrap;
             word-wrap: break-word;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
         }
 
         .chat-input-wrap {
@@ -974,7 +992,7 @@
             resize: none;
             padding: 10px 12px;
             font-size: 13px;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Nunito', sans-serif;
             border: 1.5px solid var(--input-border);
             border-radius: 14px;
             background: var(--input-bg);
@@ -987,6 +1005,8 @@
             color: var(--text-secondary);
             opacity: 0.7;
             margin-top: 6px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
         }
     </style>
 </head>
@@ -999,16 +1019,16 @@
     <div id="loginOverlay">
         <div style="text-align:center;max-width:420px;width:100%;">
             <div style="font-size:52px;margin-bottom:12px;">💜</div>
-            <h1 style="color:white;font-size:34px;font-weight:800;margin-bottom:8px;letter-spacing:-0.03em;">Your Feed</h1>
-            <p style="color:rgba(255,255,255,0.55);font-size:15px;margin-bottom:40px;font-family:'Inter',sans-serif;">Who's watching?</p>
+            <h1 style="color:white;font-size:34px;font-weight:900;margin-bottom:8px;letter-spacing:-0.03em;font-family:'Nunito',sans-serif;">Your Feed</h1>
+            <p style="color:rgba(255,255,255,0.55);font-size:15px;margin-bottom:40px;font-family:'Nunito',sans-serif;font-weight:700;">Who's watching?</p>
             <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
                 <div class="user-card" onclick="login('El')">
                     <div style="font-size:44px;margin-bottom:10px;">💖</div>
-                    <div style="font-size:20px;font-weight:800;color:white;font-family:'Inter',sans-serif;">El</div>
+                    <div style="font-size:20px;font-weight:900;color:white;font-family:'Nunito',sans-serif;">El</div>
                 </div>
                 <div class="user-card" onclick="login('Tero')">
                     <div style="font-size:44px;margin-bottom:10px;">💜</div>
-                    <div style="font-size:20px;font-weight:800;color:white;font-family:'Inter',sans-serif;">Tero</div>
+                    <div style="font-size:20px;font-weight:900;color:white;font-family:'Nunito',sans-serif;">Tero</div>
                 </div>
             </div>
         </div>
@@ -1019,14 +1039,14 @@
         <!-- Header -->
         <div class="text-center mb-8 text-white">
             <div class="flex items-center justify-center gap-3 mb-2">
-                <h1 class="text-5xl font-extrabold" style="letter-spacing: -0.03em; text-shadow: 0 4px 28px rgba(147, 51, 234, 0.45);">Your Feed</h1>
+                <h1 class="text-5xl font-extrabold" style="letter-spacing: -0.03em; text-shadow: 0 4px 28px rgba(147, 51, 234, 0.45); font-family:'Nunito',sans-serif;">Your Feed</h1>
                 <span class="text-4xl" style="filter: drop-shadow(0 2px 8px rgba(236,72,153,0.5));">💜</span>
                 <button onclick="toggleDarkMode()" class="text-2xl hover:scale-110 transition-transform opacity-70 hover:opacity-100 ml-1" title="Toggle dark mode">
                     <span id="darkModeIcon">🌙</span>
                 </button>
             </div>
-            <p class="text-sm font-medium tracking-wide" style="opacity: 0.7;">posts curated just for you</p>
-            <button onclick="logout()" id="userIndicator" style="margin-top:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 14px;color:white;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'" title="Switch user"></button>
+            <p class="text-sm font-medium tracking-wide" style="opacity: 0.7; font-family:'Nunito',sans-serif; font-weight:800;">posts curated just for you</p>
+            <button onclick="logout()" id="userIndicator" style="margin-top:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 14px;color:white;font-size:13px;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'" title="Switch user"></button>
         </div>
 
         <!-- Main Navigation -->
@@ -1048,11 +1068,11 @@
         <div id="activeFiltersBanner" class="hidden" style="margin-bottom: 14px;">
             <div style="background: rgba(255,255,255,0.10); border: 1.5px solid rgba(255,255,255,0.18); border-radius: 18px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                 <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-                    <span style="font-size:12px;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);">Filters</span>
+                    <span style="font-size:12px;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);font-family:'Nunito',sans-serif;">Filters</span>
                     <span id="activeCollectionPill" class="collection-badge hidden"></span>
                     <span id="activeSourcePill" class="collection-badge hidden"></span>
                 </div>
-                <button onclick="clearAllExtraFilters()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 7px 12px; color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 900; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Clear</button>
+                <button onclick="clearAllExtraFilters()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 7px 12px; color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 900; cursor: pointer; transition: background 0.15s;font-family:'Nunito',sans-serif;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Clear</button>
             </div>
         </div>
 
@@ -1071,8 +1091,8 @@
             <div id="postsContainer" class="space-y-5"></div>
             <div id="emptyState" class="empty-state hidden">
                 <div class="text-5xl mb-5">💜</div>
-                <h3 class="text-2xl font-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.02em;">No Posts Yet</h3>
-                <p class="text-sm mb-6" style="color: var(--text-secondary);">Start adding posts to create your personalised feed</p>
+                <h3 class="text-2xl font-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.02em; font-family:'Nunito',sans-serif;">No Posts Yet</h3>
+                <p class="text-sm mb-6" style="color: var(--text-secondary); font-family:'Nunito',sans-serif; font-weight:700;">Start adding posts to create your personalised feed</p>
                 <button onclick="openAddPostModal()" class="btn-primary px-8 py-3 text-sm font-semibold rounded-full">
                     Make a new post
                 </button>
@@ -1084,7 +1104,7 @@
     <div id="addPostModal" class="modal" onclick="if(event.target.id==='addPostModal') closeAddPostModal()">
         <div class="modal-content">
             <button class="modal-x" onclick="closeAddPostModal()" title="Close">✕</button>
-            <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary); letter-spacing: -0.02em;">Add a Post</h2>
+            <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary); letter-spacing: -0.02em; font-family:'Nunito',sans-serif;">Add a Post</h2>
             <div class="space-y-5">
                 <div class="form-field">
                     <label class="form-label">Post URL</label>
@@ -1109,7 +1129,7 @@
                 <button onclick="addPost()" class="btn-primary w-full py-4 text-base font-bold rounded-xl">
                     Add to Feed
                 </button>
-                <div style="font-size:11px;color:var(--text-secondary);opacity:0.7;line-height:1.5;">
+                <div style="font-size:11px;color:var(--text-secondary);opacity:0.7;line-height:1.5;font-family:'Nunito',sans-serif;font-weight:800;">
                     Tip: Instagram links will show an embed (image, and caption when Instagram allows it).
                 </div>
             </div>
@@ -1120,40 +1140,40 @@
     <div id="collectionsModal" class="modal" onclick="if(event.target.id==='collectionsModal') closeCollectionsModal()">
         <div class="modal-content">
             <button class="modal-x" onclick="closeCollectionsModal()" title="Close">✕</button>
-            <h2 class="text-xl font-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.02em;">Collections</h2>
-            <p class="text-sm mb-4" style="color: var(--text-secondary);">Filter posts by collection</p>
+            <h2 class="text-xl font-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.02em; font-family:'Nunito',sans-serif;">Collections</h2>
+            <p class="text-sm mb-4" style="color: var(--text-secondary); font-family:'Nunito',sans-serif; font-weight:800;">Filter posts by collection</p>
             <div class="collections-grid">
                 <div class="collection-item" onclick="filterByCollection(null)">
                     <div class="text-2xl mb-1">🌟</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">All</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">All</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('funny')">
                     <div class="text-2xl mb-1">😂</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Funny</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">Funny</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('cute')">
                     <div class="text-2xl mb-1">🥰</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Cute</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">Cute</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('news')">
                     <div class="text-2xl mb-1">📰</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">News</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">News</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('inspiration')">
                     <div class="text-2xl mb-1">✨</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Inspire</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">Inspire</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('music')">
                     <div class="text-2xl mb-1">🎵</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Music</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">Music</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('idiot-drivers')">
                     <div class="text-2xl mb-1">🚗</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Idiots</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">Idiots</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('other')">
                     <div class="text-2xl mb-1">📌</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Other</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">Other</div>
                 </div>
             </div>
         </div>
@@ -1163,45 +1183,80 @@
     <div id="sourcesModal" class="modal" onclick="if(event.target.id==='sourcesModal') closeSourcesModal()">
         <div class="modal-content">
             <button class="modal-x" onclick="closeSourcesModal()" title="Close">✕</button>
-            <h2 class="text-xl font-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.02em;">Sources</h2>
-            <p class="text-sm mb-4" style="color: var(--text-secondary);">Filter posts by source (works with collections)</p>
+            <h2 class="text-xl font-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.02em; font-family:'Nunito',sans-serif;">Sources</h2>
+            <p class="text-sm mb-4" style="color: var(--text-secondary); font-family:'Nunito',sans-serif; font-weight:800;">Filter posts by source (works with collections)</p>
             <div class="collections-grid">
                 <div class="collection-item" onclick="filterBySource(null)">
                     <div class="text-2xl mb-1">🌟</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">All</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">All</div>
                 </div>
                 <div class="collection-item" onclick="filterBySource('instagram')">
                     <div class="text-2xl mb-1">📷</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Instagram</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">Instagram</div>
                 </div>
                 <div class="collection-item" onclick="filterBySource('reddit')">
                     <div class="text-2xl mb-1">👽</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Reddit</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">Reddit</div>
                 </div>
                 <div class="collection-item" onclick="filterBySource('x')">
                     <div class="text-2xl mb-1">𝕏</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">X</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">X</div>
                 </div>
                 <div class="collection-item" onclick="filterBySource('youtube')">
                     <div class="text-2xl mb-1">▶️</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">YouTube</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">YouTube</div>
                 </div>
                 <div class="collection-item" onclick="filterBySource('tiktok')">
                     <div class="text-2xl mb-1">🎵</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">TikTok</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">TikTok</div>
                 </div>
                 <div class="collection-item" onclick="filterBySource('spotify')">
                     <div class="text-2xl mb-1">🎧</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Spotify</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">Spotify</div>
                 </div>
                 <div class="collection-item" onclick="filterBySource('news-site')">
                     <div class="text-2xl mb-1">📰</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">News site</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">News site</div>
                 </div>
                 <div class="collection-item" onclick="filterBySource('other')">
                     <div class="text-2xl mb-1">🔗</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Other</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary); font-family:'Nunito',sans-serif;">Other</div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal" onclick="if(event.target.id==='editModal') closeEditModal()">
+        <div class="modal-content">
+            <button class="modal-x" onclick="closeEditModal()" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-4" style="color: var(--text-primary); letter-spacing: -0.02em; font-family:'Nunito',sans-serif;">Edit</h2>
+            <div class="form-field">
+                <label class="form-label" id="editLabel">Text</label>
+                <textarea id="editTextarea" rows="4" placeholder="Edit..."></textarea>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;">
+                <button onclick="closeEditModal()" class="btn-secondary px-4 py-3 text-sm font-semibold rounded-xl" style="flex:1;">Cancel</button>
+                <button onclick="saveEdit()" class="btn-primary px-4 py-3 text-sm font-semibold rounded-xl" style="flex:1;">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Delete Modal -->
+    <div id="deleteModal" class="modal" onclick="if(event.target.id==='deleteModal') closeDeleteModal()">
+        <div class="modal-content" style="text-align:center;">
+            <div style="font-size:44px;margin-bottom:10px;">🖤</div>
+            <h2 class="text-xl font-black mb-2" style="color: var(--text-primary); letter-spacing: -0.02em; font-family:'Nunito',sans-serif;">
+                are you sure you want to delete this, babe?!
+            </h2>
+            <p class="text-sm mb-5" style="color: var(--text-secondary); font-family:'Nunito',sans-serif; font-weight:800;">this can’t be undone 💜</p>
+            <div style="display:flex;gap:10px;">
+                <button onclick="closeDeleteModal()" class="btn-secondary px-4 py-3 text-sm font-semibold rounded-xl" style="flex:1;">
+                    nope, keep it 💜
+                </button>
+                <button onclick="confirmDelete()" class="btn-primary px-4 py-3 text-sm font-semibold rounded-xl" style="flex:1;background:linear-gradient(135deg,#111827,#7c3aed);">
+                    yes, delete 🖤
+                </button>
             </div>
         </div>
     </div>
@@ -1262,6 +1317,10 @@
         let _audioCtx = null;
         let chatOpen = false;
         let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
+
+        // Edit/Delete modal state
+        let editTarget = null;   // { type:'post'|'reply', postId, replyId }
+        let deleteTarget = null; // { type:'post'|'reply', postId, replyId }
 
         const COLLECTION_EMOJIS = { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' };
         const COLLECTION_LABELS = { funny: 'Funny', cute: 'Cute', news: 'News', inspiration: 'Inspiration', music: 'Music', 'idiot-drivers': 'Idiot Drivers', other: 'Other' };
@@ -1325,7 +1384,6 @@
                 ensureAudio();
                 const t0 = _audioCtx.currentTime;
 
-                // Cute sparkly “pings” with different patterns per event
                 const patterns = {
                     post:   [880, 1320, 1760],
                     reply:  [660, 990, 1320],
@@ -1365,7 +1423,6 @@
         }
 
         function dataSig(posts) {
-            // enough to detect “something changed” for a ping
             let out = '';
             for (const [id, p] of Object.entries(posts)) {
                 const replies = p.replies || [];
@@ -1433,7 +1490,7 @@
             currentUser = user;
             localStorage.setItem('currentUser', user);
 
-            ensureAudio(); // initialise inside gesture
+            ensureAudio();
             document.getElementById('loginOverlay').style.display = 'none';
 
             const emoji = user === 'El' ? '💖' : '💜';
@@ -1528,6 +1585,81 @@
             document.getElementById('sourcesModal').classList.remove('show');
         };
 
+        // Edit/Delete modal controls
+        window.openEditModal = function(label, initialValue, target) {
+            editTarget = target;
+            document.getElementById('editLabel').textContent = label;
+            document.getElementById('editTextarea').value = initialValue || '';
+            document.getElementById('editModal').classList.add('show');
+            setTimeout(() => document.getElementById('editTextarea')?.focus(), 50);
+        };
+
+        window.closeEditModal = function() {
+            editTarget = null;
+            document.getElementById('editModal').classList.remove('show');
+        };
+
+        window.openDeleteModal = function(target) {
+            deleteTarget = target;
+            document.getElementById('deleteModal').classList.add('show');
+        };
+
+        window.closeDeleteModal = function() {
+            deleteTarget = null;
+            document.getElementById('deleteModal').classList.remove('show');
+        };
+
+        function collectReplyDescendants(replies, rootId) {
+            const children = replies.filter(r => r.replyToId === rootId).map(r => r.id);
+            let all = [...children];
+            for (const cid of children) all = all.concat(collectReplyDescendants(replies, cid));
+            return all;
+        }
+
+        window.saveEdit = async function() {
+            if (!editTarget) return;
+            const val = document.getElementById('editTextarea').value.trim();
+
+            if (editTarget.type === 'post') {
+                await update(ref(database, `posts/${editTarget.postId}`), { note: val });
+                showToast('Post updated');
+            } else {
+                const post = allPosts[editTarget.postId];
+                if (!post) return;
+
+                const replies = (post.replies || []).map(r => {
+                    if (r.id !== editTarget.replyId) return r;
+                    return { ...r, text: val };
+                });
+
+                await update(ref(database, `posts/${editTarget.postId}`), { replies });
+                showToast('Comment updated');
+            }
+
+            closeEditModal();
+        };
+
+        window.confirmDelete = async function() {
+            if (!deleteTarget) return;
+
+            if (deleteTarget.type === 'post') {
+                await remove(ref(database, `posts/${deleteTarget.postId}`));
+                showToast('Post deleted');
+            } else {
+                const post = allPosts[deleteTarget.postId];
+                if (!post) return;
+
+                const replies = post.replies || [];
+                const toRemove = new Set([deleteTarget.replyId, ...collectReplyDescendants(replies, deleteTarget.replyId)]);
+                const nextReplies = replies.filter(r => !toRemove.has(r.id));
+
+                await update(ref(database, `posts/${deleteTarget.postId}`), { replies: nextReplies });
+                showToast('Comment deleted');
+            }
+
+            closeDeleteModal();
+        };
+
         // ---- FILTERS ----
         window.setFilter = function(filter) {
             currentFilter = filter;
@@ -1619,9 +1751,9 @@
                     collection,
                     source,
                     timestamp: Date.now(),
-                    readBy: { [author]: true }, // author has already seen their own post
-                    reactionsBy: {},            // emoji -> { user: true }
-                    replies: []                 // reply objects
+                    readBy: { [author]: true },
+                    reactionsBy: {},
+                    replies: []
                 });
 
                 document.getElementById('postUrl').value = '';
@@ -1641,29 +1773,11 @@
             showToast('Marked as seen');
         };
 
-        window.deletePost = async function(id) {
-            if (!confirm('Delete this post?')) return;
-            await remove(ref(database, `posts/${id}`));
-            showToast('Post deleted');
+        window.deletePost = function(id) {
+            openDeleteModal({ type: 'post', postId: id });
         };
 
-        // ---- REACTIONS (with who reacted) ----
-        function getReactUsers(post, emoji) {
-            const rb = post.reactionsBy || {};
-            const map = rb[emoji] || {};
-            return Object.keys(map);
-        }
-
-        function isReactedByMe(post, emoji) {
-            return !!(post.reactionsBy && post.reactionsBy[emoji] && post.reactionsBy[emoji][currentUser]);
-        }
-
-        function usersToLabel(users) {
-            if (!users.length) return '';
-            if (users.length <= 2) return users.join(', ');
-            return `${users.slice(0,2).join(', ')} +${users.length - 2}`;
-        }
-
+        // ---- REACTIONS ----
         window.toggleReaction = async function(postId, emoji) {
             const post = allPosts[postId];
             if (!post) return;
@@ -1682,7 +1796,6 @@
             sparkSound('react');
         };
 
-        // Comment reactions (reply reactions)
         window.toggleCommentReaction = async function(postId, replyId, emoji) {
             const post = allPosts[postId];
             if (!post) return;
@@ -1704,7 +1817,7 @@
             sparkSound('react');
         };
 
-        // ---- REPLIES (Enter sends, Shift+Enter newline) ----
+        // ---- REPLIES ----
         window.addReply = async function(postId) {
             const input = document.getElementById(`reply-${postId}`);
             const text  = input.value.trim();
@@ -1805,13 +1918,21 @@
                     <div class="reply-item${isChild ? ' reply-child' : ''}">
                         <div class="reply-item-header">
                             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                                <span style="font-size:11px;font-weight:900;color:var(--text-secondary);">${safeText(reply.author)} ${ae}</span>
-                                ${ts ? `<span style="font-size:10px;color:var(--text-secondary);opacity:0.65;" title="${safeText(tsFull)}">${safeText(ts)}</span>` : ''}
+                                <span style="font-size:11px;font-weight:900;color:var(--text-secondary);font-family:'Nunito',sans-serif;">${safeText(reply.author)} ${ae}</span>
+                                ${ts ? `<span style="font-size:10px;color:var(--text-secondary);opacity:0.65;font-family:'Nunito',sans-serif;font-weight:800;" title="${safeText(tsFull)}">${safeText(ts)}</span>` : ''}
                             </div>
-                            <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}')">↩ Reply</button>
+
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}')">↩ Reply</button>
+
+                                ${reply.author === currentUser ? `
+                                    <button class="reply-btn" onclick="openEditModal('Edit comment', ${JSON.stringify(reply.text || '')}, {type:'reply', postId:'${postId}', replyId:'${reply.id}'})" title="Edit">✏️</button>
+                                    <button class="reply-btn" onclick="openDeleteModal({type:'reply', postId:'${postId}', replyId:'${reply.id}'})" title="Delete">✕</button>
+                                ` : ''}
+                            </div>
                         </div>
 
-                        <div style="font-size:13px;color:var(--text-primary);line-height:1.55;white-space:pre-wrap;">${safeText(reply.text)}</div>
+                        <div style="font-size:13px;color:var(--text-primary);line-height:1.55;white-space:pre-wrap;font-family:'Nunito',sans-serif;font-weight:700;">${safeText(reply.text)}</div>
 
                         <div class="comment-reactions">
                             ${renderRxButtons(reply.reactionsBy, postId, reply.id)}
@@ -1821,7 +1942,7 @@
                     ${children.length ? children.map(c => renderItem(c, true)).join('') : ''}
 
                     <div id="inline-reply-${postId}-${reply.id}" class="inline-reply-form hidden">
-                        <div style="font-size:11px;font-weight:800;color:var(--text-secondary);margin-bottom:6px;">Replying to ${safeText(reply.author)}</div>
+                        <div style="font-size:11px;font-weight:900;color:var(--text-secondary);margin-bottom:6px;font-family:'Nunito',sans-serif;">Replying to ${safeText(reply.author)}</div>
                         <div class="reply-input-row">
                             <textarea
                                 id="inline-input-${postId}-${reply.id}"
@@ -1849,7 +1970,7 @@
 
         window.handleReplyKey = function(e, postId, replyToId, isInline) {
             if (e.key !== 'Enter') return;
-            if (e.shiftKey) return; // newline
+            if (e.shiftKey) return;
             e.preventDefault();
             if (isInline) submitInlineReply(postId, replyToId);
             else addReply(postId);
@@ -1865,13 +1986,12 @@
         }
 
         function createInstagramEmbed(url) {
-            // Instagram caption is only available if the embed renders it (public posts usually do)
             return `
                 <div style="padding:14px 18px;">
                     <blockquote class="instagram-media" data-instgrm-permalink="${safeText(url)}" data-instgrm-version="14"
                         style="margin: 0; width: 100%; background: transparent; border: none;">
                     </blockquote>
-                    <div style="font-size:11px;color:var(--text-secondary);opacity:0.7;margin-top:8px;">
+                    <div style="font-size:11px;color:var(--text-secondary);opacity:0.7;margin-top:8px;font-family:'Nunito',sans-serif;font-weight:800;">
                         If the caption doesn’t show, Instagram is blocking it for that post.
                     </div>
                 </div>
@@ -1892,13 +2012,12 @@
             const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 
             const collectionBadge = post.collection
-                ? `<button class="collection-badge" onclick="filterByCollection('${safeText(post.collection)}')" title="Filter by collection">${getCollectionEmoji(post.collection)} ${safeText(post.collection)}</button>`
+                ? `<button class="collection-badge" onclick="filterByCollection('${safeText(post.collection)}')" title="Filter by collection">${getCollectionEmoji(post.collection)} ${safeText(COLLECTION_LABELS[post.collection] || post.collection)}</button>`
                 : '';
 
             const source = post.source || detectSource(post.url);
             const sourceBadge = `<button class="collection-badge" onclick="filterBySource('${safeText(source)}')" title="Filter by source">${safeText(getSourceLabel(source))}</button>`;
 
-            // Post reactions
             const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍'];
             const rb = post.reactionsBy || {};
 
@@ -1953,24 +2072,27 @@
                     <div class="post-header">
                         <div class="post-author-row">
                             <span class="${badgeClass}">${safeText(author)} ${emoji}</span>
-                            <span style="color: var(--text-secondary); font-size: 12px;">•</span>
-                            <span style="color: var(--text-secondary); font-size: 12px; font-weight: 700;" title="${safeText(dateFull)}">${safeText(date)}</span>
+                            <span style="color: var(--text-secondary); font-size: 12px; font-family:'Nunito',sans-serif; font-weight:900;">•</span>
+                            <span style="color: var(--text-secondary); font-size: 12px; font-weight: 900; font-family:'Nunito',sans-serif;" title="${safeText(dateFull)}">${safeText(date)}</span>
                             ${collectionBadge}
                             ${sourceBadge}
                             ${isRead(post) ? '<span class="seen-dot" title="Seen"></span>' : ''}
                         </div>
-                        <button class="delete-btn" onclick="deletePost('${post.id}')" title="Delete">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
+
+                        ${post.author === currentUser ? `
+                            <div style="display:flex;gap:6px;align-items:center;">
+                                <button class="delete-btn" onclick="openEditModal('Edit note', ${JSON.stringify(post.note || '')}, {type:'post', postId:'${post.id}'})" title="Edit">✏️</button>
+                                <button class="delete-btn" onclick="deletePost('${post.id}')" title="Delete">✕</button>
+                            </div>
+                        ` : ''}
                     </div>
 
                     ${post.note ? `
-                    <div class="post-note">
-                        <span class="post-note-quote">"</span>
-                        <p style="font-size: 14px; font-style: italic; color: var(--text-primary); line-height: 1.65; margin: 0; white-space: pre-wrap;">${safeText(post.note)}</p>
-                    </div>` : ''}
+                        <div class="post-note">
+                            <div class="note-author">${safeText(author)}</div>
+                            <p class="note-text">${safeText(post.note)}</p>
+                        </div>
+                    ` : ''}
 
                     ${contentHtml}
 
@@ -1994,21 +2116,16 @@
                                 </svg>
                             </button>
                         </div>
-                        <div style="font-size:10px;color:var(--text-secondary);opacity:0.7;margin-top:6px;">Enter to send, Shift+Enter for a new line</div>
+                        <div style="font-size:10px;color:var(--text-secondary);opacity:0.7;margin-top:6px;font-family:'Nunito',sans-serif;font-weight:800;">Enter to send, Shift+Enter for a new line</div>
                     </div>
 
-                    <div class="post-actions">
-                        <a href="${safeText(post.url)}" target="_blank" class="btn-primary flex-1 px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                            </svg>
-                            Open Link
-                        </a>
-                        ${!isRead(post) ? `
-                        <button onclick="markSeen('${post.id}')" class="btn-secondary px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
-                            <span class="seen-dot"></span> Mark Seen
-                        </button>` : ''}
-                    </div>
+                    ${!isRead(post) ? `
+                        <div class="post-actions">
+                            <button onclick="markSeen('${post.id}')" class="btn-secondary px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;gap:6px;white-space:nowrap;width:100%;justify-content:center;">
+                                <span class="seen-dot"></span> Mark Seen
+                            </button>
+                        </div>
+                    ` : ''}
                 </div>
             `;
         }
@@ -2020,11 +2137,9 @@
                 .map(([id, data]) => ({ id, ...data }))
                 .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-            // Stack collection and source together
             if (currentCollection) posts = posts.filter(p => p.collection === currentCollection);
             if (currentSource) posts = posts.filter(p => (p.source || detectSource(p.url)) === currentSource);
 
-            // Then apply All/New/Seen
             if (currentFilter === 'new')  posts = posts.filter(p => !isRead(p));
             if (currentFilter === 'seen') posts = posts.filter(p =>  isRead(p));
 
@@ -2062,7 +2177,6 @@
             emptyState.classList.add('hidden');
             container.innerHTML = posts.map(createPostCard).join('');
 
-            // Process embeds after render
             setTimeout(() => {
                 window.twttr?.widgets?.load?.();
                 window.instgrm?.Embeds?.process?.();
@@ -2109,15 +2223,13 @@
             const raw = snapshot.val() || {};
             const messages = Object.entries(raw)
                 .map(([id, m]) => ({ id, ...m }))
-                .sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
+                .sort((a,b) => (a.timestamp || 0) - (a.timestamp || 0));
 
             if (chatOpen) {
-                // when open, mark newest as seen
                 const newest = messages[messages.length - 1]?.timestamp || lastChatSeenTs;
                 lastChatSeenTs = Math.max(lastChatSeenTs, newest);
                 localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
             } else {
-                // notify sound when a new message arrives from the other person
                 const newest = messages[messages.length - 1]?.timestamp || 0;
                 const newestAuthor = messages[messages.length - 1]?.author || '';
                 if (newest > lastChatSeenTs && newestAuthor && newestAuthor !== currentUser) {
@@ -2136,11 +2248,9 @@
             panel.classList.toggle('show', chatOpen);
 
             if (chatOpen) {
-                // mark as seen now
                 lastChatSeenTs = Date.now();
                 localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
                 document.getElementById('chatUnread').classList.add('hidden');
-                // force a re-render via a get
                 get(child(ref(database), 'chat')).then(() => {});
                 setTimeout(() => document.getElementById('chatInput')?.focus(), 80);
             }
@@ -2180,8 +2290,8 @@
                 color: #ede9fe;
                 padding: 12px 20px;
                 border-radius: 14px;
-                font-size: 14px; font-weight: 800;
-                font-family: 'Inter', sans-serif;
+                font-size: 14px; font-weight: 900;
+                font-family: 'Nunito', sans-serif;
                 box-shadow: 0 8px 32px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(139,92,246,0.35);
                 z-index: 9999;
                 backdrop-filter: blur(14px);
