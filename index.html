@@ -448,9 +448,9 @@
         body.dark-mode .reaction-btn.active { color: #c084fc; }
 
         .reaction-people {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 900;
-            opacity: 0.75;
+            letter-spacing: -1px;
         }
 
         .comment-reactions {
@@ -2063,12 +2063,11 @@ function youtubeThumb(url) {
                 return cmtEmojis.map(e => {
                     const users = Object.keys(map[e] || {});
                     const active = !!(map[e] && map[e][currentUser]);
-                    const title = users.length ? `Reacted: ${users.join(', ')}` : 'React';
+                    const who = users.map(u => u === 'El' ? '💖' : '💜').join('');
                     return `
                         <button class="comment-reaction-btn${active ? ' active' : ''}"
-                                onclick="toggleCommentReaction('${postId}','${replyId}','${e}')"
-                                title="${safeText(title)}">
-                            ${e}<span class="reaction-people">${users.length ? users.length : ''}</span>
+                                onclick="toggleCommentReaction('${postId}','${replyId}','${e}')">
+                            ${e}${who ? `<span class="reaction-people">${who}</span>` : ''}
                         </button>
                     `;
                 }).join('');
@@ -2206,13 +2205,12 @@ function youtubeThumb(url) {
             const reactionButtons = reactionEmojis.map(e => {
                 const users = Object.keys(rb[e] || {});
                 const active = !!(rb[e] && rb[e][currentUser]);
-                const title = users.length ? `Reacted: ${users.join(', ')}` : 'React';
+                const who = users.map(u => u === 'El' ? '💖' : '💜').join('');
                 return `
                     <button class="reaction-btn${active ? ' active' : ''}"
-                            onclick="toggleReaction('${post.id}','${e}')"
-                            title="${safeText(title)}">
+                            onclick="toggleReaction('${post.id}','${e}')">
                         <span>${e}</span>
-                        <span class="reaction-people">${users.length ? users.length : ''}</span>
+                        ${who ? `<span class="reaction-people">${who}</span>` : ''}
                     </button>
                 `;
             }).join('');
