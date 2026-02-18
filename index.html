@@ -1011,7 +1011,7 @@
             if (newPosts > 0) {
                 badge.textContent = newPosts;
                 badge.classList.remove('hidden');
-                if (currentFilter === 'new') markAllBtn.classList.remove('hidden');
+                if (currentFilter === 'new' && !currentCollection) markAllBtn.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
                 markAllBtn.classList.add('hidden');
@@ -1052,6 +1052,7 @@
 
         window.setFilter = function(filter) {
             currentFilter = filter;
+            currentCollection = null;
             document.getElementById('btnNew').className  = 'filter-btn' + (filter === 'new'  ? ' active' : '');
             document.getElementById('btnSeen').className = 'filter-btn' + (filter === 'seen' ? ' active' : '');
             document.getElementById('btnAll').className  = 'filter-btn' + (filter === 'all'  ? ' active' : '');
@@ -1134,6 +1135,18 @@
         window.filterByCollection = function(collection) {
             currentCollection = collection;
             closeCollectionsModal();
+            if (collection) {
+                // In category mode: show All as active, new/seen don't apply
+                document.getElementById('btnNew').className  = 'filter-btn';
+                document.getElementById('btnSeen').className = 'filter-btn';
+                document.getElementById('btnAll').className  = 'filter-btn active';
+            } else {
+                // Back to normal: restore the actual filter state
+                document.getElementById('btnNew').className  = 'filter-btn' + (currentFilter === 'new'  ? ' active' : '');
+                document.getElementById('btnSeen').className = 'filter-btn' + (currentFilter === 'seen' ? ' active' : '');
+                document.getElementById('btnAll').className  = 'filter-btn' + (currentFilter === 'all'  ? ' active' : '');
+            }
+            updateNewCount();
             loadPosts();
             const names = { funny: '😂 Funny', cute: '🥰 Cute', news: '📰 News', inspiration: '✨ Inspiration', music: '🎵 Music', 'idiot-drivers': '🚗 Idiot Drivers', other: '📌 Other' };
             showToast(collection ? `Filtering: ${names[collection]}` : 'Showing all collections');
@@ -1144,9 +1157,12 @@
                 .map(([id, data]) => ({ id, ...data }))
                 .sort((a, b) => b.timestamp - a.timestamp);
 
-            if (currentFilter === 'new')  posts = posts.filter(p => !p.read);
-            if (currentFilter === 'seen') posts = posts.filter(p =>  p.read);
-            if (currentCollection) posts = posts.filter(p => p.collection === currentCollection);
+            if (currentCollection) {
+                posts = posts.filter(p => p.collection === currentCollection);
+            } else {
+                if (currentFilter === 'new')  posts = posts.filter(p => !p.read);
+                if (currentFilter === 'seen') posts = posts.filter(p =>  p.read);
+            }
 
             const container  = document.getElementById('postsContainer');
             const emptyState = document.getElementById('emptyState');
@@ -1156,7 +1172,11 @@
                 emptyState.classList.remove('hidden');
                 const h3 = emptyState.querySelector('h3');
                 const p  = emptyState.querySelector('p');
-                if (currentFilter === 'new') {
+                if (currentCollection) {
+                    const names = { funny: 'Funny', cute: 'Cute', news: 'News', inspiration: 'Inspiration', music: 'Music', 'idiot-drivers': 'Idiot Drivers', other: 'Other' };
+                    h3.textContent = `No ${names[currentCollection] || 'Collection'} Posts`;
+                    p.textContent  = 'Nothing in this category yet. ✨';
+                } else if (currentFilter === 'new') {
                     h3.textContent = 'All Caught Up! ✨';
                     p.textContent  = 'No new posts to see. 💜';
                 } else if (currentFilter === 'seen') {
