@@ -1213,7 +1213,16 @@ function renderChat(messages) {
         const me = g.author === currentUser;
         const emoji = AUTHOR_EMOJI[g.author] || '💬';
         const lastTs = g.msgs[g.msgs.length - 1].timestamp;
-        const bubbles = g.msgs.map(m => `<div class="chat-bubble">${safeText(m.text)}</div>`).join('');
+        const bubbles = g.msgs.map(m => {
+            const canHeart = !me;
+            const hearted  = canHeart && !!(m.hearts?.[currentUser]);
+            const dblclick = canHeart ? `ondblclick="heartChatMessage('${m.id}')"` : '';
+            const heartEl  = canHeart
+                ? `<span class="heart-react ${hearted ? 'hearted' : 'hint'}">${hearted ? '❤️' : '♡'}</span>`
+                : '';
+            const title = canHeart ? 'title="Double-click to ❤️"' : '';
+            return `<div class="chat-bubble${canHeart ? ' heartable' : ''}" ${dblclick} ${title}>${safeText(m.text)}${heartEl}</div>`;
+        }).join('');
         const label = me ? '' : `<div class="chat-group-label">${safeText(g.author)} ${emoji}</div>`;
         return `
             <div class="chat-group chat-group--${me ? 'me' : 'other'}">
@@ -1264,6 +1273,19 @@ onValue(query(chatRef, limitToLast(80)), (snapshot) => {
     if (chatOpen) renderChat(messages);
 });
 
+window.heartChatMessage = async function(msgId) {
+    window.getSelection()?.removeAllRanges(); // clear the text selection dblclick produces
+    const msg = lastChatMessages.find(m => m.id === msgId);
+    if (!msg) return;
+    const hearts = { ...(msg.hearts || {}) };
+    if (hearts[currentUser]) {
+        delete hearts[currentUser];
+    } else {
+        hearts[currentUser] = true;
+    }
+    await update(ref(database, `chat/${msgId}`), { hearts });
+};
+
 window.toggleChat = function() {
     if (!currentUser) return;
     chatOpen = !chatOpen;
@@ -1276,7 +1298,13 @@ window.toggleChat = function() {
         document.getElementById('chatUnread').classList.add('hidden');
 
         renderChat(lastChatMessages);
-        
+
+        // One-time hint so the double-click affordance is discoverable
+        if (!localStorage.getItem('chatHeartHintSeen')) {
+            localStorage.setItem('chatHeartHintSeen', '1');
+            setTimeout(() => showToast('Double-click Tero\'s messages to ❤️ them'), 900);
+        }
+
         setTimeout(() => document.getElementById('chatInput')?.focus(), 80);
     }
 };
