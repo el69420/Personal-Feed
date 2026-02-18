@@ -265,6 +265,106 @@
 
         .mark-all-btn:hover { background: rgba(34, 197, 94, 0.28); }
 
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 900;
+        }
+        .icon-btn:hover { color: #7c3aed; background: rgba(192,132,252,0.12); }
+        .icon-btn.fav-active { color: #ec4899; }
+        .icon-btn.fav-active:hover { color: #db2777; background: rgba(236,72,153,0.1); }
+
+        .search-wrap {
+            max-width: 480px;
+            margin: 0 auto 28px;
+            position: relative;
+        }
+        .search-input {
+            width: 100%;
+            background: rgba(255,255,255,0.10);
+            border: 1.5px solid rgba(255,255,255,0.20);
+            border-radius: 999px;
+            padding: 11px 42px;
+            color: white;
+            font-size: 14px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+            box-sizing: border-box;
+        }
+        .search-input::placeholder { color: rgba(255,255,255,0.42); }
+        .search-input:focus {
+            border-color: rgba(255,255,255,0.45);
+            background: rgba(255,255,255,0.15);
+        }
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.52);
+            pointer-events: none;
+        }
+        .search-clear {
+            position: absolute;
+            right: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.18);
+            border: none;
+            border-radius: 999px;
+            color: white;
+            width: 22px;
+            height: 22px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+            line-height: 1;
+        }
+        .search-clear:hover { background: rgba(255,255,255,0.32); }
+
+        #scrollTopBtn {
+            position: fixed;
+            bottom: 22px;
+            left: 22px;
+            z-index: 998;
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(192,132,252,0.25);
+            box-shadow: 0 10px 30px rgba(109,40,217,0.20);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            color: #6d28d9;
+        }
+        #scrollTopBtn.visible { opacity: 1; pointer-events: all; }
+        body.dark-mode #scrollTopBtn {
+            background: rgba(20,11,46,0.92);
+            border-color: rgba(139,92,246,0.38);
+            color: #ede9fe;
+        }
+
         .post-card {
             transition: transform 0.25s ease, box-shadow 0.25s ease;
             background: var(--card-bg);
@@ -1144,9 +1244,19 @@
                 <button onclick="setFilter('all')" id="btnAll" class="filter-btn active">🌟 All</button>
                 <button onclick="setFilter('new')" id="btnNew" class="filter-btn">✨ New <span id="newCount" class="new-badge hidden">0</span></button>
                 <button onclick="setFilter('seen')" id="btnSeen" class="filter-btn">💜 Seen</button>
+                <button onclick="setFilter('fav')" id="btnFav" class="filter-btn">♡ Saved</button>
                 <button onclick="filterByAuthor()" id="btnOtherUser" class="filter-btn">💜 Just Tero</button>
             </div>
             <button onclick="markAllSeen()" id="btnMarkAll" class="mark-all-btn hidden">Mark All Seen</button>
+        </div>
+
+        <!-- Search -->
+        <div class="search-wrap">
+            <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+            </svg>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search posts..." oninput="setSearch(this.value)">
+            <button id="searchClear" class="search-clear hidden" onclick="clearSearch()" title="Clear">✕</button>
         </div>
 
         <!-- Feed Section -->
@@ -1339,6 +1449,13 @@
         </div>
     </div>
 
+    <!-- Scroll to top -->
+    <button id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/>
+        </svg>
+    </button>
+
     <!-- Chat widget -->
     <button class="chat-fab" onclick="toggleChat()">
         💬 Chat <span id="chatUnread" class="new-badge hidden">0</span>
@@ -1386,6 +1503,7 @@
         let currentCollection = null;
         let currentSource = null;
         let currentAuthor = null;
+        let searchQuery = '';
         let allPosts = {};
         let currentUser = null;
         let editState = null;
@@ -1636,6 +1754,20 @@ function youtubeThumb(url) {
         const savedUser = localStorage.getItem('currentUser');
         if (savedUser) login(savedUser);
 
+        // Scroll to top button
+        window.addEventListener('scroll', () => {
+            document.getElementById('scrollTopBtn').classList.toggle('visible', window.scrollY > 300);
+        });
+
+        // Keyboard shortcut: n = new post
+        document.addEventListener('keydown', e => {
+            if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey &&
+                document.activeElement.tagName !== 'TEXTAREA' &&
+                document.activeElement.tagName !== 'INPUT' && currentUser) {
+                openAddPostModal();
+            }
+        });
+
         // Cursor
         const cursor = document.getElementById('cursor');
         const starChars = ['✦', '✧', '⋆', '✵', '✶', '✷', '✸', '✹', '*', '∗'];
@@ -1772,9 +1904,20 @@ function youtubeThumb(url) {
         window.saveEdit = async function() {
             if (!editTarget) return;
             const val = document.getElementById('editTextarea').value.trim();
+            const now = Date.now();
 
             if (editTarget.type === 'post') {
-                await update(ref(database, `posts/${editTarget.postId}`), { note: val });
+                const post = allPosts[editTarget.postId];
+                if (!post) return;
+                const updateData = { note: val, editedAt: now };
+                // Preserve the very first original — don't overwrite on subsequent edits
+                if (!post.editHistory) {
+                    updateData.editHistory = {
+                        originalTs: post.timestamp || now,
+                        originalNote: post.note || ''
+                    };
+                }
+                await update(ref(database, `posts/${editTarget.postId}`), updateData);
                 showToast('Post updated');
             } else {
                 const post = allPosts[editTarget.postId];
@@ -1782,7 +1925,11 @@ function youtubeThumb(url) {
 
                 const replies = (post.replies || []).map(r => {
                     if (r.id !== editTarget.replyId) return r;
-                    return { ...r, text: val };
+                    const updated = { ...r, text: val, editedAt: now };
+                    if (!r.editHistory) {
+                        updated.editHistory = { originalTs: r.timestamp || now, originalNote: r.text || '' };
+                    }
+                    return updated;
                 });
 
                 await update(ref(database, `posts/${editTarget.postId}`), { replies });
@@ -1820,9 +1967,35 @@ function youtubeThumb(url) {
             document.getElementById('btnAll').className  = 'filter-btn' + (filter === 'all'  ? ' active' : '');
             document.getElementById('btnNew').className  = 'filter-btn' + (filter === 'new'  ? ' active' : '');
             document.getElementById('btnSeen').className = 'filter-btn' + (filter === 'seen' ? ' active' : '');
+            document.getElementById('btnFav').className  = 'filter-btn' + (filter === 'fav'  ? ' active' : '');
 
             updateNewCount();
             loadPosts();
+        };
+
+        window.setSearch = function(val) {
+            searchQuery = val.toLowerCase();
+            document.getElementById('searchClear').classList.toggle('hidden', !searchQuery);
+            loadPosts();
+        };
+
+        window.clearSearch = function() {
+            searchQuery = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchClear').classList.add('hidden');
+            loadPosts();
+        };
+
+        window.toggleFavorite = async function(postId) {
+            const post = allPosts[postId];
+            if (!post) return;
+            const favBy = { ...(post.favoritedBy || {}) };
+            if (favBy[currentUser]) {
+                delete favBy[currentUser];
+            } else {
+                favBy[currentUser] = true;
+            }
+            await update(ref(database, `posts/${postId}`), { favoritedBy: favBy });
         };
 
         window.filterByCollection = function(collection) {
@@ -2086,6 +2259,7 @@ function youtubeThumb(url) {
                             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                                 <span style="font-size:11px;font-weight:900;color:var(--text-secondary);font-family:'Nunito',sans-serif;">${safeText(reply.author)} ${ae}</span>
                                 ${ts ? `<span style="font-size:10px;color:var(--text-secondary);opacity:0.65;font-family:'Nunito',sans-serif;font-weight:800;" title="${safeText(tsFull)}">${safeText(ts)}</span>` : ''}
+                                ${reply.editedAt && reply.editHistory ? `<button class="edit-pill" onclick="openHistory('${safeText(JSON.stringify({ meta: 'Original, ' + exactTimestamp(reply.editHistory.originalTs), text: reply.editHistory.originalNote || '' }))}')" title="View original">edited</button>` : ''}
                             </div>
 
                             <div style="display:flex;align-items:center;gap:6px;">
@@ -2198,6 +2372,7 @@ function youtubeThumb(url) {
                 : '';
 
             const source = post.source || detectSource(post.url);
+            const isFav = !!(post.favoritedBy && post.favoritedBy[currentUser]);
             const sourceBadge = `<button class="collection-badge" onclick="filterBySource('${safeText(source)}')" title="Filter by source">${safeText(getSourceLabel(source))}</button>`;
 
             const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍'];
@@ -2273,16 +2448,19 @@ function youtubeThumb(url) {
 
                         </div>
 
-                        ${post.author === currentUser ? `
-                            <div style="display:flex;gap:6px;align-items:center;">
+                        <div style="display:flex;gap:4px;align-items:center;">
+                            <button class="icon-btn${isFav ? ' fav-active' : ''}" onclick="toggleFavorite('${post.id}')" title="${isFav ? 'Unsave' : 'Save'}">
+                                ${isFav ? '♥' : '♡'}
+                            </button>
+                            ${post.author === currentUser ? `
                                 <button class="icon-btn" onclick="openEditPost('${post.id}')" title="Edit">✏️</button>
                                 <button class="icon-btn delete-btn" onclick="deletePost('${post.id}')" title="Delete">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                     </svg>
                                 </button>
-                            </div>
-                        ` : ''}
+                            ` : ''}
+                        </div>
                     </div>
 
                     ${post.note ? `
@@ -2341,6 +2519,14 @@ function youtubeThumb(url) {
 
             if (currentFilter === 'new')  posts = posts.filter(p => !isRead(p));
             if (currentFilter === 'seen') posts = posts.filter(p =>  isRead(p));
+            if (currentFilter === 'fav')  posts = posts.filter(p => p.favoritedBy?.[currentUser]);
+
+            if (searchQuery) {
+                posts = posts.filter(p => {
+                    const hay = [p.url || '', p.note || '', p.author || '', p.collection || ''].join(' ').toLowerCase();
+                    return hay.includes(searchQuery);
+                });
+            }
 
             const container  = document.getElementById('postsContainer');
             const emptyState = document.getElementById('emptyState');
@@ -2360,12 +2546,18 @@ function youtubeThumb(url) {
                 } else if (currentSource) {
                     h3.textContent = `No ${SOURCE_LABELS[currentSource] || 'Source'} Posts`;
                     p.textContent  = 'Nothing from this source yet.';
+                } else if (searchQuery) {
+                    h3.textContent = 'No Results';
+                    p.textContent  = `Nothing matched "${searchQuery}".`;
+                } else if (currentFilter === 'fav') {
+                    h3.textContent = 'No Saved Posts';
+                    p.textContent  = 'Tap ♡ on any post to save it here.';
                 } else if (currentFilter === 'new') {
                     h3.textContent = 'All Caught Up';
                     p.textContent  = 'No new posts to see.';
                 } else if (currentFilter === 'seen') {
                     h3.textContent = 'No Seen Posts';
-                    p.textContent  = 'Mark posts as seen and they’ll appear here.';
+                    p.textContent  = 'Mark posts as seen and they\'ll appear here.';
                 } else {
                     h3.textContent = 'No Posts Yet';
                     p.textContent  = 'Start adding posts.';
