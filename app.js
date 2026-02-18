@@ -466,6 +466,16 @@ window.confirmDelete = async function() {
 };
 
 // ---- FILTERS ----
+window.resetToAll = function() {
+    currentCollection = null;
+    currentSource     = null;
+    searchQuery       = '';
+    const inp = document.getElementById('searchInput');
+    if (inp) inp.value = '';
+    document.getElementById('searchClear')?.classList.add('hidden');
+    setFilter('all');
+};
+
 window.setFilter = function(filter) {
     currentFilter = filter;
 
@@ -666,11 +676,20 @@ window.markAllSeen = async function() {
     showToast('All posts marked as seen');
 };
 
+window.toggleCollPick = function(btn) {
+    btn.classList.toggle('selected');
+};
+
+function getSelectedCollections() {
+    return [...document.querySelectorAll('#collectionPicker .coll-pick-btn.selected')]
+        .map(b => b.dataset.val);
+}
+
 window.addPost = async function() {
     const url = document.getElementById('postUrl').value.trim();
     const note = document.getElementById('postNote').value.trim();
     const author = currentUser;
-    const collection = document.getElementById('collectionSelect').value;
+    const collections = getSelectedCollections();
     if (!url) { alert('Please enter a URL'); return; }
 
     const source = detectSource(url);
@@ -680,7 +699,7 @@ window.addPost = async function() {
             url,
             note,
             author,
-            collection,
+            collections,
             source,
             timestamp: Date.now(),
             readBy: { [author]: true },
@@ -690,7 +709,7 @@ window.addPost = async function() {
 
         document.getElementById('postUrl').value = '';
         document.getElementById('postNote').value = '';
-        document.getElementById('collectionSelect').value = 'funny';
+        document.querySelectorAll('#collectionPicker .coll-pick-btn').forEach(b => b.classList.remove('selected'));
 
         closeAddPostModal();
         showToast('Post added');
@@ -963,9 +982,13 @@ function createPostCard(post) {
 
     const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 
-    const collectionBadge = post.collection
-        ? `<button class="collection-badge" onclick="filterByCollection('${safeText(post.collection)}')" title="Filter by collection">${getCollectionEmoji(post.collection)} ${safeText(COLLECTION_LABELS[post.collection] || post.collection)}</button>`
-        : '';
+    // Support both new (array) and legacy (string) collection formats
+    const collArr = post.collections?.length ? post.collections
+                  : post.collection         ? [post.collection]
+                  : [];
+    const collectionBadge = collArr
+        .map(c => `<button class="collection-badge" onclick="filterByCollection('${safeText(c)}')" title="Filter by collection">${getCollectionEmoji(c)} ${safeText(COLLECTION_LABELS[c] || c)}</button>`)
+        .join('');
 
     const source = post.source || detectSource(post.url);
     const isFav = !!(post.favoritedBy && post.favoritedBy[currentUser]);
@@ -1109,7 +1132,10 @@ function loadPosts() {
         .map(([id, data]) => ({ id, ...data }))
         .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-    if (currentCollection) posts = posts.filter(p => p.collection === currentCollection);
+    if (currentCollection) posts = posts.filter(p => {
+        const colls = p.collections?.length ? p.collections : p.collection ? [p.collection] : [];
+        return colls.includes(currentCollection);
+    });
     if (currentSource) posts = posts.filter(p => (p.source || detectSource(p.url)) === currentSource);
 
     if (currentFilter === 'new')        posts = posts.filter(p => !isRead(p));
@@ -1126,7 +1152,8 @@ function loadPosts() {
 
     if (searchQuery) {
         posts = posts.filter(p => {
-            const hay = [p.url || '', p.note || '', p.author || '', p.collection || ''].join(' ').toLowerCase();
+            const colls = p.collections?.length ? p.collections : p.collection ? [p.collection] : [];
+            const hay = [p.url || '', p.note || '', p.author || '', ...colls].join(' ').toLowerCase();
             return hay.includes(searchQuery);
         });
     }
