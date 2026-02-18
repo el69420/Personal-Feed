@@ -448,9 +448,10 @@
         body.dark-mode .reaction-btn.active { color: #c084fc; }
 
         .reaction-people {
-            font-size: 13px;
-            font-weight: 900;
-            letter-spacing: -1px;
+            font-size: 11px;
+            font-weight: 800;
+            opacity: 0.8;
+            letter-spacing: 0;
         }
 
         .comment-reactions {
@@ -2063,7 +2064,7 @@ function youtubeThumb(url) {
                 return cmtEmojis.map(e => {
                     const users = Object.keys(map[e] || {});
                     const active = !!(map[e] && map[e][currentUser]);
-                    const who = users.map(u => u === 'El' ? '💖' : '💜').join('');
+                    const who = users.sort().join(' & ');
                     return `
                         <button class="comment-reaction-btn${active ? ' active' : ''}"
                                 onclick="toggleCommentReaction('${postId}','${replyId}','${e}')">
@@ -2205,7 +2206,7 @@ function youtubeThumb(url) {
             const reactionButtons = reactionEmojis.map(e => {
                 const users = Object.keys(rb[e] || {});
                 const active = !!(rb[e] && rb[e][currentUser]);
-                const who = users.map(u => u === 'El' ? '💖' : '💜').join('');
+                const who = users.sort().join(' & ');
                 return `
                     <button class="reaction-btn${active ? ' active' : ''}"
                             onclick="toggleReaction('${post.id}','${e}')">
