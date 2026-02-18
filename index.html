@@ -1265,6 +1265,10 @@
                 document.getElementById('categoryEmoji').textContent = emojis[collection] || '📁';
                 document.getElementById('categoryName').textContent  = labels[collection] || collection;
                 indicator.classList.remove('hidden');
+                // No filter is active while browsing a category
+                document.getElementById('btnNew').className  = 'filter-btn';
+                document.getElementById('btnSeen').className = 'filter-btn';
+                document.getElementById('btnAll').className  = 'filter-btn';
             } else {
                 indicator.classList.add('hidden');
                 document.getElementById('btnNew').className  = 'filter-btn' + (currentFilter === 'new'  ? ' active' : '');
