@@ -56,33 +56,48 @@
             50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
         }
         
+        /* Minimal post card - content first! */
         .post-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%) !important;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         
         .post-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
         
-        .post-card.read {
-            background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%) !important;
+        .post-header {
+            padding: 12px 16px;
+            background: rgba(249, 250, 251, 0.8);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .post-content {
+            padding: 0;
+        }
+        
+        .post-actions {
+            padding: 12px 16px;
+            background: rgba(249, 250, 251, 0.5);
+            border-top: 1px solid rgba(0,0,0,0.05);
         }
         
         .fade-in {
-            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.5s ease;
         }
         
         @keyframes fadeInUp {
             from { 
                 opacity: 0; 
-                transform: translateY(30px) scale(0.95);
+                transform: translateY(20px);
             }
             to { 
                 opacity: 1; 
-                transform: translateY(0) scale(1);
+                transform: translateY(0);
             }
         }
         
@@ -90,44 +105,39 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 10px 18px;
+            padding: 8px 14px;
             background: rgba(255, 255, 255, 0.95);
-            border-radius: 25px;
-            font-size: 14px;
+            border-radius: 20px;
+            font-size: 13px;
             font-weight: 600;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             z-index: 100;
             backdrop-filter: blur(10px);
         }
         
-        /* Badge styles */
+        /* Compact badges */
         .badge-tero {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 6px 14px;
-            border-radius: 15px;
-            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 700;
-            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
         }
         
         .badge-el {
             background: linear-gradient(135deg, #f093fb, #f5576c);
             color: white;
-            padding: 6px 14px;
-            border-radius: 15px;
-            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 700;
-            box-shadow: 0 4px 10px rgba(240, 147, 251, 0.3);
         }
         
-        /* Button glow effects */
         .btn-glow:hover {
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 0 40px rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
         }
         
-        /* New post counter badge */
         .new-badge {
             background: linear-gradient(135deg, #ff6b6b, #ff8e53);
             color: white;
@@ -161,13 +171,21 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.5);
         }
+        
+        /* Note styling */
+        .post-note {
+            padding: 12px 16px;
+            background: linear-gradient(to right, rgba(167, 139, 250, 0.1), rgba(236, 72, 153, 0.1));
+            border-left: 3px solid #a78bfa;
+            margin: 0;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div class="custom-cursor" id="cursor"></div>
     <div class="sync-indicator" id="syncStatus">🔄 Connecting...</div>
     
-    <div class="max-w-3xl mx-auto">
+    <div class="max-w-2xl mx-auto">
         <div class="text-center mb-8 text-white">
             <h1 class="text-5xl font-bold mb-3" style="text-shadow: 0 4px 20px rgba(0,0,0,0.3);">Your Personal Feed</h1>
             <p class="text-xl opacity-90">Posts curated just for you ❤️</p>
@@ -183,21 +201,21 @@
         </div>
 
         <div id="filterButtons" class="flex justify-center gap-3 mb-8">
-            <button onclick="setFilter('all')" id="btnAll" class="px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg btn-glow">
-                All Posts
-            </button>
-            <button onclick="setFilter('new')" id="btnNew" class="px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow">
+            <button onclick="setFilter('new')" id="btnNew" class="px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg btn-glow text-sm">
                 ✨ New
             </button>
-            <button onclick="setFilter('seen')" id="btnSeen" class="px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow">
+            <button onclick="setFilter('seen')" id="btnSeen" class="px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow text-sm">
                 ✅ Seen
             </button>
-            <button onclick="markAllSeen()" id="btnMarkAll" class="px-6 py-2 rounded-full font-semibold transition-all bg-green-500 bg-opacity-70 text-white hover:bg-opacity-90 btn-glow hidden">
+            <button onclick="setFilter('all')" id="btnAll" class="px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow text-sm">
+                All Posts
+            </button>
+            <button onclick="markAllSeen()" id="btnMarkAll" class="px-6 py-2 rounded-full font-semibold transition-all bg-green-500 bg-opacity-70 text-white hover:bg-opacity-90 btn-glow text-sm hidden">
                 Mark All Seen
             </button>
         </div>
 
-        <div id="addSection" class="hidden bg-white rounded-3xl shadow-2xl p-8 mb-8" style="border: 1px solid rgba(255,255,255,0.3);">
+        <div id="addSection" class="hidden bg-white rounded-3xl shadow-2xl p-8 mb-8">
             <h2 class="text-3xl font-bold text-gray-800 mb-6">Add a New Post</h2>
             <div class="space-y-5">
                 <div>
@@ -223,7 +241,7 @@
 
         <div id="feedSection" class="space-y-6">
             <div id="postsContainer" class="space-y-6"></div>
-            <div id="emptyState" class="bg-white rounded-3xl shadow-2xl p-12 text-center" style="border: 1px solid rgba(255,255,255,0.3);">
+            <div id="emptyState" class="bg-white rounded-3xl shadow-2xl p-12 text-center">
                 <div class="text-6xl mb-6">📱</div>
                 <h3 class="text-3xl font-bold text-gray-800 mb-3">No Posts Yet</h3>
                 <p class="text-gray-600 text-lg mb-6">Start adding posts to create your personalized feed!</p>
@@ -255,7 +273,7 @@
         const postsRef = ref(database, 'posts');
 
         let currentView = 'feed';
-        let currentFilter = 'all';
+        let currentFilter = 'new';
         let allPosts = {};
 
         // Glitter cursor trail
@@ -267,13 +285,11 @@
             mouseX = e.clientX;
             mouseY = e.clientY;
             
-            // Create glitter
             if (Math.random() > 0.7) {
                 createGlitter(e.clientX, e.clientY);
             }
         });
         
-        // Smooth cursor follow
         function animateCursor() {
             cursorX += (mouseX - cursorX) * 0.2;
             cursorY += (mouseY - cursorY) * 0.2;
@@ -300,7 +316,6 @@
             setTimeout(() => glitter.remove(), 1000);
         }
         
-        // Create floating particles
         function createParticles() {
             for (let i = 0; i < 15; i++) {
                 const particle = document.createElement('div');
@@ -337,7 +352,9 @@
             if (newPosts > 0) {
                 badge.textContent = newPosts;
                 badge.classList.remove('hidden');
-                markAllBtn.classList.remove('hidden');
+                if (currentFilter === 'new') {
+                    markAllBtn.classList.remove('hidden');
+                }
             } else {
                 badge.classList.add('hidden');
                 markAllBtn.classList.add('hidden');
@@ -378,15 +395,17 @@
 
         window.setFilter = function(filter) {
             currentFilter = filter;
-            document.getElementById('btnAll').className = filter === 'all' 
-                ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow'
-                : 'px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow';
             document.getElementById('btnNew').className = filter === 'new'
-                ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow'
-                : 'px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow';
+                ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow text-sm'
+                : 'px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow text-sm';
             document.getElementById('btnSeen').className = filter === 'seen'
-                ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow'
-                : 'px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow';
+                ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow text-sm'
+                : 'px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow text-sm';
+            document.getElementById('btnAll').className = filter === 'all' 
+                ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow text-sm'
+                : 'px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow text-sm';
+            
+            updateNewCount();
             loadPosts();
         }
 
@@ -473,34 +492,48 @@
             const emoji = author === 'Tero' ? '💜' : '💖';
 
             return `
-                <div class="post-card ${post.read ? 'read' : ''} rounded-3xl shadow-xl p-8 fade-in">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 text-sm text-gray-600 mb-3 flex-wrap">
-                                <span>🔗 ${domain}</span>
-                                <span>•</span>
-                                <span>${date}</span>
-                                <span class="${badgeClass}">${author} ${emoji}</span>
-                                ${post.read ? '<span class="ml-2 inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">✓ Seen</span>' : ''}
-                            </div>
-                            ${post.note ? `<div class="bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-400 p-4 rounded-lg mb-4">
-                                <p class="text-gray-800 text-lg italic font-medium">"${post.note}"</p>
-                            </div>` : ''}
-                            ${tweetId ? `<div class="my-4"><blockquote class="twitter-tweet" data-dnt="true">
-                                <a href="https://twitter.com/x/status/${tweetId}"></a>
-                            </blockquote></div>` : ''}
+                <div class="post-card fade-in">
+                    <!-- Compact header -->
+                    <div class="post-header flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <span class="${badgeClass}">${author} ${emoji}</span>
+                            <span>•</span>
+                            <span>${date}</span>
+                            ${post.read ? '<span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">✓</span>' : ''}
                         </div>
-                        <button onclick="deletePost('${post.id}')" class="text-gray-400 hover:text-red-500 p-2 ml-4 transition-all hover:scale-110">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button onclick="deletePost('${post.id}')" class="text-gray-400 hover:text-red-500 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
                         </button>
                     </div>
-                    <div class="flex gap-3">
-                        <a href="${post.url}" target="_blank" class="flex-1 text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
-                            View Post ✨
+                    
+                    <!-- Your note (if exists) -->
+                    ${post.note ? `<div class="post-note">
+                        <p class="text-sm text-gray-700 italic">"${post.note}"</p>
+                    </div>` : ''}
+                    
+                    <!-- Main content (tweet embed or link) -->
+                    <div class="post-content">
+                        ${tweetId ? `
+                            <blockquote class="twitter-tweet" data-dnt="true" data-conversation="none">
+                                <a href="https://twitter.com/x/status/${tweetId}"></a>
+                            </blockquote>
+                        ` : `
+                            <div class="p-6 text-center">
+                                <a href="${post.url}" target="_blank" class="text-purple-600 hover:text-purple-700 font-medium">
+                                    🔗 ${domain}
+                                </a>
+                            </div>
+                        `}
+                    </div>
+                    
+                    <!-- Minimal action buttons -->
+                    <div class="post-actions flex gap-2">
+                        <a href="${post.url}" target="_blank" class="flex-1 text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-pink-700 transition">
+                            View Post
                         </a>
-                        ${!post.read ? `<button onclick="markSeen('${post.id}')" class="px-6 py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all shadow-lg hover:shadow-xl transform hover:scale-105">✓</button>` : ''}
+                        ${!post.read ? `<button onclick="markSeen('${post.id}')" class="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 transition whitespace-nowrap">✓ Seen</button>` : ''}
                     </div>
                 </div>
             `;
