@@ -190,16 +190,6 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
 
-        .filter-btn.disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .filter-btn.disabled:hover {
-            background: transparent;
-            color: rgba(255, 255, 255, 0.82);
-        }
-
         /* ---- LOGIN ---- */
         #loginOverlay {
             position: fixed;
@@ -859,9 +849,6 @@
         <!-- Main Navigation -->
         <div class="flex justify-center mb-5">
             <div class="nav-glass">
-                <button id="viewFeedBtn" class="nav-btn active">
-                    💜 Feed <span id="newCount" class="new-badge hidden">0</span>
-                </button>
                 <button id="addPostBtn" class="nav-btn">
                     ➕ Add Post
                 </button>
@@ -879,7 +866,7 @@
         <!-- Filter Buttons -->
         <div id="filterButtons" class="flex justify-center items-center gap-3 mb-8 flex-wrap">
             <div class="filter-glass">
-                <button onclick="setFilter('new')" id="btnNew" class="filter-btn active">✨ New</button>
+                <button onclick="setFilter('new')" id="btnNew" class="filter-btn active">✨ New <span id="newCount" class="new-badge hidden">0</span></button>
                 <button onclick="setFilter('seen')" id="btnSeen" class="filter-btn">💜 Seen</button>
                 <button onclick="setFilter('all')" id="btnAll" class="filter-btn">🌟 All</button>
             </div>
@@ -1150,11 +1137,6 @@
             }
         }
 
-        document.getElementById('viewFeedBtn').addEventListener('click', () => {
-            currentView = 'feed';
-            updateView();
-        });
-
         document.getElementById('addPostBtn').addEventListener('click', () => {
             currentView = 'add';
             updateView();
@@ -1164,7 +1146,6 @@
             const addSection = document.getElementById('addSection');
             const feedSection = document.getElementById('feedSection');
             const filterButtons = document.getElementById('filterButtons');
-            const viewBtn = document.getElementById('viewFeedBtn');
             const addBtn = document.getElementById('addPostBtn');
 
             if (currentView === 'add') {
@@ -1172,12 +1153,10 @@
                 feedSection.classList.add('hidden');
                 filterButtons.classList.add('hidden');
                 addBtn.classList.add('active');
-                viewBtn.classList.remove('active');
             } else {
                 addSection.classList.add('hidden');
                 feedSection.classList.remove('hidden');
                 filterButtons.classList.remove('hidden');
-                viewBtn.classList.add('active');
                 addBtn.classList.remove('active');
             }
         }
@@ -1221,9 +1200,11 @@
                 document.getElementById('postUrl').value = '';
                 document.getElementById('postNote').value = '';
                 document.getElementById('collectionSelect').value = '';
-                currentView = 'feed';
-                updateView();
                 showToast('Post added! ✨💜');
+                setTimeout(() => {
+                    currentView = 'feed';
+                    updateView();
+                }, 1200);
             } catch (error) {
                 alert('Failed to add post. Check your internet connection.');
             }
@@ -1273,12 +1254,9 @@
             const names = { funny: '😂 Funny', cute: '🥰 Cute', news: '📰 News', inspiration: '✨ Inspiration', music: '🎵 Music', 'idiot-drivers': '🚗 Idiot Drivers', other: '📌 Other' };
 
             if (collection) {
-                // In category mode: show category indicator, dim new/seen buttons
+                // In category mode: show category indicator, leave filter buttons as-is
                 indicator.classList.remove('hidden');
                 categoryName.textContent = names[collection] || collection;
-                document.getElementById('btnNew').className  = 'filter-btn disabled';
-                document.getElementById('btnSeen').className = 'filter-btn disabled';
-                document.getElementById('btnAll').className  = 'filter-btn active';
             } else {
                 // Back to normal: hide indicator, restore filter buttons
                 indicator.classList.add('hidden');
