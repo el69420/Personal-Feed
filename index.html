@@ -3,77 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Personal Feed ❤️</title>
+    <title>Your Personal Feed 💜</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --bg-gradient-start: #6b46c1;
+            --bg-gradient-mid1: #9333ea;
+            --bg-gradient-mid2: #c026d3;
+            --bg-gradient-end: #db2777;
+            --card-bg: rgba(255, 255, 255, 0.98);
+            --card-border: rgba(192, 132, 252, 0.3);
+            --header-bg: linear-gradient(135deg, rgba(243, 232, 255, 0.8), rgba(250, 232, 255, 0.8));
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+        }
+        
+        body.dark-mode {
+            --bg-gradient-start: #0f0820;
+            --bg-gradient-mid1: #1a0b3e;
+            --bg-gradient-mid2: #2d1b69;
+            --bg-gradient-end: #1a0b3e;
+            --card-bg: rgba(30, 20, 60, 0.95);
+            --card-border: rgba(147, 51, 234, 0.5);
+            --header-bg: linear-gradient(135deg, rgba(30, 20, 60, 0.9), rgba(40, 25, 80, 0.9));
+            --text-primary: #e9d5ff;
+            --text-secondary: #c4b5fd;
+        }
+        
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid1) 25%, var(--bg-gradient-mid2) 50%, var(--bg-gradient-end) 75%, var(--bg-gradient-mid1) 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
             min-height: 100vh;
             cursor: none;
             overflow-x: hidden;
+            transition: all 0.5s ease;
         }
         
-        /* Custom Cursor */
+        body.dark-mode {
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid1) 25%, var(--bg-gradient-mid2) 50%, var(--bg-gradient-end) 75%, var(--bg-gradient-mid1) 100%);
+        }
+        
+        /* Add stars to dark mode */
+        body.dark-mode::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent),
+                radial-gradient(1px 1px at 80% 10%, white, transparent),
+                radial-gradient(2px 2px at 90% 60%, white, transparent),
+                radial-gradient(1px 1px at 33% 80%, white, transparent),
+                radial-gradient(1px 1px at 15% 50%, white, transparent);
+            background-size: 200% 200%;
+            animation: twinkle 3s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
         .custom-cursor {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
             position: fixed;
             pointer-events: none;
             z-index: 9999;
+            font-size: 20px;
             transition: transform 0.1s ease;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
         }
         
-        /* Glitter Trail */
-        .glitter {
+        .star-trail {
             position: fixed;
             pointer-events: none;
             z-index: 9998;
-            animation: glitterFall 1s ease-out forwards;
+            font-family: monospace;
+            color: #fff;
+            font-size: 14px;
+            animation: starFade 0.8s ease-out forwards;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
         }
         
-        @keyframes glitterFall {
+        @keyframes starFade {
             0% {
                 opacity: 1;
-                transform: translateY(0) rotate(0deg) scale(1);
+                transform: scale(1) rotate(0deg);
             }
             100% {
                 opacity: 0;
-                transform: translateY(30px) rotate(360deg) scale(0);
+                transform: scale(0.5) rotate(180deg) translateY(20px);
             }
         }
         
-        /* Floating particles */
         .particle {
             position: fixed;
             pointer-events: none;
-            animation: float 3s ease-in-out infinite;
+            animation: float 4s ease-in-out infinite;
+            z-index: 2;
         }
         
         @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
-            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+            50% { transform: translateY(-30px) rotate(180deg); opacity: 1; }
         }
         
-        /* Minimal post card - content first! */
         .post-card {
             transition: all 0.3s ease;
-            background: white;
+            background: var(--card-bg);
             border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 30px rgba(147, 51, 234, 0.2);
+            border: 2px solid var(--card-border);
+            position: relative;
+            z-index: 10;
         }
         
         .post-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 12px 40px rgba(147, 51, 234, 0.3);
+            border-color: rgba(192, 132, 252, 0.6);
         }
         
         .post-header {
             padding: 12px 16px;
-            background: rgba(249, 250, 251, 0.8);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            background: var(--header-bg);
+            border-bottom: 1px solid rgba(192, 132, 252, 0.2);
         }
         
         .post-content {
@@ -82,8 +148,50 @@
         
         .post-actions {
             padding: 12px 16px;
-            background: rgba(249, 250, 251, 0.5);
-            border-top: 1px solid rgba(0,0,0,0.05);
+            background: var(--header-bg);
+            border-top: 1px solid rgba(192, 132, 252, 0.2);
+        }
+        
+        .reactions-bar {
+            padding: 8px 16px;
+            background: var(--header-bg);
+            border-top: 1px solid rgba(192, 132, 252, 0.15);
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        
+        .reaction-btn {
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .reaction-btn:hover {
+            transform: scale(1.2);
+            border-color: rgba(192, 132, 252, 0.4);
+        }
+        
+        .reaction-btn.active {
+            background: rgba(192, 132, 252, 0.2);
+            border-color: rgba(192, 132, 252, 0.6);
+        }
+        
+        .reply-section {
+            padding: 12px 16px;
+            background: var(--header-bg);
+            border-top: 1px solid rgba(192, 132, 252, 0.15);
+        }
+        
+        .reply-item {
+            padding: 8px 12px;
+            background: rgba(192, 132, 252, 0.1);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border-left: 3px solid #a855f7;
         }
         
         .fade-in {
@@ -110,36 +218,54 @@
             border-radius: 20px;
             font-size: 13px;
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
             z-index: 100;
             backdrop-filter: blur(10px);
+            border: 2px solid rgba(192, 132, 252, 0.4);
         }
         
-        /* Compact badges */
+        body.dark-mode .sync-indicator {
+            background: rgba(30, 20, 60, 0.95);
+            color: #e9d5ff;
+        }
+        
         .badge-tero {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
             color: white;
             padding: 4px 10px;
             border-radius: 12px;
             font-size: 11px;
             font-weight: 700;
+            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
         }
         
         .badge-el {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
+            background: linear-gradient(135deg, #ec4899, #f472b6);
             color: white;
             padding: 4px 10px;
             border-radius: 12px;
             font-size: 11px;
             font-weight: 700;
+            box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
+        }
+        
+        .collection-badge {
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 6px;
         }
         
         .btn-glow:hover {
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 25px rgba(192, 132, 252, 0.6), 0 0 50px rgba(192, 132, 252, 0.3);
+            transform: scale(1.05);
         }
         
         .new-badge {
-            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            background: linear-gradient(135deg, #ec4899, #f97316);
             color: white;
             padding: 2px 8px;
             border-radius: 10px;
@@ -150,105 +276,237 @@
         }
         
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); }
+            50% { transform: scale(1.1); box-shadow: 0 0 20px 5px rgba(236, 72, 153, 0); }
         }
         
-        /* Prettier scrollbar */
         ::-webkit-scrollbar {
-            width: 10px;
+            width: 12px;
         }
         
         ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(147, 51, 234, 0.1);
         }
         
         ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            border-radius: 6px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
+            background: linear-gradient(135deg, #7c3aed, #db2777);
         }
         
-        /* Note styling */
         .post-note {
             padding: 12px 16px;
-            background: linear-gradient(to right, rgba(167, 139, 250, 0.1), rgba(236, 72, 153, 0.1));
-            border-left: 3px solid #a78bfa;
+            background: linear-gradient(to right, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15));
+            border-left: 3px solid #a855f7;
             margin: 0;
+        }
+        
+        .btn-purple {
+            background: linear-gradient(135deg, #9333ea, #c026d3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-purple:hover {
+            background: linear-gradient(135deg, #7e22ce, #a21caf);
+            box-shadow: 0 8px 25px rgba(147, 51, 234, 0.4);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(192, 132, 252, 0.5);
+            position: relative;
+            z-index: 1001;
+        }
+        
+        body.dark-mode .modal-content {
+            background: rgba(30, 20, 60, 0.98);
+            color: #e9d5ff;
+        }
+        
+        .collections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .collection-item {
+            padding: 16px 12px;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(236, 72, 153, 0.1));
+            border: 2px solid rgba(192, 132, 252, 0.3);
+            border-radius: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .collection-item:hover {
+            transform: translateY(-4px);
+            border-color: rgba(192, 132, 252, 0.6);
+            box-shadow: 0 8px 20px rgba(147, 51, 234, 0.3);
+        }
+        
+        .collection-item.active {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.3), rgba(236, 72, 153, 0.3));
+            border-color: #a855f7;
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <div class="custom-cursor" id="cursor"></div>
-    <div class="sync-indicator" id="syncStatus">🔄 Connecting...</div>
+    <div class="custom-cursor" id="cursor">✦</div>
+    <div class="sync-indicator" id="syncStatus">💜 Connecting...</div>
     
-    <div class="max-w-2xl mx-auto">
-        <div class="text-center mb-8 text-white">
-            <h1 class="text-5xl font-bold mb-3" style="text-shadow: 0 4px 20px rgba(0,0,0,0.3);">Your Personal Feed</h1>
-            <p class="text-xl opacity-90">Posts curated just for you ❤️</p>
+    <div class="max-w-2xl mx-auto" style="position: relative; z-index: 10;">
+        <div class="text-center mb-6 text-white">
+            <div class="flex items-center justify-center gap-4 mb-3">
+                <h1 class="text-6xl font-bold" style="text-shadow: 0 4px 20px rgba(147, 51, 234, 0.5);">Your Personal Feed 💜</h1>
+                <button onclick="toggleDarkMode()" class="text-3xl hover:scale-110 transition-transform" title="Toggle dark mode">
+                    <span id="darkModeIcon">🌙</span>
+                </button>
+            </div>
+            <p class="text-xl opacity-95">Posts curated just for you ✨</p>
         </div>
 
-        <div class="flex justify-center gap-4 mb-6">
+        <div class="flex justify-center gap-4 mb-6 flex-wrap">
             <button id="viewFeedBtn" class="px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white text-purple-600 scale-105 btn-glow">
-                📱 View Feed<span id="newCount" class="new-badge hidden">0</span>
+                💜 View Feed<span id="newCount" class="new-badge hidden">0</span>
             </button>
-            <button id="addPostBtn" class="px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-purple-800 bg-opacity-50 text-white hover:bg-opacity-70 btn-glow">
+            <button id="addPostBtn" class="px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow border-2 border-white border-opacity-30">
                 ➕ Add Post
             </button>
+            <button onclick="openCollectionsModal()" class="px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow border-2 border-white border-opacity-30">
+                📁 Collections
+            </button>
         </div>
 
-        <div id="filterButtons" class="flex justify-center gap-3 mb-8">
+        <div id="filterButtons" class="flex justify-center gap-3 mb-8 flex-wrap">
             <button onclick="setFilter('new')" id="btnNew" class="px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg btn-glow text-sm">
                 ✨ New
             </button>
-            <button onclick="setFilter('seen')" id="btnSeen" class="px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow text-sm">
-                ✅ Seen
+            <button onclick="setFilter('seen')" id="btnSeen" class="px-6 py-2 rounded-full font-semibold transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow text-sm border-2 border-white border-opacity-30">
+                💜 Seen
             </button>
-            <button onclick="setFilter('all')" id="btnAll" class="px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow text-sm">
-                All Posts
+            <button onclick="setFilter('all')" id="btnAll" class="px-6 py-2 rounded-full font-semibold transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow text-sm border-2 border-white border-opacity-30">
+                🌟 All Posts
             </button>
-            <button onclick="markAllSeen()" id="btnMarkAll" class="px-6 py-2 rounded-full font-semibold transition-all bg-green-500 bg-opacity-70 text-white hover:bg-opacity-90 btn-glow text-sm hidden">
-                Mark All Seen
+            <button onclick="markAllSeen()" id="btnMarkAll" class="px-6 py-2 rounded-full font-semibold transition-all bg-green-500 bg-opacity-80 text-white hover:bg-opacity-100 btn-glow text-sm hidden border-2 border-white border-opacity-30">
+                ✓ Mark All
             </button>
         </div>
 
-        <div id="addSection" class="hidden bg-white rounded-3xl shadow-2xl p-8 mb-8">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Add a New Post</h2>
+        <div id="addSection" class="hidden bg-white rounded-3xl shadow-2xl p-8 mb-8 border-2 border-purple-300">
+            <h2 class="text-3xl font-bold text-purple-900 mb-6">Add a New Post 💜</h2>
             <div class="space-y-5">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Who's posting?</label>
-                    <select id="authorSelect" class="w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg">
+                    <label class="block text-sm font-semibold text-purple-900 mb-2">Who's posting? ✨</label>
+                    <select id="authorSelect" class="w-full px-5 py-3 border-2 border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg">
                         <option value="El">El 💖</option>
                         <option value="Tero">Tero 💜</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Post URL</label>
-                    <input type="url" id="postUrl" placeholder="https://..." class="w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg">
+                    <label class="block text-sm font-semibold text-purple-900 mb-2">Post URL 🔗</label>
+                    <input type="url" id="postUrl" placeholder="https://..." class="w-full px-5 py-3 border-2 border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg">
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Your Note (Optional)</label>
-                    <textarea id="postNote" placeholder="Why you thought they'd like this..." rows="4" class="w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg"></textarea>
+                    <label class="block text-sm font-semibold text-purple-900 mb-2">Collection (Optional) 📁</label>
+                    <select id="collectionSelect" class="w-full px-5 py-3 border-2 border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg">
+                        <option value="">No collection</option>
+                        <option value="funny">😂 Funny</option>
+                        <option value="cute">🥰 Cute</option>
+                        <option value="news">📰 News</option>
+                        <option value="inspiration">✨ Inspiration</option>
+                        <option value="music">🎵 Music</option>
+                        <option value="other">📌 Other</option>
+                    </select>
                 </div>
-                <button onclick="addPost()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105">
-                    ✨ Add to Feed
+                <div>
+                    <label class="block text-sm font-semibold text-purple-900 mb-2">Your Note (Optional) 💭</label>
+                    <textarea id="postNote" placeholder="Why you thought they'd like this..." rows="4" class="w-full px-5 py-3 border-2 border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg"></textarea>
+                </div>
+                <button onclick="addPost()" class="w-full btn-purple text-white py-4 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105">
+                    ✨ Add to Feed 💜
                 </button>
             </div>
         </div>
 
         <div id="feedSection" class="space-y-6">
             <div id="postsContainer" class="space-y-6"></div>
-            <div id="emptyState" class="bg-white rounded-3xl shadow-2xl p-12 text-center">
-                <div class="text-6xl mb-6">📱</div>
-                <h3 class="text-3xl font-bold text-gray-800 mb-3">No Posts Yet</h3>
-                <p class="text-gray-600 text-lg mb-6">Start adding posts to create your personalized feed!</p>
-                <button onclick="document.getElementById('addPostBtn').click()" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full font-semibold hover:from-purple-700 hover:to-pink-700 transition transform hover:scale-105">
-                    Add Your First Post
+            <div id="emptyState" class="bg-white rounded-3xl shadow-2xl p-12 text-center border-2 border-purple-300">
+                <div class="text-6xl mb-6">💜</div>
+                <h3 class="text-3xl font-bold text-purple-900 mb-3">No Posts Yet</h3>
+                <p class="text-purple-700 text-lg mb-6">Start adding posts to create your personalized feed! ✨</p>
+                <button onclick="document.getElementById('addPostBtn').click()" class="px-8 py-3 btn-purple text-white rounded-full font-semibold transition transform hover:scale-105">
+                    Add Your First Post 💜
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Collections Modal -->
+    <div id="collectionsModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4 text-purple-900">📁 Collections</h2>
+            <p class="text-sm text-gray-600 mb-4">Filter posts by collection</p>
+            <div class="collections-grid">
+                <div class="collection-item" onclick="filterByCollection(null)">
+                    <div class="text-2xl mb-1">🌟</div>
+                    <div class="text-sm font-semibold">All</div>
+                </div>
+                <div class="collection-item" onclick="filterByCollection('funny')">
+                    <div class="text-2xl mb-1">😂</div>
+                    <div class="text-sm font-semibold">Funny</div>
+                </div>
+                <div class="collection-item" onclick="filterByCollection('cute')">
+                    <div class="text-2xl mb-1">🥰</div>
+                    <div class="text-sm font-semibold">Cute</div>
+                </div>
+                <div class="collection-item" onclick="filterByCollection('news')">
+                    <div class="text-2xl mb-1">📰</div>
+                    <div class="text-sm font-semibold">News</div>
+                </div>
+                <div class="collection-item" onclick="filterByCollection('inspiration')">
+                    <div class="text-2xl mb-1">✨</div>
+                    <div class="text-sm font-semibold">Inspire</div>
+                </div>
+                <div class="collection-item" onclick="filterByCollection('music')">
+                    <div class="text-2xl mb-1">🎵</div>
+                    <div class="text-sm font-semibold">Music</div>
+                </div>
+                <div class="collection-item" onclick="filterByCollection('other')">
+                    <div class="text-2xl mb-1">📌</div>
+                    <div class="text-sm font-semibold">Other</div>
+                </div>
+            </div>
+            <button onclick="closeCollectionsModal()" class="w-full mt-6 px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition">
+                Close
+            </button>
         </div>
     </div>
 
@@ -274,62 +532,79 @@
 
         let currentView = 'feed';
         let currentFilter = 'new';
+        let currentCollection = null;
         let allPosts = {};
+        let isDarkMode = false;
 
-        // Glitter cursor trail
+        // Star cursor
         const cursor = document.getElementById('cursor');
         let mouseX = 0, mouseY = 0;
         let cursorX = 0, cursorY = 0;
+        
+        const starChars = ['✦', '✧', '⋆', '✵', '✶', '✷', '✸', '✹', '*', '∗'];
+        let trailCounter = 0;
         
         document.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
             
-            if (Math.random() > 0.7) {
-                createGlitter(e.clientX, e.clientY);
+            trailCounter++;
+            if (trailCounter % 3 === 0) {
+                createStarTrail(e.clientX, e.clientY);
             }
         });
         
         function animateCursor() {
-            cursorX += (mouseX - cursorX) * 0.2;
-            cursorY += (mouseY - cursorY) * 0.2;
+            cursorX += (mouseX - cursorX) * 0.15;
+            cursorY += (mouseY - cursorY) * 0.15;
             cursor.style.left = cursorX + 'px';
             cursor.style.top = cursorY + 'px';
             requestAnimationFrame(animateCursor);
         }
         animateCursor();
         
-        function createGlitter(x, y) {
-            const glitter = document.createElement('div');
-            glitter.className = 'glitter';
-            glitter.style.left = x + 'px';
-            glitter.style.top = y + 'px';
-            glitter.style.width = Math.random() * 6 + 3 + 'px';
-            glitter.style.height = glitter.style.width;
+        function createStarTrail(x, y) {
+            const trail = document.createElement('div');
+            trail.className = 'star-trail';
+            trail.textContent = starChars[Math.floor(Math.random() * starChars.length)];
+            trail.style.left = (x - 7) + 'px';
+            trail.style.top = (y - 7) + 'px';
             
-            const colors = ['#ffd700', '#ffb6c1', '#e0b0ff', '#87ceeb', '#fff'];
-            glitter.style.background = colors[Math.floor(Math.random() * colors.length)];
-            glitter.style.borderRadius = '50%';
-            glitter.style.boxShadow = '0 0 10px currentColor';
+            const colors = ['#c084fc', '#e879f9', '#f0abfc', '#fae8ff', '#fff'];
+            trail.style.color = colors[Math.floor(Math.random() * colors.length)];
             
-            document.body.appendChild(glitter);
-            setTimeout(() => glitter.remove(), 1000);
+            document.body.appendChild(trail);
+            setTimeout(() => trail.remove(), 800);
         }
         
         function createParticles() {
-            for (let i = 0; i < 15; i++) {
+            const purpleEmojis = ['💜', '✨', '💫', '⭐', '🌟', '✦', '🔮', '🪻'];
+            for (let i = 0; i < 20; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
-                particle.textContent = ['✨', '💫', '⭐', '💖', '💜'][Math.floor(Math.random() * 5)];
+                particle.textContent = purpleEmojis[Math.floor(Math.random() * purpleEmojis.length)];
                 particle.style.left = Math.random() * 100 + '%';
                 particle.style.top = Math.random() * 100 + '%';
-                particle.style.fontSize = Math.random() * 20 + 10 + 'px';
-                particle.style.animationDelay = Math.random() * 3 + 's';
-                particle.style.animationDuration = (Math.random() * 2 + 3) + 's';
+                particle.style.fontSize = Math.random() * 25 + 15 + 'px';
+                particle.style.animationDelay = Math.random() * 4 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 4) + 's';
                 document.body.appendChild(particle);
             }
         }
         createParticles();
+
+        // Dark mode
+        window.toggleDarkMode = function() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode');
+            document.getElementById('darkModeIcon').textContent = isDarkMode ? '☀️' : '🌙';
+            localStorage.setItem('darkMode', isDarkMode);
+        }
+        
+        // Load dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            toggleDarkMode();
+        }
 
         function updateSyncStatus(status, color) {
             document.getElementById('syncStatus').textContent = status;
@@ -340,8 +615,8 @@
             allPosts = snapshot.val() || {};
             loadPosts();
             updateNewCount();
-            updateSyncStatus('✅ Synced', 'rgba(134, 239, 172, 0.95)');
-            setTimeout(() => updateSyncStatus('🔄 Live', 'rgba(255, 255, 255, 0.95)'), 2000);
+            updateSyncStatus('💜 Synced', isDarkMode ? 'rgba(30, 20, 60, 0.95)' : 'rgba(216, 180, 254, 0.95)');
+            setTimeout(() => updateSyncStatus('✨ Live', isDarkMode ? 'rgba(30, 20, 60, 0.95)' : 'rgba(255, 255, 255, 0.95)'), 2000);
         });
 
         function updateNewCount() {
@@ -383,13 +658,13 @@
                 feedSection.classList.add('hidden');
                 filterButtons.classList.add('hidden');
                 addBtn.className = 'px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white text-purple-600 scale-105 btn-glow';
-                viewBtn.className = 'px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-purple-800 bg-opacity-50 text-white hover:bg-opacity-70 btn-glow';
+                viewBtn.className = 'px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow border-2 border-white border-opacity-30';
             } else {
                 addSection.classList.add('hidden');
                 feedSection.classList.remove('hidden');
                 filterButtons.classList.remove('hidden');
                 viewBtn.className = 'px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white text-purple-600 scale-105 btn-glow';
-                addBtn.className = 'px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-purple-800 bg-opacity-50 text-white hover:bg-opacity-70 btn-glow';
+                addBtn.className = 'px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow border-2 border-white border-opacity-30';
             }
         }
 
@@ -397,13 +672,13 @@
             currentFilter = filter;
             document.getElementById('btnNew').className = filter === 'new'
                 ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow text-sm'
-                : 'px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow text-sm';
+                : 'px-6 py-2 rounded-full font-semibold transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow text-sm border-2 border-white border-opacity-30';
             document.getElementById('btnSeen').className = filter === 'seen'
                 ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow text-sm'
-                : 'px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow text-sm';
+                : 'px-6 py-2 rounded-full font-semibold transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow text-sm border-2 border-white border-opacity-30';
             document.getElementById('btnAll').className = filter === 'all' 
                 ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow text-sm'
-                : 'px-6 py-2 rounded-full font-semibold transition-all bg-purple-700 bg-opacity-40 text-white hover:bg-opacity-60 btn-glow text-sm';
+                : 'px-6 py-2 rounded-full font-semibold transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow text-sm border-2 border-white border-opacity-30';
             
             updateNewCount();
             loadPosts();
@@ -417,13 +692,14 @@
                 }
             });
             await update(ref(database), updates);
-            showToast('All posts marked as seen! ✓');
+            showToast('All posts marked as seen! 💜');
         }
 
         window.addPost = async function() {
             const url = document.getElementById('postUrl').value.trim();
             const note = document.getElementById('postNote').value.trim();
             const author = document.getElementById('authorSelect').value;
+            const collection = document.getElementById('collectionSelect').value;
 
             if (!url) {
                 alert('Please enter a URL');
@@ -435,16 +711,48 @@
                     url: url,
                     note: note,
                     author: author,
+                    collection: collection,
                     timestamp: Date.now(),
-                    read: false
+                    read: false,
+                    reactions: {},
+                    replies: []
                 });
                 document.getElementById('postUrl').value = '';
                 document.getElementById('postNote').value = '';
+                document.getElementById('collectionSelect').value = '';
                 currentView = 'feed';
                 updateView();
-                showToast('Post added! ✨');
+                showToast('Post added! ✨💜');
             } catch (error) {
                 alert('Failed to add post. Check your internet connection.');
+            }
+        }
+
+        // Collections
+        window.openCollectionsModal = function() {
+            document.getElementById('collectionsModal').classList.add('show');
+        }
+
+        window.closeCollectionsModal = function() {
+            document.getElementById('collectionsModal').classList.remove('show');
+        }
+
+        window.filterByCollection = function(collection) {
+            currentCollection = collection;
+            closeCollectionsModal();
+            loadPosts();
+            if (collection) {
+                const collectionNames = {
+                    funny: '😂 Funny',
+                    cute: '🥰 Cute',
+                    news: '📰 News',
+                    inspiration: '✨ Inspiration',
+                    music: '🎵 Music',
+                    other: '📌 Other'
+                };
+                showToast(`Filtering: ${collectionNames[collection]}`);
+            } else {
+                showToast('Showing all collections');
             }
         }
 
@@ -454,6 +762,7 @@
 
             if (currentFilter === 'new') posts = posts.filter(p => !p.read);
             if (currentFilter === 'seen') posts = posts.filter(p => p.read);
+            if (currentCollection) posts = posts.filter(p => p.collection === currentCollection);
 
             const container = document.getElementById('postsContainer');
             const emptyState = document.getElementById('emptyState');
@@ -465,13 +774,13 @@
                 const p = emptyState.querySelector('p');
                 if (currentFilter === 'new') {
                     h3.textContent = 'All Caught Up! ✨';
-                    p.textContent = 'No new posts to see.';
+                    p.textContent = 'No new posts to see. 💜';
                 } else if (currentFilter === 'seen') {
                     h3.textContent = 'No Seen Posts';
-                    p.textContent = 'Mark posts as seen and they\'ll appear here.';
+                    p.textContent = 'Mark posts as seen and they\'ll appear here. 💜';
                 } else {
                     h3.textContent = 'No Posts Yet';
-                    p.textContent = 'Start adding posts!';
+                    p.textContent = 'Start adding posts! ✨';
                 }
                 return;
             }
@@ -479,6 +788,18 @@
             emptyState.classList.add('hidden');
             container.innerHTML = posts.map(createPostCard).join('');
             setTimeout(() => window.twttr?.widgets?.load(), 100);
+        }
+
+        function getCollectionEmoji(collection) {
+            const emojis = {
+                funny: '😂',
+                cute: '🥰',
+                news: '📰',
+                inspiration: '✨',
+                music: '🎵',
+                other: '📌'
+            };
+            return emojis[collection] || '';
         }
 
         function createPostCard(post) {
@@ -490,30 +811,33 @@
             const author = post.author || 'Unknown';
             const badgeClass = author === 'Tero' ? 'badge-tero' : 'badge-el';
             const emoji = author === 'Tero' ? '💜' : '💖';
+            
+            const reactions = post.reactions || {};
+            const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍'];
+            
+            const replies = post.replies || [];
 
             return `
                 <div class="post-card fade-in">
-                    <!-- Compact header -->
                     <div class="post-header flex items-center justify-between">
-                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <div class="flex items-center gap-2 text-xs" style="color: var(--text-secondary)">
                             <span class="${badgeClass}">${author} ${emoji}</span>
                             <span>•</span>
                             <span>${date}</span>
-                            ${post.read ? '<span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">✓</span>' : ''}
+                            ${post.collection ? `<span class="collection-badge">${getCollectionEmoji(post.collection)}</span>` : ''}
+                            ${post.read ? '<span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">💜</span>' : ''}
                         </div>
-                        <button onclick="deletePost('${post.id}')" class="text-gray-400 hover:text-red-500 transition">
+                        <button onclick="deletePost('${post.id}')" class="text-purple-400 hover:text-red-500 transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
                         </button>
                     </div>
                     
-                    <!-- Your note (if exists) -->
                     ${post.note ? `<div class="post-note">
-                        <p class="text-sm text-gray-700 italic">"${post.note}"</p>
+                        <p class="text-sm italic" style="color: var(--text-primary)">"${post.note}"</p>
                     </div>` : ''}
                     
-                    <!-- Main content (tweet embed or link) -->
                     <div class="post-content">
                         ${tweetId ? `
                             <blockquote class="twitter-tweet" data-dnt="true" data-conversation="none">
@@ -521,27 +845,92 @@
                             </blockquote>
                         ` : `
                             <div class="p-6 text-center">
-                                <a href="${post.url}" target="_blank" class="text-purple-600 hover:text-purple-700 font-medium">
+                                <a href="${post.url}" target="_blank" class="text-purple-600 hover:text-purple-700 font-medium text-lg">
                                     🔗 ${domain}
                                 </a>
                             </div>
                         `}
                     </div>
                     
-                    <!-- Minimal action buttons -->
+                    <!-- Reactions -->
+                    <div class="reactions-bar">
+                        ${reactionEmojis.map(emoji => {
+                            const count = reactions[emoji] || 0;
+                            const isActive = count > 0;
+                            return `<button class="reaction-btn ${isActive ? 'active' : ''}" onclick="toggleReaction('${post.id}', '${emoji}')">${emoji}${count > 0 ? ` ${count}` : ''}</button>`;
+                        }).join('')}
+                    </div>
+                    
+                    <!-- Replies -->
+                    ${replies.length > 0 ? `
+                        <div class="reply-section">
+                            <div class="text-xs font-semibold mb-2" style="color: var(--text-secondary)">💬 Replies:</div>
+                            ${replies.map(reply => `
+                                <div class="reply-item">
+                                    <div class="text-xs font-semibold mb-1" style="color: var(--text-secondary)">${reply.author} ${reply.author === 'Tero' ? '💜' : '💖'}</div>
+                                    <div class="text-sm" style="color: var(--text-primary)">${reply.text}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <!-- Reply input -->
+                    <div class="reply-section">
+                        <input type="text" id="reply-${post.id}" placeholder="Add a reply... 💬" class="w-full px-3 py-2 text-sm border-2 border-purple-300 rounded-lg mb-2" style="background: var(--card-bg); color: var(--text-primary)">
+                        <button onclick="addReply('${post.id}')" class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-semibold hover:bg-purple-600 transition">
+                            💬 Reply
+                        </button>
+                    </div>
+                    
                     <div class="post-actions flex gap-2">
-                        <a href="${post.url}" target="_blank" class="flex-1 text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-pink-700 transition">
-                            View Post
+                        <a href="${post.url}" target="_blank" class="flex-1 text-center btn-purple text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                            View Post ✨
                         </a>
-                        ${!post.read ? `<button onclick="markSeen('${post.id}')" class="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-semibold hover:bg-green-600 transition whitespace-nowrap">✓ Seen</button>` : ''}
+                        ${!post.read ? `<button onclick="markSeen('${post.id}')" class="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-semibold hover:bg-purple-600 transition whitespace-nowrap">💜 Seen</button>` : ''}
                     </div>
                 </div>
             `;
         }
 
+        // Reactions
+        window.toggleReaction = async function(postId, emoji) {
+            const post = allPosts[postId];
+            const reactions = post.reactions || {};
+            reactions[emoji] = (reactions[emoji] || 0) + 1;
+            
+            await update(ref(database, `posts/${postId}`), { reactions });
+            showToast(`${emoji} reaction added!`);
+        }
+
+        // Replies
+        window.addReply = async function(postId) {
+            const input = document.getElementById(`reply-${postId}`);
+            const text = input.value.trim();
+            
+            if (!text) {
+                alert('Please enter a reply');
+                return;
+            }
+
+            // Get current user (you can make this dynamic if needed)
+            const author = 'El'; // Change based on who's logged in
+            
+            const post = allPosts[postId];
+            const replies = post.replies || [];
+            replies.push({
+                author,
+                text,
+                timestamp: Date.now()
+            });
+            
+            await update(ref(database, `posts/${postId}`), { replies });
+            input.value = '';
+            showToast('Reply added! 💬');
+        }
+
         window.markSeen = async function(id) {
             await update(ref(database, `posts/${id}`), { read: true });
-            showToast('Marked as seen! ✓');
+            showToast('Marked as seen! 💜');
         }
 
         window.deletePost = async function(id) {
@@ -552,8 +941,9 @@
 
         function showToast(msg) {
             const toast = document.createElement('div');
-            toast.className = 'fixed bottom-8 right-8 bg-gray-900 text-white px-8 py-4 rounded-2xl shadow-2xl z-50';
+            toast.className = 'fixed bottom-8 right-8 bg-purple-900 text-white px-8 py-4 rounded-2xl shadow-2xl z-50';
             toast.style.backdropFilter = 'blur(10px)';
+            toast.style.border = '2px solid rgba(192, 132, 252, 0.5)';
             toast.textContent = msg;
             document.body.appendChild(toast);
             setTimeout(() => {
