@@ -458,12 +458,26 @@
             border-radius: 20px;
             font-size: 11px;
             font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .collection-badge:hover {
+            background: rgba(139, 92, 246, 0.18);
+            border-color: rgba(139, 92, 246, 0.45);
+            transform: scale(1.05);
         }
 
         body.dark-mode .collection-badge {
             background: rgba(139, 92, 246, 0.18);
             color: #c084fc;
             border-color: rgba(139, 92, 246, 0.38);
+        }
+
+        body.dark-mode .collection-badge:hover {
+            background: rgba(139, 92, 246, 0.28);
+            border-color: rgba(139, 92, 246, 0.55);
         }
 
         .new-badge {
@@ -782,6 +796,7 @@
                         <option value="news">📰 News</option>
                         <option value="inspiration">✨ Inspiration</option>
                         <option value="music">🎵 Music</option>
+                        <option value="idiot-drivers">🚗 Idiot Drivers</option>
                         <option value="other">📌 Other</option>
                     </select>
                 </div>
@@ -839,6 +854,10 @@
                     <div class="text-2xl mb-1">🎵</div>
                     <div class="text-xs font-semibold" style="color: var(--text-primary);">Music</div>
                 </div>
+                <div class="collection-item" onclick="filterByCollection('idiot-drivers')">
+                    <div class="text-2xl mb-1">🚗</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Idiots</div>
+                </div>
                 <div class="collection-item" onclick="filterByCollection('other')">
                     <div class="text-2xl mb-1">📌</div>
                     <div class="text-xs font-semibold" style="color: var(--text-primary);">Other</div>
@@ -846,6 +865,51 @@
             </div>
             <button onclick="closeCollectionsModal()" class="btn-primary w-full mt-5 py-3 text-sm font-semibold rounded-xl">
                 Done
+            </button>
+        </div>
+    </div>
+
+    <!-- Edit Collection Modal -->
+    <div id="editCollectionModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.02em;">🏷️ Change Category</h2>
+            <p class="text-sm mb-4" style="color: var(--text-secondary);">Select a new category for this post</p>
+            <div class="collections-grid" id="editCollectionsGrid">
+                <div class="collection-item" onclick="updatePostCollectionAndClose('', '')">
+                    <div class="text-2xl mb-1">✕</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">None</div>
+                </div>
+                <div class="collection-item" onclick="updatePostCollectionAndClose('funny', '😂')">
+                    <div class="text-2xl mb-1">😂</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Funny</div>
+                </div>
+                <div class="collection-item" onclick="updatePostCollectionAndClose('cute', '🥰')">
+                    <div class="text-2xl mb-1">🥰</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Cute</div>
+                </div>
+                <div class="collection-item" onclick="updatePostCollectionAndClose('news', '📰')">
+                    <div class="text-2xl mb-1">📰</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">News</div>
+                </div>
+                <div class="collection-item" onclick="updatePostCollectionAndClose('inspiration', '✨')">
+                    <div class="text-2xl mb-1">✨</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Inspire</div>
+                </div>
+                <div class="collection-item" onclick="updatePostCollectionAndClose('music', '🎵')">
+                    <div class="text-2xl mb-1">🎵</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Music</div>
+                </div>
+                <div class="collection-item" onclick="updatePostCollectionAndClose('idiot-drivers', '🚗')">
+                    <div class="text-2xl mb-1">🚗</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Idiots</div>
+                </div>
+                <div class="collection-item" onclick="updatePostCollectionAndClose('other', '📌')">
+                    <div class="text-2xl mb-1">📌</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Other</div>
+                </div>
+            </div>
+            <button onclick="closeEditCollectionModal()" class="btn-secondary w-full mt-5 py-3 text-sm font-semibold rounded-xl">
+                Cancel
             </button>
         </div>
     </div>
@@ -1052,11 +1116,39 @@
             document.getElementById('collectionsModal').classList.remove('show');
         }
 
+        let editingPostId = null;
+
+        window.openEditCollectionModal = function(postId, currentCollection) {
+            editingPostId = postId;
+            document.getElementById('editCollectionModal').classList.add('show');
+        }
+
+        window.closeEditCollectionModal = function() {
+            document.getElementById('editCollectionModal').classList.remove('show');
+            editingPostId = null;
+        }
+
+        window.updatePostCollectionAndClose = async function(collection, emoji) {
+            if (!editingPostId) return;
+            await updatePostCollection(editingPostId, collection);
+            closeEditCollectionModal();
+            const collectionName = collection ? `${emoji} ${collection}` : 'None';
+            showToast(`Category changed to ${collectionName}`);
+        }
+
+        window.updatePostCollection = async function(postId, collection) {
+            try {
+                await update(ref(database, `posts/${postId}`), { collection });
+            } catch (error) {
+                alert('Failed to update category');
+            }
+        }
+
         window.filterByCollection = function(collection) {
             currentCollection = collection;
             closeCollectionsModal();
             loadPosts();
-            const names = { funny: '😂 Funny', cute: '🥰 Cute', news: '📰 News', inspiration: '✨ Inspiration', music: '🎵 Music', other: '📌 Other' };
+            const names = { funny: '😂 Funny', cute: '🥰 Cute', news: '📰 News', inspiration: '✨ Inspiration', music: '🎵 Music', 'idiot-drivers': '🚗 Idiot Drivers', other: '📌 Other' };
             showToast(collection ? `Filtering: ${names[collection]}` : 'Showing all collections');
         }
 
@@ -1096,7 +1188,7 @@
         }
 
         function getCollectionEmoji(collection) {
-            return { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', other: '📌' }[collection] || '';
+            return { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' }[collection] || '';
         }
 
         function createPostCard(post) {
@@ -1119,7 +1211,7 @@
                             <span class="${badgeClass}">${author} ${emoji}</span>
                             <span style="color: var(--text-secondary); font-size: 12px;">•</span>
                             <span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">${date}</span>
-                            ${post.collection ? `<span class="collection-badge">${getCollectionEmoji(post.collection)} ${post.collection}</span>` : ''}
+                            ${post.collection ? `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '${post.collection}')" title="Click to change category">${getCollectionEmoji(post.collection)} ${post.collection}</button>` : '<button class="collection-badge" onclick="openEditCollectionModal(\'${post.id}\', \'\')" title="Click to add category">+ Add</button>'}
                             ${post.read ? '<span class="seen-dot" title="Seen"></span>' : ''}
                         </div>
                         <button class="delete-btn" onclick="deletePost('${post.id}')" title="Delete">
