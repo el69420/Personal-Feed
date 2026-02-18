@@ -2047,7 +2047,7 @@ function youtubeThumb(url) {
                             <div style="display:flex;align-items:center;gap:6px;">
                                 <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}')">↩ Reply</button>
                                 ${reply.author === currentUser ? `
-                                    <button class="reply-btn" onclick="openEditModal('Edit comment', ${JSON.stringify(reply.text || '')}, {type:'reply', postId:'${postId}', replyId:'${reply.id}'})" title="Edit">✏️</button>
+                                    <button class="reply-btn" onclick="openEditComment('${postId}','${reply.id}')" title="Edit">✏️</button>
                                     <button class="reply-btn" onclick="openDeleteModal({type:'reply', postId:'${postId}', replyId:'${reply.id}'})" title="Delete">✕</button>
                                 ` : ''}
                             </div>
@@ -2232,7 +2232,7 @@ function youtubeThumb(url) {
 
                         ${post.author === currentUser ? `
                             <div style="display:flex;gap:6px;align-items:center;">
-                                <button class="icon-btn" onclick="openEditModal('Edit note', ${JSON.stringify(post.note || '')}, {type:'post', postId:'${post.id}'})" title="Edit">✏️</button>
+                                <button class="icon-btn" onclick="openEditPost('${post.id}')" title="Edit">✏️</button>
                                 <button class="icon-btn delete-btn" onclick="deletePost('${post.id}')" title="Delete">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
