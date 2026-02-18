@@ -447,7 +447,23 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 10px;
             margin-bottom: 3px;
+        }
+
+        .reply-meta-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .reply-actions-right {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
         }
 
         .reply-btn {
@@ -461,12 +477,19 @@
             border-radius: 8px;
             font-family: 'Inter', sans-serif;
             transition: all 0.15s;
-            opacity: 0.6;
+            opacity: 0.65;
+            white-space: nowrap;
         }
 
         .reply-btn:hover {
             background: rgba(168, 85, 247, 0.1);
             color: #a855f7;
+            opacity: 1;
+        }
+
+        .reply-danger:hover {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
             opacity: 1;
         }
 
@@ -489,7 +512,7 @@
         .reply-input-row {
             display: flex;
             gap: 8px;
-            align-items: center;
+            align-items: flex-start;
         }
 
         .reply-input {
@@ -498,11 +521,14 @@
             font-size: 13px;
             font-family: 'Inter', sans-serif;
             border: 1.5px solid var(--input-border);
-            border-radius: 20px;
+            border-radius: 16px;
             background: var(--input-bg);
             color: var(--text-primary);
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
+            resize: vertical;
+            min-height: 38px;
+            line-height: 1.45;
         }
 
         .reply-input:focus {
@@ -524,11 +550,81 @@
             justify-content: center;
             flex-shrink: 0;
             transition: all 0.2s;
+            margin-top: 1px;
         }
 
         .reply-send-btn:hover {
             transform: scale(1.1);
             box-shadow: 0 4px 14px rgba(147, 51, 234, 0.45);
+        }
+
+        .edited-pill {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(168, 85, 247, 0.35);
+            background: rgba(168, 85, 247, 0.12);
+            color: rgba(255,255,255,0.85);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .edited-pill:hover {
+            background: rgba(168, 85, 247, 0.18);
+            border-color: rgba(168, 85, 247, 0.55);
+            transform: translateY(-1px);
+        }
+
+        .edited-original {
+            margin-top: 8px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.12);
+            border: 1px dashed rgba(255,255,255,0.18);
+        }
+
+        body:not(.dark-mode) .edited-pill {
+            color: #6d28d9;
+            background: rgba(168, 85, 247, 0.12);
+        }
+
+        body:not(.dark-mode) .edited-original {
+            background: rgba(168, 85, 247, 0.06);
+            border-color: rgba(168, 85, 247, 0.22);
+        }
+
+        .child-toggle {
+            margin-left: 16px;
+            margin-top: 6px;
+            margin-bottom: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: rgba(147, 51, 234, 0.85);
+            background: rgba(147, 51, 234, 0.08);
+            border: 1px solid rgba(147, 51, 234, 0.18);
+            padding: 6px 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .child-toggle:hover {
+            background: rgba(147, 51, 234, 0.12);
+            border-color: rgba(147, 51, 234, 0.28);
+            transform: translateY(-1px);
+        }
+
+        body.dark-mode .child-toggle {
+            color: #c084fc;
+            background: rgba(147, 51, 234, 0.14);
+            border-color: rgba(147, 51, 234, 0.26);
         }
 
         /* ---- POST ACTIONS ---- */
@@ -593,6 +689,36 @@
         body.dark-mode .collection-badge:hover {
             background: rgba(139, 92, 246, 0.28);
             border-color: rgba(139, 92, 246, 0.55);
+        }
+
+        .source-badge {
+            background: rgba(236, 72, 153, 0.09);
+            color: #db2777;
+            border: 1px solid rgba(236, 72, 153, 0.2);
+            padding: 2px 9px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .source-badge:hover {
+            background: rgba(236, 72, 153, 0.14);
+            border-color: rgba(236, 72, 153, 0.35);
+            transform: scale(1.05);
+        }
+
+        body.dark-mode .source-badge {
+            background: rgba(236, 72, 153, 0.14);
+            color: #f9a8d4;
+            border-color: rgba(236, 72, 153, 0.26);
+        }
+
+        body.dark-mode .source-badge:hover {
+            background: rgba(236, 72, 153, 0.22);
+            border-color: rgba(236, 72, 153, 0.4);
         }
 
         .new-badge {
@@ -715,6 +841,7 @@
             border-radius: 22px;
             box-shadow: 0 4px 32px rgba(109, 40, 217, 0.15);
             padding: 28px;
+            margin-bottom: 28px;
             border: 1px solid var(--card-border);
         }
 
@@ -782,47 +909,12 @@
             background: var(--card-bg);
             border-radius: 24px;
             padding: 28px;
-            max-width: 480px;
-            width: 90%;
+            max-width: 520px;
+            width: 92%;
             box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
             border: 1px solid var(--card-border);
             position: relative;
             z-index: 1001;
-        }
-
-        /* Close button for modals */
-        .modal-close {
-            position: absolute;
-            top: 10px;
-            right: 12px;
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.18);
-            color: var(--text-primary);
-            font-size: 18px;
-            font-weight: 800;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s, transform 0.15s;
-        }
-
-        .modal-close:hover {
-            background: rgba(255,255,255,0.2);
-            transform: scale(1.05);
-        }
-
-        body.dark-mode .modal-close {
-            background: rgba(147, 51, 234, 0.14);
-            border-color: rgba(139, 92, 246, 0.25);
-            color: #ede9fe;
-        }
-
-        body.modal-open {
-            overflow: hidden;
         }
 
         .collections-grid {
@@ -919,12 +1011,9 @@
         <!-- Main Navigation -->
         <div class="flex justify-center mb-5">
             <div class="nav-glass">
-                <button id="addPostBtn" class="nav-btn">
-                    ➕ Add Post
-                </button>
-                <button onclick="openCollectionsModal()" class="nav-btn">
-                    📁 Collections
-                </button>
+                <button id="addPostBtn" class="nav-btn">➕ Add Post</button>
+                <button onclick="openCollectionsModal()" class="nav-btn">📁 Collections</button>
+                <button onclick="openSourcesModal()" class="nav-btn">🌐 Sources</button>
             </div>
         </div>
 
@@ -934,21 +1023,68 @@
                 <span id="categoryEmoji" style="font-size: 54px; line-height: 1; flex-shrink: 0;"></span>
                 <div style="flex: 1; min-width: 0;">
                     <div id="categoryName" style="font-size: 27px; font-weight: 800; color: white; letter-spacing: -0.02em; font-family: 'Inter', sans-serif; line-height: 1.1;"></div>
-                    <div style="font-size: 13px; color: rgba(255,255,255,0.52); font-family: 'Inter', sans-serif; margin-top: 4px;">Viewing all posts in this category</div>
+                    <div id="categorySubtitle" style="font-size: 13px; color: rgba(255,255,255,0.52); font-family: 'Inter', sans-serif; margin-top: 4px;">Viewing filtered posts</div>
                 </div>
-                <button onclick="filterByCollection(null)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; width: 34px; height: 34px; color: rgba(255,255,255,0.8); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</button>
+                <button onclick="clearAllSecondaryFilters()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; width: 34px; height: 34px; color: rgba(255,255,255,0.8); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</button>
             </div>
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.35); text-align: center; margin-top: 16px; margin-bottom: 4px; font-family: 'Inter', sans-serif;">← back to everything</div>
         </div>
 
-        <!-- Filter Buttons -->
+        <!-- Filter Buttons (order: All, New, Seen) -->
         <div id="filterButtons" class="flex justify-center items-center gap-3 mb-8 flex-wrap">
             <div class="filter-glass">
+                <button onclick="setFilter('all')" id="btnAll" class="filter-btn active">🌟 All</button>
                 <button onclick="setFilter('new')" id="btnNew" class="filter-btn">✨ New <span id="newCount" class="new-badge hidden">0</span></button>
-                <button onclick="setFilter('seen')" id="btnSeen" class="filter-btn active">💜 Seen</button>
-                <button onclick="setFilter('all')" id="btnAll" class="filter-btn">🌟 All</button>
+                <button onclick="setFilter('seen')" id="btnSeen" class="filter-btn">💜 Seen</button>
             </div>
             <button onclick="markAllSeen()" id="btnMarkAll" class="mark-all-btn hidden">✓ Mark All Seen</button>
+        </div>
+
+        <!-- Add Post Section -->
+        <div id="addSection" class="hidden add-section">
+            <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary); letter-spacing: -0.02em;">Add a Post 💜</h2>
+            <div class="space-y-5">
+                <div class="form-field">
+                    <label class="form-label">Post URL</label>
+                    <input type="url" id="postUrl" placeholder="https://..." onblur="autofillSourceFromUrl()">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Collection</label>
+                    <select id="collectionSelect">
+                        <option value="funny">😂 Funny</option>
+                        <option value="cute">🥰 Cute</option>
+                        <option value="news">📰 News</option>
+                        <option value="inspiration">✨ Inspiration</option>
+                        <option value="music">🎵 Music</option>
+                        <option value="idiot-drivers">🚗 Idiot Drivers</option>
+                        <option value="other">📌 Other</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Source (auto-detected)</label>
+                    <select id="sourceSelect">
+                        <option value="">Auto</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="reddit">Reddit</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="youtube">YouTube</option>
+                        <option value="x">X/Twitter</option>
+                        <option value="spotify">Spotify</option>
+                        <option value="bbc">BBC</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Note (Optional)</label>
+                    <textarea id="postNote" placeholder="Why you thought they'd like this..." rows="3"></textarea>
+                </div>
+                <button onclick="addPost()" class="btn-primary w-full py-4 text-base font-bold rounded-xl">
+                    ✨ Add to Feed
+                </button>
+                <button onclick="cancelAddPost()" class="btn-secondary w-full py-3 text-sm font-semibold rounded-xl">
+                    Cancel
+                </button>
+            </div>
         </div>
 
         <!-- Feed Section -->
@@ -957,46 +1093,10 @@
             <div id="emptyState" class="empty-state hidden">
                 <div class="text-5xl mb-5">💜</div>
                 <h3 class="text-2xl font-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.02em;">No Posts Yet</h3>
-                <p class="text-sm mb-6" style="color: var(--text-secondary);">Start adding posts to create your personalized feed ✨</p>
+                <p class="text-sm mb-6" style="color: var(--text-secondary);">Start adding posts to create your personalised feed ✨</p>
                 <button onclick="document.getElementById('addPostBtn').click()" class="btn-primary px-8 py-3 text-sm font-semibold rounded-full">
                     Make a new post!
                 </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Post Modal -->
-    <div id="addPostModal" class="modal">
-        <div class="modal-content" style="max-width: 520px;" onclick="event.stopPropagation()">
-            <button class="modal-close" onclick="closeAddPostModal()" aria-label="Close">✕</button>
-
-            <div class="add-section" style="padding: 0; box-shadow: none; border: none; background: transparent;">
-                <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary); letter-spacing: -0.02em;">Add a Post 💜</h2>
-                <div class="space-y-5">
-                    <div class="form-field">
-                        <label class="form-label">Post URL</label>
-                        <input type="url" id="postUrl" placeholder="https://...">
-                    </div>
-                    <div class="form-field">
-                        <label class="form-label">Collection</label>
-                        <select id="collectionSelect">
-                            <option value="funny">😂 Funny</option>
-                            <option value="cute">🥰 Cute</option>
-                            <option value="news">📰 News</option>
-                            <option value="inspiration">✨ Inspiration</option>
-                            <option value="music">🎵 Music</option>
-                            <option value="idiot-drivers">🚗 Idiot Drivers</option>
-                            <option value="other">📌 Other</option>
-                        </select>
-                    </div>
-                    <div class="form-field">
-                        <label class="form-label">Note (Optional)</label>
-                        <textarea id="postNote" placeholder="Why you thought they'd like this..." rows="3"></textarea>
-                    </div>
-                    <button onclick="addPost()" class="btn-primary w-full py-4 text-base font-bold rounded-xl">
-                        ✨ Add to Feed
-                    </button>
-                </div>
             </div>
         </div>
     </div>
@@ -1005,7 +1105,7 @@
     <div id="collectionsModal" class="modal">
         <div class="modal-content">
             <h2 class="text-xl font-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.02em;">📁 Collections</h2>
-            <p class="text-sm mb-4" style="color: var(--text-secondary);">Filter posts by collection</p>
+            <p class="text-sm mb-4" style="color: var(--text-secondary);">Filter by collection (can be combined with a Source)</p>
             <div class="collections-grid">
                 <div class="collection-item" onclick="filterByCollection(null)">
                     <div class="text-2xl mb-1">🌟</div>
@@ -1041,6 +1141,55 @@
                 </div>
             </div>
             <button onclick="closeCollectionsModal()" class="btn-primary w-full mt-5 py-3 text-sm font-semibold rounded-xl">
+                Done
+            </button>
+        </div>
+    </div>
+
+    <!-- Sources Modal -->
+    <div id="sourcesModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.02em;">🌐 Sources</h2>
+            <p class="text-sm mb-4" style="color: var(--text-secondary);">Filter by source (can be combined with a Collection)</p>
+            <div class="collections-grid">
+                <div class="collection-item" onclick="filterBySource(null)">
+                    <div class="text-2xl mb-1">🌍</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">All</div>
+                </div>
+                <div class="collection-item" onclick="filterBySource('instagram')">
+                    <div class="text-2xl mb-1">📷</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Instagram</div>
+                </div>
+                <div class="collection-item" onclick="filterBySource('reddit')">
+                    <div class="text-2xl mb-1">👽</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Reddit</div>
+                </div>
+                <div class="collection-item" onclick="filterBySource('tiktok')">
+                    <div class="text-2xl mb-1">🎬</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">TikTok</div>
+                </div>
+                <div class="collection-item" onclick="filterBySource('youtube')">
+                    <div class="text-2xl mb-1">▶️</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">YouTube</div>
+                </div>
+                <div class="collection-item" onclick="filterBySource('x')">
+                    <div class="text-2xl mb-1">𝕏</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">X</div>
+                </div>
+                <div class="collection-item" onclick="filterBySource('spotify')">
+                    <div class="text-2xl mb-1">🎧</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Spotify</div>
+                </div>
+                <div class="collection-item" onclick="filterBySource('bbc')">
+                    <div class="text-2xl mb-1">📰</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">BBC</div>
+                </div>
+                <div class="collection-item" onclick="filterBySource('other')">
+                    <div class="text-2xl mb-1">🔗</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Other</div>
+                </div>
+            </div>
+            <button onclick="closeSourcesModal()" class="btn-primary w-full mt-5 py-3 text-sm font-semibold rounded-xl">
                 Done
             </button>
         </div>
@@ -1088,6 +1237,7 @@
     </div>
 
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <script async src="https://www.instagram.com/embed.js"></script>
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
@@ -1107,8 +1257,10 @@
         const database = getDatabase(app);
         const postsRef = ref(database, 'posts');
 
+        let currentView = 'feed';
         let currentFilter = 'all';
         let currentCollection = null;
+        let currentSource = null;
         let allPosts = {};
         let isDarkMode = false;
         let currentUser = null;
@@ -1127,7 +1279,82 @@
             if (h < 24)  return `${h}h ago`;
             const d = Math.floor(h / 24);
             if (d < 7)   return `${d}d ago`;
-            return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return new Date(ts).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+        }
+
+        function exactStamp(ts) {
+            try {
+                return new Date(ts).toLocaleString('en-GB', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function normaliseUrl(url) {
+            const u = (url || '').trim();
+            if (!u) return '';
+            if (/^https?:\/\//i.test(u)) return u;
+            return 'https://' + u;
+        }
+
+        function detectSource(url) {
+            try {
+                const u = new URL(normaliseUrl(url));
+                const h = u.hostname.replace(/^www\./, '').toLowerCase();
+                if (h.includes('instagram.com')) return 'instagram';
+                if (h.includes('reddit.com') || h === 'redd.it') return 'reddit';
+                if (h.includes('tiktok.com')) return 'tiktok';
+                if (h.includes('youtube.com') || h === 'youtu.be') return 'youtube';
+                if (h.includes('twitter.com') || h === 'x.com') return 'x';
+                if (h.includes('spotify.com')) return 'spotify';
+                if (h.includes('bbc.co.uk') || h.includes('bbc.com')) return 'bbc';
+                return 'other';
+            } catch (e) {
+                return 'other';
+            }
+        }
+
+        function sourceLabel(src) {
+            return {
+                instagram: 'Instagram',
+                reddit: 'Reddit',
+                tiktok: 'TikTok',
+                youtube: 'YouTube',
+                x: 'X',
+                spotify: 'Spotify',
+                bbc: 'BBC',
+                other: 'Other'
+            }[src] || 'Other';
+        }
+
+        function sourceEmoji(src) {
+            return {
+                instagram: '📷',
+                reddit: '👽',
+                tiktok: '🎬',
+                youtube: '▶️',
+                x: '𝕏',
+                spotify: '🎧',
+                bbc: '📰',
+                other: '🔗'
+            }[src] || '🔗';
         }
 
         function playPing() {
@@ -1153,8 +1380,19 @@
             let out = '';
             for (const [id, p] of Object.entries(posts)) {
                 const replies = p.replies || [];
-                const postRx  = Object.values(p.reactions || {}).reduce((a, b) => a + b, 0);
-                const cmtRx   = replies.reduce((s, r) => s + Object.values(r.reactions || {}).reduce((a, b) => a + b, 0), 0);
+                const postRx  = Object.values(p.reactions || {}).reduce((a, b) => {
+                    if (typeof b === 'number') return a + b;
+                    if (b && typeof b === 'object') return a + Object.keys(b).length;
+                    return a;
+                }, 0);
+                const cmtRx = replies.reduce((s, r) => {
+                    const rr = r.reactions || {};
+                    return s + Object.values(rr).reduce((a, b) => {
+                        if (typeof b === 'number') return a + b;
+                        if (b && typeof b === 'object') return a + Object.keys(b).length;
+                        return a;
+                    }, 0);
+                }, 0);
                 out += `${id}:${replies.length}:${postRx}:${cmtRx}|`;
             }
             return out;
@@ -1265,58 +1503,93 @@
             if (newPosts > 0) {
                 badge.textContent = newPosts;
                 badge.classList.remove('hidden');
-                if (currentFilter === 'new' && !currentCollection) markAllBtn.classList.remove('hidden');
+                if (currentFilter === 'new' && !currentCollection && !currentSource) markAllBtn.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
                 markAllBtn.classList.add('hidden');
             }
         }
 
-        // ---- ADD POST MODAL ----
-        function openAddPostModal() {
-            const m = document.getElementById('addPostModal');
-            m.classList.add('show');
-            document.body.classList.add('modal-open');
-            document.getElementById('addPostBtn').classList.add('active');
-            setTimeout(() => document.getElementById('postUrl')?.focus(), 50);
-        }
-
-        function closeAddPostModal() {
-            const m = document.getElementById('addPostModal');
-            m.classList.remove('show');
-            document.body.classList.remove('modal-open');
-            document.getElementById('addPostBtn').classList.remove('active');
-        }
-
-        // Make available to inline onclick handlers
-        window.closeAddPostModal = closeAddPostModal;
-
-        // Click Add Post opens modal
         document.getElementById('addPostBtn').addEventListener('click', () => {
-            openAddPostModal();
+            currentView = 'add';
+            updateView();
+            setTimeout(() => document.getElementById('postUrl')?.focus(), 50);
         });
 
-        // Clicking backdrop closes
-        document.getElementById('addPostModal').addEventListener('click', (e) => {
-            if (e.target.id === 'addPostModal') closeAddPostModal();
-        });
+        function updateView() {
+            const addSection = document.getElementById('addSection');
+            const feedSection = document.getElementById('feedSection');
+            const filterButtons = document.getElementById('filterButtons');
+            const addBtn = document.getElementById('addPostBtn');
 
-        // Esc closes
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                if (document.getElementById('addPostModal').classList.contains('show')) closeAddPostModal();
-                if (document.getElementById('collectionsModal').classList.contains('show')) closeCollectionsModal();
-                if (document.getElementById('editCollectionModal').classList.contains('show')) closeEditCollectionModal();
+            if (currentView === 'add') {
+                addSection.classList.remove('hidden');
+                feedSection.classList.add('hidden');
+                filterButtons.classList.add('hidden');
+                addBtn.classList.add('active');
+            } else {
+                addSection.classList.add('hidden');
+                feedSection.classList.remove('hidden');
+                filterButtons.classList.remove('hidden');
+                addBtn.classList.remove('active');
             }
-        });
+        }
+
+        window.cancelAddPost = function() {
+            currentView = 'feed';
+            updateView();
+        }
+
+        function updateCategoryBanner() {
+            const indicator = document.getElementById('categoryIndicator');
+            const emojiEl = document.getElementById('categoryEmoji');
+            const nameEl = document.getElementById('categoryName');
+            const subEl = document.getElementById('categorySubtitle');
+
+            const hasCollection = !!currentCollection;
+            const hasSource = !!currentSource;
+
+            if (!hasCollection && !hasSource) {
+                indicator.classList.add('hidden');
+                return;
+            }
+
+            indicator.classList.remove('hidden');
+
+            const labels  = { funny: 'Funny', cute: 'Cute', news: 'News', inspiration: 'Inspiration', music: 'Music', 'idiot-drivers': 'Idiot Drivers', other: 'Other' };
+            const emojis  = { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' };
+
+            if (hasCollection && hasSource) {
+                emojiEl.textContent = `${emojis[currentCollection] || '📁'}${sourceEmoji(currentSource)}`;
+                nameEl.textContent = `${labels[currentCollection] || currentCollection} + ${sourceLabel(currentSource)}`;
+                subEl.textContent = 'Viewing posts matching both filters';
+            } else if (hasCollection) {
+                emojiEl.textContent = emojis[currentCollection] || '📁';
+                nameEl.textContent = labels[currentCollection] || currentCollection;
+                subEl.textContent = 'Viewing all posts in this collection';
+            } else {
+                emojiEl.textContent = sourceEmoji(currentSource);
+                nameEl.textContent = sourceLabel(currentSource);
+                subEl.textContent = 'Viewing all posts from this source';
+            }
+        }
+
+        window.clearAllSecondaryFilters = function() {
+            currentCollection = null;
+            currentSource = null;
+            updateCategoryBanner();
+            updateNewCount();
+            loadPosts();
+            showToast('Showing all posts');
+        }
 
         window.setFilter = function(filter) {
             currentFilter = filter;
-            currentCollection = null;
-            document.getElementById('categoryIndicator').classList.add('hidden');
+
+            document.getElementById('btnAll').className  = 'filter-btn' + (filter === 'all'  ? ' active' : '');
             document.getElementById('btnNew').className  = 'filter-btn' + (filter === 'new'  ? ' active' : '');
             document.getElementById('btnSeen').className = 'filter-btn' + (filter === 'seen' ? ' active' : '');
-            document.getElementById('btnAll').className  = 'filter-btn' + (filter === 'all'  ? ' active' : '');
+
             updateNewCount();
             loadPosts();
         }
@@ -1330,17 +1603,32 @@
             showToast('All posts marked as seen! 💜');
         }
 
+        window.autofillSourceFromUrl = function() {
+            const url = document.getElementById('postUrl')?.value || '';
+            if (!url.trim()) return;
+            const detected = detectSource(url);
+            const select = document.getElementById('sourceSelect');
+            if (!select) return;
+            if (!select.value || select.value === '') {
+                // keep Auto selected, but if user later chooses manual, it will override
+                return;
+            }
+        }
+
         window.addPost = async function() {
-            const url = document.getElementById('postUrl').value.trim();
+            const urlRaw = document.getElementById('postUrl').value.trim();
+            const url = normaliseUrl(urlRaw);
             const note = document.getElementById('postNote').value.trim();
             const author = currentUser;
             const collection = document.getElementById('collectionSelect').value;
+            const manualSource = document.getElementById('sourceSelect').value;
+            const source = manualSource ? manualSource : detectSource(url);
 
             if (!url) { alert('Please enter a URL'); return; }
 
             try {
                 await push(postsRef, {
-                    url, note, author, collection,
+                    url, note, author, collection, source,
                     timestamp: Date.now(),
                     read: false,
                     reactions: {},
@@ -1349,26 +1637,30 @@
                 document.getElementById('postUrl').value = '';
                 document.getElementById('postNote').value = '';
                 document.getElementById('collectionSelect').value = 'funny';
+                document.getElementById('sourceSelect').value = '';
                 showToast('Post added! ✨💜');
                 setTimeout(() => {
-                    closeAddPostModal();
-                }, 500);
+                    currentView = 'feed';
+                    updateView();
+                }, 800);
             } catch (error) {
                 alert('Failed to add post. Check your internet connection.');
             }
         }
 
+        // ---- MODALS ----
         window.openCollectionsModal = function() {
             document.getElementById('collectionsModal').classList.add('show');
-            document.body.classList.add('modal-open');
         }
-
         window.closeCollectionsModal = function() {
             document.getElementById('collectionsModal').classList.remove('show');
-            if (
-                !document.getElementById('addPostModal').classList.contains('show') &&
-                !document.getElementById('editCollectionModal').classList.contains('show')
-            ) document.body.classList.remove('modal-open');
+        }
+
+        window.openSourcesModal = function() {
+            document.getElementById('sourcesModal').classList.add('show');
+        }
+        window.closeSourcesModal = function() {
+            document.getElementById('sourcesModal').classList.remove('show');
         }
 
         let editingPostId = null;
@@ -1376,24 +1668,18 @@
         window.openEditCollectionModal = function(postId, currentCollection) {
             editingPostId = postId;
             document.getElementById('editCollectionModal').classList.add('show');
-            document.body.classList.add('modal-open');
         }
 
         window.closeEditCollectionModal = function() {
             document.getElementById('editCollectionModal').classList.remove('show');
             editingPostId = null;
-            if (
-                !document.getElementById('addPostModal').classList.contains('show') &&
-                !document.getElementById('collectionsModal').classList.contains('show')
-            ) document.body.classList.remove('modal-open');
         }
 
         window.updatePostCollectionAndClose = async function(collection, emoji) {
             if (!editingPostId) return;
             await updatePostCollection(editingPostId, collection);
             closeEditCollectionModal();
-            const collectionName = collection ? `${emoji} ${collection}` : 'None';
-            showToast(`Category changed to ${collectionName}`);
+            showToast(`Category changed`);
         }
 
         window.updatePostCollection = async function(postId, collection) {
@@ -1407,39 +1693,66 @@
         window.filterByCollection = function(collection) {
             currentCollection = collection;
             closeCollectionsModal();
-            const indicator = document.getElementById('categoryIndicator');
-            const emojis  = { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' };
-            const labels  = { funny: 'Funny', cute: 'Cute', news: 'News', inspiration: 'Inspiration', music: 'Music', 'idiot-drivers': 'Idiot Drivers', other: 'Other' };
-
-            if (collection) {
-                document.getElementById('categoryEmoji').textContent = emojis[collection] || '📁';
-                document.getElementById('categoryName').textContent  = labels[collection] || collection;
-                indicator.classList.remove('hidden');
-                document.getElementById('btnNew').className  = 'filter-btn';
-                document.getElementById('btnSeen').className = 'filter-btn';
-                document.getElementById('btnAll').className  = 'filter-btn';
-            } else {
-                indicator.classList.add('hidden');
-                document.getElementById('btnNew').className  = 'filter-btn' + (currentFilter === 'new'  ? ' active' : '');
-                document.getElementById('btnSeen').className = 'filter-btn' + (currentFilter === 'seen' ? ' active' : '');
-                document.getElementById('btnAll').className  = 'filter-btn' + (currentFilter === 'all'  ? ' active' : '');
-            }
+            updateCategoryBanner();
             updateNewCount();
             loadPosts();
-            showToast(collection ? `Showing: ${labels[collection] || collection}` : 'Showing all posts');
+            showToast(collection ? `Filtered: collection` : 'Collection filter cleared');
         }
 
+        window.filterBySource = function(source) {
+            currentSource = source;
+            closeSourcesModal();
+            updateCategoryBanner();
+            updateNewCount();
+            loadPosts();
+            showToast(source ? `Filtered: source` : 'Source filter cleared');
+        }
+
+        // ---- REACTION HELPERS (now per-user, with backwards-compat for old numeric counts) ----
+        function getReactionNames(reactionValue) {
+            if (!reactionValue) return [];
+            if (typeof reactionValue === 'number') return []; // old data, no names stored
+            if (typeof reactionValue === 'object') return Object.keys(reactionValue);
+            return [];
+        }
+
+        function getReactionCount(reactionValue) {
+            if (!reactionValue) return 0;
+            if (typeof reactionValue === 'number') return reactionValue;
+            if (typeof reactionValue === 'object') return Object.keys(reactionValue).length;
+            return 0;
+        }
+
+        function isUserInReaction(reactionValue, user) {
+            if (!reactionValue) return false;
+            if (typeof reactionValue === 'object') return !!reactionValue[user];
+            return false;
+        }
+
+        function buildTooltipFromNames(names) {
+            if (!names || names.length === 0) return '';
+            if (names.length === 1) return names[0];
+            return names.join(', ');
+        }
+
+        // ---- RENDERING ----
         function loadPosts() {
             let posts = Object.entries(allPosts)
                 .map(([id, data]) => ({ id, ...data }))
                 .sort((a, b) => b.timestamp - a.timestamp);
 
-            if (currentCollection) {
-                posts = posts.filter(p => p.collection === currentCollection);
-            } else {
-                if (currentFilter === 'new')  posts = posts.filter(p => !isRead(p));
-                if (currentFilter === 'seen') posts = posts.filter(p =>  isRead(p));
+            // Apply secondary filters (independent + combinable)
+            if (currentCollection) posts = posts.filter(p => p.collection === currentCollection);
+            if (currentSource) {
+                posts = posts.filter(p => {
+                    const s = p.source || detectSource(p.url);
+                    return s === currentSource;
+                });
             }
+
+            // Apply primary filter (all/new/seen)
+            if (currentFilter === 'new')  posts = posts.filter(p => !isRead(p));
+            if (currentFilter === 'seen') posts = posts.filter(p =>  isRead(p));
 
             const container  = document.getElementById('postsContainer');
             const emptyState = document.getElementById('emptyState');
@@ -1447,18 +1760,19 @@
             if (posts.length === 0) {
                 container.innerHTML = '';
                 emptyState.classList.remove('hidden');
+
                 const h3 = emptyState.querySelector('h3');
                 const p  = emptyState.querySelector('p');
-                if (currentCollection) {
-                    const names = { funny: 'Funny', cute: 'Cute', news: 'News', inspiration: 'Inspiration', music: 'Music', 'idiot-drivers': 'Idiot Drivers', other: 'Other' };
-                    h3.textContent = `No ${names[currentCollection] || 'Collection'} Posts`;
-                    p.textContent  = 'Nothing in this category yet. ✨';
+
+                if (currentCollection || currentSource) {
+                    h3.textContent = 'Nothing Here Yet';
+                    p.textContent  = 'No posts match those filters. ✨';
                 } else if (currentFilter === 'new') {
                     h3.textContent = 'All Caught Up! ✨';
                     p.textContent  = 'No new posts to see. 💜';
                 } else if (currentFilter === 'seen') {
                     h3.textContent = 'No Seen Posts';
-                    p.textContent  = 'Mark posts as seen and they\'ll appear here. 💜';
+                    p.textContent  = 'Mark posts as seen and they will appear here. 💜';
                 } else {
                     h3.textContent = 'No Posts Yet';
                     p.textContent  = 'Start adding posts! ✨';
@@ -1468,7 +1782,23 @@
 
             emptyState.classList.add('hidden');
             container.innerHTML = posts.map(createPostCard).join('');
-            setTimeout(() => window.twttr?.widgets?.load(), 100);
+
+            // Re-process embeds after render
+            setTimeout(() => {
+                window.twttr?.widgets?.load();
+                window.instgrm?.Embeds?.process();
+            }, 150);
+        }
+
+        function replyEnterHandler(event, submitFn) {
+            if (event.key !== 'Enter') return;
+            if (event.shiftKey) return;
+            event.preventDefault();
+            submitFn();
+        }
+
+        function getCollectionEmoji(collection) {
+            return { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' }[collection] || '';
         }
 
         function renderReplies(postId, replies) {
@@ -1482,34 +1812,97 @@
             });
 
             const cmtEmojis = ['❤️', '😂', '😮', '🔥'];
+
             const renderItem = (reply, isChild) => {
-                const ae       = reply.author === 'Tero' ? '💜' : '💖';
-                const ts       = reply.timestamp ? timeAgo(reply.timestamp) : '';
+                const ae = reply.author === 'Tero' ? '💜' : '💖';
+                const ts = reply.timestamp ? timeAgo(reply.timestamp) : '';
                 const children = byParent[reply.id] || [];
-                const cRx      = reply.reactions || {};
+                const isMine = reply.author === currentUser;
+
+                const hasEdited = !!reply.editedAt;
+                const originalStamp = reply.originalTimestamp || reply.timestamp;
+                const originalText = reply.originalText || '';
+                const safeText = escapeHTML(reply.text || '').replace(/\n/g, '<br>');
+                const safeOriginal = escapeHTML(originalText).replace(/\n/g, '<br>');
+
+                const cRx = reply.reactions || {};
+
+                const childCount = children.length;
+                const childToggleNeeded = childCount > 1;
+                const childWrapId = `child-wrap-${postId}-${reply.id}`;
+
                 return `
                     <div class="reply-item${isChild ? ' reply-child' : ''}">
                         <div class="reply-item-header">
-                            <div style="display:flex;align-items:center;gap:6px;">
+                            <div class="reply-meta-left">
                                 <span style="font-size:11px;font-weight:700;color:var(--text-secondary);">${reply.author} ${ae}</span>
                                 ${ts ? `<span style="font-size:10px;color:var(--text-secondary);opacity:0.55;">${ts}</span>` : ''}
+                                ${hasEdited ? `<button class="edited-pill" onclick="toggleEditedInfo('${postId}','${reply.id}')" title="Show original">edited</button>` : ''}
                             </div>
-                            <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}','${reply.author}')">↩ Reply</button>
+                            <div class="reply-actions-right">
+                                <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}','${reply.author}')">↩ Reply</button>
+                                ${isMine ? `<button class="reply-btn" onclick="openEditReply('${postId}','${reply.id}')">✎ Edit</button>` : ''}
+                                ${isMine ? `<button class="reply-btn reply-danger" onclick="deleteReply('${postId}','${reply.id}')">🗑 Delete</button>` : ''}
+                            </div>
                         </div>
-                        <div style="font-size:13px;color:var(--text-primary);line-height:1.55;">${reply.text}</div>
+
+                        <div id="reply-text-${postId}-${reply.id}" style="font-size:13px;color:var(--text-primary);line-height:1.55;">${safeText}</div>
+
+                        ${hasEdited ? `
+                            <div id="edited-info-${postId}-${reply.id}" class="edited-original hidden">
+                                <div style="font-size:10px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px;opacity:0.75;">
+                                    Original, ${exactStamp(originalStamp)}
+                                </div>
+                                <div style="font-size:12px;color:var(--text-primary);line-height:1.55;opacity:0.9;">${safeOriginal}</div>
+                            </div>
+                        ` : ''}
+
                         <div class="comment-reactions">
                             ${cmtEmojis.map(e => {
-                                const cnt = cRx[e] || 0;
-                                return `<button class="comment-reaction-btn${cnt > 0 ? ' active' : ''}" onclick="toggleCommentReaction('${postId}','${reply.id}','${e}')">${e}${cnt > 0 ? `<span style="font-size:11px;font-weight:700;margin-left:1px;">${cnt}</span>` : ''}</button>`;
+                                const rv = cRx[e];
+                                const names = getReactionNames(rv);
+                                const cnt = getReactionCount(rv);
+                                const isActive = isUserInReaction(rv, currentUser);
+                                const tip = buildTooltipFromNames(names);
+                                const title = tip ? `title="${escapeHTML(tip)}"` : '';
+                                return `<button class="comment-reaction-btn${isActive ? ' active' : ''}" ${title} onclick="toggleCommentReaction('${postId}','${reply.id}','${e}')">${e}${cnt > 0 ? `<span style="font-size:11px;font-weight:700;margin-left:1px;">${cnt}</span>` : ''}</button>`;
                             }).join('')}
                         </div>
+
+                        <div id="edit-reply-${postId}-${reply.id}" class="inline-reply-form hidden" style="margin-left:0;margin-top:10px;">
+                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">✎ Editing your comment</div>
+                            <div class="reply-input-row">
+                                <textarea id="edit-input-${postId}-${reply.id}" class="reply-input" rows="3"
+                                    placeholder="Edit your comment..."
+                                    onkeydown="replyEnterHandler(event, () => saveEditReply('${postId}','${reply.id}'))"></textarea>
+                                <button onclick="saveEditReply('${postId}','${reply.id}')" class="reply-send-btn" title="Save">
+                                    <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+                                <button class="reply-btn" onclick="closeEditReply('${postId}','${reply.id}')">Cancel</button>
+                            </div>
+                        </div>
                     </div>
-                    ${children.map(c => renderItem(c, true)).join('')}
+
+                    ${childToggleNeeded ? `
+                        <button class="child-toggle" onclick="toggleChildReplies('${childWrapId}', this)">
+                            ↳ ${childCount} replies
+                        </button>
+                    ` : ''}
+
+                    <div id="${childWrapId}" class="${childToggleNeeded ? 'hidden' : ''}">
+                        ${children.map(c => renderItem(c, true)).join('')}
+                    </div>
+
                     <div id="inline-reply-${postId}-${reply.id}" class="inline-reply-form hidden">
                         <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">↩ Replying to ${reply.author}</div>
                         <div class="reply-input-row">
-                            <input type="text" id="inline-input-${postId}-${reply.id}" placeholder="Reply to ${reply.author}..." class="reply-input"
-                                onkeydown="if(event.key==='Enter')submitInlineReply('${postId}','${reply.id}')">
+                            <textarea id="inline-input-${postId}-${reply.id}" class="reply-input" rows="2"
+                                placeholder="Reply to ${reply.author}..."
+                                onkeydown="replyEnterHandler(event, () => submitInlineReply('${postId}','${reply.id}'))"></textarea>
                             <button onclick="submitInlineReply('${postId}','${reply.id}')" class="reply-send-btn" title="Send">
                                 <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
@@ -1528,6 +1921,22 @@
             `;
         }
 
+        window.toggleChildReplies = function(wrapId, btn) {
+            const el = document.getElementById(wrapId);
+            if (!el) return;
+            const isHidden = el.classList.contains('hidden');
+            el.classList.toggle('hidden');
+            if (btn) {
+                btn.style.opacity = isHidden ? '0.75' : '1';
+            }
+        }
+
+        window.toggleEditedInfo = function(postId, replyId) {
+            const el = document.getElementById(`edited-info-${postId}-${replyId}`);
+            if (!el) return;
+            el.classList.toggle('hidden');
+        }
+
         window.openInlineReply = function(postId, replyId, replyToAuthor) {
             const form = document.getElementById(`inline-reply-${postId}-${replyId}`);
             if (!form) return;
@@ -1542,38 +1951,135 @@
         window.submitInlineReply = async function(postId, replyToId) {
             const input  = document.getElementById(`inline-input-${postId}-${replyToId}`);
             const author = currentUser;
-            const text   = input.value.trim();
+            const text   = (input?.value || '').trim();
             if (!text) return;
+
             const post    = allPosts[postId];
             const replies = post.replies || [];
+
             replies.push({
                 id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-                author, text,
+                author,
+                text,
                 timestamp: Date.now(),
                 replyToId
             });
+
             await update(ref(database, `posts/${postId}`), { replies });
             input.value = '';
-            document.getElementById(`inline-reply-${postId}-${replyToId}`).classList.add('hidden');
+            document.getElementById(`inline-reply-${postId}-${replyToId}`)?.classList.add('hidden');
             showToast('Reply added! 💬');
         }
 
-        function getCollectionEmoji(collection) {
-            return { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' }[collection] || '';
+        window.openEditReply = function(postId, replyId) {
+            const post = allPosts[postId];
+            if (!post) return;
+            const replies = post.replies || [];
+            const reply = replies.find(r => r.id === replyId);
+            if (!reply) return;
+            if (reply.author !== currentUser) return;
+
+            document.querySelectorAll(`[id^="edit-reply-${postId}-"]`).forEach(el => el.classList.add('hidden'));
+            const wrap = document.getElementById(`edit-reply-${postId}-${replyId}`);
+            const input = document.getElementById(`edit-input-${postId}-${replyId}`);
+            if (!wrap || !input) return;
+
+            input.value = reply.text || '';
+            wrap.classList.remove('hidden');
+            input.focus();
+        }
+
+        window.closeEditReply = function(postId, replyId) {
+            document.getElementById(`edit-reply-${postId}-${replyId}`)?.classList.add('hidden');
+        }
+
+        window.saveEditReply = async function(postId, replyId) {
+            const post = allPosts[postId];
+            if (!post) return;
+            const input = document.getElementById(`edit-input-${postId}-${replyId}`);
+            if (!input) return;
+            const newText = input.value.trim();
+            if (!newText) { showToast('Cannot save an empty edit'); return; }
+
+            const replies = (post.replies || []).map(r => {
+                if (r.id !== replyId) return r;
+                if (r.author !== currentUser) return r;
+
+                const alreadyHasOriginal = !!r.originalText;
+                const originalText = alreadyHasOriginal ? r.originalText : (r.text || '');
+                const originalTimestamp = alreadyHasOriginal ? (r.originalTimestamp || r.timestamp) : r.timestamp;
+
+                return {
+                    ...r,
+                    text: newText,
+                    editedAt: Date.now(),
+                    originalText,
+                    originalTimestamp
+                };
+            });
+
+            await update(ref(database, `posts/${postId}`), { replies });
+            showToast('Comment edited ✎');
+        }
+
+        function collectReplyAndChildrenIds(replies, targetId) {
+            const ids = new Set([targetId]);
+            let changed = true;
+            while (changed) {
+                changed = false;
+                for (const r of replies) {
+                    if (r.replyToId && ids.has(r.replyToId) && !ids.has(r.id)) {
+                        ids.add(r.id);
+                        changed = true;
+                    }
+                }
+            }
+            return ids;
+        }
+
+        window.deleteReply = async function(postId, replyId) {
+            const post = allPosts[postId];
+            if (!post) return;
+            const replies = post.replies || [];
+            const reply = replies.find(r => r.id === replyId);
+            if (!reply) return;
+            if (reply.author !== currentUser) return;
+
+            if (!confirm('Delete this comment? This will also delete any replies to it.')) return;
+
+            const idsToDelete = collectReplyAndChildrenIds(replies, replyId);
+            const newReplies = replies.filter(r => !idsToDelete.has(r.id));
+            await update(ref(database, `posts/${postId}`), { replies: newReplies });
+            showToast('Comment deleted');
+        }
+
+        function isInstagramUrl(url) {
+            try {
+                const u = new URL(normaliseUrl(url));
+                const h = u.hostname.replace(/^www\./,'').toLowerCase();
+                return h.includes('instagram.com');
+            } catch (e) {
+                return false;
+            }
         }
 
         function createPostCard(post) {
             const date    = timeAgo(post.timestamp);
-            const domain  = post.url.match(/https?:\/\/([^\/]+)/)?.[1]?.replace('www.', '') || 'link';
-            const tweetId = post.url.match(/(?:twitter|x)\.com\/.*\/status\/(\d+)/)?.[1];
+            const url     = normaliseUrl(post.url);
+            const domain  = url.match(/https?:\/\/([^\/]+)/)?.[1]?.replace('www.', '') || 'link';
+
+            const tweetId = url.match(/(?:twitter|x)\.com\/.*\/status\/(\d+)/)?.[1];
+
             const author  = post.author || 'Unknown';
             const badgeClass = author === 'Tero' ? 'badge-tero' : 'badge-el';
             const emoji      = author === 'Tero' ? '💜' : '💖';
 
-            const reactions    = post.reactions || {};
+            const reactions      = post.reactions || {};
             const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍'];
-            const replies      = post.replies || [];
-            const faviconUrl   = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+            const replies        = post.replies || [];
+            const faviconUrl     = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`;
+
+            const src = post.source || detectSource(url);
 
             return `
                 <div class="post-card fade-in">
@@ -1582,7 +2088,16 @@
                             <span class="${badgeClass}">${author} ${emoji}</span>
                             <span style="color: var(--text-secondary); font-size: 12px;">•</span>
                             <span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">${date}</span>
-                            ${post.collection ? `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '${post.collection}')" title="Click to change category">${getCollectionEmoji(post.collection)} ${post.collection}</button>` : `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '')" title="Click to add category">+ Add category</button>`}
+
+                            ${post.collection
+                                ? `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '${post.collection}')" title="Click to change category">${getCollectionEmoji(post.collection)} ${post.collection}</button>`
+                                : `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '')" title="Click to add category">+ Add category</button>`
+                            }
+
+                            <button class="source-badge" onclick="filterBySource('${src}')" title="Filter by source">
+                                ${sourceEmoji(src)} ${sourceLabel(src)}
+                            </button>
+
                             ${isRead(post) ? '<span class="seen-dot" title="Seen"></span>' : ''}
                         </div>
                         <button class="delete-btn" onclick="deletePost('${post.id}')" title="Delete">
@@ -1595,22 +2110,41 @@
                     ${post.note ? `
                     <div class="post-note">
                         <span class="post-note-quote">"</span>
-                        <p style="font-size: 14px; font-style: italic; color: var(--text-primary); line-height: 1.65; margin: 0;">${post.note}</p>
+                        <p style="font-size: 14px; font-style: italic; color: var(--text-primary); line-height: 1.65; margin: 0;">${escapeHTML(post.note)}</p>
                     </div>` : ''}
 
                     <div class="post-content">
                         ${tweetId ? `
                             <blockquote class="twitter-tweet" data-dnt="true" data-conversation="none">
-                                <a href="https://twitter.com/x/status/${tweetId}"></a>
+                                <a href="${url}"></a>
                             </blockquote>
+                        ` : isInstagramUrl(url) ? `
+                            <blockquote class="instagram-media" data-instgrm-permalink="${url}" data-instgrm-version="14"
+                                style=" background:transparent; border:0; margin: 0; padding: 14px 18px;">
+                            </blockquote>
+                            <div style="padding:0 18px 14px; font-size:11px; color: var(--text-secondary); opacity:0.75;">
+                                If the Instagram embed does not load, tap the link below.
+                            </div>
+                            <a href="${url}" target="_blank" class="link-preview" style="margin-top:-8px;">
+                                <div class="link-favicon">
+                                    <img src="${faviconUrl}" alt="${domain}" onerror="this.parentNode.innerHTML='📷'">
+                                </div>
+                                <div class="link-info">
+                                    <div class="link-domain">Instagram</div>
+                                    <div class="link-url">${url}</div>
+                                </div>
+                                <svg class="link-arrow" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                            </a>
                         ` : `
-                            <a href="${post.url}" target="_blank" class="link-preview">
+                            <a href="${url}" target="_blank" class="link-preview">
                                 <div class="link-favicon">
                                     <img src="${faviconUrl}" alt="${domain}" onerror="this.parentNode.innerHTML='🔗'">
                                 </div>
                                 <div class="link-info">
-                                    <div class="link-domain">${domain}</div>
-                                    <div class="link-url">${post.url}</div>
+                                    <div class="link-domain">${escapeHTML(domain)}</div>
+                                    <div class="link-url">${escapeHTML(url)}</div>
                                 </div>
                                 <svg class="link-arrow" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -1621,9 +2155,13 @@
 
                     <div class="reactions-bar">
                         ${reactionEmojis.map(e => {
-                            const count    = reactions[e] || 0;
-                            const isActive = count > 0;
-                            return `<button class="reaction-btn ${isActive ? 'active' : ''}" onclick="toggleReaction('${post.id}', '${e}')">${e}${count > 0 ? `<span style="font-size:12px;font-weight:700;">${count}</span>` : ''}</button>`;
+                            const rv = reactions[e];
+                            const names = getReactionNames(rv);
+                            const cnt = getReactionCount(rv);
+                            const isActive = isUserInReaction(rv, currentUser);
+                            const tip = buildTooltipFromNames(names);
+                            const title = tip ? `title="${escapeHTML(tip)}"` : '';
+                            return `<button class="reaction-btn ${isActive ? 'active' : ''}" ${title} onclick="toggleReaction('${post.id}', '${e}')">${e}${cnt > 0 ? `<span style="font-size:12px;font-weight:700;">${cnt}</span>` : ''}</button>`;
                         }).join('')}
                     </div>
 
@@ -1631,7 +2169,8 @@
 
                     <div class="reply-section">
                         <div class="reply-input-row">
-                            <input type="text" id="reply-${post.id}" placeholder="Add a reply..." class="reply-input">
+                            <textarea id="reply-${post.id}" placeholder="Add a reply... (Enter to send, Shift+Enter for new line)" class="reply-input" rows="2"
+                                onkeydown="replyEnterHandler(event, () => addReply('${post.id}'))"></textarea>
                             <button onclick="addReply('${post.id}')" class="reply-send-btn" title="Send">
                                 <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
@@ -1641,7 +2180,7 @@
                     </div>
 
                     <div class="post-actions">
-                        <a href="${post.url}" target="_blank" class="btn-primary flex-1 px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;">
+                        <a href="${url}" target="_blank" class="btn-primary flex-1 px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;">
                             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                             Open Link
                         </a>
@@ -1654,28 +2193,53 @@
             `;
         }
 
+        // ---- REACTIONS (now toggle per user, shows names on hover) ----
         window.toggleReaction = async function(postId, emoji) {
-            const post      = allPosts[postId];
+            const post = allPosts[postId];
+            if (!post) return;
+
             const reactions = post.reactions || {};
-            reactions[emoji] = (reactions[emoji] || 0) + 1;
+            const rv = reactions[emoji];
+
+            // If old numeric reactions exist, keep them but start a per-user map alongside by converting to map with unknown
+            let map = {};
+            if (rv && typeof rv === 'object') map = { ...rv };
+            // if rv is number, we cannot know who reacted, start fresh per-user map
+            const had = !!map[currentUser];
+            if (had) delete map[currentUser];
+            else map[currentUser] = true;
+
+            reactions[emoji] = map;
             await update(ref(database, `posts/${postId}`), { reactions });
-            showToast(`${emoji} reaction added!`);
         }
 
         window.toggleCommentReaction = async function(postId, replyId, emoji) {
-            const post    = allPosts[postId];
+            const post = allPosts[postId];
+            if (!post) return;
+
             const replies = (post.replies || []).map(r => {
                 if (r.id !== replyId) return r;
-                const reactions = { ...(r.reactions || {}) };
-                reactions[emoji] = (reactions[emoji] || 0) + 1;
-                return { ...r, reactions };
+
+                const rr = r.reactions || {};
+                const rv = rr[emoji];
+
+                let map = {};
+                if (rv && typeof rv === 'object') map = { ...rv };
+                const had = !!map[currentUser];
+                if (had) delete map[currentUser];
+                else map[currentUser] = true;
+
+                rr[emoji] = map;
+                return { ...r, reactions: rr };
             });
+
             await update(ref(database, `posts/${postId}`), { replies });
         }
 
+        // ---- COMMENTS ----
         window.addReply = async function(postId) {
             const input = document.getElementById(`reply-${postId}`);
-            const text  = input.value.trim();
+            const text  = (input?.value || '').trim();
             if (!text) { alert('Please enter a reply'); return; }
 
             const author  = currentUser;
@@ -1683,9 +2247,11 @@
             const replies = post.replies || [];
             replies.push({
                 id: Date.now().toString(36) + Math.random().toString(36).slice(2),
-                author, text,
+                author,
+                text,
                 timestamp: Date.now(),
-                replyToId: null
+                replyToId: null,
+                reactions: {}
             });
 
             await update(ref(database, `posts/${postId}`), { replies });
@@ -1693,6 +2259,7 @@
             showToast('Reply added! 💬');
         }
 
+        // ---- POSTS ----
         window.markSeen = async function(id) {
             await update(ref(database, `posts/${id}/readBy`), { [currentUser]: true });
             showToast('Marked as seen! 💜');
@@ -1704,6 +2271,7 @@
             showToast('Post deleted');
         }
 
+        // ---- TOAST ----
         function showToast(msg) {
             const toast = document.createElement('div');
             toast.style.cssText = `
@@ -1726,8 +2294,11 @@
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateY(10px)';
                 setTimeout(() => toast.remove(), 300);
-            }, 2500);
+            }, 2200);
         }
+
+        // Initialise banner
+        updateCategoryBanner();
     </script>
 </body>
 </html>
