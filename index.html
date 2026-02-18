@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Personal Feed 💜</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -11,48 +14,48 @@
             --bg-gradient-mid1: #9333ea;
             --bg-gradient-mid2: #c026d3;
             --bg-gradient-end: #db2777;
-            --card-bg: rgba(255, 255, 255, 0.98);
-            --card-border: rgba(192, 132, 252, 0.3);
-            --header-bg: linear-gradient(135deg, rgba(243, 232, 255, 0.8), rgba(250, 232, 255, 0.8));
-            --text-primary: #1f2937;
+            --card-bg: rgba(255, 255, 255, 0.99);
+            --card-border: rgba(192, 132, 252, 0.2);
+            --section-bg: rgba(250, 245, 255, 0.55);
+            --text-primary: #1e1b4b;
             --text-secondary: #6b7280;
+            --input-bg: #fff;
+            --input-border: rgba(192, 132, 252, 0.35);
         }
-        
+
         body.dark-mode {
             --bg-gradient-start: #0f0820;
             --bg-gradient-mid1: #1a0b3e;
             --bg-gradient-mid2: #2d1b69;
             --bg-gradient-end: #1a0b3e;
-            --card-bg: rgba(30, 20, 60, 0.95);
-            --card-border: rgba(147, 51, 234, 0.5);
-            --header-bg: linear-gradient(135deg, rgba(30, 20, 60, 0.9), rgba(40, 25, 80, 0.9));
-            --text-primary: #e9d5ff;
-            --text-secondary: #c4b5fd;
+            --card-bg: rgba(20, 11, 46, 0.97);
+            --card-border: rgba(139, 92, 246, 0.35);
+            --section-bg: rgba(30, 17, 65, 0.6);
+            --text-primary: #ede9fe;
+            --text-secondary: #9d8fc8;
+            --input-bg: rgba(30, 17, 65, 0.9);
+            --input-border: rgba(139, 92, 246, 0.4);
         }
-        
+
+        * { box-sizing: border-box; }
+
         body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid1) 25%, var(--bg-gradient-mid2) 50%, var(--bg-gradient-end) 75%, var(--bg-gradient-mid1) 100%);
             background-size: 400% 400%;
             animation: gradientShift 15s ease infinite;
             min-height: 100vh;
             cursor: none;
             overflow-x: hidden;
-            transition: all 0.5s ease;
+            transition: background 0.5s ease;
         }
-        
-        body.dark-mode {
-            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid1) 25%, var(--bg-gradient-mid2) 50%, var(--bg-gradient-end) 75%, var(--bg-gradient-mid1) 100%);
-        }
-        
-        /* Add stars to dark mode */
+
         body.dark-mode::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image:
                 radial-gradient(2px 2px at 20% 30%, white, transparent),
                 radial-gradient(2px 2px at 60% 70%, white, transparent),
                 radial-gradient(1px 1px at 50% 50%, white, transparent),
@@ -65,17 +68,18 @@
             pointer-events: none;
             z-index: 1;
         }
-        
+
         @keyframes twinkle {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
+            0%, 100% { opacity: 0.35; }
+            50% { opacity: 0.85; }
         }
-        
+
         @keyframes gradientShift {
             0%, 100% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
         }
-        
+
+        /* ---- CURSOR ---- */
         .custom-cursor {
             position: fixed;
             pointer-events: none;
@@ -84,7 +88,7 @@
             transition: transform 0.1s ease;
             filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
         }
-        
+
         .star-trail {
             position: fixed;
             pointer-events: none;
@@ -95,348 +99,683 @@
             animation: starFade 0.8s ease-out forwards;
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
         }
-        
+
         @keyframes starFade {
-            0% {
-                opacity: 1;
-                transform: scale(1) rotate(0deg);
-            }
-            100% {
-                opacity: 0;
-                transform: scale(0.5) rotate(180deg) translateY(20px);
-            }
+            0%   { opacity: 1; transform: scale(1) rotate(0deg); }
+            100% { opacity: 0; transform: scale(0.5) rotate(180deg) translateY(20px); }
         }
-        
+
         .particle {
             position: fixed;
             pointer-events: none;
             animation: float 4s ease-in-out infinite;
             z-index: 2;
+            opacity: 0.55;
         }
-        
+
         @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
-            50% { transform: translateY(-30px) rotate(180deg); opacity: 1; }
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.55; }
+            50%       { transform: translateY(-28px) rotate(180deg); opacity: 0.85; }
         }
-        
+
+        /* ---- NAVIGATION ---- */
+        .nav-glass {
+            background: rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.26);
+            border-radius: 50px;
+            padding: 5px;
+            display: inline-flex;
+            gap: 2px;
+        }
+
+        .nav-btn {
+            padding: 10px 22px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: rgba(255, 255, 255, 0.88);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: -0.01em;
+        }
+
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.14); color: white; }
+
+        .nav-btn.active {
+            background: white;
+            color: #6d28d9;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
+        }
+
+        /* ---- FILTERS ---- */
+        .filter-glass {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 50px;
+            padding: 4px;
+            display: inline-flex;
+            gap: 2px;
+        }
+
+        .filter-btn {
+            padding: 7px 18px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: rgba(255, 255, 255, 0.82);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: -0.01em;
+        }
+
+        .filter-btn:hover { background: rgba(255, 255, 255, 0.14); color: white; }
+
+        .filter-btn.active {
+            background: white;
+            color: #6d28d9;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+
+        .mark-all-btn {
+            padding: 7px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            background: rgba(34, 197, 94, 0.18);
+            color: #dcfce7;
+            border: 1px solid rgba(34, 197, 94, 0.35);
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: -0.01em;
+        }
+
+        .mark-all-btn:hover { background: rgba(34, 197, 94, 0.28); }
+
+        /* ---- POST CARD ---- */
         .post-card {
-            transition: all 0.3s ease;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
             background: var(--card-bg);
             border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 8px 30px rgba(147, 51, 234, 0.2);
-            border: 2px solid var(--card-border);
+            box-shadow: 0 2px 16px rgba(109, 40, 217, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--card-border);
             position: relative;
             z-index: 10;
         }
-        
+
         .post-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(147, 51, 234, 0.3);
-            border-color: rgba(192, 132, 252, 0.6);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 32px rgba(109, 40, 217, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
         }
-        
+
         .post-header {
-            padding: 12px 16px;
-            background: var(--header-bg);
-            border-bottom: 1px solid rgba(192, 132, 252, 0.2);
+            padding: 14px 18px;
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
         }
-        
-        .post-content {
-            padding: 0;
+
+        .post-author-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
         }
-        
-        .post-actions {
-            padding: 12px 16px;
-            background: var(--header-bg);
-            border-top: 1px solid rgba(192, 132, 252, 0.2);
+
+        /* ---- NOTE BLOCK ---- */
+        .post-note {
+            padding: 14px 18px;
+            background: linear-gradient(to right, rgba(168, 85, 247, 0.07), rgba(236, 72, 153, 0.07));
+            border-left: 3px solid #a855f7;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
         }
-        
+
+        .post-note-quote {
+            font-size: 30px;
+            line-height: 0.8;
+            color: #a855f7;
+            opacity: 0.45;
+            font-family: Georgia, serif;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        /* ---- LINK PREVIEW ---- */
+        .link-preview {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            text-decoration: none;
+            transition: background 0.18s ease;
+        }
+
+        .link-preview:hover { background: rgba(147, 51, 234, 0.04); }
+
+        .link-favicon {
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
+            background: linear-gradient(135deg, #f5f3ff, #fdf2f8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 1px solid rgba(192, 132, 252, 0.18);
+            font-size: 18px;
+        }
+
+        body.dark-mode .link-favicon {
+            background: linear-gradient(135deg, rgba(109, 40, 217, 0.25), rgba(168, 85, 247, 0.15));
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .link-favicon img { width: 24px; height: 24px; object-fit: contain; }
+
+        .link-info { flex: 1; min-width: 0; }
+
+        .link-domain {
+            font-size: 14px;
+            font-weight: 700;
+            color: #7c3aed;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: -0.01em;
+        }
+
+        body.dark-mode .link-domain { color: #c084fc; }
+
+        .link-url {
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+            opacity: 0.8;
+        }
+
+        .link-arrow { flex-shrink: 0; color: #c084fc; opacity: 0.7; }
+
+        /* ---- REACTIONS ---- */
         .reactions-bar {
-            padding: 8px 16px;
-            background: var(--header-bg);
-            border-top: 1px solid rgba(192, 132, 252, 0.15);
+            padding: 10px 18px;
+            background: var(--section-bg);
+            border-top: 1px solid var(--card-border);
             display: flex;
             gap: 4px;
             flex-wrap: wrap;
         }
-        
+
         .reaction-btn {
-            padding: 4px 8px;
-            border-radius: 12px;
-            border: 2px solid transparent;
-            transition: all 0.2s;
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: 1.5px solid transparent;
+            transition: all 0.15s ease;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
+            background: rgba(147, 51, 234, 0.05);
+            line-height: 1.4;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-secondary);
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
         }
-        
+
         .reaction-btn:hover {
-            transform: scale(1.2);
-            border-color: rgba(192, 132, 252, 0.4);
+            transform: scale(1.15);
+            background: rgba(192, 132, 252, 0.14);
+            border-color: rgba(192, 132, 252, 0.35);
         }
-        
+
         .reaction-btn.active {
-            background: rgba(192, 132, 252, 0.2);
-            border-color: rgba(192, 132, 252, 0.6);
+            background: rgba(192, 132, 252, 0.13);
+            border-color: rgba(168, 85, 247, 0.45);
+            color: #7c3aed;
         }
-        
+
+        body.dark-mode .reaction-btn.active { color: #c084fc; }
+
+        /* ---- REPLIES ---- */
         .reply-section {
-            padding: 12px 16px;
-            background: var(--header-bg);
-            border-top: 1px solid rgba(192, 132, 252, 0.15);
+            padding: 12px 18px;
+            background: var(--section-bg);
+            border-top: 1px solid var(--card-border);
         }
-        
+
         .reply-item {
             padding: 8px 12px;
-            background: rgba(192, 132, 252, 0.1);
+            background: rgba(192, 132, 252, 0.07);
             border-radius: 12px;
-            margin-bottom: 8px;
-            border-left: 3px solid #a855f7;
+            margin-bottom: 6px;
+            border-left: 2px solid rgba(168, 85, 247, 0.5);
         }
-        
-        .fade-in {
-            animation: fadeInUp 0.5s ease;
+
+        .reply-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
-        
-        @keyframes fadeInUp {
-            from { 
-                opacity: 0; 
-                transform: translateY(20px);
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0);
-            }
-        }
-        
-        .sync-indicator {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 8px 14px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
+
+        .reply-input {
+            flex: 1;
+            padding: 9px 14px;
             font-size: 13px;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
-            z-index: 100;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(192, 132, 252, 0.4);
+            font-family: 'Inter', sans-serif;
+            border: 1.5px solid var(--input-border);
+            border-radius: 20px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        
-        body.dark-mode .sync-indicator {
-            background: rgba(30, 20, 60, 0.95);
-            color: #e9d5ff;
+
+        .reply-input:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
         }
-        
+
+        .reply-input::placeholder { color: rgba(147, 51, 234, 0.3); }
+
+        .reply-send-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9333ea, #ec4899);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .reply-send-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 14px rgba(147, 51, 234, 0.45);
+        }
+
+        /* ---- POST ACTIONS ---- */
+        .post-actions {
+            padding: 12px 18px;
+            background: var(--section-bg);
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ---- BADGES ---- */
         .badge-tero {
             background: linear-gradient(135deg, #7c3aed, #a855f7);
             color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
+            padding: 3px 11px;
+            border-radius: 20px;
             font-size: 11px;
             font-weight: 700;
-            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+            letter-spacing: 0.02em;
         }
-        
+
         .badge-el {
             background: linear-gradient(135deg, #ec4899, #f472b6);
             color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
+            padding: 3px 11px;
+            border-radius: 20px;
             font-size: 11px;
             font-weight: 700;
-            box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
+            letter-spacing: 0.02em;
         }
-        
+
         .collection-badge {
-            background: linear-gradient(135deg, #8b5cf6, #ec4899);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: 700;
-            margin-left: 6px;
+            background: rgba(139, 92, 246, 0.1);
+            color: #7c3aed;
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            padding: 2px 9px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
         }
-        
-        .btn-glow:hover {
-            box-shadow: 0 0 25px rgba(192, 132, 252, 0.6), 0 0 50px rgba(192, 132, 252, 0.3);
-            transform: scale(1.05);
+
+        body.dark-mode .collection-badge {
+            background: rgba(139, 92, 246, 0.18);
+            color: #c084fc;
+            border-color: rgba(139, 92, 246, 0.38);
         }
-        
+
         .new-badge {
             background: linear-gradient(135deg, #ec4899, #f97316);
             color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
+            padding: 1px 7px;
+            border-radius: 20px;
             font-size: 11px;
             font-weight: 700;
-            margin-left: 6px;
-            animation: pulse 2s ease-in-out infinite;
+            animation: badgePulse 2s ease-in-out infinite;
         }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); }
-            50% { transform: scale(1.1); box-shadow: 0 0 20px 5px rgba(236, 72, 153, 0); }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50%       { transform: scale(1.12); }
         }
-        
-        ::-webkit-scrollbar {
-            width: 12px;
+
+        .seen-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #a855f7;
+            display: inline-block;
+            flex-shrink: 0;
         }
-        
-        ::-webkit-scrollbar-track {
-            background: rgba(147, 51, 234, 0.1);
+
+        /* ---- FADE IN ---- */
+        .fade-in { animation: fadeInUp 0.38s ease both; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
-        
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #a855f7, #ec4899);
-            border-radius: 6px;
+
+        /* ---- SYNC INDICATOR ---- */
+        .sync-indicator {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            padding: 7px 14px;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 4px 16px rgba(109, 40, 217, 0.18);
+            z-index: 100;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(192, 132, 252, 0.25);
+            letter-spacing: 0.01em;
         }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #7c3aed, #db2777);
+
+        body.dark-mode .sync-indicator {
+            background: rgba(20, 11, 46, 0.92);
+            color: #ede9fe;
+            border-color: rgba(139, 92, 246, 0.38);
         }
-        
-        .post-note {
-            padding: 12px 16px;
-            background: linear-gradient(to right, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15));
-            border-left: 3px solid #a855f7;
-            margin: 0;
-        }
-        
-        .btn-purple {
+
+        /* ---- BUTTONS ---- */
+        .btn-primary {
             background: linear-gradient(135deg, #9333ea, #c026d3);
-            transition: all 0.3s ease;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        
-        .btn-purple:hover {
+
+        .btn-primary:hover {
             background: linear-gradient(135deg, #7e22ce, #a21caf);
-            box-shadow: 0 8px 25px rgba(147, 51, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(147, 51, 234, 0.4);
+            transform: translateY(-1px);
         }
-        
+
+        .btn-secondary {
+            background: rgba(147, 51, 234, 0.09);
+            color: #7c3aed;
+            border: 1.5px solid rgba(147, 51, 234, 0.22);
+            border-radius: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(147, 51, 234, 0.15);
+        }
+
+        body.dark-mode .btn-secondary {
+            color: #c084fc;
+            border-color: rgba(147, 51, 234, 0.38);
+            background: rgba(147, 51, 234, 0.13);
+        }
+
+        /* ---- DELETE BTN ---- */
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+        }
+
+        .delete-btn:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* ---- ADD POST FORM ---- */
+        .add-section {
+            background: var(--card-bg);
+            border-radius: 22px;
+            box-shadow: 0 4px 32px rgba(109, 40, 217, 0.15);
+            padding: 28px;
+            margin-bottom: 28px;
+            border: 1px solid var(--card-border);
+        }
+
+        .form-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--input-border);
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus,
+        .form-field textarea:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+        }
+
+        /* ---- EMPTY STATE ---- */
+        .empty-state {
+            background: var(--card-bg);
+            border-radius: 22px;
+            box-shadow: 0 2px 20px rgba(109, 40, 217, 0.1);
+            padding: 56px 24px;
+            text-align: center;
+            border: 1px solid var(--card-border);
+        }
+
+        /* ---- MODAL ---- */
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.55);
             z-index: 1000;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
-        
+
         .modal.show {
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        
+
         .modal-content {
-            background: white;
-            border-radius: 20px;
-            padding: 24px;
-            max-width: 500px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 28px;
+            max-width: 480px;
             width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            border: 2px solid rgba(192, 132, 252, 0.5);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+            border: 1px solid var(--card-border);
             position: relative;
             z-index: 1001;
         }
-        
-        body.dark-mode .modal-content {
-            background: rgba(30, 20, 60, 0.98);
-            color: #e9d5ff;
-        }
-        
+
         .collections-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+            gap: 10px;
             margin-top: 16px;
         }
-        
+
         .collection-item {
-            padding: 16px 12px;
-            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(236, 72, 153, 0.1));
-            border: 2px solid rgba(192, 132, 252, 0.3);
+            padding: 18px 12px;
+            background: rgba(147, 51, 234, 0.05);
+            border: 1.5px solid rgba(192, 132, 252, 0.18);
             border-radius: 16px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
-        
+
         .collection-item:hover {
-            transform: translateY(-4px);
-            border-color: rgba(192, 132, 252, 0.6);
-            box-shadow: 0 8px 20px rgba(147, 51, 234, 0.3);
+            transform: translateY(-3px);
+            border-color: rgba(168, 85, 247, 0.45);
+            background: rgba(147, 51, 234, 0.1);
+            box-shadow: 0 6px 18px rgba(147, 51, 234, 0.18);
         }
-        
+
         .collection-item.active {
-            background: linear-gradient(135deg, rgba(147, 51, 234, 0.3), rgba(236, 72, 153, 0.3));
+            background: rgba(147, 51, 234, 0.14);
             border-color: #a855f7;
+        }
+
+        /* ---- SCROLLBAR ---- */
+        ::-webkit-scrollbar { width: 7px; }
+        ::-webkit-scrollbar-track { background: rgba(147, 51, 234, 0.04); }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #7c3aed, #db2777);
+        }
+
+        /* ---- MISC ---- */
+        .hidden { display: none !important; }
+
+        .divider-text {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div class="custom-cursor" id="cursor">✦</div>
     <div class="sync-indicator" id="syncStatus">💜 Connecting...</div>
-    
+
     <div class="max-w-2xl mx-auto" style="position: relative; z-index: 10;">
-        <div class="text-center mb-6 text-white">
-            <div class="flex items-center justify-center gap-4 mb-3">
-                <h1 class="text-6xl font-bold" style="text-shadow: 0 4px 20px rgba(147, 51, 234, 0.5);">Your Personal Feed 💜</h1>
-                <button onclick="toggleDarkMode()" class="text-3xl hover:scale-110 transition-transform" title="Toggle dark mode">
+
+        <!-- Header -->
+        <div class="text-center mb-8 text-white">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <h1 class="text-5xl font-extrabold" style="letter-spacing: -0.03em; text-shadow: 0 4px 28px rgba(147, 51, 234, 0.45);">Your Feed</h1>
+                <span class="text-4xl" style="filter: drop-shadow(0 2px 8px rgba(236,72,153,0.5));">💜</span>
+                <button onclick="toggleDarkMode()" class="text-2xl hover:scale-110 transition-transform opacity-70 hover:opacity-100 ml-1" title="Toggle dark mode">
                     <span id="darkModeIcon">🌙</span>
                 </button>
             </div>
-            <p class="text-xl opacity-95">Posts curated just for you ✨</p>
+            <p class="text-sm font-medium tracking-wide" style="opacity: 0.7;">posts curated just for you ✨</p>
         </div>
 
-        <div class="flex justify-center gap-4 mb-6 flex-wrap">
-            <button id="viewFeedBtn" class="px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white text-purple-600 scale-105 btn-glow">
-                💜 View Feed<span id="newCount" class="new-badge hidden">0</span>
-            </button>
-            <button id="addPostBtn" class="px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow border-2 border-white border-opacity-30">
-                ➕ Add Post
-            </button>
-            <button onclick="openCollectionsModal()" class="px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow border-2 border-white border-opacity-30">
-                📁 Collections
-            </button>
+        <!-- Main Navigation -->
+        <div class="flex justify-center mb-5">
+            <div class="nav-glass">
+                <button id="viewFeedBtn" class="nav-btn active">
+                    💜 Feed <span id="newCount" class="new-badge hidden">0</span>
+                </button>
+                <button id="addPostBtn" class="nav-btn">
+                    ➕ Add Post
+                </button>
+                <button onclick="openCollectionsModal()" class="nav-btn">
+                    📁 Collections
+                </button>
+            </div>
         </div>
 
-        <div id="filterButtons" class="flex justify-center gap-3 mb-8 flex-wrap">
-            <button onclick="setFilter('new')" id="btnNew" class="px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg btn-glow text-sm">
-                ✨ New
-            </button>
-            <button onclick="setFilter('seen')" id="btnSeen" class="px-6 py-2 rounded-full font-semibold transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow text-sm border-2 border-white border-opacity-30">
-                💜 Seen
-            </button>
-            <button onclick="setFilter('all')" id="btnAll" class="px-6 py-2 rounded-full font-semibold transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow text-sm border-2 border-white border-opacity-30">
-                🌟 All Posts
-            </button>
-            <button onclick="markAllSeen()" id="btnMarkAll" class="px-6 py-2 rounded-full font-semibold transition-all bg-green-500 bg-opacity-80 text-white hover:bg-opacity-100 btn-glow text-sm hidden border-2 border-white border-opacity-30">
-                ✓ Mark All
-            </button>
+        <!-- Filter Buttons -->
+        <div id="filterButtons" class="flex justify-center items-center gap-3 mb-8 flex-wrap">
+            <div class="filter-glass">
+                <button onclick="setFilter('new')" id="btnNew" class="filter-btn active">✨ New</button>
+                <button onclick="setFilter('seen')" id="btnSeen" class="filter-btn">💜 Seen</button>
+                <button onclick="setFilter('all')" id="btnAll" class="filter-btn">🌟 All</button>
+            </div>
+            <button onclick="markAllSeen()" id="btnMarkAll" class="mark-all-btn hidden">✓ Mark All Seen</button>
         </div>
 
-        <div id="addSection" class="hidden bg-white rounded-3xl shadow-2xl p-8 mb-8 border-2 border-purple-300">
-            <h2 class="text-3xl font-bold text-purple-900 mb-6">Add a New Post 💜</h2>
+        <!-- Add Post Section -->
+        <div id="addSection" class="hidden add-section">
+            <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary); letter-spacing: -0.02em;">Add a Post 💜</h2>
             <div class="space-y-5">
-                <div>
-                    <label class="block text-sm font-semibold text-purple-900 mb-2">Who's posting? ✨</label>
-                    <select id="authorSelect" class="w-full px-5 py-3 border-2 border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg">
+                <div class="form-field">
+                    <label class="form-label">Who's posting?</label>
+                    <select id="authorSelect">
                         <option value="El">El 💖</option>
                         <option value="Tero">Tero 💜</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-purple-900 mb-2">Post URL 🔗</label>
-                    <input type="url" id="postUrl" placeholder="https://..." class="w-full px-5 py-3 border-2 border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg">
+                <div class="form-field">
+                    <label class="form-label">Post URL</label>
+                    <input type="url" id="postUrl" placeholder="https://...">
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-purple-900 mb-2">Collection (Optional) 📁</label>
-                    <select id="collectionSelect" class="w-full px-5 py-3 border-2 border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg">
+                <div class="form-field">
+                    <label class="form-label">Collection</label>
+                    <select id="collectionSelect">
                         <option value="">No collection</option>
                         <option value="funny">😂 Funny</option>
                         <option value="cute">🥰 Cute</option>
@@ -446,24 +785,25 @@
                         <option value="other">📌 Other</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-purple-900 mb-2">Your Note (Optional) 💭</label>
-                    <textarea id="postNote" placeholder="Why you thought they'd like this..." rows="4" class="w-full px-5 py-3 border-2 border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition text-lg"></textarea>
+                <div class="form-field">
+                    <label class="form-label">Note (Optional)</label>
+                    <textarea id="postNote" placeholder="Why you thought they'd like this..." rows="3"></textarea>
                 </div>
-                <button onclick="addPost()" class="w-full btn-purple text-white py-4 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105">
-                    ✨ Add to Feed 💜
+                <button onclick="addPost()" class="btn-primary w-full py-4 text-base font-bold rounded-xl">
+                    ✨ Add to Feed
                 </button>
             </div>
         </div>
 
-        <div id="feedSection" class="space-y-6">
-            <div id="postsContainer" class="space-y-6"></div>
-            <div id="emptyState" class="bg-white rounded-3xl shadow-2xl p-12 text-center border-2 border-purple-300">
-                <div class="text-6xl mb-6">💜</div>
-                <h3 class="text-3xl font-bold text-purple-900 mb-3">No Posts Yet</h3>
-                <p class="text-purple-700 text-lg mb-6">Start adding posts to create your personalized feed! ✨</p>
-                <button onclick="document.getElementById('addPostBtn').click()" class="px-8 py-3 btn-purple text-white rounded-full font-semibold transition transform hover:scale-105">
-                    Add Your First Post 💜
+        <!-- Feed Section -->
+        <div id="feedSection" class="space-y-5">
+            <div id="postsContainer" class="space-y-5"></div>
+            <div id="emptyState" class="empty-state hidden">
+                <div class="text-5xl mb-5">💜</div>
+                <h3 class="text-2xl font-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.02em;">No Posts Yet</h3>
+                <p class="text-sm mb-6" style="color: var(--text-secondary);">Start adding posts to create your personalized feed ✨</p>
+                <button onclick="document.getElementById('addPostBtn').click()" class="btn-primary px-8 py-3 text-sm font-semibold rounded-full">
+                    Add Your First Post
                 </button>
             </div>
         </div>
@@ -472,40 +812,40 @@
     <!-- Collections Modal -->
     <div id="collectionsModal" class="modal">
         <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4 text-purple-900">📁 Collections</h2>
-            <p class="text-sm text-gray-600 mb-4">Filter posts by collection</p>
+            <h2 class="text-xl font-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.02em;">📁 Collections</h2>
+            <p class="text-sm mb-4" style="color: var(--text-secondary);">Filter posts by collection</p>
             <div class="collections-grid">
                 <div class="collection-item" onclick="filterByCollection(null)">
                     <div class="text-2xl mb-1">🌟</div>
-                    <div class="text-sm font-semibold">All</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">All</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('funny')">
                     <div class="text-2xl mb-1">😂</div>
-                    <div class="text-sm font-semibold">Funny</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Funny</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('cute')">
                     <div class="text-2xl mb-1">🥰</div>
-                    <div class="text-sm font-semibold">Cute</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Cute</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('news')">
                     <div class="text-2xl mb-1">📰</div>
-                    <div class="text-sm font-semibold">News</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">News</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('inspiration')">
                     <div class="text-2xl mb-1">✨</div>
-                    <div class="text-sm font-semibold">Inspire</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Inspire</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('music')">
                     <div class="text-2xl mb-1">🎵</div>
-                    <div class="text-sm font-semibold">Music</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Music</div>
                 </div>
                 <div class="collection-item" onclick="filterByCollection('other')">
                     <div class="text-2xl mb-1">📌</div>
-                    <div class="text-sm font-semibold">Other</div>
+                    <div class="text-xs font-semibold" style="color: var(--text-primary);">Other</div>
                 </div>
             </div>
-            <button onclick="closeCollectionsModal()" class="w-full mt-6 px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition">
-                Close
+            <button onclick="closeCollectionsModal()" class="btn-primary w-full mt-5 py-3 text-sm font-semibold rounded-xl">
+                Done
             </button>
         </div>
     </div>
@@ -540,20 +880,17 @@
         const cursor = document.getElementById('cursor');
         let mouseX = 0, mouseY = 0;
         let cursorX = 0, cursorY = 0;
-        
+
         const starChars = ['✦', '✧', '⋆', '✵', '✶', '✷', '✸', '✹', '*', '∗'];
         let trailCounter = 0;
-        
+
         document.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
-            
             trailCounter++;
-            if (trailCounter % 3 === 0) {
-                createStarTrail(e.clientX, e.clientY);
-            }
+            if (trailCounter % 3 === 0) createStarTrail(e.clientX, e.clientY);
         });
-        
+
         function animateCursor() {
             cursorX += (mouseX - cursorX) * 0.15;
             cursorY += (mouseY - cursorY) * 0.15;
@@ -562,21 +899,19 @@
             requestAnimationFrame(animateCursor);
         }
         animateCursor();
-        
+
         function createStarTrail(x, y) {
             const trail = document.createElement('div');
             trail.className = 'star-trail';
             trail.textContent = starChars[Math.floor(Math.random() * starChars.length)];
             trail.style.left = (x - 7) + 'px';
             trail.style.top = (y - 7) + 'px';
-            
             const colors = ['#c084fc', '#e879f9', '#f0abfc', '#fae8ff', '#fff'];
             trail.style.color = colors[Math.floor(Math.random() * colors.length)];
-            
             document.body.appendChild(trail);
             setTimeout(() => trail.remove(), 800);
         }
-        
+
         function createParticles() {
             const purpleEmojis = ['💜', '✨', '💫', '⭐', '🌟', '✦', '🔮', '🪻'];
             for (let i = 0; i < 20; i++) {
@@ -600,36 +935,32 @@
             document.getElementById('darkModeIcon').textContent = isDarkMode ? '☀️' : '🌙';
             localStorage.setItem('darkMode', isDarkMode);
         }
-        
-        // Load dark mode preference
+
         if (localStorage.getItem('darkMode') === 'true') {
             toggleDarkMode();
         }
 
-        function updateSyncStatus(status, color) {
+        function updateSyncStatus(status) {
             document.getElementById('syncStatus').textContent = status;
-            document.getElementById('syncStatus').style.background = color;
         }
 
         onValue(postsRef, (snapshot) => {
             allPosts = snapshot.val() || {};
             loadPosts();
             updateNewCount();
-            updateSyncStatus('💜 Synced', isDarkMode ? 'rgba(30, 20, 60, 0.95)' : 'rgba(216, 180, 254, 0.95)');
-            setTimeout(() => updateSyncStatus('✨ Live', isDarkMode ? 'rgba(30, 20, 60, 0.95)' : 'rgba(255, 255, 255, 0.95)'), 2000);
+            updateSyncStatus('💜 Synced');
+            setTimeout(() => updateSyncStatus('✨ Live'), 2000);
         });
 
         function updateNewCount() {
             const newPosts = Object.values(allPosts).filter(p => !p.read).length;
             const badge = document.getElementById('newCount');
             const markAllBtn = document.getElementById('btnMarkAll');
-            
+
             if (newPosts > 0) {
                 badge.textContent = newPosts;
                 badge.classList.remove('hidden');
-                if (currentFilter === 'new') {
-                    markAllBtn.classList.remove('hidden');
-                }
+                if (currentFilter === 'new') markAllBtn.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
                 markAllBtn.classList.add('hidden');
@@ -657,29 +988,22 @@
                 addSection.classList.remove('hidden');
                 feedSection.classList.add('hidden');
                 filterButtons.classList.add('hidden');
-                addBtn.className = 'px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white text-purple-600 scale-105 btn-glow';
-                viewBtn.className = 'px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow border-2 border-white border-opacity-30';
+                addBtn.classList.add('active');
+                viewBtn.classList.remove('active');
             } else {
                 addSection.classList.add('hidden');
                 feedSection.classList.remove('hidden');
                 filterButtons.classList.remove('hidden');
-                viewBtn.className = 'px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white text-purple-600 scale-105 btn-glow';
-                addBtn.className = 'px-8 py-3 rounded-full font-semibold shadow-lg transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow border-2 border-white border-opacity-30';
+                viewBtn.classList.add('active');
+                addBtn.classList.remove('active');
             }
         }
 
         window.setFilter = function(filter) {
             currentFilter = filter;
-            document.getElementById('btnNew').className = filter === 'new'
-                ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow text-sm'
-                : 'px-6 py-2 rounded-full font-semibold transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow text-sm border-2 border-white border-opacity-30';
-            document.getElementById('btnSeen').className = filter === 'seen'
-                ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow text-sm'
-                : 'px-6 py-2 rounded-full font-semibold transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow text-sm border-2 border-white border-opacity-30';
-            document.getElementById('btnAll').className = filter === 'all' 
-                ? 'px-6 py-2 rounded-full font-semibold transition-all bg-white text-purple-600 shadow-lg scale-105 btn-glow text-sm'
-                : 'px-6 py-2 rounded-full font-semibold transition-all bg-white bg-opacity-20 text-white hover:bg-opacity-30 btn-glow text-sm border-2 border-white border-opacity-30';
-            
+            document.getElementById('btnNew').className  = 'filter-btn' + (filter === 'new'  ? ' active' : '');
+            document.getElementById('btnSeen').className = 'filter-btn' + (filter === 'seen' ? ' active' : '');
+            document.getElementById('btnAll').className  = 'filter-btn' + (filter === 'all'  ? ' active' : '');
             updateNewCount();
             loadPosts();
         }
@@ -687,9 +1011,7 @@
         window.markAllSeen = async function() {
             const updates = {};
             Object.entries(allPosts).forEach(([id, post]) => {
-                if (!post.read) {
-                    updates[`posts/${id}/read`] = true;
-                }
+                if (!post.read) updates[`posts/${id}/read`] = true;
             });
             await update(ref(database), updates);
             showToast('All posts marked as seen! 💜');
@@ -701,17 +1023,11 @@
             const author = document.getElementById('authorSelect').value;
             const collection = document.getElementById('collectionSelect').value;
 
-            if (!url) {
-                alert('Please enter a URL');
-                return;
-            }
+            if (!url) { alert('Please enter a URL'); return; }
 
             try {
                 await push(postsRef, {
-                    url: url,
-                    note: note,
-                    author: author,
-                    collection: collection,
+                    url, note, author, collection,
                     timestamp: Date.now(),
                     read: false,
                     reactions: {},
@@ -728,7 +1044,6 @@
             }
         }
 
-        // Collections
         window.openCollectionsModal = function() {
             document.getElementById('collectionsModal').classList.add('show');
         }
@@ -741,46 +1056,36 @@
             currentCollection = collection;
             closeCollectionsModal();
             loadPosts();
-            if (collection) {
-                const collectionNames = {
-                    funny: '😂 Funny',
-                    cute: '🥰 Cute',
-                    news: '📰 News',
-                    inspiration: '✨ Inspiration',
-                    music: '🎵 Music',
-                    other: '📌 Other'
-                };
-                showToast(`Filtering: ${collectionNames[collection]}`);
-            } else {
-                showToast('Showing all collections');
-            }
+            const names = { funny: '😂 Funny', cute: '🥰 Cute', news: '📰 News', inspiration: '✨ Inspiration', music: '🎵 Music', other: '📌 Other' };
+            showToast(collection ? `Filtering: ${names[collection]}` : 'Showing all collections');
         }
 
         function loadPosts() {
-            let posts = Object.entries(allPosts).map(([id, data]) => ({ id, ...data }))
+            let posts = Object.entries(allPosts)
+                .map(([id, data]) => ({ id, ...data }))
                 .sort((a, b) => b.timestamp - a.timestamp);
 
-            if (currentFilter === 'new') posts = posts.filter(p => !p.read);
-            if (currentFilter === 'seen') posts = posts.filter(p => p.read);
+            if (currentFilter === 'new')  posts = posts.filter(p => !p.read);
+            if (currentFilter === 'seen') posts = posts.filter(p =>  p.read);
             if (currentCollection) posts = posts.filter(p => p.collection === currentCollection);
 
-            const container = document.getElementById('postsContainer');
+            const container  = document.getElementById('postsContainer');
             const emptyState = document.getElementById('emptyState');
 
             if (posts.length === 0) {
                 container.innerHTML = '';
                 emptyState.classList.remove('hidden');
                 const h3 = emptyState.querySelector('h3');
-                const p = emptyState.querySelector('p');
+                const p  = emptyState.querySelector('p');
                 if (currentFilter === 'new') {
                     h3.textContent = 'All Caught Up! ✨';
-                    p.textContent = 'No new posts to see. 💜';
+                    p.textContent  = 'No new posts to see. 💜';
                 } else if (currentFilter === 'seen') {
                     h3.textContent = 'No Seen Posts';
-                    p.textContent = 'Mark posts as seen and they\'ll appear here. 💜';
+                    p.textContent  = 'Mark posts as seen and they\'ll appear here. 💜';
                 } else {
                     h3.textContent = 'No Posts Yet';
-                    p.textContent = 'Start adding posts! ✨';
+                    p.textContent  = 'Start adding posts! ✨';
                 }
                 return;
             }
@@ -791,138 +1096,128 @@
         }
 
         function getCollectionEmoji(collection) {
-            const emojis = {
-                funny: '😂',
-                cute: '🥰',
-                news: '📰',
-                inspiration: '✨',
-                music: '🎵',
-                other: '📌'
-            };
-            return emojis[collection] || '';
+            return { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', other: '📌' }[collection] || '';
         }
 
         function createPostCard(post) {
-            const date = new Date(post.timestamp).toLocaleDateString('en-US', {
-                month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
-            });
-            const domain = post.url.match(/https?:\/\/([^\/]+)/)?.[1]?.replace('www.', '') || 'link';
+            const date    = new Date(post.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+            const domain  = post.url.match(/https?:\/\/([^\/]+)/)?.[1]?.replace('www.', '') || 'link';
             const tweetId = post.url.match(/(?:twitter|x)\.com\/.*\/status\/(\d+)/)?.[1];
-            const author = post.author || 'Unknown';
+            const author  = post.author || 'Unknown';
             const badgeClass = author === 'Tero' ? 'badge-tero' : 'badge-el';
-            const emoji = author === 'Tero' ? '💜' : '💖';
-            
-            const reactions = post.reactions || {};
+            const emoji      = author === 'Tero' ? '💜' : '💖';
+
+            const reactions    = post.reactions || {};
             const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍'];
-            
-            const replies = post.replies || [];
+            const replies      = post.replies || [];
+            const faviconUrl   = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 
             return `
                 <div class="post-card fade-in">
-                    <div class="post-header flex items-center justify-between">
-                        <div class="flex items-center gap-2 text-xs" style="color: var(--text-secondary)">
+                    <div class="post-header">
+                        <div class="post-author-row">
                             <span class="${badgeClass}">${author} ${emoji}</span>
-                            <span>•</span>
-                            <span>${date}</span>
-                            ${post.collection ? `<span class="collection-badge">${getCollectionEmoji(post.collection)}</span>` : ''}
-                            ${post.read ? '<span class="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">💜</span>' : ''}
+                            <span style="color: var(--text-secondary); font-size: 12px;">•</span>
+                            <span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">${date}</span>
+                            ${post.collection ? `<span class="collection-badge">${getCollectionEmoji(post.collection)} ${post.collection}</span>` : ''}
+                            ${post.read ? '<span class="seen-dot" title="Seen"></span>' : ''}
                         </div>
-                        <button onclick="deletePost('${post.id}')" class="text-purple-400 hover:text-red-500 transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button class="delete-btn" onclick="deletePost('${post.id}')" title="Delete">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
                         </button>
                     </div>
-                    
-                    ${post.note ? `<div class="post-note">
-                        <p class="text-sm italic" style="color: var(--text-primary)">"${post.note}"</p>
+
+                    ${post.note ? `
+                    <div class="post-note">
+                        <span class="post-note-quote">"</span>
+                        <p style="font-size: 14px; font-style: italic; color: var(--text-primary); line-height: 1.65; margin: 0;">${post.note}</p>
                     </div>` : ''}
-                    
+
                     <div class="post-content">
                         ${tweetId ? `
                             <blockquote class="twitter-tweet" data-dnt="true" data-conversation="none">
                                 <a href="https://twitter.com/x/status/${tweetId}"></a>
                             </blockquote>
                         ` : `
-                            <div class="p-6 text-center">
-                                <a href="${post.url}" target="_blank" class="text-purple-600 hover:text-purple-700 font-medium text-lg">
-                                    🔗 ${domain}
-                                </a>
-                            </div>
+                            <a href="${post.url}" target="_blank" class="link-preview">
+                                <div class="link-favicon">
+                                    <img src="${faviconUrl}" alt="${domain}" onerror="this.parentNode.innerHTML='🔗'">
+                                </div>
+                                <div class="link-info">
+                                    <div class="link-domain">${domain}</div>
+                                    <div class="link-url">${post.url}</div>
+                                </div>
+                                <svg class="link-arrow" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                            </a>
                         `}
                     </div>
-                    
-                    <!-- Reactions -->
+
                     <div class="reactions-bar">
-                        ${reactionEmojis.map(emoji => {
-                            const count = reactions[emoji] || 0;
+                        ${reactionEmojis.map(e => {
+                            const count    = reactions[e] || 0;
                             const isActive = count > 0;
-                            return `<button class="reaction-btn ${isActive ? 'active' : ''}" onclick="toggleReaction('${post.id}', '${emoji}')">${emoji}${count > 0 ? ` ${count}` : ''}</button>`;
+                            return `<button class="reaction-btn ${isActive ? 'active' : ''}" onclick="toggleReaction('${post.id}', '${e}')">${e}${count > 0 ? `<span style="font-size:12px;font-weight:700;">${count}</span>` : ''}</button>`;
                         }).join('')}
                     </div>
-                    
-                    <!-- Replies -->
+
                     ${replies.length > 0 ? `
-                        <div class="reply-section">
-                            <div class="text-xs font-semibold mb-2" style="color: var(--text-secondary)">💬 Replies:</div>
-                            ${replies.map(reply => `
-                                <div class="reply-item">
-                                    <div class="text-xs font-semibold mb-1" style="color: var(--text-secondary)">${reply.author} ${reply.author === 'Tero' ? '💜' : '💖'}</div>
-                                    <div class="text-sm" style="color: var(--text-primary)">${reply.text}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-                    
-                    <!-- Reply input -->
                     <div class="reply-section">
-                        <input type="text" id="reply-${post.id}" placeholder="Add a reply... 💬" class="w-full px-3 py-2 text-sm border-2 border-purple-300 rounded-lg mb-2" style="background: var(--card-bg); color: var(--text-primary)">
-                        <button onclick="addReply('${post.id}')" class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-semibold hover:bg-purple-600 transition">
-                            💬 Reply
-                        </button>
+                        <div class="divider-text">💬 Replies</div>
+                        ${replies.map(reply => `
+                            <div class="reply-item">
+                                <div style="font-size: 11px; font-weight: 700; margin-bottom: 3px; color: var(--text-secondary);">${reply.author} ${reply.author === 'Tero' ? '💜' : '💖'}</div>
+                                <div style="font-size: 13px; color: var(--text-primary); line-height: 1.55;">${reply.text}</div>
+                            </div>
+                        `).join('')}
+                    </div>` : ''}
+
+                    <div class="reply-section">
+                        <div class="reply-input-row">
+                            <input type="text" id="reply-${post.id}" placeholder="Add a reply..." class="reply-input">
+                            <button onclick="addReply('${post.id}')" class="reply-send-btn" title="Send">
+                                <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    
-                    <div class="post-actions flex gap-2">
-                        <a href="${post.url}" target="_blank" class="flex-1 text-center btn-purple text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                            View Post ✨
+
+                    <div class="post-actions">
+                        <a href="${post.url}" target="_blank" class="btn-primary flex-1 px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            Open Link
                         </a>
-                        ${!post.read ? `<button onclick="markSeen('${post.id}')" class="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-semibold hover:bg-purple-600 transition whitespace-nowrap">💜 Seen</button>` : ''}
+                        ${!post.read ? `
+                        <button onclick="markSeen('${post.id}')" class="btn-secondary px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+                            <span class="seen-dot"></span> Mark Seen
+                        </button>` : ''}
                     </div>
                 </div>
             `;
         }
 
-        // Reactions
         window.toggleReaction = async function(postId, emoji) {
-            const post = allPosts[postId];
+            const post      = allPosts[postId];
             const reactions = post.reactions || {};
             reactions[emoji] = (reactions[emoji] || 0) + 1;
-            
             await update(ref(database, `posts/${postId}`), { reactions });
             showToast(`${emoji} reaction added!`);
         }
 
-        // Replies
         window.addReply = async function(postId) {
             const input = document.getElementById(`reply-${postId}`);
-            const text = input.value.trim();
-            
-            if (!text) {
-                alert('Please enter a reply');
-                return;
-            }
+            const text  = input.value.trim();
+            if (!text) { alert('Please enter a reply'); return; }
 
-            // Get current user (you can make this dynamic if needed)
-            const author = 'El'; // Change based on who's logged in
-            
-            const post = allPosts[postId];
+            const author  = 'El';
+            const post    = allPosts[postId];
             const replies = post.replies || [];
-            replies.push({
-                author,
-                text,
-                timestamp: Date.now()
-            });
-            
+            replies.push({ author, text, timestamp: Date.now() });
+
             await update(ref(database, `posts/${postId}`), { replies });
             input.value = '';
             showToast('Reply added! 💬');
@@ -941,14 +1236,25 @@
 
         function showToast(msg) {
             const toast = document.createElement('div');
-            toast.className = 'fixed bottom-8 right-8 bg-purple-900 text-white px-8 py-4 rounded-2xl shadow-2xl z-50';
-            toast.style.backdropFilter = 'blur(10px)';
-            toast.style.border = '2px solid rgba(192, 132, 252, 0.5)';
+            toast.style.cssText = `
+                position: fixed; bottom: 28px; right: 28px;
+                background: rgba(18, 9, 42, 0.96);
+                color: #ede9fe;
+                padding: 12px 20px;
+                border-radius: 14px;
+                font-size: 14px; font-weight: 600;
+                font-family: 'Inter', sans-serif;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(139,92,246,0.35);
+                z-index: 9999;
+                backdrop-filter: blur(14px);
+                transition: opacity 0.3s ease, transform 0.3s ease;
+                letter-spacing: -0.01em;
+            `;
             toast.textContent = msg;
             document.body.appendChild(toast);
             setTimeout(() => {
                 toast.style.opacity = '0';
-                toast.style.transform = 'translateY(20px)';
+                toast.style.transform = 'translateY(10px)';
                 setTimeout(() => toast.remove(), 300);
             }, 2500);
         }
