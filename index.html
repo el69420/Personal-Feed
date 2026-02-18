@@ -190,6 +190,16 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
 
+        .filter-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .filter-btn.disabled:hover {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.82);
+        }
+
         .mark-all-btn {
             padding: 7px 16px;
             border-radius: 50px;
@@ -809,6 +819,11 @@
             </div>
         </div>
 
+        <!-- Category Indicator -->
+        <div id="categoryIndicator" class="hidden" style="text-align: center; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #a855f7;">
+            📁 <span id="categoryName"></span> <button onclick="filterByCollection(null)" style="background: none; border: none; cursor: pointer; color: #a855f7; text-decoration: underline; font-size: 12px; margin-left: 8px;">×</button>
+        </div>
+
         <!-- Filter Buttons -->
         <div id="filterButtons" class="flex justify-center items-center gap-3 mb-8 flex-wrap">
             <div class="filter-glass">
@@ -1096,6 +1111,7 @@
         window.setFilter = function(filter) {
             currentFilter = filter;
             currentCollection = null;
+            document.getElementById('categoryIndicator').classList.add('hidden');
             document.getElementById('btnNew').className  = 'filter-btn' + (filter === 'new'  ? ' active' : '');
             document.getElementById('btnSeen').className = 'filter-btn' + (filter === 'seen' ? ' active' : '');
             document.getElementById('btnAll').className  = 'filter-btn' + (filter === 'all'  ? ' active' : '');
@@ -1178,21 +1194,27 @@
         window.filterByCollection = function(collection) {
             currentCollection = collection;
             closeCollectionsModal();
+            const indicator = document.getElementById('categoryIndicator');
+            const categoryName = document.getElementById('categoryName');
+            const names = { funny: '😂 Funny', cute: '🥰 Cute', news: '📰 News', inspiration: '✨ Inspiration', music: '🎵 Music', 'idiot-drivers': '🚗 Idiot Drivers', other: '📌 Other' };
+
             if (collection) {
-                // In category mode: show All as active, new/seen don't apply
-                document.getElementById('btnNew').className  = 'filter-btn';
-                document.getElementById('btnSeen').className = 'filter-btn';
+                // In category mode: show category indicator, dim new/seen buttons
+                indicator.classList.remove('hidden');
+                categoryName.textContent = names[collection] || collection;
+                document.getElementById('btnNew').className  = 'filter-btn disabled';
+                document.getElementById('btnSeen').className = 'filter-btn disabled';
                 document.getElementById('btnAll').className  = 'filter-btn active';
             } else {
-                // Back to normal: restore the actual filter state
+                // Back to normal: hide indicator, restore filter buttons
+                indicator.classList.add('hidden');
                 document.getElementById('btnNew').className  = 'filter-btn' + (currentFilter === 'new'  ? ' active' : '');
                 document.getElementById('btnSeen').className = 'filter-btn' + (currentFilter === 'seen' ? ' active' : '');
                 document.getElementById('btnAll').className  = 'filter-btn' + (currentFilter === 'all'  ? ' active' : '');
             }
             updateNewCount();
             loadPosts();
-            const names = { funny: '😂 Funny', cute: '🥰 Cute', news: '📰 News', inspiration: '✨ Inspiration', music: '🎵 Music', 'idiot-drivers': '🚗 Idiot Drivers', other: '📌 Other' };
-            showToast(collection ? `Filtering: ${names[collection]}` : 'Showing all collections');
+            showToast(collection ? `Showing all ${names[collection]}` : 'Showing all collections');
         }
 
         function loadPosts() {
