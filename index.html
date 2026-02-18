@@ -637,6 +637,38 @@
             opacity: 1;
         }
 
+        .watch-later-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 900;
+            font-family: 'Nunito', sans-serif;
+            color: var(--text-secondary);
+            background: none;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 20px;
+            padding: 5px 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin: 8px 14px 4px;
+        }
+        .watch-later-btn:hover {
+            background: rgba(168, 85, 247, 0.1);
+            color: #a855f7;
+            border-color: rgba(168, 85, 247, 0.4);
+        }
+        .watch-later-btn.active {
+            background: rgba(168, 85, 247, 0.12);
+            color: #a855f7;
+            border-color: rgba(168, 85, 247, 0.45);
+        }
+        body.dark-mode .watch-later-btn.active {
+            color: #c084fc;
+            border-color: rgba(192, 132, 252, 0.5);
+            background: rgba(192, 132, 252, 0.1);
+        }
+
         .reply-child {
             margin-left: 16px;
             border-left: 2px solid rgba(168, 85, 247, 0.25);
@@ -1286,6 +1318,7 @@
                 <button onclick="setFilter('new')" id="btnNew" class="filter-btn">✨ New <span id="newCount" class="new-badge hidden">0</span></button>
                 <button onclick="setFilter('seen')" id="btnSeen" class="filter-btn">💜 Seen</button>
                 <button onclick="setFilter('fav')" id="btnFav" class="filter-btn">♡ Saved</button>
+                <button onclick="setFilter('watch-later')" id="btnWatchLater" class="filter-btn">🕐 Watch Later</button>
                 <button onclick="setFilter('just-other')" id="btnOtherUser" class="filter-btn">💜 Just Tero</button>
             </div>
             <button onclick="markAllSeen()" id="btnMarkAll" class="mark-all-btn hidden">Mark All Seen</button>
@@ -1993,11 +2026,12 @@ function youtubeThumb(url) {
         window.setFilter = function(filter) {
             currentFilter = filter;
 
-            document.getElementById('btnAll').className       = 'filter-btn' + (filter === 'all'        ? ' active' : '');
-            document.getElementById('btnNew').className       = 'filter-btn' + (filter === 'new'        ? ' active' : '');
-            document.getElementById('btnSeen').className      = 'filter-btn' + (filter === 'seen'       ? ' active' : '');
-            document.getElementById('btnFav').className       = 'filter-btn' + (filter === 'fav'        ? ' active' : '');
-            document.getElementById('btnOtherUser').className = 'filter-btn' + (filter === 'just-other' ? ' active' : '');
+            document.getElementById('btnAll').className        = 'filter-btn' + (filter === 'all'          ? ' active' : '');
+            document.getElementById('btnNew').className        = 'filter-btn' + (filter === 'new'          ? ' active' : '');
+            document.getElementById('btnSeen').className       = 'filter-btn' + (filter === 'seen'         ? ' active' : '');
+            document.getElementById('btnFav').className        = 'filter-btn' + (filter === 'fav'          ? ' active' : '');
+            document.getElementById('btnWatchLater').className = 'filter-btn' + (filter === 'watch-later'  ? ' active' : '');
+            document.getElementById('btnOtherUser').className  = 'filter-btn' + (filter === 'just-other'   ? ' active' : '');
 
             updateNewCount();
             loadPosts();
@@ -2028,6 +2062,20 @@ function youtubeThumb(url) {
             await update(ref(database, `posts/${postId}`), { favoritedBy: favBy });
         };
 
+        window.toggleWatchLater = async function(postId) {
+            const post = allPosts[postId];
+            if (!post) return;
+            const wlBy = { ...(post.watchLaterBy || {}) };
+            if (wlBy[currentUser]) {
+                delete wlBy[currentUser];
+                showToast('Removed from Watch Later');
+            } else {
+                wlBy[currentUser] = Date.now();
+                showToast('Added to Watch Later 🕐');
+            }
+            await update(ref(database, `posts/${postId}`), { watchLaterBy: wlBy });
+        };
+
         window.filterByCollection = function(collection) {
             currentCollection = collection;
             closeCollectionsModal();
@@ -2047,28 +2095,29 @@ function youtubeThumb(url) {
         };
 
         // ---- NOTIFICATIONS ----
+        function notifSupported() { return 'Notification' in window; }
+        function notifActive() { return notificationsEnabled && notifSupported() && Notification.permission === 'granted'; }
+
         function sendNotification(title, body, tag) {
-            if (!notificationsEnabled) return;
-            if (Notification.permission !== 'granted') return;
+            if (!notifActive()) return;
             if (document.hasFocus()) return;
-            new Notification(title, { body, tag, icon: '/favicon.ico' });
+            new Notification(title, { body, tag });
         }
 
         function updateNotifBtn() {
             const btn = document.getElementById('notifBtn');
             if (!btn) return;
-            btn.textContent = notificationsEnabled && Notification.permission === 'granted' ? '🔔' : '🔕';
-            btn.title = (notificationsEnabled && Notification.permission === 'granted')
-                ? 'Desktop notifications on — click to turn off'
-                : 'Click to enable desktop notifications';
+            const on = notifActive();
+            btn.textContent = on ? '🔔' : '🔕';
+            btn.title = on ? 'Desktop notifications on — click to turn off' : 'Click to enable desktop notifications';
         }
 
-        window.toggleNotifications = async function() {
-            if (!('Notification' in window)) {
+        window.toggleNotifications = function() {
+            if (!notifSupported()) {
                 showToast('Notifications not supported in this browser');
                 return;
             }
-            if (notificationsEnabled && Notification.permission === 'granted') {
+            if (notifActive()) {
                 notificationsEnabled = false;
                 localStorage.setItem('notificationsEnabled', 'false');
                 updateNotifBtn();
@@ -2076,21 +2125,27 @@ function youtubeThumb(url) {
                 return;
             }
             if (Notification.permission === 'denied') {
-                showToast('Notifications are blocked — allow them in your browser settings');
+                showToast('Notifications blocked — allow them in your browser settings then try again');
                 return;
             }
-            const perm = await Notification.requestPermission();
-            if (perm === 'granted') {
-                notificationsEnabled = true;
-                localStorage.setItem('notificationsEnabled', 'true');
-                updateNotifBtn();
-                new Notification('Notifications enabled 💜', { body: "You'll be notified about new posts and messages." });
-            } else {
-                showToast('Notification permission denied');
-            }
+            // Use .then() to keep the user-gesture stack intact across all browsers
+            Notification.requestPermission().then(perm => {
+                if (perm === 'granted') {
+                    notificationsEnabled = true;
+                    localStorage.setItem('notificationsEnabled', 'true');
+                    updateNotifBtn();
+                    new Notification('Notifications enabled 💜', { body: "You'll be notified about new posts and messages." });
+                } else {
+                    showToast('Notification permission not granted');
+                }
+            });
         };
 
-        // Initialise button state after page loads
+        // Sync stored preference with actual browser permission on load
+        if (notificationsEnabled && notifSupported() && Notification.permission !== 'granted') {
+            notificationsEnabled = false;
+            localStorage.setItem('notificationsEnabled', 'false');
+        }
         setTimeout(updateNotifBtn, 0);
 
         // ---- DATA ----
@@ -2401,6 +2456,7 @@ function youtubeThumb(url) {
             const id = getYouTubeId(post.url);
             const hq = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
             const max = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+            const isWL = !!(post.watchLaterBy?.[currentUser]);
             return `
                 <a href="${safeText(post.url)}" target="_blank" class="yt-embed">
                     <img src="${max}" alt="YouTube thumbnail" onerror="this.src='${hq}'">
@@ -2411,6 +2467,9 @@ function youtubeThumb(url) {
                         </svg>
                     </div>
                 </a>
+                <button class="watch-later-btn${isWL ? ' active' : ''}" onclick="toggleWatchLater('${safeText(post.id)}')">
+                    🕐 ${isWL ? 'In Watch Later' : 'Watch Later'}
+                </button>
             `;
         }
 
@@ -2592,6 +2651,10 @@ function youtubeThumb(url) {
             if (currentFilter === 'new')        posts = posts.filter(p => !isRead(p));
             else if (currentFilter === 'seen')  posts = posts.filter(p =>  isRead(p));
             else if (currentFilter === 'fav')   posts = posts.filter(p => p.favoritedBy?.[currentUser]);
+            else if (currentFilter === 'watch-later') {
+                posts = posts.filter(p => !!(p.watchLaterBy?.[currentUser]));
+                posts.sort((a, b) => (b.watchLaterBy[currentUser] || 0) - (a.watchLaterBy[currentUser] || 0));
+            }
             else if (currentFilter === 'just-other') {
                 const other = currentUser === 'El' ? 'Tero' : 'El';
                 posts = posts.filter(p => p.author === other);
@@ -2634,6 +2697,9 @@ function youtubeThumb(url) {
                 } else if (currentFilter === 'seen') {
                     h3.textContent = 'No Seen Posts';
                     p.textContent  = 'Mark posts as seen and they\'ll appear here.';
+                } else if (currentFilter === 'watch-later') {
+                    h3.textContent = 'Watch Later is empty';
+                    p.textContent  = 'Hit 🕐 under any YouTube video to save it here.';
                 } else if (currentFilter === 'just-other') {
                     const other = currentUser === 'El' ? 'Tero' : 'El';
                     h3.textContent = `No Posts from ${other}`;
