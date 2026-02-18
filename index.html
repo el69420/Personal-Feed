@@ -392,6 +392,42 @@
 
         body.dark-mode .reaction-btn.active { color: #c084fc; }
 
+        .comment-reactions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            margin-top: 6px;
+        }
+
+        .comment-reaction-btn {
+            background: rgba(147, 51, 234, 0.06);
+            border: 1px solid transparent;
+            border-radius: 10px;
+            padding: 2px 7px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-secondary);
+        }
+
+        .comment-reaction-btn:hover {
+            background: rgba(192, 132, 252, 0.14);
+            border-color: rgba(192, 132, 252, 0.35);
+            transform: scale(1.12);
+        }
+
+        .comment-reaction-btn.active {
+            background: rgba(192, 132, 252, 0.13);
+            border-color: rgba(168, 85, 247, 0.4);
+            color: #7c3aed;
+        }
+
+        body.dark-mode .comment-reaction-btn.active { color: #c084fc; }
+
         /* ---- REPLIES ---- */
         .reply-section {
             padding: 12px 18px;
@@ -1037,11 +1073,60 @@
         let allPosts = {};
         let isDarkMode = false;
         let currentUser = null;
+        let prevDataSig = null;
+        let isInitialLoad = true;
+        let _audioCtx = null;
+
+        // ---- HELPERS ----
+        function timeAgo(ts) {
+            if (!ts) return '';
+            const s = Math.floor((Date.now() - ts) / 1000);
+            if (s < 60)  return 'just now';
+            const m = Math.floor(s / 60);
+            if (m < 60)  return `${m}m ago`;
+            const h = Math.floor(m / 60);
+            if (h < 24)  return `${h}h ago`;
+            const d = Math.floor(h / 24);
+            if (d < 7)   return `${d}d ago`;
+            return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function playPing() {
+            try {
+                if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (_audioCtx.state === 'suspended') _audioCtx.resume();
+                const osc  = _audioCtx.createOscillator();
+                const gain = _audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(_audioCtx.destination);
+                osc.type = 'sine';
+                const t = _audioCtx.currentTime;
+                osc.frequency.setValueAtTime(880, t);
+                osc.frequency.exponentialRampToValueAtTime(1320, t + 0.08);
+                gain.gain.setValueAtTime(0.22, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+                osc.start(t);
+                osc.stop(t + 0.45);
+            } catch(e) {}
+        }
+
+        function dataSig(posts) {
+            let out = '';
+            for (const [id, p] of Object.entries(posts)) {
+                const replies = p.replies || [];
+                const postRx  = Object.values(p.reactions || {}).reduce((a, b) => a + b, 0);
+                const cmtRx   = replies.reduce((s, r) => s + Object.values(r.reactions || {}).reduce((a, b) => a + b, 0), 0);
+                out += `${id}:${replies.length}:${postRx}:${cmtRx}|`;
+            }
+            return out;
+        }
 
         // ---- AUTH ----
         window.login = function(user) {
             currentUser = user;
             localStorage.setItem('currentUser', user);
+            // Initialise AudioContext inside a user gesture so browsers allow it
+            if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             document.getElementById('loginOverlay').style.display = 'none';
             const emoji = user === 'El' ? '💖' : '💜';
             document.getElementById('userIndicator').textContent = `${emoji} ${user} · switch`;
@@ -1123,7 +1208,12 @@
         }
 
         onValue(postsRef, (snapshot) => {
-            allPosts = snapshot.val() || {};
+            const newPosts = snapshot.val() || {};
+            const sig = dataSig(newPosts);
+            if (!isInitialLoad && sig !== prevDataSig) playPing();
+            prevDataSig = sig;
+            isInitialLoad = false;
+            allPosts = newPosts;
             loadPosts();
             updateNewCount();
             updateSyncStatus('💜 Synced');
@@ -1333,16 +1423,28 @@
                 (byParent[r.replyToId] = byParent[r.replyToId] || []).push(r);
             });
 
+            const cmtEmojis = ['❤️', '😂', '😮', '🔥'];
             const renderItem = (reply, isChild) => {
-                const ae = reply.author === 'Tero' ? '💜' : '💖';
-                const children = !isChild ? (byParent[reply.id] || []) : [];
+                const ae       = reply.author === 'Tero' ? '💜' : '💖';
+                const ts       = reply.timestamp ? timeAgo(reply.timestamp) : '';
+                const children = byParent[reply.id] || [];
+                const cRx      = reply.reactions || {};
                 return `
                     <div class="reply-item${isChild ? ' reply-child' : ''}">
                         <div class="reply-item-header">
-                            <span style="font-size:11px;font-weight:700;color:var(--text-secondary);">${reply.author} ${ae}</span>
-                            ${!isChild ? `<button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}','${reply.author}')">↩ Reply</button>` : ''}
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <span style="font-size:11px;font-weight:700;color:var(--text-secondary);">${reply.author} ${ae}</span>
+                                ${ts ? `<span style="font-size:10px;color:var(--text-secondary);opacity:0.55;">${ts}</span>` : ''}
+                            </div>
+                            <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}','${reply.author}')">↩ Reply</button>
                         </div>
                         <div style="font-size:13px;color:var(--text-primary);line-height:1.55;">${reply.text}</div>
+                        <div class="comment-reactions">
+                            ${cmtEmojis.map(e => {
+                                const cnt = cRx[e] || 0;
+                                return `<button class="comment-reaction-btn${cnt > 0 ? ' active' : ''}" onclick="toggleCommentReaction('${postId}','${reply.id}','${e}')">${e}${cnt > 0 ? `<span style="font-size:11px;font-weight:700;margin-left:1px;">${cnt}</span>` : ''}</button>`;
+                            }).join('')}
+                        </div>
                     </div>
                     ${children.map(c => renderItem(c, true)).join('')}
                     <div id="inline-reply-${postId}-${reply.id}" class="inline-reply-form hidden">
@@ -1404,7 +1506,7 @@
         }
 
         function createPostCard(post) {
-            const date    = new Date(post.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+            const date    = timeAgo(post.timestamp);
             const domain  = post.url.match(/https?:\/\/([^\/]+)/)?.[1]?.replace('www.', '') || 'link';
             const tweetId = post.url.match(/(?:twitter|x)\.com\/.*\/status\/(\d+)/)?.[1];
             const author  = post.author || 'Unknown';
@@ -1501,6 +1603,17 @@
             reactions[emoji] = (reactions[emoji] || 0) + 1;
             await update(ref(database, `posts/${postId}`), { reactions });
             showToast(`${emoji} reaction added!`);
+        }
+
+        window.toggleCommentReaction = async function(postId, replyId, emoji) {
+            const post    = allPosts[postId];
+            const replies = (post.replies || []).map(r => {
+                if (r.id !== replyId) return r;
+                const reactions = { ...(r.reactions || {}) };
+                reactions[emoji] = (reactions[emoji] || 0) + 1;
+                return { ...r, reactions };
+            });
+            await update(ref(database, `posts/${postId}`), { replies });
         }
 
         window.addReply = async function(postId) {
