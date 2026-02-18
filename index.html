@@ -910,8 +910,8 @@
         <!-- Filter Buttons -->
         <div id="filterButtons" class="flex justify-center items-center gap-3 mb-8 flex-wrap">
             <div class="filter-glass">
-                <button onclick="setFilter('new')" id="btnNew" class="filter-btn active">✨ New <span id="newCount" class="new-badge hidden">0</span></button>
-                <button onclick="setFilter('seen')" id="btnSeen" class="filter-btn">💜 Seen</button>
+                <button onclick="setFilter('new')" id="btnNew" class="filter-btn">✨ New <span id="newCount" class="new-badge hidden">0</span></button>
+                <button onclick="setFilter('seen')" id="btnSeen" class="filter-btn active">💜 Seen</button>
                 <button onclick="setFilter('all')" id="btnAll" class="filter-btn">🌟 All</button>
             </div>
             <button onclick="markAllSeen()" id="btnMarkAll" class="mark-all-btn hidden">✓ Mark All Seen</button>
@@ -955,7 +955,7 @@
                 <h3 class="text-2xl font-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.02em;">No Posts Yet</h3>
                 <p class="text-sm mb-6" style="color: var(--text-secondary);">Start adding posts to create your personalized feed ✨</p>
                 <button onclick="document.getElementById('addPostBtn').click()" class="btn-primary px-8 py-3 text-sm font-semibold rounded-full">
-                    Add Your First Post
+                    Make a new post!
                 </button>
             </div>
         </div>
@@ -1068,7 +1068,7 @@
         const postsRef = ref(database, 'posts');
 
         let currentView = 'feed';
-        let currentFilter = 'new';
+        let currentFilter = 'all';
         let currentCollection = null;
         let allPosts = {};
         let isDarkMode = false;
@@ -1674,3 +1674,4 @@
     </script>
 </body>
 </html>
+
