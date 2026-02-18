@@ -858,9 +858,17 @@
             </div>
         </div>
 
-        <!-- Category Indicator -->
-        <div id="categoryIndicator" class="hidden" style="text-align: center; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #a855f7;">
-            📁 <span id="categoryName"></span> <button onclick="filterByCollection(null)" style="background: none; border: none; cursor: pointer; color: #a855f7; text-decoration: underline; font-size: 12px; margin-left: 8px;">×</button>
+        <!-- Category Banner -->
+        <div id="categoryIndicator" class="hidden" style="margin-bottom: 8px;">
+            <div style="background: rgba(168,85,247,0.15); border: 1.5px solid rgba(168,85,247,0.45); border-radius: 20px; padding: 18px 22px; display: flex; align-items: center; gap: 16px;">
+                <span id="categoryEmoji" style="font-size: 54px; line-height: 1; flex-shrink: 0;"></span>
+                <div style="flex: 1; min-width: 0;">
+                    <div id="categoryName" style="font-size: 27px; font-weight: 800; color: white; letter-spacing: -0.02em; font-family: 'Inter', sans-serif; line-height: 1.1;"></div>
+                    <div style="font-size: 13px; color: rgba(255,255,255,0.52); font-family: 'Inter', sans-serif; margin-top: 4px;">Viewing all posts in this category</div>
+                </div>
+                <button onclick="filterByCollection(null)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 50%; width: 34px; height: 34px; color: rgba(255,255,255,0.8); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</button>
+            </div>
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.35); text-align: center; margin-top: 16px; margin-bottom: 4px; font-family: 'Inter', sans-serif;">← back to everything</div>
         </div>
 
         <!-- Filter Buttons -->
@@ -1250,15 +1258,14 @@
             currentCollection = collection;
             closeCollectionsModal();
             const indicator = document.getElementById('categoryIndicator');
-            const categoryName = document.getElementById('categoryName');
-            const names = { funny: '😂 Funny', cute: '🥰 Cute', news: '📰 News', inspiration: '✨ Inspiration', music: '🎵 Music', 'idiot-drivers': '🚗 Idiot Drivers', other: '📌 Other' };
+            const emojis  = { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' };
+            const labels  = { funny: 'Funny', cute: 'Cute', news: 'News', inspiration: 'Inspiration', music: 'Music', 'idiot-drivers': 'Idiot Drivers', other: 'Other' };
 
             if (collection) {
-                // In category mode: show category indicator, leave filter buttons as-is
+                document.getElementById('categoryEmoji').textContent = emojis[collection] || '📁';
+                document.getElementById('categoryName').textContent  = labels[collection] || collection;
                 indicator.classList.remove('hidden');
-                categoryName.textContent = names[collection] || collection;
             } else {
-                // Back to normal: hide indicator, restore filter buttons
                 indicator.classList.add('hidden');
                 document.getElementById('btnNew').className  = 'filter-btn' + (currentFilter === 'new'  ? ' active' : '');
                 document.getElementById('btnSeen').className = 'filter-btn' + (currentFilter === 'seen' ? ' active' : '');
@@ -1266,7 +1273,7 @@
             }
             updateNewCount();
             loadPosts();
-            showToast(collection ? `Showing all ${names[collection]}` : 'Showing all collections');
+            showToast(collection ? `Showing: ${labels[collection] || collection}` : 'Showing all posts');
         }
 
         function loadPosts() {
