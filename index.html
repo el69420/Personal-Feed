@@ -336,6 +336,29 @@
 
         .link-preview:hover { background: rgba(147, 51, 234, 0.04); }
 
+        .yt-embed {
+            display: block;
+            position: relative;
+            text-decoration: none;
+            overflow: hidden;
+        }
+        .yt-embed img {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            display: block;
+        }
+        .yt-play-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.12);
+            transition: background 0.2s;
+        }
+        .yt-embed:hover .yt-play-overlay { background: rgba(0,0,0,0.28); }
+
         .link-favicon {
             width: 42px;
             height: 42px;
@@ -2083,6 +2106,23 @@ function youtubeThumb(url) {
             return `${SOURCE_EMOJIS[s] || '🔗'} ${SOURCE_LABELS[s] || s}`;
         }
 
+        function createYouTubeEmbed(post) {
+            const id = getYouTubeId(post.url);
+            const hq = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+            const max = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+            return `
+                <a href="${safeText(post.url)}" target="_blank" class="yt-embed">
+                    <img src="${max}" alt="YouTube thumbnail" onerror="this.src='${hq}'">
+                    <div class="yt-play-overlay">
+                        <svg width="64" height="44" viewBox="0 0 64 44" fill="none">
+                            <rect width="64" height="44" rx="10" fill="#FF0000" opacity="0.92"/>
+                            <polygon points="25,12 25,32 46,22" fill="white"/>
+                        </svg>
+                    </div>
+                </a>
+            `;
+        }
+
         function createInstagramEmbed(url) {
             return `
                 <div style="padding:14px 18px;">
@@ -2114,7 +2154,6 @@ function youtubeThumb(url) {
                 : '';
 
             const source = post.source || detectSource(post.url);
-            const ytThumb = (source === 'youtube') ? youtubeThumb(post.url) : null;
             const sourceBadge = `<button class="collection-badge" onclick="filterBySource('${safeText(source)}')" title="Filter by source">${safeText(getSourceLabel(source))}</button>`;
 
             const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍'];
@@ -2145,19 +2184,17 @@ function youtubeThumb(url) {
                         </blockquote>
                     </div>
                 `;
-            } else if ((post.source || detectSource(post.url)) === 'instagram') {
+            } else if (source === 'instagram') {
                 contentHtml = createInstagramEmbed(post.url);
+            } else if (source === 'youtube') {
+                contentHtml = createYouTubeEmbed(post);
             } else {
                 contentHtml = `
                     <div class="post-content">
                         <a href="${safeText(post.url)}" target="_blank" class="link-preview">
-                            <div class="link-favicon" style="${ytThumb ? 'width:72px;height:48px;border-radius:14px;' : ''}">
-    ${ytThumb
-        ? `<img src="${ytThumb}" alt="YouTube thumbnail" style="width:100%;height:100%;object-fit:cover;">`
-        : `<img src="${faviconUrl}" alt="${safeText(domain)}" onerror="this.parentNode.innerHTML='🔗'">`
-    }
-</div>
-
+                            <div class="link-favicon">
+                                <img src="${faviconUrl}" alt="${safeText(domain)}" onerror="this.parentNode.innerHTML='🔗'">
+                            </div>
                             <div class="link-info">
                                 <div class="link-domain">${safeText(domain)}</div>
                                 <div class="link-url">${safeText(post.url)}</div>
