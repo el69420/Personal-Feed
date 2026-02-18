@@ -200,6 +200,38 @@
             color: rgba(255, 255, 255, 0.82);
         }
 
+        /* ---- LOGIN ---- */
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #1e0a3c 0%, #12092a 50%, #0d0520 100%);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .user-card {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1.5px solid rgba(255,255,255,0.15);
+            border-radius: 24px;
+            padding: 32px 40px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            min-width: 130px;
+        }
+
+        .user-card:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+            border-color: rgba(168,85,247,0.6);
+        }
+
         .mark-all-btn {
             padding: 7px 16px;
             border-radius: 50px;
@@ -790,6 +822,25 @@
     <div class="custom-cursor" id="cursor">✦</div>
     <div class="sync-indicator" id="syncStatus">💜 Connecting...</div>
 
+    <!-- Login Overlay -->
+    <div id="loginOverlay">
+        <div style="text-align:center;max-width:420px;width:100%;">
+            <div style="font-size:52px;margin-bottom:12px;">💜</div>
+            <h1 style="color:white;font-size:34px;font-weight:800;margin-bottom:8px;letter-spacing:-0.03em;">Your Feed</h1>
+            <p style="color:rgba(255,255,255,0.55);font-size:15px;margin-bottom:40px;font-family:'Inter',sans-serif;">Who's watching?</p>
+            <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+                <div class="user-card" onclick="login('El')">
+                    <div style="font-size:44px;margin-bottom:10px;">💖</div>
+                    <div style="font-size:20px;font-weight:800;color:white;font-family:'Inter',sans-serif;">El</div>
+                </div>
+                <div class="user-card" onclick="login('Tero')">
+                    <div style="font-size:44px;margin-bottom:10px;">💜</div>
+                    <div style="font-size:20px;font-weight:800;color:white;font-family:'Inter',sans-serif;">Tero</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="max-w-2xl mx-auto" style="position: relative; z-index: 10;">
 
         <!-- Header -->
@@ -802,6 +853,7 @@
                 </button>
             </div>
             <p class="text-sm font-medium tracking-wide" style="opacity: 0.7;">posts curated just for you ✨</p>
+            <button onclick="logout()" id="userIndicator" style="margin-top:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 14px;color:white;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'" title="Switch user"></button>
         </div>
 
         <!-- Main Navigation -->
@@ -838,13 +890,6 @@
         <div id="addSection" class="hidden add-section">
             <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary); letter-spacing: -0.02em;">Add a Post 💜</h2>
             <div class="space-y-5">
-                <div class="form-field">
-                    <label class="form-label">Who's posting?</label>
-                    <select id="authorSelect">
-                        <option value="El">El 💖</option>
-                        <option value="Tero">Tero 💜</option>
-                    </select>
-                </div>
                 <div class="form-field">
                     <label class="form-label">Post URL</label>
                     <input type="url" id="postUrl" placeholder="https://...">
@@ -996,6 +1041,35 @@
         let currentCollection = null;
         let allPosts = {};
         let isDarkMode = false;
+        let currentUser = null;
+
+        // ---- AUTH ----
+        window.login = function(user) {
+            currentUser = user;
+            localStorage.setItem('currentUser', user);
+            document.getElementById('loginOverlay').style.display = 'none';
+            const emoji = user === 'El' ? '💖' : '💜';
+            document.getElementById('userIndicator').textContent = `${emoji} ${user} · switch`;
+            updateNewCount();
+            loadPosts();
+        }
+
+        window.logout = function() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            document.getElementById('loginOverlay').style.display = 'flex';
+        }
+
+        // Per-user read state helper (backwards-compatible with old boolean `read` field)
+        function isRead(post) {
+            if (post.readBy) return !!(post.readBy[currentUser]);
+            return !!post.read;
+        }
+
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+            login(savedUser);
+        }
 
         // Star cursor
         const cursor = document.getElementById('cursor');
@@ -1062,7 +1136,7 @@
         });
 
         function updateNewCount() {
-            const newPosts = Object.values(allPosts).filter(p => !p.read).length;
+            const newPosts = Object.values(allPosts).filter(p => !isRead(p)).length;
             const badge = document.getElementById('newCount');
             const markAllBtn = document.getElementById('btnMarkAll');
 
@@ -1122,7 +1196,7 @@
         window.markAllSeen = async function() {
             const updates = {};
             Object.entries(allPosts).forEach(([id, post]) => {
-                if (!post.read) updates[`posts/${id}/read`] = true;
+                if (!isRead(post)) updates[`posts/${id}/readBy/${currentUser}`] = true;
             });
             await update(ref(database), updates);
             showToast('All posts marked as seen! 💜');
@@ -1131,7 +1205,7 @@
         window.addPost = async function() {
             const url = document.getElementById('postUrl').value.trim();
             const note = document.getElementById('postNote').value.trim();
-            const author = document.getElementById('authorSelect').value;
+            const author = currentUser;
             const collection = document.getElementById('collectionSelect').value;
 
             if (!url) { alert('Please enter a URL'); return; }
@@ -1225,8 +1299,8 @@
             if (currentCollection) {
                 posts = posts.filter(p => p.collection === currentCollection);
             } else {
-                if (currentFilter === 'new')  posts = posts.filter(p => !p.read);
-                if (currentFilter === 'seen') posts = posts.filter(p =>  p.read);
+                if (currentFilter === 'new')  posts = posts.filter(p => !isRead(p));
+                if (currentFilter === 'seen') posts = posts.filter(p =>  isRead(p));
             }
 
             const container  = document.getElementById('postsContainer');
@@ -1285,10 +1359,6 @@
                     <div id="inline-reply-${postId}-${reply.id}" class="inline-reply-form hidden">
                         <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">↩ Replying to ${reply.author}</div>
                         <div class="reply-input-row">
-                            <select id="inline-author-${postId}-${reply.id}" style="padding:8px 10px;border:1.5px solid var(--input-border);border-radius:20px;background:var(--input-bg);color:var(--text-primary);font-size:13px;font-family:'Inter',sans-serif;outline:none;flex-shrink:0;cursor:pointer;">
-                                <option value="El">El 💖</option>
-                                <option value="Tero">Tero 💜</option>
-                            </select>
                             <input type="text" id="inline-input-${postId}-${reply.id}" placeholder="Reply to ${reply.author}..." class="reply-input"
                                 onkeydown="if(event.key==='Enter')submitInlineReply('${postId}','${reply.id}')">
                             <button onclick="submitInlineReply('${postId}','${reply.id}')" class="reply-send-btn" title="Send">
@@ -1323,7 +1393,7 @@
 
         window.submitInlineReply = async function(postId, replyToId) {
             const input  = document.getElementById(`inline-input-${postId}-${replyToId}`);
-            const author = document.getElementById(`inline-author-${postId}-${replyToId}`).value;
+            const author = currentUser;
             const text   = input.value.trim();
             if (!text) return;
             const post    = allPosts[postId];
@@ -1365,7 +1435,7 @@
                             <span style="color: var(--text-secondary); font-size: 12px;">•</span>
                             <span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">${date}</span>
                             ${post.collection ? `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '${post.collection}')" title="Click to change category">${getCollectionEmoji(post.collection)} ${post.collection}</button>` : `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '')" title="Click to add category">+ Add category</button>`}
-                            ${post.read ? '<span class="seen-dot" title="Seen"></span>' : ''}
+                            ${isRead(post) ? '<span class="seen-dot" title="Seen"></span>' : ''}
                         </div>
                         <button class="delete-btn" onclick="deletePost('${post.id}')" title="Delete">
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1413,10 +1483,6 @@
 
                     <div class="reply-section">
                         <div class="reply-input-row">
-                            <select id="reply-author-${post.id}" style="padding:8px 10px;border:1.5px solid var(--input-border);border-radius:20px;background:var(--input-bg);color:var(--text-primary);font-size:13px;font-family:'Inter',sans-serif;outline:none;flex-shrink:0;cursor:pointer;">
-                                <option value="El">El 💖</option>
-                                <option value="Tero">Tero 💜</option>
-                            </select>
                             <input type="text" id="reply-${post.id}" placeholder="Add a reply..." class="reply-input">
                             <button onclick="addReply('${post.id}')" class="reply-send-btn" title="Send">
                                 <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24">
@@ -1431,7 +1497,7 @@
                             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                             Open Link
                         </a>
-                        ${!post.read ? `
+                        ${!isRead(post) ? `
                         <button onclick="markSeen('${post.id}')" class="btn-secondary px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
                             <span class="seen-dot"></span> Mark Seen
                         </button>` : ''}
@@ -1453,7 +1519,7 @@
             const text  = input.value.trim();
             if (!text) { alert('Please enter a reply'); return; }
 
-            const author  = document.getElementById(`reply-author-${postId}`).value;
+            const author  = currentUser;
             const post    = allPosts[postId];
             const replies = post.replies || [];
             replies.push({
@@ -1469,7 +1535,7 @@
         }
 
         window.markSeen = async function(id) {
-            await update(ref(database, `posts/${id}`), { read: true });
+            await update(ref(database, `posts/${id}/readBy`), { [currentUser]: true });
             showToast('Marked as seen! 💜');
         }
 
