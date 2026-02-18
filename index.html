@@ -1246,6 +1246,7 @@
                 <button onclick="toggleDarkMode()" class="text-2xl hover:scale-110 transition-transform opacity-70 hover:opacity-100 ml-1" title="Toggle dark mode">
                     <span id="darkModeIcon">🌙</span>
                 </button>
+                <button onclick="toggleNotifications()" id="notifBtn" class="text-2xl hover:scale-110 transition-transform opacity-70 hover:opacity-100 ml-1" title="Enable desktop notifications" style="background:none;border:none;cursor:none;padding:0;line-height:1;">🔕</button>
             </div>
             <p class="text-sm font-medium tracking-wide" style="opacity: 0.7; font-family:'Nunito',sans-serif; font-weight:800;">posts curated just for you</p>
             <button onclick="logout()" id="userIndicator" style="margin-top:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 14px;color:white;font-size:13px;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'" title="Switch user"></button>
@@ -1273,7 +1274,6 @@
                     <span style="font-size:12px;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);font-family:'Nunito',sans-serif;">Filters</span>
                     <span id="activeCollectionPill" class="collection-badge hidden"></span>
                     <span id="activeSourcePill" class="collection-badge hidden"></span>
-                    <span id="activeAuthorPill" class="collection-badge hidden"></span>
                 </div>
                 <button onclick="clearAllExtraFilters()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 7px 12px; color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 900; cursor: pointer; transition: background 0.15s;font-family:'Nunito',sans-serif;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Clear</button>
             </div>
@@ -1286,7 +1286,7 @@
                 <button onclick="setFilter('new')" id="btnNew" class="filter-btn">✨ New <span id="newCount" class="new-badge hidden">0</span></button>
                 <button onclick="setFilter('seen')" id="btnSeen" class="filter-btn">💜 Seen</button>
                 <button onclick="setFilter('fav')" id="btnFav" class="filter-btn">♡ Saved</button>
-                <button onclick="filterByAuthor()" id="btnOtherUser" class="filter-btn">💜 Just Tero</button>
+                <button onclick="setFilter('just-other')" id="btnOtherUser" class="filter-btn">💜 Just Tero</button>
             </div>
             <button onclick="markAllSeen()" id="btnMarkAll" class="mark-all-btn hidden">Mark All Seen</button>
         </div>
@@ -1543,7 +1543,8 @@
         let currentFilter = 'all';
         let currentCollection = null;
         let currentSource = null;
-        let currentAuthor = null;
+        let seenPostIds = new Set();
+        let notificationsEnabled = localStorage.getItem('notificationsEnabled') === 'true';
         let searchQuery = '';
         let allPosts = {};
         let currentUser = null;
@@ -1712,17 +1713,14 @@ function youtubeThumb(url) {
             const banner = document.getElementById('activeFiltersBanner');
             const collPill = document.getElementById('activeCollectionPill');
             const srcPill = document.getElementById('activeSourcePill');
-            const authorPill = document.getElementById('activeAuthorPill');
 
             const hasColl = !!currentCollection;
             const hasSrc = !!currentSource;
-            const hasAuthor = !!currentAuthor;
 
-            if (!hasColl && !hasSrc && !hasAuthor) {
+            if (!hasColl && !hasSrc) {
                 banner.classList.add('hidden');
                 collPill.classList.add('hidden');
                 srcPill.classList.add('hidden');
-                authorPill.classList.add('hidden');
                 return;
             }
 
@@ -1745,23 +1743,11 @@ function youtubeThumb(url) {
             } else {
                 srcPill.classList.add('hidden');
             }
-
-            if (hasAuthor) {
-                const ae = currentAuthor === 'El' ? '💖' : '💜';
-                authorPill.classList.remove('hidden');
-                authorPill.textContent = `${ae} Just ${currentAuthor}`;
-                authorPill.onclick = () => filterByAuthor(null);
-                authorPill.title = 'Clear author filter';
-            } else {
-                authorPill.classList.add('hidden');
-            }
         }
 
         window.clearAllExtraFilters = function() {
             currentCollection = null;
             currentSource = null;
-            currentAuthor = null;
-            document.getElementById('btnOtherUser').classList.remove('active');
             updateActiveFiltersBanner();
             loadPosts();
         };
@@ -2007,10 +1993,11 @@ function youtubeThumb(url) {
         window.setFilter = function(filter) {
             currentFilter = filter;
 
-            document.getElementById('btnAll').className  = 'filter-btn' + (filter === 'all'  ? ' active' : '');
-            document.getElementById('btnNew').className  = 'filter-btn' + (filter === 'new'  ? ' active' : '');
-            document.getElementById('btnSeen').className = 'filter-btn' + (filter === 'seen' ? ' active' : '');
-            document.getElementById('btnFav').className  = 'filter-btn' + (filter === 'fav'  ? ' active' : '');
+            document.getElementById('btnAll').className       = 'filter-btn' + (filter === 'all'        ? ' active' : '');
+            document.getElementById('btnNew').className       = 'filter-btn' + (filter === 'new'        ? ' active' : '');
+            document.getElementById('btnSeen').className      = 'filter-btn' + (filter === 'seen'       ? ' active' : '');
+            document.getElementById('btnFav').className       = 'filter-btn' + (filter === 'fav'        ? ' active' : '');
+            document.getElementById('btnOtherUser').className = 'filter-btn' + (filter === 'just-other' ? ' active' : '');
 
             updateNewCount();
             loadPosts();
@@ -2059,19 +2046,52 @@ function youtubeThumb(url) {
             showToast(source ? `Source: ${SOURCE_LABELS[source] || source}` : 'All sources');
         };
 
-        window.filterByAuthor = function(author) {
-            // if called with no arg, toggle the other user
-            if (author === undefined) {
-                const other = currentUser === 'El' ? 'Tero' : 'El';
-                author = currentAuthor === other ? null : other;
+        // ---- NOTIFICATIONS ----
+        function sendNotification(title, body, tag) {
+            if (!notificationsEnabled) return;
+            if (Notification.permission !== 'granted') return;
+            if (document.hasFocus()) return;
+            new Notification(title, { body, tag, icon: '/favicon.ico' });
+        }
+
+        function updateNotifBtn() {
+            const btn = document.getElementById('notifBtn');
+            if (!btn) return;
+            btn.textContent = notificationsEnabled && Notification.permission === 'granted' ? '🔔' : '🔕';
+            btn.title = (notificationsEnabled && Notification.permission === 'granted')
+                ? 'Desktop notifications on — click to turn off'
+                : 'Click to enable desktop notifications';
+        }
+
+        window.toggleNotifications = async function() {
+            if (!('Notification' in window)) {
+                showToast('Notifications not supported in this browser');
+                return;
             }
-            currentAuthor = author;
-            const btn = document.getElementById('btnOtherUser');
-            btn.classList.toggle('active', !!author);
-            updateActiveFiltersBanner();
-            updateNewCount();
-            loadPosts();
+            if (notificationsEnabled && Notification.permission === 'granted') {
+                notificationsEnabled = false;
+                localStorage.setItem('notificationsEnabled', 'false');
+                updateNotifBtn();
+                showToast('Desktop notifications turned off');
+                return;
+            }
+            if (Notification.permission === 'denied') {
+                showToast('Notifications are blocked — allow them in your browser settings');
+                return;
+            }
+            const perm = await Notification.requestPermission();
+            if (perm === 'granted') {
+                notificationsEnabled = true;
+                localStorage.setItem('notificationsEnabled', 'true');
+                updateNotifBtn();
+                new Notification('Notifications enabled 💜', { body: "You'll be notified about new posts and messages." });
+            } else {
+                showToast('Notification permission denied');
+            }
         };
+
+        // Initialise button state after page loads
+        setTimeout(updateNotifBtn, 0);
 
         // ---- DATA ----
         onValue(postsRef, (snapshot) => {
@@ -2080,8 +2100,18 @@ function youtubeThumb(url) {
 
             if (!isInitialLoad && sig !== prevDataSig) {
                 sparkSound('ping');
+
+                // Desktop notification for brand-new posts
+                const newIds = Object.keys(newPosts).filter(id => !seenPostIds.has(id));
+                if (newIds.length > 0) {
+                    const p = newPosts[newIds[0]];
+                    const author = p.author || 'Someone';
+                    const label = p.note || p.url || 'A new post was shared';
+                    sendNotification(`New post from ${author} 💜`, label, 'new-post');
+                }
             }
 
+            seenPostIds = new Set(Object.keys(newPosts));
             prevDataSig = sig;
             isInitialLoad = false;
 
@@ -2558,11 +2588,14 @@ function youtubeThumb(url) {
 
             if (currentCollection) posts = posts.filter(p => p.collection === currentCollection);
             if (currentSource) posts = posts.filter(p => (p.source || detectSource(p.url)) === currentSource);
-            if (currentAuthor) posts = posts.filter(p => p.author === currentAuthor);
 
-            if (currentFilter === 'new')  posts = posts.filter(p => !isRead(p));
-            if (currentFilter === 'seen') posts = posts.filter(p =>  isRead(p));
-            if (currentFilter === 'fav')  posts = posts.filter(p => p.favoritedBy?.[currentUser]);
+            if (currentFilter === 'new')        posts = posts.filter(p => !isRead(p));
+            else if (currentFilter === 'seen')  posts = posts.filter(p =>  isRead(p));
+            else if (currentFilter === 'fav')   posts = posts.filter(p => p.favoritedBy?.[currentUser]);
+            else if (currentFilter === 'just-other') {
+                const other = currentUser === 'El' ? 'Tero' : 'El';
+                posts = posts.filter(p => p.author === other);
+            }
 
             if (searchQuery) {
                 posts = posts.filter(p => {
@@ -2601,6 +2634,10 @@ function youtubeThumb(url) {
                 } else if (currentFilter === 'seen') {
                     h3.textContent = 'No Seen Posts';
                     p.textContent  = 'Mark posts as seen and they\'ll appear here.';
+                } else if (currentFilter === 'just-other') {
+                    const other = currentUser === 'El' ? 'Tero' : 'El';
+                    h3.textContent = `No Posts from ${other}`;
+                    p.textContent  = `${other} hasn't shared anything yet.`;
                 } else {
                     h3.textContent = 'No Posts Yet';
                     p.textContent  = 'Start adding posts.';
@@ -2688,6 +2725,8 @@ function youtubeThumb(url) {
                 const newestAuthor = messages[messages.length - 1]?.author || '';
                 if (newest > lastChatSeenTs && newestAuthor && newestAuthor !== currentUser) {
                     sparkSound('chat');
+                    const lastMsg = messages[messages.length - 1];
+                    sendNotification(`💬 ${lastMsg.author}`, lastMsg.text, 'chat-message');
                 }
             }
 
