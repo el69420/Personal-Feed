@@ -1180,6 +1180,52 @@ body.dark-mode .chat-fab {
     white-space: pre-wrap;
     word-break: break-word;
     font-family: 'Nunito', sans-serif;
+    position: relative;
+}
+
+.chat-bubble.heartable { cursor: default; }
+
+/* Floating heart badge — sits in the bottom-right corner of the bubble */
+.heart-react {
+    position: absolute;
+    bottom: -11px;
+    right: -4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background: var(--card-bg, #fff);
+    border: 1px solid rgba(192, 132, 252, 0.35);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.13);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+    pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 2;
+}
+.heart-react.hint {
+    opacity: 0;
+    transform: scale(0.5);
+}
+.chat-bubble.heartable:hover .heart-react.hint {
+    opacity: 1;
+    transform: scale(1);
+}
+.heart-react.hearted {
+    opacity: 1;
+    transform: scale(1);
+    animation: heartPop 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes heartPop {
+    0%   { transform: scale(0.4); }
+    65%  { transform: scale(1.3); }
+    100% { transform: scale(1);   }
+}
+body.dark-mode .heart-react {
+    background: var(--card-bg, #1e0a3c);
+    border-color: rgba(192, 132, 252, 0.4);
 }
 
 /* Other person: purple-tinted bubbles, tail on bottom-left */
