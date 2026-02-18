@@ -790,7 +790,6 @@
                 <div class="form-field">
                     <label class="form-label">Collection</label>
                     <select id="collectionSelect">
-                        <option value="">No collection</option>
                         <option value="funny">😂 Funny</option>
                         <option value="cute">🥰 Cute</option>
                         <option value="news">📰 News</option>
@@ -875,10 +874,6 @@
             <h2 class="text-xl font-bold mb-1" style="color: var(--text-primary); letter-spacing: -0.02em;">🏷️ Change Category</h2>
             <p class="text-sm mb-4" style="color: var(--text-secondary);">Select a new category for this post</p>
             <div class="collections-grid" id="editCollectionsGrid">
-                <div class="collection-item" onclick="updatePostCollectionAndClose('', '')">
-                    <div class="text-2xl mb-1">✕</div>
-                    <div class="text-xs font-semibold" style="color: var(--text-primary);">None</div>
-                </div>
                 <div class="collection-item" onclick="updatePostCollectionAndClose('funny', '😂')">
                     <div class="text-2xl mb-1">😂</div>
                     <div class="text-xs font-semibold" style="color: var(--text-primary);">Funny</div>
@@ -1211,7 +1206,7 @@
                             <span class="${badgeClass}">${author} ${emoji}</span>
                             <span style="color: var(--text-secondary); font-size: 12px;">•</span>
                             <span style="color: var(--text-secondary); font-size: 12px; font-weight: 500;">${date}</span>
-                            ${post.collection ? `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '${post.collection}')" title="Click to change category">${getCollectionEmoji(post.collection)} ${post.collection}</button>` : '<button class="collection-badge" onclick="openEditCollectionModal(\'${post.id}\', \'\')" title="Click to add category">+ Add</button>'}
+                            ${post.collection ? `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '${post.collection}')" title="Click to change category">${getCollectionEmoji(post.collection)} ${post.collection}</button>` : `<button class="collection-badge" onclick="openEditCollectionModal('${post.id}', '')" title="Click to add category">+ Add category</button>`}
                             ${post.read ? '<span class="seen-dot" title="Seen"></span>' : ''}
                         </div>
                         <button class="delete-btn" onclick="deletePost('${post.id}')" title="Delete">
@@ -1269,6 +1264,10 @@
 
                     <div class="reply-section">
                         <div class="reply-input-row">
+                            <select id="reply-author-${post.id}" style="padding:8px 10px;border:1.5px solid var(--input-border);border-radius:20px;background:var(--input-bg);color:var(--text-primary);font-size:13px;font-family:'Inter',sans-serif;outline:none;flex-shrink:0;cursor:pointer;">
+                                <option value="El">El 💖</option>
+                                <option value="Tero">Tero 💜</option>
+                            </select>
                             <input type="text" id="reply-${post.id}" placeholder="Add a reply..." class="reply-input">
                             <button onclick="addReply('${post.id}')" class="reply-send-btn" title="Send">
                                 <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24">
@@ -1305,7 +1304,7 @@
             const text  = input.value.trim();
             if (!text) { alert('Please enter a reply'); return; }
 
-            const author  = 'El';
+            const author  = document.getElementById(`reply-author-${postId}`).value;
             const post    = allPosts[postId];
             const replies = post.replies || [];
             replies.push({ author, text, timestamp: Date.now() });
