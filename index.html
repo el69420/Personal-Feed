@@ -371,8 +371,51 @@
             padding: 8px 12px;
             background: rgba(192, 132, 252, 0.07);
             border-radius: 12px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             border-left: 2px solid rgba(168, 85, 247, 0.5);
+        }
+
+        .reply-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .reply-btn {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.15s;
+            opacity: 0.6;
+        }
+
+        .reply-btn:hover {
+            background: rgba(168, 85, 247, 0.1);
+            color: #a855f7;
+            opacity: 1;
+        }
+
+        .reply-child {
+            margin-left: 16px;
+            border-left: 2px solid rgba(168, 85, 247, 0.25);
+            background: rgba(192, 132, 252, 0.04);
+        }
+
+        .inline-reply-form {
+            margin-left: 16px;
+            margin-top: 4px;
+            margin-bottom: 6px;
+            padding: 10px 12px;
+            background: rgba(192, 132, 252, 0.06);
+            border-radius: 12px;
+            border: 1px dashed rgba(192, 132, 252, 0.3);
         }
 
         .reply-input-row {
@@ -1194,6 +1237,87 @@
             setTimeout(() => window.twttr?.widgets?.load(), 100);
         }
 
+        function renderReplies(postId, replies) {
+            if (replies.length === 0) return '';
+
+            // Assign temp ids to old replies that don't have one
+            const withIds = replies.map((r, i) => ({ ...r, id: r.id || `${postId}_${i}` }));
+            const topLevel = withIds.filter(r => !r.replyToId);
+            const byParent = {};
+            withIds.filter(r => r.replyToId).forEach(r => {
+                (byParent[r.replyToId] = byParent[r.replyToId] || []).push(r);
+            });
+
+            const renderItem = (reply, isChild) => {
+                const ae = reply.author === 'Tero' ? '💜' : '💖';
+                const children = !isChild ? (byParent[reply.id] || []) : [];
+                return `
+                    <div class="reply-item${isChild ? ' reply-child' : ''}">
+                        <div class="reply-item-header">
+                            <span style="font-size:11px;font-weight:700;color:var(--text-secondary);">${reply.author} ${ae}</span>
+                            ${!isChild ? `<button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}','${reply.author}')">↩ Reply</button>` : ''}
+                        </div>
+                        <div style="font-size:13px;color:var(--text-primary);line-height:1.55;">${reply.text}</div>
+                    </div>
+                    ${children.map(c => renderItem(c, true)).join('')}
+                    <div id="inline-reply-${postId}-${reply.id}" class="inline-reply-form hidden">
+                        <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">↩ Replying to ${reply.author}</div>
+                        <div class="reply-input-row">
+                            <select id="inline-author-${postId}-${reply.id}" style="padding:8px 10px;border:1.5px solid var(--input-border);border-radius:20px;background:var(--input-bg);color:var(--text-primary);font-size:13px;font-family:'Inter',sans-serif;outline:none;flex-shrink:0;cursor:pointer;">
+                                <option value="El">El 💖</option>
+                                <option value="Tero">Tero 💜</option>
+                            </select>
+                            <input type="text" id="inline-input-${postId}-${reply.id}" placeholder="Reply to ${reply.author}..." class="reply-input"
+                                onkeydown="if(event.key==='Enter')submitInlineReply('${postId}','${reply.id}')">
+                            <button onclick="submitInlineReply('${postId}','${reply.id}')" class="reply-send-btn" title="Send">
+                                <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            };
+
+            return `
+                <div class="reply-section">
+                    <div class="divider-text">💬 Replies</div>
+                    ${topLevel.map(r => renderItem(r, false)).join('')}
+                </div>
+            `;
+        }
+
+        window.openInlineReply = function(postId, replyId, replyToAuthor) {
+            const form = document.getElementById(`inline-reply-${postId}-${replyId}`);
+            if (!form) return;
+            const isHidden = form.classList.contains('hidden');
+            // Close all inline reply forms for this post
+            document.querySelectorAll(`[id^="inline-reply-${postId}-"]`).forEach(el => el.classList.add('hidden'));
+            if (isHidden) {
+                form.classList.remove('hidden');
+                document.getElementById(`inline-input-${postId}-${replyId}`)?.focus();
+            }
+        }
+
+        window.submitInlineReply = async function(postId, replyToId) {
+            const input  = document.getElementById(`inline-input-${postId}-${replyToId}`);
+            const author = document.getElementById(`inline-author-${postId}-${replyToId}`).value;
+            const text   = input.value.trim();
+            if (!text) return;
+            const post    = allPosts[postId];
+            const replies = post.replies || [];
+            replies.push({
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+                author, text,
+                timestamp: Date.now(),
+                replyToId
+            });
+            await update(ref(database, `posts/${postId}`), { replies });
+            input.value = '';
+            document.getElementById(`inline-reply-${postId}-${replyToId}`).classList.add('hidden');
+            showToast('Reply added! 💬');
+        }
+
         function getCollectionEmoji(collection) {
             return { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' }[collection] || '';
         }
@@ -1263,16 +1387,7 @@
                         }).join('')}
                     </div>
 
-                    ${replies.length > 0 ? `
-                    <div class="reply-section">
-                        <div class="divider-text">💬 Replies</div>
-                        ${replies.map(reply => `
-                            <div class="reply-item">
-                                <div style="font-size: 11px; font-weight: 700; margin-bottom: 3px; color: var(--text-secondary);">${reply.author} ${reply.author === 'Tero' ? '💜' : '💖'}</div>
-                                <div style="font-size: 13px; color: var(--text-primary); line-height: 1.55;">${reply.text}</div>
-                            </div>
-                        `).join('')}
-                    </div>` : ''}
+                    ${renderReplies(post.id, replies)}
 
                     <div class="reply-section">
                         <div class="reply-input-row">
@@ -1319,7 +1434,12 @@
             const author  = document.getElementById(`reply-author-${postId}`).value;
             const post    = allPosts[postId];
             const replies = post.replies || [];
-            replies.push({ author, text, timestamp: Date.now() });
+            replies.push({
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+                author, text,
+                timestamp: Date.now(),
+                replyToId: null
+            });
 
             await update(ref(database, `posts/${postId}`), { replies });
             input.value = '';
