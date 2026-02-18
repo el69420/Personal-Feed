@@ -63,6 +63,10 @@
 
         * { box-sizing: border-box; }
 
+        html {
+            background-color: #2d1555; /* prevents white flash on iOS overscroll */
+        }
+
         body {
             font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid1) 25%, var(--bg-gradient-mid2) 50%, var(--bg-gradient-end) 75%, var(--bg-gradient-mid1) 100%);
@@ -109,7 +113,7 @@
             pointer-events: none;
             z-index: 9999;
             font-size: 20px;
-            transition: transform 0.1s ease;
+            transform: translate(-50%, -50%);
             filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
         }
 
@@ -117,16 +121,15 @@
             position: fixed;
             pointer-events: none;
             z-index: 9998;
-            font-family: monospace;
-            color: #fff;
-            font-size: 14px;
-            animation: starFade 0.8s ease-out forwards;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            line-height: 1;
+            animation: starFade 1.4s ease-out forwards;
+            filter: drop-shadow(0 0 5px currentColor);
         }
 
         @keyframes starFade {
-            0%   { opacity: 1; transform: scale(1) rotate(0deg); }
-            100% { opacity: 0; transform: scale(0.5) rotate(180deg) translateY(20px); }
+            0%   { opacity: 1;   transform: scale(1)   translateY(0px)   rotate(0deg); }
+            35%  { opacity: 0.9; }
+            100% { opacity: 0;   transform: scale(0.2) translateY(-40px) rotate(450deg); }
         }
 
         .particle {
@@ -1770,26 +1773,28 @@ function youtubeThumb(url) {
 
         // Cursor
         const cursor = document.getElementById('cursor');
-        const starChars = ['✦', '✧', '⋆', '✵', '✶', '✷', '✸', '✹', '*', '∗'];
+        const starChars = ['✦', '✧', '⋆', '✵', '✿', '❋', '✽', '♡', '✨', '⭐', '🌸', '💫', '🌟', '✶'];
+        const trailColors = ['#f9a8d4', '#e879f9', '#c084fc', '#a78bfa', '#fbcfe8', '#fde68a', '#fff', '#f0abfc'];
         let trailCounter = 0;
 
         document.addEventListener('mousemove', (e) => {
             cursor.style.left = e.clientX + 'px';
             cursor.style.top = e.clientY + 'px';
             trailCounter++;
-            if (trailCounter % 3 === 0) createStarTrail(e.clientX, e.clientY);
+            if (trailCounter % 2 === 0) createStarTrail(e.clientX, e.clientY);
         });
 
         function createStarTrail(x, y) {
             const trail = document.createElement('div');
             trail.className = 'star-trail';
             trail.textContent = starChars[Math.floor(Math.random() * starChars.length)];
-            trail.style.left = (x - 7) + 'px';
-            trail.style.top = (y - 7) + 'px';
-            const colors = ['#c084fc', '#e879f9', '#f0abfc', '#fae8ff', '#fff'];
-            trail.style.color = colors[Math.floor(Math.random() * colors.length)];
+            const size = Math.random() * 10 + 10;
+            trail.style.fontSize = size + 'px';
+            trail.style.left = (x - size / 2 + (Math.random() - 0.5) * 12) + 'px';
+            trail.style.top  = (y - size / 2 + (Math.random() - 0.5) * 12) + 'px';
+            trail.style.color = trailColors[Math.floor(Math.random() * trailColors.length)];
             document.body.appendChild(trail);
-            setTimeout(() => trail.remove(), 800);
+            setTimeout(() => trail.remove(), 1400);
         }
 
         function createParticles() {
@@ -2189,7 +2194,7 @@ function youtubeThumb(url) {
             document.querySelectorAll(`[id^="inline-reply-${postId}-"]`).forEach(el => el.classList.add('hidden'));
             if (isHidden) {
                 form.classList.remove('hidden');
-                document.getElementById(`inline-input-${postId}-${replyId}`)?.focus();
+                document.getElementById(`inline-input-${postId}-${replyId}`)?.focus({ preventScroll: true });
             }
         };
 
@@ -2566,7 +2571,9 @@ function youtubeThumb(url) {
             }
 
             emptyState.classList.add('hidden');
+            const savedScroll = window.scrollY;
             container.innerHTML = posts.map(createPostCard).join('');
+            window.scrollTo({ top: savedScroll, behavior: 'instant' });
 
             setTimeout(() => {
                 window.twttr?.widgets?.load?.();
