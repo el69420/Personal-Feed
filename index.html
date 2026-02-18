@@ -22,28 +22,6 @@
             --text-secondary: #6b7280;
             --input-bg: #fff;
             --input-border: rgba(192, 132, 252, 0.35);
-
-            .edit-pill {
-    font-size: 11px;
-    font-weight: 900;
-    color: rgba(124, 58, 237, 0.9);
-    background: rgba(192, 132, 252, 0.18);
-    border: 1px solid rgba(192, 132, 252, 0.35);
-    padding: 2px 8px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: transform 0.12s ease, background 0.12s ease;
-}
-body.dark-mode .edit-pill {
-    color: rgba(192, 132, 252, 0.95);
-    background: rgba(139, 92, 246, 0.16);
-    border-color: rgba(139, 92, 246, 0.38);
-}
-.edit-pill:hover {
-    transform: scale(1.04);
-    background: rgba(192, 132, 252, 0.26);
-}
-
         }
 
         body.dark-mode {
@@ -58,6 +36,29 @@ body.dark-mode .edit-pill {
             --text-secondary: #9d8fc8;
             --input-bg: rgba(30, 17, 65, 0.9);
             --input-border: rgba(139, 92, 246, 0.4);
+        }
+
+        .edit-pill {
+            font-size: 11px;
+            font-weight: 900;
+            color: rgba(124, 58, 237, 0.9);
+            background: rgba(192, 132, 252, 0.18);
+            border: 1px solid rgba(192, 132, 252, 0.35);
+            padding: 2px 8px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: transform 0.12s ease, background 0.12s ease;
+        }
+
+        body.dark-mode .edit-pill {
+            color: rgba(192, 132, 252, 0.95);
+            background: rgba(139, 92, 246, 0.16);
+            border-color: rgba(139, 92, 246, 0.38);
+        }
+
+        .edit-pill:hover {
+            transform: scale(1.04);
+            background: rgba(192, 132, 252, 0.26);
         }
 
         * { box-sizing: border-box; }
@@ -891,47 +892,6 @@ body.dark-mode .edit-pill {
             margin-bottom: 8px;
         }
 
-        <!-- Edit Modal -->
-<div id="editModal" class="modal" onclick="if(event.target.id==='editModal') closeEditModal()">
-  <div class="modal-content">
-    <button class="modal-x" onclick="closeEditModal()" title="Close">✕</button>
-    <h2 id="editModalTitle" class="text-2xl font-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.02em;">Edit</h2>
-    <p id="editModalSub" class="text-sm mb-5" style="color: var(--text-secondary);">Make your changes, then save.</p>
-
-    <div class="space-y-4">
-      <div class="form-field">
-        <label id="editModalLabel" class="form-label">Text</label>
-        <textarea id="editModalText" rows="5" placeholder="Edit..."></textarea>
-      </div>
-
-      <div style="display:flex;gap:10px;">
-        <button onclick="saveEdit()" class="btn-primary flex-1 py-3 text-sm font-semibold rounded-xl">Save</button>
-        <button onclick="closeEditModal()" class="btn-secondary px-5 py-3 text-sm font-semibold rounded-xl">Cancel</button>
-      </div>
-
-      <div id="editModalHint" style="font-size:11px;color:var(--text-secondary);opacity:0.75;line-height:1.5;"></div>
-    </div>
-  </div>
-</div>
-
-<!-- History Modal -->
-<div id="historyModal" class="modal" onclick="if(event.target.id==='historyModal') closeHistoryModal()">
-  <div class="modal-content">
-    <button class="modal-x" onclick="closeHistoryModal()" title="Close">✕</button>
-    <h2 class="text-2xl font-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.02em;">Original</h2>
-    <p id="historyMeta" class="text-sm mb-4" style="color: var(--text-secondary);"></p>
-
-    <div style="background: rgba(147, 51, 234, 0.06); border: 1px solid rgba(192, 132, 252, 0.18); border-radius: 16px; padding: 14px;">
-      <div id="historyText" style="white-space: pre-wrap; font-size: 14px; color: var(--text-primary); line-height: 1.65;"></div>
-    </div>
-
-    <div style="margin-top:12px;display:flex;justify-content:flex-end;">
-      <button onclick="closeHistoryModal()" class="btn-secondary px-5 py-3 text-sm font-semibold rounded-xl">Close</button>
-    </div>
-  </div>
-</div>
-
-
         /* Chat widget */
         .chat-fab {
             position: fixed;
@@ -1330,6 +1290,21 @@ body.dark-mode .edit-pill {
         </div>
     </div>
 
+    <!-- History Modal -->
+    <div id="historyModal" class="modal" onclick="if(event.target.id==='historyModal') closeHistoryModal()">
+        <div class="modal-content">
+            <button class="modal-x" onclick="closeHistoryModal()" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-2" style="color: var(--text-primary); letter-spacing: -0.02em; font-family:'Nunito',sans-serif;">Original</h2>
+            <p id="historyMeta" class="text-sm mb-4" style="color: var(--text-secondary); font-family:'Nunito',sans-serif; font-weight:800;"></p>
+            <div style="background: rgba(147, 51, 234, 0.06); border: 1px solid rgba(192, 132, 252, 0.18); border-radius: 16px; padding: 14px;">
+                <div id="historyText" style="white-space: pre-wrap; font-size: 14px; color: var(--text-primary); line-height: 1.65; font-family:'Nunito',sans-serif;"></div>
+            </div>
+            <div style="margin-top:12px;display:flex;justify-content:flex-end;">
+                <button onclick="closeHistoryModal()" class="btn-secondary px-5 py-3 text-sm font-semibold rounded-xl">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Chat widget -->
     <button class="chat-fab" onclick="toggleChat()">
         💬 Chat <span id="chatUnread" class="new-badge hidden">0</span>
@@ -1660,113 +1635,29 @@ particle.style.animationDuration = (Math.random() * 28 + 26) + 's'; // much slow
 
 
         window.openEditPost = function(postId) {
-    const post = allPosts[postId];
-    if (!post) return;
-    if (post.author !== currentUser) return;
+            const post = allPosts[postId];
+            if (!post || post.author !== currentUser) return;
+            openEditModal('Edit note', post.note || '', { type: 'post', postId });
+        };
 
-    editState = { type: 'post', postId };
-    document.getElementById('editModalTitle').textContent = 'Edit post note';
-    document.getElementById('editModalSub').textContent = 'Update your note, then save.';
-    document.getElementById('editModalLabel').textContent = 'Note';
-    document.getElementById('editModalText').value = post.note || '';
-    document.getElementById('editModalHint').textContent = 'This can only be edited by the author.';
-    document.getElementById('editModal').classList.add('show');
-    setTimeout(() => document.getElementById('editModalText')?.focus(), 80);
-};
+        window.openEditComment = function(postId, replyId) {
+            const post = allPosts[postId];
+            if (!post) return;
+            const reply = (post.replies || []).find(r => r.id === replyId);
+            if (!reply || reply.author !== currentUser) return;
+            openEditModal('Edit comment', reply.text || '', { type: 'reply', postId, replyId });
+        };
 
-window.openEditComment = function(postId, replyId) {
-    const post = allPosts[postId];
-    if (!post) return;
-    const reply = (post.replies || []).find(r => r.id === replyId);
-    if (!reply) return;
-    if (reply.author !== currentUser) return;
+        window.openHistory = function(payloadJson) {
+            const p = JSON.parse(payloadJson || '{}');
+            document.getElementById('historyMeta').textContent = p.meta || '';
+            document.getElementById('historyText').textContent = p.text || '';
+            document.getElementById('historyModal').classList.add('show');
+        };
 
-    editState = { type: 'reply', postId, replyId };
-    document.getElementById('editModalTitle').textContent = 'Edit comment';
-    document.getElementById('editModalSub').textContent = 'Update your comment, then save.';
-    document.getElementById('editModalLabel').textContent = 'Comment';
-    document.getElementById('editModalText').value = reply.text || '';
-    document.getElementById('editModalHint').textContent = 'This can only be edited by the author.';
-    document.getElementById('editModal').classList.add('show');
-    setTimeout(() => document.getElementById('editModalText')?.focus(), 80);
-};
-
-window.closeEditModal = function() {
-    document.getElementById('editModal').classList.remove('show');
-    editState = null;
-};
-
-window.openHistory = function(payloadJson) {
-    const p = JSON.parse(payloadJson || '{}');
-    document.getElementById('historyMeta').textContent = p.meta || '';
-    document.getElementById('historyText').textContent = p.text || '';
-    document.getElementById('historyModal').classList.add('show');
-};
-
-window.closeHistoryModal = function() {
-    document.getElementById('historyModal').classList.remove('show');
-};
-
-window.saveEdit = async function() {
-    if (!editState) return;
-    const text = document.getElementById('editModalText').value;
-
-    if (editState.type === 'post') {
-        const { postId } = editState;
-        const post = allPosts[postId];
-        if (!post || post.author !== currentUser) return;
-
-        const originalNote = (post.editHistory && post.editHistory.originalNote !== undefined)
-            ? post.editHistory.originalNote
-            : (post.note || '');
-
-        const originalTs = (post.editHistory && post.editHistory.originalTs)
-            ? post.editHistory.originalTs
-            : (post.timestamp || Date.now());
-
-        await update(ref(database, `posts/${postId}`), {
-            note: text,
-            editedAt: Date.now(),
-            editHistory: { originalNote, originalTs }
-        });
-
-        showToast('Post updated');
-        closeEditModal();
-        return;
-    }
-
-    if (editState.type === 'reply') {
-        const { postId, replyId } = editState;
-        const post = allPosts[postId];
-        if (!post) return;
-
-        const replies = (post.replies || []).map(r => {
-            if (r.id !== replyId) return r;
-            if (r.author !== currentUser) return r;
-
-            const originalText = (r.editHistory && r.editHistory.originalText !== undefined)
-                ? r.editHistory.originalText
-                : (r.text || '');
-
-            const originalTs = (r.editHistory && r.editHistory.originalTs)
-                ? r.editHistory.originalTs
-                : (r.timestamp || Date.now());
-
-            return {
-                ...r,
-                text,
-                editedAt: Date.now(),
-                editHistory: { originalText, originalTs }
-            };
-        });
-
-        await update(ref(database, `posts/${postId}`), { replies });
-
-        showToast('Comment updated');
-        closeEditModal();
-        return;
-    }
-};
+        window.closeHistoryModal = function() {
+            document.getElementById('historyModal').classList.remove('show');
+        };
 
         window.openAddPostModal = function() {
             document.getElementById('addPostModal').classList.add('show');
@@ -2128,14 +2019,7 @@ window.saveEdit = async function() {
                             </div>
 
                             <div style="display:flex;align-items:center;gap:6px;">
-                                <div class="reply-actions">
-  <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}')">↩ Reply</button>
-  ${(reply.author === currentUser) ? `
-    <button class="reply-btn" onclick="openEditComment('${postId}','${reply.id}')" title="Edit">✏️</button>
-  ` : ''}
-</div>
-
-
+                                <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}')">↩ Reply</button>
                                 ${reply.author === currentUser ? `
                                     <button class="reply-btn" onclick="openEditModal('Edit comment', ${JSON.stringify(reply.text || '')}, {type:'reply', postId:'${postId}', replyId:'${reply.id}'})" title="Edit">✏️</button>
                                     <button class="reply-btn" onclick="openDeleteModal({type:'reply', postId:'${postId}', replyId:'${reply.id}'})" title="Delete">✕</button>
@@ -2308,19 +2192,12 @@ window.saveEdit = async function() {
 
                         ${post.author === currentUser ? `
                             <div style="display:flex;gap:6px;align-items:center;">
-                                <div style="display:flex;gap:6px;align-items:center;">
-  ${(post.author === currentUser) ? `
-    <button class="icon-btn" onclick="openEditPost('${post.id}')" title="Edit">
-      ✏️
-    </button>
-    <button class="icon-btn delete-btn" onclick="deletePost('${post.id}')" title="Delete">
-      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-      </svg>
-    </button>
-  ` : ''}
-</div>
-
+                                <button class="icon-btn" onclick="openEditModal('Edit note', ${JSON.stringify(post.note || '')}, {type:'post', postId:'${post.id}'})" title="Edit">✏️</button>
+                                <button class="icon-btn delete-btn" onclick="deletePost('${post.id}')" title="Delete">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
                             </div>
                         ` : ''}
                     </div>
@@ -2461,7 +2338,7 @@ window.saveEdit = async function() {
             const raw = snapshot.val() || {};
             const messages = Object.entries(raw)
                 .map(([id, m]) => ({ id, ...m }))
-                .sort((a,b) => (a.timestamp || 0) - (a.timestamp || 0));
+                .sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
             lastChatMessages = messages;
 
 
