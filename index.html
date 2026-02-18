@@ -652,6 +652,31 @@
             cursor: pointer;
             transition: all 0.15s;
             margin: 8px 14px 4px;
+            position: relative;
+        }
+        .watch-later-btn::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%) scale(0.92);
+            background: rgba(15, 5, 35, 0.88);
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 10px;
+            padding: 4px 9px;
+            border-radius: 7px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s, transform 0.12s;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            border: 1px solid rgba(168, 85, 247, 0.25);
+            z-index: 10;
+        }
+        .watch-later-btn:hover::after {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
         }
         .watch-later-btn:hover {
             background: rgba(168, 85, 247, 0.1);
@@ -2467,7 +2492,7 @@ function youtubeThumb(url) {
                         </svg>
                     </div>
                 </a>
-                <button class="watch-later-btn${isWL ? ' active' : ''}" onclick="toggleWatchLater('${safeText(post.id)}')">
+                <button class="watch-later-btn${isWL ? ' active' : ''}" onclick="toggleWatchLater('${safeText(post.id)}')" data-tooltip="${isWL ? 'Click to remove' : 'Save to Watch Later'}">
                     🕐 ${isWL ? 'In Watch Later' : 'Watch Later'}
                 </button>
             `;
