@@ -1609,11 +1609,14 @@ function youtubeThumb(url) {
         function createParticles() {
             const purpleEmojis = ['💜', '✨', '💫', '⭐', '🌟', '✦', '🔮', '🪻'];
             for (let i = 0; i < 65; i++) {
-...
-particle.style.fontSize = (Math.random() * 10 + 10) + 'px';     // smaller
-particle.style.animationDelay = (Math.random() * 10) + 's';
-particle.style.animationDuration = (Math.random() * 28 + 26) + 's'; // much slower
-
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.textContent = purpleEmojis[Math.floor(Math.random() * purpleEmojis.length)];
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.fontSize = (Math.random() * 10 + 10) + 'px';
+                particle.style.animationDelay = (Math.random() * 10) + 's';
+                particle.style.animationDuration = (Math.random() * 28 + 26) + 's';
                 document.body.appendChild(particle);
             }
         }
