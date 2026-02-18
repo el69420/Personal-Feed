@@ -715,7 +715,6 @@
             border-radius: 22px;
             box-shadow: 0 4px 32px rgba(109, 40, 217, 0.15);
             padding: 28px;
-            margin-bottom: 28px;
             border: 1px solid var(--card-border);
         }
 
@@ -789,6 +788,41 @@
             border: 1px solid var(--card-border);
             position: relative;
             z-index: 1001;
+        }
+
+        /* Close button for modals */
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, transform 0.15s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+
+        body.dark-mode .modal-close {
+            background: rgba(147, 51, 234, 0.14);
+            border-color: rgba(139, 92, 246, 0.25);
+            color: #ede9fe;
+        }
+
+        body.modal-open {
+            overflow: hidden;
         }
 
         .collections-grid {
@@ -917,36 +951,6 @@
             <button onclick="markAllSeen()" id="btnMarkAll" class="mark-all-btn hidden">✓ Mark All Seen</button>
         </div>
 
-        <!-- Add Post Section -->
-        <div id="addSection" class="hidden add-section">
-            <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary); letter-spacing: -0.02em;">Add a Post 💜</h2>
-            <div class="space-y-5">
-                <div class="form-field">
-                    <label class="form-label">Post URL</label>
-                    <input type="url" id="postUrl" placeholder="https://...">
-                </div>
-                <div class="form-field">
-                    <label class="form-label">Collection</label>
-                    <select id="collectionSelect">
-                        <option value="funny">😂 Funny</option>
-                        <option value="cute">🥰 Cute</option>
-                        <option value="news">📰 News</option>
-                        <option value="inspiration">✨ Inspiration</option>
-                        <option value="music">🎵 Music</option>
-                        <option value="idiot-drivers">🚗 Idiot Drivers</option>
-                        <option value="other">📌 Other</option>
-                    </select>
-                </div>
-                <div class="form-field">
-                    <label class="form-label">Note (Optional)</label>
-                    <textarea id="postNote" placeholder="Why you thought they'd like this..." rows="3"></textarea>
-                </div>
-                <button onclick="addPost()" class="btn-primary w-full py-4 text-base font-bold rounded-xl">
-                    ✨ Add to Feed
-                </button>
-            </div>
-        </div>
-
         <!-- Feed Section -->
         <div id="feedSection" class="space-y-5">
             <div id="postsContainer" class="space-y-5"></div>
@@ -957,6 +961,42 @@
                 <button onclick="document.getElementById('addPostBtn').click()" class="btn-primary px-8 py-3 text-sm font-semibold rounded-full">
                     Make a new post!
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Post Modal -->
+    <div id="addPostModal" class="modal">
+        <div class="modal-content" style="max-width: 520px;" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeAddPostModal()" aria-label="Close">✕</button>
+
+            <div class="add-section" style="padding: 0; box-shadow: none; border: none; background: transparent;">
+                <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary); letter-spacing: -0.02em;">Add a Post 💜</h2>
+                <div class="space-y-5">
+                    <div class="form-field">
+                        <label class="form-label">Post URL</label>
+                        <input type="url" id="postUrl" placeholder="https://...">
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Collection</label>
+                        <select id="collectionSelect">
+                            <option value="funny">😂 Funny</option>
+                            <option value="cute">🥰 Cute</option>
+                            <option value="news">📰 News</option>
+                            <option value="inspiration">✨ Inspiration</option>
+                            <option value="music">🎵 Music</option>
+                            <option value="idiot-drivers">🚗 Idiot Drivers</option>
+                            <option value="other">📌 Other</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label">Note (Optional)</label>
+                        <textarea id="postNote" placeholder="Why you thought they'd like this..." rows="3"></textarea>
+                    </div>
+                    <button onclick="addPost()" class="btn-primary w-full py-4 text-base font-bold rounded-xl">
+                        ✨ Add to Feed
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1067,7 +1107,6 @@
         const database = getDatabase(app);
         const postsRef = ref(database, 'posts');
 
-        let currentView = 'feed';
         let currentFilter = 'all';
         let currentCollection = null;
         let allPosts = {};
@@ -1125,7 +1164,6 @@
         window.login = function(user) {
             currentUser = user;
             localStorage.setItem('currentUser', user);
-            // Initialise AudioContext inside a user gesture so browsers allow it
             if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             document.getElementById('loginOverlay').style.display = 'none';
             const emoji = user === 'El' ? '💖' : '💜';
@@ -1140,7 +1178,6 @@
             document.getElementById('loginOverlay').style.display = 'flex';
         }
 
-        // Per-user read state helper (backwards-compatible with old boolean `read` field)
         function isRead(post) {
             if (post.readBy) return !!(post.readBy[currentUser]);
             return !!post.read;
@@ -1235,29 +1272,43 @@
             }
         }
 
+        // ---- ADD POST MODAL ----
+        function openAddPostModal() {
+            const m = document.getElementById('addPostModal');
+            m.classList.add('show');
+            document.body.classList.add('modal-open');
+            document.getElementById('addPostBtn').classList.add('active');
+            setTimeout(() => document.getElementById('postUrl')?.focus(), 50);
+        }
+
+        function closeAddPostModal() {
+            const m = document.getElementById('addPostModal');
+            m.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            document.getElementById('addPostBtn').classList.remove('active');
+        }
+
+        // Make available to inline onclick handlers
+        window.closeAddPostModal = closeAddPostModal;
+
+        // Click Add Post opens modal
         document.getElementById('addPostBtn').addEventListener('click', () => {
-            currentView = 'add';
-            updateView();
+            openAddPostModal();
         });
 
-        function updateView() {
-            const addSection = document.getElementById('addSection');
-            const feedSection = document.getElementById('feedSection');
-            const filterButtons = document.getElementById('filterButtons');
-            const addBtn = document.getElementById('addPostBtn');
+        // Clicking backdrop closes
+        document.getElementById('addPostModal').addEventListener('click', (e) => {
+            if (e.target.id === 'addPostModal') closeAddPostModal();
+        });
 
-            if (currentView === 'add') {
-                addSection.classList.remove('hidden');
-                feedSection.classList.add('hidden');
-                filterButtons.classList.add('hidden');
-                addBtn.classList.add('active');
-            } else {
-                addSection.classList.add('hidden');
-                feedSection.classList.remove('hidden');
-                filterButtons.classList.remove('hidden');
-                addBtn.classList.remove('active');
+        // Esc closes
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (document.getElementById('addPostModal').classList.contains('show')) closeAddPostModal();
+                if (document.getElementById('collectionsModal').classList.contains('show')) closeCollectionsModal();
+                if (document.getElementById('editCollectionModal').classList.contains('show')) closeEditCollectionModal();
             }
-        }
+        });
 
         window.setFilter = function(filter) {
             currentFilter = filter;
@@ -1297,12 +1348,11 @@
                 });
                 document.getElementById('postUrl').value = '';
                 document.getElementById('postNote').value = '';
-                document.getElementById('collectionSelect').value = '';
+                document.getElementById('collectionSelect').value = 'funny';
                 showToast('Post added! ✨💜');
                 setTimeout(() => {
-                    currentView = 'feed';
-                    updateView();
-                }, 1200);
+                    closeAddPostModal();
+                }, 500);
             } catch (error) {
                 alert('Failed to add post. Check your internet connection.');
             }
@@ -1310,10 +1360,15 @@
 
         window.openCollectionsModal = function() {
             document.getElementById('collectionsModal').classList.add('show');
+            document.body.classList.add('modal-open');
         }
 
         window.closeCollectionsModal = function() {
             document.getElementById('collectionsModal').classList.remove('show');
+            if (
+                !document.getElementById('addPostModal').classList.contains('show') &&
+                !document.getElementById('editCollectionModal').classList.contains('show')
+            ) document.body.classList.remove('modal-open');
         }
 
         let editingPostId = null;
@@ -1321,11 +1376,16 @@
         window.openEditCollectionModal = function(postId, currentCollection) {
             editingPostId = postId;
             document.getElementById('editCollectionModal').classList.add('show');
+            document.body.classList.add('modal-open');
         }
 
         window.closeEditCollectionModal = function() {
             document.getElementById('editCollectionModal').classList.remove('show');
             editingPostId = null;
+            if (
+                !document.getElementById('addPostModal').classList.contains('show') &&
+                !document.getElementById('collectionsModal').classList.contains('show')
+            ) document.body.classList.remove('modal-open');
         }
 
         window.updatePostCollectionAndClose = async function(collection, emoji) {
@@ -1355,7 +1415,6 @@
                 document.getElementById('categoryEmoji').textContent = emojis[collection] || '📁';
                 document.getElementById('categoryName').textContent  = labels[collection] || collection;
                 indicator.classList.remove('hidden');
-                // No filter is active while browsing a category
                 document.getElementById('btnNew').className  = 'filter-btn';
                 document.getElementById('btnSeen').className = 'filter-btn';
                 document.getElementById('btnAll').className  = 'filter-btn';
@@ -1415,7 +1474,6 @@
         function renderReplies(postId, replies) {
             if (replies.length === 0) return '';
 
-            // Assign temp ids to old replies that don't have one
             const withIds = replies.map((r, i) => ({ ...r, id: r.id || `${postId}_${i}` }));
             const topLevel = withIds.filter(r => !r.replyToId);
             const byParent = {};
@@ -1474,7 +1532,6 @@
             const form = document.getElementById(`inline-reply-${postId}-${replyId}`);
             if (!form) return;
             const isHidden = form.classList.contains('hidden');
-            // Close all inline reply forms for this post
             document.querySelectorAll(`[id^="inline-reply-${postId}-"]`).forEach(el => el.classList.add('hidden'));
             if (isHidden) {
                 form.classList.remove('hidden');
@@ -1674,4 +1731,3 @@
     </script>
 </body>
 </html>
-
