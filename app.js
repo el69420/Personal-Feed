@@ -343,8 +343,8 @@ window.clearAllExtraFilters = function() {
 // Map each authorised Google account email → display name used throughout the app.
 // Edit the two email addresses below — nothing else needs to change.
 const ALLOWED_USERS = {
-    'YOUR_EMAIL@gmail.com':   'El',
-    'THEIR_EMAIL@gmail.com':  'Tero',
+    'elliotpeep@gmail.com':  'El',
+    'a.fduarte1@gmail.com':  'Tero',
 };
 
 // ---- AUTH ----

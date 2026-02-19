@@ -12,7 +12,7 @@
     // rules do not support dynamic allowlist lookups.
     // -------------------------------------------------------
 
-    ".read":  "auth != null && (auth.token.email === 'YOUR_EMAIL@gmail.com' || auth.token.email === 'THEIR_EMAIL@gmail.com')",
-    ".write": "auth != null && (auth.token.email === 'YOUR_EMAIL@gmail.com' || auth.token.email === 'THEIR_EMAIL@gmail.com')"
+    ".read":  "auth != null && (auth.token.email === 'elliotpeep@gmail.com' || auth.token.email === 'a.fduarte1@gmail.com')",
+    ".write": "auth != null && (auth.token.email === 'elliotpeep@gmail.com' || auth.token.email === 'a.fduarte1@gmail.com')"
   }
 }
