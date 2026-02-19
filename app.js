@@ -1279,7 +1279,7 @@ window.toggleCommentReaction = async function(postId, replyId, emoji, btn) {
     if (newReply) {
         const rxEl = document.getElementById(`comment-rx-${postId}-${replyId}`);
         if (rxEl) {
-            const cmtEmojis = ['❤️', '😂', '😮', '🔥'];
+            const cmtEmojis = ['❤️', '😂', '😮', '🔥', '😭', '🥹'];
             rxEl.innerHTML = cmtEmojis.map(e => {
                 const rxBy = newReply.reactionsBy || {};
                 const users = Object.keys(rxBy[e] || {});
@@ -1377,7 +1377,7 @@ function renderReplies(postId, replies) {
         (byParent[r.replyToId] = byParent[r.replyToId] || []).push(r);
     });
 
-    const cmtEmojis = ['❤️', '😂', '😮', '🔥'];
+    const cmtEmojis = ['❤️', '😂', '😮', '🔥', '😭', '🥹'];
 
     const renderRxButtons = (rxBy, postId, replyId) => {
         const map = rxBy || {};
