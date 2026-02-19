@@ -121,6 +121,36 @@
         </div>
     </div>
 
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcutsModal" class="modal" onclick="if(event.target.id==='shortcutsModal') closeShortcutsModal()">
+        <div class="modal-content" style="max-width:400px;">
+            <button class="modal-x" onclick="closeShortcutsModal()" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-1" style="color:var(--text-primary);letter-spacing:-0.02em;font-family:'Nunito',sans-serif;">⌨️ Keyboard Shortcuts</h2>
+            <p class="text-sm mb-5" style="color:var(--text-secondary);font-family:'Nunito',sans-serif;font-weight:800;">Press <kbd>?</kbd> anytime to see this</p>
+
+            <div class="shortcuts-section">
+                <div class="shortcuts-section-title">Navigate</div>
+                <div class="shortcut-row"><kbd>J</kbd> <span>Next post</span></div>
+                <div class="shortcut-row"><kbd>K</kbd> <span>Previous post</span></div>
+            </div>
+
+            <div class="shortcuts-section">
+                <div class="shortcuts-section-title">Focused post</div>
+                <div class="shortcut-row"><kbd>L</kbd> <span>React with ❤️</span></div>
+                <div class="shortcut-row"><kbd>F</kbd> <span>Save / unsave</span></div>
+            </div>
+
+            <div class="shortcuts-section">
+                <div class="shortcuts-section-title">App</div>
+                <div class="shortcut-row"><kbd>N</kbd> <span>New post</span></div>
+                <div class="shortcut-row"><kbd>M</kbd> <span>Open chat</span></div>
+                <div class="shortcut-row"><kbd>/</kbd> <span>Search</span></div>
+                <div class="shortcut-row"><kbd>?</kbd> <span>This help screen</span></div>
+                <div class="shortcut-row"><kbd>Esc</kbd> <span>Close / dismiss</span></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Type Picker Modal -->
     <div id="typePickerModal" class="modal" onclick="if(event.target.id==='typePickerModal') closeTypePickerModal()">
         <div class="modal-content" style="max-width:340px;text-align:center;">

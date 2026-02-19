@@ -1780,3 +1780,62 @@ body.dark-mode #pollEndsAt {
     color: var(--text-primary);
 }
 
+/* ---- KEYBOARD NAVIGATION — focused post ---- */
+.post-card.post-focused {
+    outline: 2.5px solid rgba(139,92,246,0.55);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px rgba(139,92,246,0.10), 0 8px 32px rgba(0,0,0,0.12);
+    transition: outline 0.15s, box-shadow 0.15s;
+}
+
+/* ---- KEYBOARD SHORTCUTS MODAL ---- */
+.shortcuts-section {
+    margin-bottom: 16px;
+}
+
+.shortcuts-section-title {
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    font-family: 'Nunito', sans-serif;
+    opacity: 0.6;
+    margin-bottom: 6px;
+}
+
+.shortcut-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+    font-family: 'Nunito', sans-serif;
+}
+
+.shortcut-row span {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    padding: 3px 8px;
+    border-radius: 7px;
+    background: rgba(139,92,246,0.1);
+    border: 1.5px solid rgba(139,92,246,0.25);
+    font-size: 12px;
+    font-weight: 900;
+    font-family: 'Nunito', sans-serif;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+body.dark-mode kbd {
+    background: rgba(139,92,246,0.18);
+    border-color: rgba(139,92,246,0.38);
+}
+

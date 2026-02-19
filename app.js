@@ -22,6 +22,7 @@ let editState = null;
 
 let isDarkMode = false;
 let isInitialLoad = true;
+let focusedPostId = null;
 let prevDataSig = null;
 
 let _audioCtx = null;
@@ -295,12 +296,95 @@ window.addEventListener('scroll', () => {
     document.getElementById('scrollTopBtn').classList.toggle('visible', window.scrollY > 300);
 });
 
-// Keyboard shortcut: n = new post
+// ---- KEYBOARD NAVIGATION ----
+
+function isTypingInField() {
+    const tag = document.activeElement.tagName;
+    return tag === 'TEXTAREA' || tag === 'INPUT' || document.activeElement.isContentEditable;
+}
+
+function getVisiblePostCards() {
+    return Array.from(document.querySelectorAll('#postsContainer .post-card'));
+}
+
+function setFocusedPost(index) {
+    const cards = getVisiblePostCards();
+    if (!cards.length) return;
+    index = Math.max(0, Math.min(index, cards.length - 1));
+    cards.forEach(c => c.classList.remove('post-focused'));
+    cards[index].classList.add('post-focused');
+    cards[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    focusedPostId = cards[index].dataset.postId;
+}
+
+function getCurrentFocusedIndex() {
+    if (!focusedPostId) return -1;
+    return getVisiblePostCards().findIndex(c => c.dataset.postId === focusedPostId);
+}
+
+function closeEverything() {
+    document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
+    if (chatOpen) toggleChat();
+    closeActivityPanel();
+    // Clear focused post highlight
+    document.querySelectorAll('.post-focused').forEach(c => c.classList.remove('post-focused'));
+    focusedPostId = null;
+}
+
+window.openShortcutsModal = function() {
+    document.getElementById('shortcutsModal').classList.add('show');
+};
+window.closeShortcutsModal = function() {
+    document.getElementById('shortcutsModal').classList.remove('show');
+};
+
 document.addEventListener('keydown', e => {
-    if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey &&
-        document.activeElement.tagName !== 'TEXTAREA' &&
-        document.activeElement.tagName !== 'INPUT' && currentUser) {
-        openTypePickerModal();
+    // Esc always works, even in inputs
+    if (e.key === 'Escape') { closeEverything(); return; }
+
+    // Everything else: skip if typing or using modifier keys
+    if (isTypingInField() || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!currentUser) return;
+
+    switch (e.key) {
+        case 'j': case 'J': {
+            e.preventDefault();
+            const idx = getCurrentFocusedIndex();
+            setFocusedPost(idx < 0 ? 0 : idx + 1);
+            break;
+        }
+        case 'k': case 'K': {
+            e.preventDefault();
+            const idx = getCurrentFocusedIndex();
+            if (idx > 0) setFocusedPost(idx - 1);
+            else if (idx < 0) setFocusedPost(0);
+            break;
+        }
+        case 'l': case 'L': {
+            // Like / react ❤️ on focused post
+            if (!focusedPostId) break;
+            const card = document.querySelector(`[data-post-id="${focusedPostId}"]`);
+            card?.querySelector('.reaction-btn')?.click(); // first btn is always ❤️
+            break;
+        }
+        case 'f': case 'F': {
+            // Favourite / save focused post
+            if (focusedPostId) toggleFavorite(focusedPostId);
+            break;
+        }
+        case 'n': case 'N':
+            openTypePickerModal();
+            break;
+        case 'm': case 'M':
+            toggleChat();
+            break;
+        case '/':
+            e.preventDefault();
+            document.getElementById('searchInput')?.focus();
+            break;
+        case '?':
+            openShortcutsModal();
+            break;
     }
 });
 
@@ -1469,6 +1553,10 @@ function loadPosts() {
     const savedScroll = window.scrollY;
     container.innerHTML = posts.map(createPostCard).join('');
     window.scrollTo({ top: savedScroll, behavior: 'instant' });
+    // Re-apply keyboard-navigation focus after re-render
+    if (focusedPostId) {
+        document.querySelector(`[data-post-id="${focusedPostId}"]`)?.classList.add('post-focused');
+    }
 
     setTimeout(() => {
         window.twttr?.widgets?.load?.();
