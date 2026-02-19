@@ -346,28 +346,10 @@
 </style>
 
     <!-- About Us button (fixed, top-right) -->
-<button id="aboutBtn" style="
-  position: fixed;
-  top: 18px;
-  right: 22px;
-  z-index: 10000;
-
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.6);
-
-  font-size: 14px;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-">
+<button id="aboutBtn">
   about
-    <p style="margin: 12px 0; line-height: 1.5;">
-  if you somehow found this site and you are not el or tero,
-  these are just social media posts we send each other.
-  hi, i guess??
-</p>
-
 </button>
+
 
 
 
@@ -419,9 +401,12 @@
 
     <div style="margin-top:12px; line-height:1.35;">
       <p style="margin:10px 0;"><strong>El</strong>, and <strong>Tero</strong>.</p>
-      <p style="margin:10px 0;">
-        This is our wee corner of the internet, a personal feed for posts, chats, and experiments.
-      </p>
+      <p style="margin: 12px 0; line-height: 1.5;">
+  if you somehow found this site and you are not el or tero,
+  these are just social media posts we send each other.
+  hi, i guess??
+</p>
+
       <p style="margin:10px 0;">
         <a href="https://github.com/el69420/Personal-Feed" target="_blank" rel="noreferrer">Project on GitHub</a>
       </p>
@@ -474,10 +459,41 @@
   }
 </style>
 
+    <style>
+  #aboutBtn {
+    position: fixed;
+    top: 70px; /* pushes it below your live status */
+    right: 22px;
+    z-index: 10000;
+
+    background: linear-gradient(135deg, #6d28d9, #9333ea);
+    border: none;
+    color: white;
+
+    padding: 8px 14px;
+    border-radius: 999px;
+
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+
+    cursor: pointer;
+
+    box-shadow: 0 8px 22px rgba(109, 40, 217, 0.4);
+    transition: all 0.15s ease;
+  }
+
+  #aboutBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(147, 51, 234, 0.6);
+  }
+</style>
+
 
     <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
 
 
