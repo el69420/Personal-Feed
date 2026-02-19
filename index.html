@@ -61,7 +61,7 @@
         <!-- Main Navigation -->
         <div class="flex justify-center mb-5">
             <div class="nav-glass">
-                <button onclick="openAddPostModal()" class="nav-btn">
+                <button onclick="openTypePickerModal()" class="nav-btn">
                     ➕ Add Post
                 </button>
                 <button onclick="openCollectionsModal()" class="nav-btn">
@@ -117,6 +117,123 @@
                 <button onclick="openAddPostModal()" class="btn-primary px-8 py-3 text-sm font-semibold rounded-full">
                     Make a new post
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Type Picker Modal -->
+    <div id="typePickerModal" class="modal" onclick="if(event.target.id==='typePickerModal') closeTypePickerModal()">
+        <div class="modal-content" style="max-width:340px;text-align:center;">
+            <button class="modal-x" onclick="closeTypePickerModal()" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-5" style="color:var(--text-primary);letter-spacing:-0.02em;font-family:'Nunito',sans-serif;">What do you want to share?</h2>
+            <div class="type-picker-grid">
+                <button class="type-picker-btn" onclick="closeTypePickerModal();openAddPostModal()">
+                    <span class="type-picker-icon">🔗</span>
+                    <span class="type-picker-label">Link</span>
+                </button>
+                <button class="type-picker-btn" onclick="closeTypePickerModal();openImageModal()">
+                    <span class="type-picker-icon">📸</span>
+                    <span class="type-picker-label">Photo</span>
+                </button>
+                <button class="type-picker-btn" onclick="closeTypePickerModal();openPollModal()">
+                    <span class="type-picker-icon">📊</span>
+                    <span class="type-picker-label">Poll</span>
+                </button>
+                <button class="type-picker-btn" onclick="closeTypePickerModal();openMovieModal()">
+                    <span class="type-picker-icon">🎬</span>
+                    <span class="type-picker-label">Movie / Show</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Poll Modal -->
+    <div id="pollModal" class="modal" onclick="if(event.target.id==='pollModal') closePollModal()">
+        <div class="modal-content">
+            <button class="modal-x" onclick="closePollModal()" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-5" style="color:var(--text-primary);letter-spacing:-0.02em;font-family:'Nunito',sans-serif;">📊 Create a Poll</h2>
+            <div class="space-y-4">
+                <div class="form-field">
+                    <label class="form-label">Question</label>
+                    <textarea id="pollQuestion" rows="2" placeholder="What should we watch tonight?"></textarea>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Options</label>
+                    <input type="text" id="pollOpt0" placeholder="Option 1…" style="margin-bottom:8px;">
+                    <input type="text" id="pollOpt1" placeholder="Option 2…" style="margin-bottom:8px;">
+                    <input type="text" id="pollOpt2" placeholder="Option 3 (optional)…" style="margin-bottom:8px;">
+                    <input type="text" id="pollOpt3" placeholder="Option 4 (optional)…">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Poll ends at</label>
+                    <input type="datetime-local" id="pollEndsAt">
+                </div>
+                <button onclick="addPoll()" class="btn-primary w-full py-4 text-base font-bold rounded-xl">Create Poll</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Post Modal -->
+    <div id="imageModal" class="modal" onclick="if(event.target.id==='imageModal') closeImageModal()">
+        <div class="modal-content">
+            <button class="modal-x" onclick="closeImageModal()" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-5" style="color:var(--text-primary);letter-spacing:-0.02em;font-family:'Nunito',sans-serif;">📸 Share a Photo</h2>
+            <div class="space-y-4">
+                <div class="form-field">
+                    <label class="form-label">Photo</label>
+                    <label class="image-upload-label">
+                        <input type="file" id="imageFile" accept="image/*" onchange="previewImage(this)" style="display:none;">
+                        <span class="image-upload-text">Click to choose a photo</span>
+                    </label>
+                    <div id="imagePreview"></div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Caption (optional)</label>
+                    <textarea id="imageCaption" rows="2" placeholder="Say something…"></textarea>
+                </div>
+                <button id="sharePhotoBtn" onclick="addImagePost()" class="btn-primary w-full py-4 text-base font-bold rounded-xl">Share Photo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movie / Show Rec Modal -->
+    <div id="movieModal" class="modal" onclick="if(event.target.id==='movieModal') closeMovieModal()">
+        <div class="modal-content">
+            <button class="modal-x" onclick="closeMovieModal()" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-5" style="color:var(--text-primary);letter-spacing:-0.02em;font-family:'Nunito',sans-serif;">🎬 Recommend something</h2>
+            <div class="space-y-4">
+                <div class="form-field">
+                    <label class="form-label">Title</label>
+                    <input type="text" id="recTitle" placeholder="The Bear, Dune, etc.">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Type</label>
+                    <div id="mediaTypePicker" style="display:flex;gap:8px;margin-top:4px;">
+                        <button type="button" class="type-toggle-btn active" onclick="setMediaType('movie',this)">🎬 Movie</button>
+                        <button type="button" class="type-toggle-btn" onclick="setMediaType('show',this)">📺 Show</button>
+                    </div>
+                    <input type="hidden" id="recMediaType" value="movie">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Where to watch</label>
+                    <input type="text" id="recService" placeholder="Netflix, Disney+, cinema…">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Rating</label>
+                    <div id="starPicker" class="star-picker">
+                        <button type="button" onclick="setRating(1)">★</button>
+                        <button type="button" onclick="setRating(2)">★</button>
+                        <button type="button" onclick="setRating(3)">★</button>
+                        <button type="button" onclick="setRating(4)">★</button>
+                        <button type="button" onclick="setRating(5)">★</button>
+                    </div>
+                    <input type="hidden" id="recRating" value="0">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Note (optional)</label>
+                    <textarea id="recNote" rows="2" placeholder="Why you loved it…"></textarea>
+                </div>
+                <button onclick="addMovieRec()" class="btn-primary w-full py-4 text-base font-bold rounded-xl">Add Recommendation</button>
             </div>
         </div>
     </div>

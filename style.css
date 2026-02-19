@@ -1475,3 +1475,308 @@ body.dark-mode .chat-group--other .chat-bubble {
     font-weight: 800;
 }
 
+/* ---- TYPE PICKER ---- */
+.type-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.type-picker-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 18px 12px;
+    border-radius: 16px;
+    border: 1.5px solid var(--card-border);
+    background: var(--card-bg);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.12s;
+    font-family: 'Nunito', sans-serif;
+}
+
+.type-picker-btn:hover {
+    border-color: rgba(139,92,246,0.5);
+    background: rgba(139,92,246,0.06);
+    transform: translateY(-2px);
+}
+
+.type-picker-icon { font-size: 28px; }
+
+.type-picker-label {
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--text-primary);
+}
+
+/* ---- POLL ---- */
+.poll-content {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.poll-question {
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--text-primary);
+    font-family: 'Nunito', sans-serif;
+    line-height: 1.35;
+}
+
+.poll-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.poll-vote-btn {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(139,92,246,0.35);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 800;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.14s, border-color 0.14s;
+}
+
+.poll-vote-btn:hover {
+    background: rgba(139,92,246,0.09);
+    border-color: rgba(139,92,246,0.6);
+}
+
+.poll-result {
+    position: relative;
+    overflow: hidden;
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+}
+
+.poll-result--voted {
+    border-color: rgba(139,92,246,0.55);
+}
+
+.poll-result-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: rgba(139,92,246,0.12);
+    border-radius: 11px 0 0 11px;
+    transition: width 0.4s ease;
+}
+
+.poll-result--voted .poll-result-fill {
+    background: rgba(139,92,246,0.22);
+}
+
+.poll-result-label {
+    position: relative;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-primary);
+    font-family: 'Nunito', sans-serif;
+    flex: 1;
+}
+
+.poll-result-pct {
+    position: relative;
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--text-secondary);
+    font-family: 'Nunito', sans-serif;
+    flex-shrink: 0;
+}
+
+.poll-voters {
+    position: relative;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    opacity: 0.65;
+    font-family: 'Nunito', sans-serif;
+}
+
+.poll-meta {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    font-family: 'Nunito', sans-serif;
+    opacity: 0.7;
+}
+
+.poll-closed {
+    color: #ec4899;
+    font-weight: 900;
+}
+
+/* ---- IMAGE POST ---- */
+.post-image {
+    width: 100%;
+    border-radius: 12px;
+    display: block;
+    max-height: 520px;
+    object-fit: cover;
+}
+
+.image-upload-label {
+    display: block;
+    border: 2px dashed rgba(139,92,246,0.4);
+    border-radius: 14px;
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    margin-top: 4px;
+}
+
+.image-upload-label:hover {
+    border-color: rgba(139,92,246,0.7);
+    background: rgba(139,92,246,0.05);
+}
+
+.image-upload-text {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    font-family: 'Nunito', sans-serif;
+}
+
+.image-preview-thumb {
+    width: 100%;
+    border-radius: 12px;
+    margin-top: 10px;
+    max-height: 260px;
+    object-fit: cover;
+    display: block;
+}
+
+/* ---- MOVIE / SHOW REC ---- */
+.rec-content {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rec-type-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 2px 10px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(109,40,217,0.14), rgba(236,72,153,0.12));
+    border: 1px solid rgba(139,92,246,0.28);
+    color: var(--text-primary);
+    font-family: 'Nunito', sans-serif;
+    width: fit-content;
+    margin-bottom: 2px;
+}
+
+.rec-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--text-primary);
+    font-family: 'Nunito', sans-serif;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.rec-service {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    font-family: 'Nunito', sans-serif;
+}
+
+.rec-rating {
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: #f59e0b;
+}
+
+/* ---- STAR PICKER (modal) ---- */
+.star-picker {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.star-picker button {
+    font-size: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    opacity: 0.4;
+    transition: opacity 0.12s, transform 0.12s;
+    padding: 0;
+    line-height: 1;
+}
+
+.star-picker button.active,
+.star-picker button:hover {
+    color: #f59e0b;
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+/* ---- MEDIA TYPE TOGGLE (modal) ---- */
+.type-toggle-btn {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--card-border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 800;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    transition: border-color 0.14s, background 0.14s, color 0.14s;
+}
+
+.type-toggle-btn.active {
+    border-color: rgba(139,92,246,0.55);
+    background: rgba(139,92,246,0.1);
+    color: var(--text-primary);
+}
+
+/* ---- POLL modal inputs ---- */
+#pollOpt0, #pollOpt1, #pollOpt2, #pollOpt3, #pollEndsAt {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg, var(--card-bg));
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    outline: none;
+    transition: border-color 0.15s;
+    display: block;
+}
+
+#pollOpt0:focus, #pollOpt1:focus, #pollOpt2:focus, #pollOpt3:focus, #pollEndsAt:focus {
+    border-color: rgba(139,92,246,0.5);
+}
+
+body.dark-mode #pollOpt0,
+body.dark-mode #pollOpt1,
+body.dark-mode #pollOpt2,
+body.dark-mode #pollOpt3,
+body.dark-mode #pollEndsAt {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+}
+

@@ -1,9 +1,11 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 import { firebaseConfig } from './firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
+const storage  = getStorage(app);
 const postsRef = ref(database, 'posts');
 const chatRef  = ref(database, 'chat');
 
@@ -298,7 +300,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey &&
         document.activeElement.tagName !== 'TEXTAREA' &&
         document.activeElement.tagName !== 'INPUT' && currentUser) {
-        openAddPostModal();
+        openTypePickerModal();
     }
 });
 
@@ -390,6 +392,38 @@ window.openAddPostModal = function() {
 };
 window.closeAddPostModal = function() {
     document.getElementById('addPostModal').classList.remove('show');
+};
+
+window.openTypePickerModal = function() {
+    document.getElementById('typePickerModal').classList.add('show');
+};
+window.closeTypePickerModal = function() {
+    document.getElementById('typePickerModal').classList.remove('show');
+};
+window.openPollModal = function() {
+    const dt = new Date(Date.now() + 86400000);
+    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('pollEndsAt').value = local;
+    document.getElementById('pollModal').classList.add('show');
+    setTimeout(() => document.getElementById('pollQuestion')?.focus(), 50);
+};
+window.closePollModal = function() {
+    document.getElementById('pollModal').classList.remove('show');
+};
+window.openImageModal = function() {
+    document.getElementById('imageModal').classList.add('show');
+};
+window.closeImageModal = function() {
+    document.getElementById('imageModal').classList.remove('show');
+    document.getElementById('imagePreview').innerHTML = '';
+    document.getElementById('imageFile').value = '';
+};
+window.openMovieModal = function() {
+    document.getElementById('movieModal').classList.add('show');
+    setTimeout(() => document.getElementById('recTitle')?.focus(), 50);
+};
+window.closeMovieModal = function() {
+    document.getElementById('movieModal').classList.remove('show');
 };
 
 window.openCollectionsModal = function() {
@@ -754,6 +788,125 @@ window.addPost = async function() {
     }
 };
 
+window.addPoll = async function() {
+    const question = document.getElementById('pollQuestion').value.trim();
+    const options = ['pollOpt0','pollOpt1','pollOpt2','pollOpt3']
+        .map(id => document.getElementById(id).value.trim()).filter(Boolean);
+    const endsAtValue = document.getElementById('pollEndsAt').value;
+    const endsAt = endsAtValue ? new Date(endsAtValue).getTime() : null;
+
+    if (!question) { showToast('Please enter a question'); return; }
+    if (options.length < 2) { showToast('Please enter at least 2 options'); return; }
+    if (!throttle('add-poll', 2000)) return;
+
+    try {
+        await push(postsRef, {
+            type: 'poll', question, options, endsAt, votes: {},
+            author: currentUser, collections: [],
+            timestamp: Date.now(), readBy: { [currentUser]: true },
+            reactionsBy: {}, replies: []
+        });
+        ['pollQuestion','pollOpt0','pollOpt1','pollOpt2','pollOpt3'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        closePollModal();
+        showToast('Poll created!');
+        sparkSound('post');
+    } catch { showToast('Failed to create poll.'); }
+};
+
+window.castVote = async function(postId, optionIndex) {
+    if (!currentUser) return;
+    const post = allPosts[postId];
+    if (!post) return;
+    if (post.endsAt && Date.now() > post.endsAt) { showToast('This poll has ended'); return; }
+    await update(ref(database, `posts/${postId}/votes`), { [currentUser]: optionIndex });
+};
+
+window.addImagePost = async function() {
+    const file = document.getElementById('imageFile').files[0];
+    const caption = document.getElementById('imageCaption').value.trim();
+    if (!file) { showToast('Please select a photo'); return; }
+    if (!throttle('add-image', 3000)) return;
+
+    const btn = document.getElementById('sharePhotoBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+
+    try {
+        const ext = file.name.split('.').pop() || 'jpg';
+        const imgRef = sRef(storage, `images/${Date.now()}_${currentUser}.${ext}`);
+        const snapshot = await uploadBytes(imgRef, file);
+        const imageUrl = await getDownloadURL(snapshot.ref);
+
+        await push(postsRef, {
+            type: 'image', imageUrl, note: caption,
+            author: currentUser, collections: [],
+            timestamp: Date.now(), readBy: { [currentUser]: true },
+            reactionsBy: {}, replies: []
+        });
+
+        document.getElementById('imageCaption').value = '';
+        closeImageModal();
+        showToast('Photo shared!');
+        sparkSound('post');
+    } catch (err) {
+        console.error(err);
+        showToast('Upload failed — make sure Firebase Storage is enabled.');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Share Photo'; }
+    }
+};
+
+window.previewImage = function(input) {
+    const preview = document.getElementById('imagePreview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => { preview.innerHTML = `<img src="${e.target.result}" class="image-preview-thumb" alt="preview">`; };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.innerHTML = '';
+    }
+};
+
+window.addMovieRec = async function() {
+    const title = document.getElementById('recTitle').value.trim();
+    const mediaType = document.getElementById('recMediaType').value || 'show';
+    const streamingService = document.getElementById('recService').value.trim();
+    const rating = parseInt(document.getElementById('recRating').value || '0', 10);
+    const note = document.getElementById('recNote').value.trim();
+
+    if (!title) { showToast('Please enter a title'); return; }
+    if (!throttle('add-rec', 2000)) return;
+
+    try {
+        await push(postsRef, {
+            type: 'recommendation', title, mediaType, streamingService, rating, note,
+            author: currentUser, collections: [],
+            timestamp: Date.now(), readBy: { [currentUser]: true },
+            reactionsBy: {}, replies: []
+        });
+        ['recTitle','recService','recNote'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        document.getElementById('recRating').value = '0';
+        document.querySelectorAll('#starPicker button').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#mediaTypePicker .type-toggle-btn').forEach((b,i) => b.classList.toggle('active', i === 0));
+        document.getElementById('recMediaType').value = 'movie';
+        closeMovieModal();
+        showToast('Recommendation added!');
+        sparkSound('post');
+    } catch { showToast('Failed to add recommendation.'); }
+};
+
+window.setRating = function(n) {
+    document.getElementById('recRating').value = n;
+    document.querySelectorAll('#starPicker button').forEach((b, i) => b.classList.toggle('active', i < n));
+};
+
+window.setMediaType = function(type, btn) {
+    document.getElementById('recMediaType').value = type;
+    document.querySelectorAll('#mediaTypePicker .type-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+};
+
 window.markSeen = async function(id) {
     await update(ref(database, `posts/${id}/readBy`), { [currentUser]: true });
     showToast('Marked as seen');
@@ -1008,18 +1161,77 @@ function createInstagramEmbed(url) {
     `;
 }
 
+// ---- POST-TYPE CONTENT RENDERERS ----
+
+function renderPollContent(post) {
+    const now = Date.now();
+    const isExpired = post.endsAt && now > post.endsAt;
+    const votes = post.votes || {};
+    const totalVotes = Object.keys(votes).length;
+    const myVote = votes[currentUser];
+    const hasVoted = myVote !== undefined;
+
+    const voteCounts = (post.options || []).map((_, i) =>
+        Object.values(votes).filter(v => v === i).length
+    );
+
+    const endLabel = post.endsAt
+        ? (isExpired ? `Ended ${timeAgo(post.endsAt)}` : `Ends ${timeAgo(post.endsAt)}`)
+        : '';
+
+    const optionsHtml = (post.options || []).map((opt, i) => {
+        const count = voteCounts[i] || 0;
+        const pct = totalVotes ? Math.round(count / totalVotes * 100) : 0;
+        const isMyVote = hasVoted && myVote === i;
+        const voters = Object.entries(votes).filter(([, v]) => v === i).map(([u]) => u).join(', ');
+
+        if (isExpired || hasVoted) {
+            return `
+                <div class="poll-result${isMyVote ? ' poll-result--voted' : ''}">
+                    <div class="poll-result-fill" style="width:${pct}%"></div>
+                    <span class="poll-result-label">${safeText(opt)}</span>
+                    <span class="poll-result-pct">${pct}%</span>
+                    ${voters ? `<span class="poll-voters">${safeText(voters)}</span>` : ''}
+                </div>
+            `;
+        } else {
+            return `<button class="poll-vote-btn" onclick="castVote('${post.id}', ${i})">${safeText(opt)}</button>`;
+        }
+    }).join('');
+
+    return `
+        <div class="post-content poll-content">
+            <div class="poll-question">${safeText(post.question)}</div>
+            <div class="poll-options">${optionsHtml}</div>
+            <div class="poll-meta">
+                ${totalVotes} vote${totalVotes !== 1 ? 's' : ''}${endLabel ? ` · ${endLabel}` : ''}${isExpired ? ' · <span class="poll-closed">Closed</span>' : ''}
+            </div>
+        </div>
+    `;
+}
+
+function renderRecommendationContent(post) {
+    const mediaLabel = post.mediaType === 'movie' ? '🎬 Movie' : '📺 Show';
+    const stars = Array.from({length: 5}, (_, i) => i < (post.rating || 0) ? '★' : '☆').join('');
+    return `
+        <div class="post-content rec-content">
+            <div class="rec-type-badge">${mediaLabel}</div>
+            <div class="rec-title">${safeText(post.title)}</div>
+            ${post.streamingService ? `<div class="rec-service">📍 ${safeText(post.streamingService)}</div>` : ''}
+            ${post.rating ? `<div class="rec-rating" title="${post.rating} out of 5">${stars}</div>` : ''}
+        </div>
+    `;
+}
+
+// ---- CARD RENDERER ----
+
 function createPostCard(post) {
     const date = timeAgo(post.timestamp);
     const dateFull = exactTimestamp(post.timestamp);
-
-    const domain = post.url.match(/https?:\/\/([^\/]+)/)?.[1]?.replace('www.', '') || 'link';
-    const tweetId = post.url.match(/(?:twitter|x)\.com\/.*\/status\/(\d+)/)?.[1];
-
     const author = post.author || 'Unknown';
     const badgeClass = AUTHOR_BADGE[author] || 'badge-el';
     const emoji = AUTHOR_EMOJI[author] || '💬';
-
-    const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+    const isFav = !!(post.favoritedBy && post.favoritedBy[currentUser]);
 
     // Support both new (array) and legacy (string) collection formats
     const collArr = post.collections?.length ? post.collections
@@ -1029,13 +1241,8 @@ function createPostCard(post) {
         .map(c => `<button class="collection-badge" onclick="filterByCollection('${safeText(c)}')" title="Filter by collection">${getCollectionEmoji(c)} ${safeText(COLLECTION_LABELS[c] || c)}</button>`)
         .join('');
 
-    const source = post.source || detectSource(post.url);
-    const isFav = !!(post.favoritedBy && post.favoritedBy[currentUser]);
-    const sourceBadge = `<button class="collection-badge" onclick="filterBySource('${safeText(source)}')" title="Filter by source">${safeText(getSourceLabel(source))}</button>`;
-
     const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍'];
     const rb = post.reactionsBy || {};
-
     const reactionButtons = reactionEmojis.map(e => {
         const users = Object.keys(rb[e] || {});
         const active = !!(rb[e] && rb[e][currentUser]);
@@ -1051,36 +1258,54 @@ function createPostCard(post) {
 
     const replies = post.replies || [];
 
+    // Type-specific: source badge + content
+    let sourceBadge = '';
     let contentHtml = '';
-    if (tweetId) {
-        contentHtml = `
-            <div class="post-content">
-                <blockquote class="twitter-tweet" data-dnt="true" data-conversation="none">
-                    <a href="https://twitter.com/x/status/${tweetId}"></a>
-                </blockquote>
-            </div>
-        `;
-    } else if (source === 'instagram') {
-        contentHtml = createInstagramEmbed(post.url);
-    } else if (source === 'youtube') {
-        contentHtml = createYouTubeEmbed(post);
-    } else {
-        contentHtml = `
-            <div class="post-content">
-                <a href="${safeText(post.url)}" target="_blank" class="link-preview">
-                    <div class="link-favicon">
-                        <img src="${faviconUrl}" alt="${safeText(domain)}" onerror="this.parentNode.innerHTML='🔗'">
-                    </div>
-                    <div class="link-info">
-                        <div class="link-domain">${safeText(domain)}</div>
-                        <div class="link-url">${safeText(post.url)}</div>
-                    </div>
-                    <svg class="link-arrow" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                    </svg>
-                </a>
-            </div>
-        `;
+
+    if (!post.type || post.type === 'link') {
+        const url = post.url || '';
+        const domain = url.match(/https?:\/\/([^\/]+)/)?.[1]?.replace('www.', '') || 'link';
+        const tweetId = url.match(/(?:twitter|x)\.com\/.*\/status\/(\d+)/)?.[1];
+        const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+        const source = post.source || detectSource(url);
+        sourceBadge = `<button class="collection-badge" onclick="filterBySource('${safeText(source)}')" title="Filter by source">${safeText(getSourceLabel(source))}</button>`;
+
+        if (tweetId) {
+            contentHtml = `
+                <div class="post-content">
+                    <blockquote class="twitter-tweet" data-dnt="true" data-conversation="none">
+                        <a href="https://twitter.com/x/status/${tweetId}"></a>
+                    </blockquote>
+                </div>
+            `;
+        } else if (source === 'instagram') {
+            contentHtml = createInstagramEmbed(url);
+        } else if (source === 'youtube') {
+            contentHtml = createYouTubeEmbed(post);
+        } else {
+            contentHtml = `
+                <div class="post-content">
+                    <a href="${safeText(url)}" target="_blank" class="link-preview">
+                        <div class="link-favicon">
+                            <img src="${faviconUrl}" alt="${safeText(domain)}" onerror="this.parentNode.innerHTML='🔗'">
+                        </div>
+                        <div class="link-info">
+                            <div class="link-domain">${safeText(domain)}</div>
+                            <div class="link-url">${safeText(url)}</div>
+                        </div>
+                        <svg class="link-arrow" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </a>
+                </div>
+            `;
+        }
+    } else if (post.type === 'image') {
+        contentHtml = `<div class="post-content"><img src="${safeText(post.imageUrl)}" class="post-image" alt="shared photo" loading="lazy"></div>`;
+    } else if (post.type === 'poll') {
+        contentHtml = renderPollContent(post);
+    } else if (post.type === 'recommendation') {
+        contentHtml = renderRecommendationContent(post);
     }
 
     return `
