@@ -1324,23 +1324,26 @@ window.addPost = async function() {
     if (!throttle('add-post', 2000)) return;
 
     const source = detectSource(url);
+    const capsuleToggle = document.getElementById('timeCapsuleToggle');
+    const capsulePicker = document.getElementById('timeCapsulePicker');
+    const unlockAt = capsuleToggle?.checked && capsulePicker?.value
+        ? new Date(capsulePicker.value).getTime() : null;
 
     try {
-        await push(postsRef, {
-            url,
-            note,
-            author,
-            collections,
-            source,
+        const postData = {
+            url, note, author, collections, source,
             timestamp: Date.now(),
             readBy: { [author]: true },
             reactionsBy: {},
             replies: []
-        });
+        };
+        if (unlockAt) postData.unlockAt = unlockAt;
+        await push(postsRef, postData);
 
         document.getElementById('postUrl').value = '';
         document.getElementById('postNote').value = '';
         document.querySelectorAll('#collectionPicker .coll-pick-btn').forEach(b => b.classList.remove('selected'));
+        if (capsuleToggle) { capsuleToggle.checked = false; capsulePicker.classList.add('hidden'); capsulePicker.value = ''; }
 
         closeAddPostModal();
         showToast('Post added');
@@ -1861,6 +1864,20 @@ function renderRecommendationContent(post) {
 // ---- CARD RENDERER ----
 
 function createPostCard(post) {
+    // Time capsule: non-owners see a locked placeholder until unlockAt passes
+    if (post.unlockAt && post.unlockAt > Date.now() && post.author !== currentUser) {
+        const unlockDate = exactTimestamp(post.unlockAt);
+        return `
+            <div class="post-card fade-in capsule-card" data-post-id="${post.id}">
+                <div class="capsule-lock">
+                    <div class="capsule-icon">🔒</div>
+                    <div class="capsule-label">Locked until</div>
+                    <div class="capsule-date">${safeText(unlockDate)}</div>
+                    <div class="capsule-author">from ${safeText(post.author || 'someone')}</div>
+                </div>
+            </div>`;
+    }
+
     const date = timeAgo(post.timestamp);
     const dateFull = exactTimestamp(post.timestamp);
     const author = post.author || 'Unknown';

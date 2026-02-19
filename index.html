@@ -361,6 +361,13 @@
                     <label class="form-label">Note (Optional)</label>
                     <textarea id="postNote" placeholder="Why you thought they'd like this..." rows="3"></textarea>
                 </div>
+                <div class="form-field">
+                    <label class="capsule-toggle-row">
+                        <input type="checkbox" id="timeCapsuleToggle" onchange="document.getElementById('timeCapsulePicker').classList.toggle('hidden',!this.checked)">
+                        <span>🔒 Time Capsule — hide until…</span>
+                    </label>
+                    <input type="datetime-local" id="timeCapsulePicker" class="hidden mt-2">
+                </div>
                 <button id="addPostBtn" class="btn-primary w-full py-4 text-base font-bold rounded-xl">
                     Add to Feed
                 </button>

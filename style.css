@@ -2840,6 +2840,61 @@ select { cursor: pointer; }
 .delete-letter-btn { margin-top: 20px; }
 
 /* ======================================
+   TIME CAPSULE
+   ====================================== */
+.capsule-card { cursor: default; }
+
+.capsule-lock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 20px;
+    gap: 5px;
+    text-align: center;
+}
+
+.capsule-icon { font-size: 34px; margin-bottom: 8px; }
+
+.capsule-label {
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    opacity: 0.55;
+    font-family: 'Nunito', sans-serif;
+}
+
+.capsule-date {
+    font-size: 17px;
+    font-weight: 900;
+    color: var(--text-primary);
+    font-family: 'Nunito', sans-serif;
+    margin-top: 2px;
+}
+
+.capsule-author {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    opacity: 0.45;
+    font-family: 'Nunito', sans-serif;
+    margin-top: 4px;
+}
+
+.capsule-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-primary);
+    font-family: 'Nunito', sans-serif;
+}
+
+/* ======================================
    NOW LISTENING
    ====================================== */
 .now-listening-bar {
