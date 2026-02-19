@@ -73,6 +73,12 @@
                 <button id="navSources" class="nav-btn">
                     🔗 Sources
                 </button>
+                <button id="navBoards" class="nav-btn">
+                    📋 Boards
+                </button>
+                <button id="navMailbox" class="nav-btn">
+                    💌 Mailbox <span id="mailboxBadge" class="new-badge hidden">0</span>
+                </button>
             </div>
         </div>
 
@@ -102,12 +108,41 @@
         </div>
 
         <!-- Search -->
-        <div class="search-wrap">
+        <div id="searchWrap" class="search-wrap">
             <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
             </svg>
             <input type="text" id="searchInput" class="search-input" placeholder="Search posts...">
             <button id="searchClear" class="search-clear hidden" title="Clear">✕</button>
+        </div>
+
+        <!-- Boards Section -->
+        <div id="boardsSection" class="hidden space-y-5">
+            <div class="boards-header">
+                <h2 class="boards-title">📋 Boards</h2>
+                <button class="btn-primary boards-action-btn" onclick="openCreateBoardModal()">+ New Board</button>
+            </div>
+            <div id="boardsList"></div>
+            <div id="boardDetail" class="hidden">
+                <button class="board-back-btn" onclick="closeBoardDetail()">← Back to boards</button>
+                <div id="boardDetailHeader" class="boards-header mb-4"></div>
+                <div id="boardDetailPosts" class="space-y-5"></div>
+            </div>
+        </div>
+
+        <!-- Mailbox Section -->
+        <div id="mailboxSection" class="hidden">
+            <div class="boards-header">
+                <h2 class="boards-title">💌 Mailbox</h2>
+                <button class="btn-primary boards-action-btn" onclick="openComposeLetter()">✍️ Write</button>
+            </div>
+            <div class="mailbox-tabs">
+                <button class="mailbox-tab active" id="tabInbox" onclick="switchMailboxTab('inbox')">
+                    Inbox <span id="inboxUnread" class="new-badge hidden">0</span>
+                </button>
+                <button class="mailbox-tab" id="tabSent" onclick="switchMailboxTab('sent')">Sent</button>
+            </div>
+            <div id="mailboxBody" class="mailbox-body"></div>
         </div>
 
         <!-- Now Listening -->
@@ -559,6 +594,54 @@
                 <p class="about-tip">
                     Tip: press Escape to close this.
                 </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Board Picker Modal -->
+    <div id="boardPickerModal" class="modal">
+        <div class="modal-content modal-sm">
+            <button class="modal-x" id="boardPickerClose" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-4 modal-heading">📋 Save to Board</h2>
+            <div id="boardPickerList" class="board-picker-list"></div>
+            <button class="btn-secondary w-full mt-3" style="padding:10px;border-radius:10px;font-size:13px;" onclick="openCreateBoardModal()">+ New Board</button>
+        </div>
+    </div>
+
+    <!-- Create Board Modal -->
+    <div id="createBoardModal" class="modal">
+        <div class="modal-content modal-sm">
+            <button class="modal-x" id="createBoardClose" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-5 modal-heading">New Board</h2>
+            <div class="space-y-4">
+                <div class="form-field">
+                    <label class="form-label">Name</label>
+                    <input type="text" id="boardNameInput" placeholder="My board…">
+                </div>
+                <label class="board-shared-label">
+                    <input type="checkbox" id="boardSharedToggle">
+                    <span>Shared with both of us</span>
+                </label>
+                <button id="createBoardConfirmBtn" class="btn-primary w-full py-3 rounded-xl">Create Board</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compose Letter Modal -->
+    <div id="composeLetterModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-x" id="composeLetterClose" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-5 modal-heading">💌 Write a Letter</h2>
+            <div class="space-y-4">
+                <div class="form-field">
+                    <label class="form-label">Subject <span class="coll-pick-label">(optional)</span></label>
+                    <input type="text" id="letterSubject" placeholder="No subject">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Message</label>
+                    <textarea id="letterBody" rows="6" placeholder="Write something lovely…"></textarea>
+                </div>
+                <button id="sendLetterBtn" class="btn-primary w-full py-4 text-base font-bold rounded-xl">Send 💌</button>
             </div>
         </div>
     </div>
