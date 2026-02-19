@@ -1231,6 +1231,26 @@ window.toggleReaction = async function(postId, emoji, btn) {
         reactionsBy[emoji][currentUser] = true;
     }
 
+    // In-place DOM update — avoids a full loadPosts() rebuild and scroll shift.
+    const rxEl = document.getElementById(`post-rx-${postId}`);
+    if (rxEl) {
+        const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍', '😭', '🥹'];
+        rxEl.innerHTML = reactionEmojis.map(e => {
+            const users = Object.keys(reactionsBy[e] || {});
+            const active = !!(reactionsBy[e]?.[currentUser]);
+            const who = users.sort().join(' & ');
+            return `<button class="reaction-btn${active ? ' active' : ''}"
+                    onclick="toggleReaction('${postId}','${e}',this)">
+                <span>${e}</span>
+                ${who ? `<span class="reaction-people">${who}</span>` : ''}
+            </button>`;
+        }).join('');
+    }
+
+    // Pre-set prevVisualSig so the Firebase echo doesn't trigger a redundant loadPosts().
+    const updatedPosts = { ...allPosts, [postId]: { ...allPosts[postId], reactionsBy } };
+    prevVisualSig = visualSig(updatedPosts);
+
     await update(ref(database, `posts/${postId}`), { reactionsBy });
     sparkSound('react');
 };
@@ -1684,7 +1704,7 @@ text: post.editHistory.originalNote || ''
 
             ${contentHtml}
 
-            <div class="reactions-bar">
+            <div class="reactions-bar" id="post-rx-${post.id}">
                 ${reactionButtons}
             </div>
 
