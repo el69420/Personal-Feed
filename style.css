@@ -1327,3 +1327,13 @@ body.dark-mode .chat-group--other .chat-bubble {
     font-family: 'Nunito', sans-serif;
     font-weight: 800;
 }
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0px rgba(0,0,0,0); }
+  50% { box-shadow: 0 0 6px rgba(100, 150, 255, 0.4); }
+  100% { box-shadow: 0 0 0px rgba(0,0,0,0); }
+}
+
+#chatInput:focus {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
