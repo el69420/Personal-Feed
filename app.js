@@ -14,6 +14,69 @@ const chatRef       = ref(database, 'chat');
 const boardsRef     = ref(database, 'boards');
 const boardItemsRef = ref(database, 'board_items');
 const lettersRef    = ref(database, 'letters');
+const linkMetaRef   = ref(database, 'linkMeta');
+
+// ---- LINK PREVIEW CACHE ----
+// Converts a URL to a safe Firebase key (no . # $ [ ] /)
+function urlToKey(url) {
+    return url.replace(/https?:\/\//g, '').replace(/[.#$[\]/]/g, '_').substring(0, 768);
+}
+
+// Apply cached/fetched metadata to an already-rendered .link-preview element
+function applyLinkMeta(el, meta) {
+    el.classList.remove('lp-loading');
+    if (meta.title) {
+        const d = el.querySelector('.link-domain');
+        if (d) d.textContent = meta.title;
+    }
+    if (meta.description) {
+        const u = el.querySelector('.link-url');
+        if (u) u.textContent = meta.description;
+    }
+    if (meta.image) {
+        const img = el.querySelector('.link-favicon img');
+        if (img) {
+            img.src = meta.image;
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        }
+    }
+}
+
+// For each .link-preview[data-url] in container: check Firebase cache,
+// then fall back to microlink.io (free, no key needed). Fires and forgets.
+async function hydrateLinkPreviews(container) {
+    const previews = container.querySelectorAll('.link-preview[data-url]');
+    for (const el of previews) {
+        const url = decodeURIComponent(el.dataset.url);
+        const key = urlToKey(url);
+        try {
+            // 1. Check Firebase cache
+            const snap = await get(child(ref(database), `linkMeta/${key}`));
+            if (snap.exists()) {
+                applyLinkMeta(el, snap.val());
+                continue;
+            }
+            // 2. Fetch from microlink.io (public free API, CORS-safe)
+            const resp = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(6000) });
+            if (!resp.ok) throw new Error('microlink error');
+            const data = await resp.json();
+            if (data.status === 'success') {
+                const meta = {
+                    title:       data.data.title       || null,
+                    description: data.data.description || null,
+                    image:       data.data.image?.url  || null,
+                };
+                // Cache in Firebase for next render
+                set(ref(database, `linkMeta/${key}`), meta).catch(() => {});
+                applyLinkMeta(el, meta);
+            } else {
+                el.classList.remove('lp-loading');
+            }
+        } catch (_) {
+            el.classList.remove('lp-loading');
+        }
+    }
+}
 
 let currentFilter = 'all';
 let currentCollection = null;
@@ -1937,7 +2000,7 @@ function createPostCard(post) {
         } else {
             contentHtml = `
                 <div class="post-content">
-                    <a href="${safeText(url)}" target="_blank" class="link-preview">
+                    <a href="${safeText(url)}" target="_blank" class="link-preview lp-loading" data-url="${encodeURIComponent(url)}">
                         <div class="link-favicon">
                             <img src="${faviconUrl}" alt="${safeText(domain)}" onerror="this.parentNode.innerHTML='🔗'">
                         </div>
@@ -2121,6 +2184,7 @@ function loadPosts() {
     emptyState.classList.add('hidden');
     const savedScroll = window.scrollY;
     container.innerHTML = posts.map(createPostCard).join('');
+    hydrateLinkPreviews(container);
     window.scrollTo({ top: savedScroll, behavior: 'instant' });
     // Re-apply keyboard-navigation focus after re-render
     if (focusedPostId) {
