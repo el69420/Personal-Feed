@@ -1,939 +1,1102 @@
 /* ============================================================
-   theme-mskuromi.css — Kuromi / early-2000s web overlay
-   Load AFTER style.css. Overrides only. No structural changes.
+   theme-mskuromi.css — Windows 95 System restyle overlay
+   Drop AFTER style.css. No HTML/JS structural changes.
+
+   Win95 palette
+     #C0C0C0  base grey         #808080  dark shadow
+     #404040  very dark         #FFFFFF  highlight
+     #000080  accent blue       #000000  text
+     #DFDFDF  inner-light edge  #202020  inner-dark edge
+
+   Raised bevel  (panels, buttons):
+     border-color: #FFFFFF #808080 #808080 #FFFFFF
+     box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040
+
+   Sunken bevel  (inputs, inset areas):
+     border-color: #808080 #FFFFFF #FFFFFF #808080
+     box-shadow: inset 1px 1px 0 #404040
+
+   Pressed button state: same as sunken.
    ============================================================ */
 
-/* ---- PALETTE ----
-   Deep purple  #2a0045
-   Mid purple   #5a0090
-   Btn face     #9340c8
-   Lavender     #c8a0e8
-   Card light   #f7f0ff
-   Card dark    #160a28
-   Pink accent  #e91e8c
-   Mint accent  #00c896
-   Hi edge      #e8d0ff   (Win98 top/left highlight)
-   Sh edge      #3d0060   (Win98 bottom/right shadow)
-   ---- */
-
 /* ============================================================
-   1. VARIABLE OVERRIDES
+   1.  CSS VARIABLE OVERRIDES
    ============================================================ */
 :root {
-    --card-bg:        #f7f0ff;
-    --card-border:    #8b3ab8;
-    --section-bg:     #eedeff;
-    --text-primary:   #1a001a;
-    --text-secondary: #6b2a8c;
-    --input-bg:       #ffffff;
-    --input-border:   #8b3ab8;
+    --card-bg:        #C0C0C0;
+    --card-border:    #808080;
+    --section-bg:     #C0C0C0;
+    --text-primary:   #000000;
+    --text-secondary: #404040;
+    --input-bg:       #FFFFFF;
+    --input-border:   #808080;
 }
 
 body.dark-mode {
-    --card-bg:        #160a28;
-    --card-border:    #7b2faa;
-    --section-bg:     #0e0520;
-    --text-primary:   #f2e8ff;
-    --text-secondary: #b090cc;
-    --input-bg:       #0e0520;
-    --input-border:   #7b2faa;
+    --card-bg:        #808080;
+    --card-border:    #404040;
+    --section-bg:     #808080;
+    --text-primary:   #FFFFFF;
+    --text-secondary: #DFDFDF;
+    --input-bg:       #C0C0C0;
+    --input-border:   #404040;
 }
 
 /* ============================================================
-   2. BODY — tiled background, kill animation & blur
+   2.  GLOBAL TYPOGRAPHY — match chat bubble exactly
    ============================================================ */
-html { background-color: #0d000d; }
+body, button, input, textarea, select, label, a,
+.post-card, .nav-btn, .filter-btn, .btn-primary,
+.btn-secondary, .reply-send-btn, .chat-input,
+.reply-input, .search-input, .collection-badge,
+.badge-el, .badge-tero, .badge-guest,
+.link-domain, .link-url, .note-text, .post-tags,
+.mark-all-btn, .edit-pill, .type-picker-btn,
+.type-toggle-btn, .poll-vote-btn, .mailbox-tab,
+.board-back-btn, .form-field input,
+.form-field select, .form-field textarea {
+    font-family: 'Nunito', sans-serif !important;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* ============================================================
+   3.  BODY — Win95 grey + subtle grid, no animation
+   ============================================================ */
+html { background-color: #C0C0C0; }
 
 body {
-    font-family: Tahoma, Verdana, 'MS Sans Serif', system-ui, sans-serif;
+    background-color: #C0C0C0;
     background-image:
-        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-    background-size: 20px 20px, 20px 20px;
-    background-color: #2a0045;
+        repeating-linear-gradient(0deg,   rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 20px),
+        repeating-linear-gradient(90deg,  rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 20px);
     animation: none;
     cursor: auto;
+    color: #000000;
 }
 
 body.dark-mode {
-    background-color: #0d000d;
+    background-color: #808080;
     background-image:
-        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 20px 20px, 20px 20px;
+        repeating-linear-gradient(0deg,  rgba(0,0,0,0.07) 0, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 20px),
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.07) 0, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 20px);
+    color: #FFFFFF;
 }
-
-/* kill star field */
-body.dark-mode::before { display: none; }
-
-/* kill original cursor elements */
-.custom-cursor { display: none; }
-.star-trail    { display: none; }
-.particle      { display: none; }
 
 /* ============================================================
-   3. GLOBAL — nuke all border-radius + backdrop-filter
+   4.  KILL OLD DECORATIVE EFFECTS
    ============================================================ */
-.nav-glass, .nav-btn,
-.filter-glass, .filter-btn,
-.post-card,
-.modal-content, .modal-x,
-.btn-primary, .btn-secondary, .btn-primary-dark,
-.reaction-btn, .comment-reaction-btn,
-.reply-send-btn, .reply-input, .chat-input,
-.chat-fab, .activity-fab, #scrollTopBtn,
-.chat-panel, .activity-panel,
-.search-input, .search-clear,
-.form-field input, .form-field select, .form-field textarea,
-.coll-pick-btn, .collection-badge,
-.badge-el, .badge-tero, .badge-guest, .new-badge,
-.user-card, .collection-item,
-.reply-item, .inline-reply-form, .reply-child,
-.type-picker-btn, .type-toggle-btn,
-.poll-vote-btn, .poll-result, .poll-result-fill,
-.board-card, .board-picker-item,
-.mailbox-tabs, .mailbox-tab, .letter-item, .letter-full,
-.notif-perm-card, .notif-perm-allow, .notif-perm-deny,
-.about-card, .about-close-btn,
-.watch-later-btn, .icon-btn, .delete-btn,
-.sync-indicator, .mark-all-btn, .edit-pill,
-.link-favicon, .rec-type-badge, .rec-poster,
-.nl-card, .nl-art, .now-listening-bar,
-.post-image, .image-preview-thumb, .image-upload-label,
-.toast, kbd,
-.clear-filters-btn, .user-indicator-btn,
-.filters-banner-inner, .google-signin-btn,
-.chat-group--other .chat-bubble,
-.chat-group--me .chat-bubble,
-.heart-react,
-.history-box, .seen-dot,
-.boards-action-btn,
-#aboutBtn,
-#pollOpt0, #pollOpt1, #pollOpt2, #pollOpt3, #pollEndsAt {
-    border-radius: 0 !important;
-}
+/* No star field, no cursor sprites, no floating particles */
+body.dark-mode::before { display: none; }
+.custom-cursor { display: none; }
+.star-trail     { display: none; }
+.particle       { display: none; }
 
-/* Backdrop-filter: remove all blur/glass effects */
-.nav-glass, .filter-glass,
-.chat-fab, .activity-fab, #scrollTopBtn,
-.sync-indicator, .modal, .google-signin-btn,
+/* Nuke all blur / glass */
+.nav-glass, .filter-glass, .chat-fab, .activity-fab,
+#scrollTopBtn, .sync-indicator, .modal, .google-signin-btn,
 .user-card, .about-card, .notif-perm-card,
 .modal-content, .notif-perm-backdrop {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
 
+/* Nuke all border-radius */
+*, *::before, *::after { border-radius: 0 !important; }
+
+/* Nuke all transitions on visual-only decorators */
+.post-card, .btn-primary, .btn-secondary, .nav-btn, .filter-btn,
+.user-card, .collection-item, .board-card, .letter-item,
+.reaction-btn, .comment-reaction-btn, .reply-send-btn,
+.type-picker-btn, .type-toggle-btn, .watch-later-btn,
+.icon-btn, .delete-btn, .edit-pill, .modal-x,
+.google-signin-btn, .notif-perm-allow, .about-close-btn,
+#aboutBtn, .coll-pick-btn, .mark-all-btn, .clear-filters-btn {
+    transition: none !important;
+}
+
 /* ============================================================
-   4. NAVIGATION BAR
+   5.  NAV BAR
    ============================================================ */
 .nav-glass {
-    background: #5a0090;
+    background: #C0C0C0;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: none;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    padding: 4px;
 }
 
 .nav-btn {
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    color: #f0d8ff;
+    background: #C0C0C0;
+    color: #000000;
     border: 2px solid transparent;
-    transition: none;
+    font-weight: 700;
 }
-
 .nav-btn:hover {
-    background: #7a30b0;
-    color: #fff;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    background: #C0C0C0;
+    color: #000000;
+}
+.nav-btn.active {
+    background: #000080;
+    color: #FFFFFF;
+    border: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
 }
 
-.nav-btn.active {
-    background: #f0e8ff;
-    color: #3d006d;
-    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
-    box-shadow: none;
+body.dark-mode .nav-glass {
+    background: #808080;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020;
 }
+body.dark-mode .nav-btn { background: #808080; color: #FFFFFF; }
+body.dark-mode .nav-btn:hover { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; color: #FFFFFF; }
+body.dark-mode .nav-btn.active { background: #000080; color: #FFFFFF; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
 
 /* ============================================================
-   5. FILTER PILLS
+   6.  FILTER PILLS
    ============================================================ */
 .filter-glass {
-    background: rgba(90,0,144,0.75);
+    background: #C0C0C0;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: none;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    padding: 3px;
 }
-
 .filter-btn {
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    color: #f0d8ff;
-    border: 1px solid transparent;
-    transition: none;
+    background: #C0C0C0;
+    color: #000000;
+    border: 2px solid transparent;
+    font-weight: 700;
 }
-
 .filter-btn:hover {
-    background: #7a30b0;
-    color: #fff;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    color: #000000;
+    background: #C0C0C0;
+}
+.filter-btn.active {
+    background: #000080;
+    color: #FFFFFF;
+    border: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
 }
 
-.filter-btn.active {
-    background: #f0e8ff;
-    color: #3d006d;
-    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
-    box-shadow: none;
+body.dark-mode .filter-glass {
+    background: #808080;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020;
 }
+body.dark-mode .filter-btn { background: #808080; color: #FFFFFF; }
+body.dark-mode .filter-btn:hover { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; color: #FFFFFF; }
+body.dark-mode .filter-btn.active { background: #000080; color: #FFFFFF; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
 
 /* ============================================================
-   6. SEARCH
+   7.  SEARCH INPUT
    ============================================================ */
 .search-input {
-    background: rgba(255,255,255,0.10);
+    background: #FFFFFF;
+    color: #000000;
     border: 2px solid;
-    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
-    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
-    transition: none;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+    font-weight: 700;
 }
-
+.search-input::placeholder { color: #808080; opacity: 1; }
 .search-input:focus {
-    border-color: #e91e8c;
-    background: rgba(255,255,255,0.14);
-    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    background: #FFFFFF;
+    box-shadow: inset 1px 1px 0 #404040;
+}
+.search-clear {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    color: #000000;
+}
+.search-clear:hover {
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
 }
 
-.search-clear {
-    background: rgba(200,160,232,0.3);
-    border: 1px solid #8b3ab8;
-    transition: none;
-}
-.search-clear:hover { background: rgba(200,160,232,0.5); }
+body.dark-mode .search-input { background: #C0C0C0; color: #000000; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
+body.dark-mode .search-input::placeholder { color: #404040; }
 
 /* ============================================================
-   7. SCROLL-TO-TOP + CHAT/ACTIVITY FABs
+   8.  SCROLL-TOP + FABs
    ============================================================ */
-#scrollTopBtn {
-    background: #9340c8;
+#scrollTopBtn, .chat-fab, .activity-fab {
+    background: #C0C0C0;
+    color: #000000;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: none;
-    color: #f0d8ff;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
-body.dark-mode #scrollTopBtn {
-    background: #5a0090;
-    color: #f0d8ff;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+#scrollTopBtn:active, .chat-fab:active, .activity-fab:active {
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
 }
 
-.chat-fab, .activity-fab {
-    background: #9340c8;
-    color: #f0d8ff;
-    border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: none;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-}
+body.dark-mode #scrollTopBtn,
 body.dark-mode .chat-fab,
 body.dark-mode .activity-fab {
-    background: #5a0090;
-    color: #f0d8ff;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    background: #808080;
+    color: #FFFFFF;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020;
 }
 
 /* ============================================================
-   8. POST CARDS
+   9.  POST CARDS
    ============================================================ */
 .post-card {
-    border: 2px solid #8b3ab8;
-    box-shadow: 3px 3px 0 #3d0060;
-    transition: none;
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
-.post-card:hover {
-    transform: none;
-    box-shadow: 3px 3px 0 #3d0060;
-}
-.post-card.post-focused {
-    outline: 2px solid #e91e8c !important;
-    outline-offset: 2px;
-    box-shadow: 3px 3px 0 #3d0060;
-}
+.post-card:hover { transform: none; box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040; }
+.post-card.post-focused { outline: 2px dotted #000080 !important; outline-offset: 2px; }
 
-.post-header { border-bottom: 2px solid #8b3ab8; }
-.post-actions { border-top: 2px solid #8b3ab8; }
-.reactions-bar { border-top: 2px solid #8b3ab8; }
-.reply-section { border-top: 2px solid #8b3ab8; }
-
+.post-header {
+    background: #C0C0C0;
+    border-bottom: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+}
+.post-actions  { border-top: 1px solid #808080; background: #C0C0C0; }
+.reactions-bar { border-top: 1px solid #808080; background: #C0C0C0; }
+.reply-section { border-top: 1px solid #808080; background: #C0C0C0; }
 .post-note {
-    background: rgba(139,58,184,0.09);
-    border-left: 3px solid #8b3ab8;
+    background: #C0C0C0;
+    border-left: 3px solid #000080;
+    border-top: 1px solid #808080;
+    border-bottom: 1px solid #808080;
 }
+.note-author { color: #000080; }
+.note-text    { color: #000000; }
+
+body.dark-mode .post-card {
+    background: #808080;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020;
+}
+body.dark-mode .post-header { background: #808080; border-color: #404040 #C0C0C0 #C0C0C0 #404040; }
+body.dark-mode .post-actions, body.dark-mode .reactions-bar, body.dark-mode .reply-section { background: #808080; border-top-color: #404040; }
+body.dark-mode .post-note { background: #808080; border-left-color: #6060C0; }
+body.dark-mode .note-author { color: #C0C0FF; }
+body.dark-mode .note-text   { color: #FFFFFF; }
 
 /* ============================================================
-   9. BUTTONS — Win98 raised/pressed style
+   10.  BUTTONS — Win95 raised / pressed
    ============================================================ */
-.btn-primary {
-    background: #9340c8;
+.btn-primary, .btn-secondary, .btn-primary-dark,
+.reply-send-btn, .mark-all-btn, #aboutBtn {
+    background: #C0C0C0;
+    color: #000000;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: none;
-    transition: none;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    font-weight: 700;
 }
-.btn-primary:hover { background: #7b2faa; box-shadow: none; transform: none; }
-.btn-primary:active { border-color: #3d0060 #e8d0ff #e8d0ff #3d0060; }
-
-.btn-primary-dark {
-    background: #3d006d;
-    border: 2px solid;
-    border-color: #e8d0ff #1a0030 #1a0030 #e8d0ff;
+.btn-primary:hover, .btn-secondary:hover,
+.reply-send-btn:hover, .mark-all-btn:hover, #aboutBtn:hover {
+    background: #D0D0D0;
+    transform: none;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
-
-.btn-secondary {
-    background: #f0e4ff;
-    color: #3d006d;
-    border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: none;
-    transition: none;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-}
-.btn-secondary:hover { background: #e8d8ff; }
-.btn-secondary:active { border-color: #3d0060 #e8d0ff #e8d0ff #3d0060; }
-body.dark-mode .btn-secondary {
-    background: #3d006d;
-    color: #f0d8ff;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+.btn-primary:active, .btn-secondary:active,
+.reply-send-btn:active, .mark-all-btn:active, #aboutBtn:active {
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+    padding: 1px 0 0 1px; /* nudge content on press */
 }
 
-.delete-btn { font-family: Tahoma, Verdana, system-ui, sans-serif; transition: none; }
-.icon-btn   { font-family: Tahoma, Verdana, system-ui, sans-serif; transition: none; }
-.icon-btn:hover { color: #5a0090; background: rgba(139,58,184,0.12); }
+body.dark-mode .btn-primary, body.dark-mode .btn-secondary,
+body.dark-mode .reply-send-btn, body.dark-mode .mark-all-btn,
+body.dark-mode #aboutBtn {
+    background: #808080;
+    color: #FFFFFF;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020;
+}
 
 /* ============================================================
-   10. REACTION BUTTONS
+   11.  ICON BUTTONS
    ============================================================ */
-.reaction-btn {
-    border: 1px solid #8b3ab8;
-    background: rgba(139,58,184,0.07);
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+.icon-btn {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid transparent;
 }
-.reaction-btn:hover { transform: none; background: rgba(139,58,184,0.18); border-color: #5a0090; }
-.reaction-btn.active { background: #f0e4ff; border-color: #8b3ab8; color: #3d006d; }
-body.dark-mode .reaction-btn.active { color: #c8a0e8; }
+.icon-btn:hover {
+    background: #C0C0C0;
+    border: 1px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    color: #000000;
+}
+.icon-btn.fav-active { color: #800000; }
 
-.comment-reaction-btn {
-    border: 1px solid #8b3ab8;
-    background: rgba(139,58,184,0.06);
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
-}
-.comment-reaction-btn:hover { transform: none; background: rgba(139,58,184,0.15); }
-body.dark-mode .comment-reaction-btn.active { color: #c8a0e8; }
+body.dark-mode .icon-btn:hover { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; color: #FFFFFF; }
 
 /* ============================================================
-   11. REPLY AREA
+   12.  REACTION BUTTONS
+   ============================================================ */
+.reaction-btn, .comment-reaction-btn {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    color: #000000;
+}
+.reaction-btn:hover, .comment-reaction-btn:hover {
+    background: #D0D0D0;
+    transform: none;
+}
+.reaction-btn:active, .comment-reaction-btn:active {
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+}
+.reaction-btn.active {
+    background: #000080;
+    color: #FFFFFF;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+}
+body.dark-mode .reaction-btn, body.dark-mode .comment-reaction-btn {
+    background: #808080;
+    color: #FFFFFF;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020;
+}
+
+/* ============================================================
+   13.  REPLY AREA
    ============================================================ */
 .reply-item {
-    border: 1px solid #8b3ab8;
-    border-left: 3px solid #8b3ab8;
-    background: rgba(139,58,184,0.06);
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+    border-left: 3px solid #000080;
 }
-.reply-child {
-    border-left: 3px solid #8b3ab8;
-    background: rgba(139,58,184,0.04);
-}
-.inline-reply-form {
-    border: 1px dashed #8b3ab8;
-    background: rgba(139,58,184,0.04);
-}
+.reply-child { border-left: 3px solid #000080; background: #C0C0C0; }
+.inline-reply-form { border: 1px dashed #808080; background: #C0C0C0; }
+
 .reply-input {
+    background: #FFFFFF;
+    color: #000000;
     border: 2px solid;
-    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
-    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.18);
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
 }
-.reply-input:focus { border-color: #e91e8c; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.18); }
-.reply-input::placeholder { color: rgba(139,58,184,0.4); }
+.reply-input:focus { border-color: #000080 #FFFFFF #FFFFFF #000080; }
+.reply-input::placeholder { color: #808080; }
 
-.reply-send-btn {
-    background: #9340c8;
-    border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: none;
-    transition: none;
-}
-.reply-send-btn:hover { transform: none; box-shadow: none; background: #7b2faa; }
-.reply-send-btn:active { border-color: #3d0060 #e8d0ff #e8d0ff #3d0060; }
+body.dark-mode .reply-item { background: #808080; border-left-color: #6060C0; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; border-left: 3px solid #6060C0; }
+body.dark-mode .reply-input { background: #C0C0C0; color: #000000; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
 
 /* ============================================================
-   12. FORM INPUTS
+   14.  FORM INPUTS / TEXTAREAS
    ============================================================ */
-.form-field input,
-.form-field select,
-.form-field textarea {
-    border: 2px solid;
-    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
-    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.15);
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
-}
-.form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus {
-    border-color: #e91e8c;
-    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.15);
-}
-
+.form-field input, .form-field select, .form-field textarea,
 #pollOpt0, #pollOpt1, #pollOpt2, #pollOpt3, #pollEndsAt {
+    background: #FFFFFF;
+    color: #000000;
     border: 2px solid;
-    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
-    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.12);
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+    font-weight: 700;
 }
-#pollOpt0:focus, #pollOpt1:focus, #pollOpt2:focus, #pollOpt3:focus, #pollEndsAt:focus {
-    border-color: #e91e8c;
+.form-field input:focus, .form-field select:focus,
+.form-field textarea:focus,
+#pollOpt0:focus, #pollOpt1:focus, #pollOpt2:focus,
+#pollOpt3:focus, #pollEndsAt:focus {
+    border-color: #000080 #FFFFFF #FFFFFF #000080;
+    box-shadow: inset 1px 1px 0 #404040;
 }
-body.dark-mode #pollOpt0,
-body.dark-mode #pollOpt1,
-body.dark-mode #pollOpt2,
-body.dark-mode #pollOpt3,
-body.dark-mode #pollEndsAt { background: rgba(255,255,255,0.05); }
+.form-field input::placeholder, .form-field textarea::placeholder { color: #808080; opacity: 1; }
+
+body.dark-mode .form-field input,
+body.dark-mode .form-field select,
+body.dark-mode .form-field textarea,
+body.dark-mode #pollOpt0, body.dark-mode #pollOpt1,
+body.dark-mode #pollOpt2, body.dark-mode #pollOpt3,
+body.dark-mode #pollEndsAt {
+    background: #C0C0C0;
+    color: #000000;
+    border-color: #404040 #C0C0C0 #C0C0C0 #404040;
+    box-shadow: inset 1px 1px 0 #202020;
+}
 
 /* ============================================================
-   13. MODAL
+   15.  MODAL
    ============================================================ */
-.modal {
-    backdrop-filter: none;
-    background: rgba(0,0,0,0.78);
-}
+.modal { background: rgba(0,0,0,0.65); }
 .modal-content {
-    border: 3px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: 5px 5px 0 #000;
-    background: var(--card-bg);
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #404040 #404040 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #808080, 4px 4px 0 #000000;
 }
 .modal-x {
-    background: #9340c8;
-    color: #fff;
+    background: #C0C0C0;
+    color: #000000;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    transition: none;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    font-weight: 900;
 }
-.modal-x:hover  { background: #7b2faa; transform: none; }
-.modal-x:active { border-color: #3d0060 #e8d0ff #e8d0ff #3d0060; }
+.modal-x:hover { background: #D0D0D0; transform: none; }
+.modal-x:active { border-color: #808080 #FFFFFF #FFFFFF #808080; box-shadow: inset 1px 1px 0 #404040; }
+
+body.dark-mode .modal-content { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020, 4px 4px 0 #000000; }
+body.dark-mode .modal-x { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
 
 /* ============================================================
-   14. COLLECTIONS
+   16.  COLLECTIONS
    ============================================================ */
 .collection-item {
-    border: 2px solid #8b3ab8;
-    background: rgba(139,58,184,0.06);
-    transition: none;
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
-.collection-item:hover {
-    transform: none;
-    border-color: #5a0090;
-    background: rgba(139,58,184,0.14);
-    box-shadow: 2px 2px 0 #3d0060;
-}
+.collection-item:hover { transform: none; box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040; border-color: #FFFFFF #808080 #808080 #FFFFFF; background: #D0D0D0; }
 
 .coll-pick-btn {
-    border: 1px solid #8b3ab8;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    color: #000000;
 }
-.coll-pick-btn:hover { background: rgba(139,58,184,0.13); border-color: #5a0090; }
-.coll-pick-btn.selected { background: #9340c8; color: #fff; border-color: #3d0060; box-shadow: none; }
-body.dark-mode .coll-pick-btn.selected { color: #fff; }
+.coll-pick-btn:hover { background: #D0D0D0; }
+.coll-pick-btn.selected {
+    background: #000080;
+    color: #FFFFFF;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+}
+
+body.dark-mode .collection-item { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+body.dark-mode .coll-pick-btn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+
+/* ============================================================
+   17.  BADGES
+   ============================================================ */
+.badge-el   { background: #800080; color: #FFFFFF; box-shadow: none; }
+.badge-tero { background: #008080; color: #FFFFFF; box-shadow: none; }
+.badge-guest { background: #808000; color: #FFFFFF; box-shadow: none; }
+.new-badge  { background: #C00000; color: #FFFFFF; }
 
 .collection-badge {
-    border: 1px solid #8b3ab8;
-    background: rgba(139,58,184,0.12);
-    color: #3d006d;
-    transition: none;
+    background: #C0C0C0;
+    border: 1px solid #808080;
+    color: #000000;
+    box-shadow: none;
 }
-.collection-badge:hover { transform: none; background: rgba(139,58,184,0.2); }
-body.dark-mode .collection-badge { color: #c8a0e8; }
+.collection-badge:hover { background: #D0D0D0; transform: none; }
+
+body.dark-mode .collection-badge { background: #808080; color: #FFFFFF; border-color: #404040; }
 
 /* ============================================================
-   15. BADGES
+   18.  LINK PREVIEW
    ============================================================ */
-.badge-el    { background: #d01080; box-shadow: none; }
-.badge-tero  { background: #5a0090; box-shadow: none; }
-.badge-guest { background: #007850; box-shadow: none; }
-.new-badge   { background: #e91e8c; }
+.link-preview {
+    background: #FFFFFF;
+    border: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+    padding: 10px 14px;
+    margin: 8px 14px;
+    text-decoration: none;
+}
+.link-preview:hover { background: #FFFFF0; }
+
+.link-favicon {
+    background: #FFFFFF;
+    border: 1px solid #808080;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+}
+.link-favicon img { width: 24px; height: 24px; object-fit: contain; }
+
+.link-domain {
+    color: #000080;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0;
+}
+.link-url {
+    color: #404040;
+    font-size: 11px;
+    opacity: 1;
+}
+.link-arrow { color: #808080; }
+
+body.dark-mode .link-preview { background: #C0C0C0; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
+body.dark-mode .link-domain { color: #0000C0; }
+body.dark-mode .link-url    { color: #000000; }
+
+/* Link preview loading skeleton */
+.link-preview.lp-loading .link-domain,
+.link-preview.lp-loading .link-url {
+    background-color: #C0C0C0;
+    background-image: linear-gradient(90deg, #C0C0C0 25%, #E0E0E0 50%, #C0C0C0 75%);
+    background-size: 200% 100%;
+    animation: w95Skeleton 1.2s linear infinite;
+    color: transparent !important;
+    user-select: none;
+    min-width: 80px;
+    display: block;
+    min-height: 13px;
+}
+.link-preview.lp-loading .link-domain { min-width: 140px; }
+
+@keyframes w95Skeleton {
+    0%   { background-position:  200% 0; }
+    100% { background-position: -200% 0; }
+}
 
 /* ============================================================
-   16. CHAT + ACTIVITY PANELS
+   19.  CHAT + ACTIVITY PANELS
    ============================================================ */
 .chat-panel, .activity-panel {
+    background: #C0C0C0;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: 5px 5px 0 rgba(0,0,0,0.6);
+    border-color: #FFFFFF #404040 #404040 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #808080, 4px 4px 0 #000000;
 }
-
 .chat-header {
-    background: #5a0090;
-    border-bottom: 2px solid #3d0060;
+    background: #000080;
+    border-bottom: 2px solid #000000;
 }
 .chat-title {
     background: none;
     -webkit-background-clip: unset;
     background-clip: unset;
-    -webkit-text-fill-color: #f0d8ff;
-    color: #f0d8ff;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    -webkit-text-fill-color: #FFFFFF;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0;
 }
-
 .activity-header {
-    background: #5a0090;
-    border-bottom: 2px solid #3d0060;
+    background: #000080;
+    border-bottom: 2px solid #000000;
 }
 .activity-title {
     background: none;
     -webkit-background-clip: unset;
     background-clip: unset;
-    -webkit-text-fill-color: #f0d8ff;
-    color: #f0d8ff;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    -webkit-text-fill-color: #FFFFFF;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0;
 }
+.chat-body { background: #C0C0C0; }
+.activity-body { background: #C0C0C0; }
+.chat-input-wrap { background: #C0C0C0; border-top: 2px solid; border-color: #808080 #FFFFFF #FFFFFF #808080; }
 
 .chat-input {
+    background: #FFFFFF;
+    color: #000000;
     border: 2px solid;
-    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
-    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2);
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+    font-weight: 700;
 }
-.chat-input:focus { border-color: #e91e8c; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2); }
+.chat-input:focus { border-color: #000080 #FFFFFF #FFFFFF #000080; box-shadow: inset 1px 1px 0 #404040; }
+.chat-input::placeholder { color: #808080; opacity: 1; }
 
-/* Chat bubbles — all corners square */
+.chat-send-btn, .activity-close-btn, .chat-close-btn {
+    background: #C0C0C0;
+    color: #000000;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+}
+.chat-send-btn:active, .activity-close-btn:active, .chat-close-btn:active {
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+}
+
+body.dark-mode .chat-panel, body.dark-mode .activity-panel { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020, 4px 4px 0 #000000; }
+body.dark-mode .chat-body, body.dark-mode .activity-body { background: #808080; }
+body.dark-mode .chat-input-wrap { background: #808080; border-color: #404040 #C0C0C0 #C0C0C0 #404040; }
+body.dark-mode .chat-input { background: #C0C0C0; color: #000000; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
+body.dark-mode .chat-send-btn, body.dark-mode .activity-close-btn, body.dark-mode .chat-close-btn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+
+/* ============================================================
+   20.  CHAT BUBBLES
+   ============================================================ */
 .chat-group--other .chat-bubble,
 .chat-group--other .chat-bubble:only-child,
 .chat-group--other .chat-bubble:first-child:not(:only-child),
 .chat-group--other .chat-bubble:last-child:not(:only-child) {
     border-radius: 0 !important;
-    border: 1px solid #8b3ab8;
-    background: rgba(139,58,184,0.10);
+    background: #DFDFDF;
+    border: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+    color: #000000;
 }
-body.dark-mode .chat-group--other .chat-bubble {
-    background: rgba(139,58,184,0.22);
-    border-color: #7b2faa;
-}
-
 .chat-group--me .chat-bubble,
 .chat-group--me .chat-bubble:only-child,
 .chat-group--me .chat-bubble:first-child:not(:only-child),
 .chat-group--me .chat-bubble:last-child:not(:only-child) {
     border-radius: 0 !important;
-    background: #5a0090;
+    background: #000080;
+    color: #FFFFFF;
     border: none;
 }
-
 .heart-react {
-    border: 1px solid #8b3ab8;
-    background: var(--card-bg, #f7f0ff);
+    background: #C0C0C0;
+    border: 1px solid #808080;
+    box-shadow: none;
 }
-body.dark-mode .heart-react {
-    background: var(--card-bg, #160a28);
-    border-color: #7b2faa;
-}
+.activity-item:hover { background: #D0D0D0; }
 
-.activity-item:hover { background: rgba(139,58,184,0.09); }
+body.dark-mode .chat-group--other .chat-bubble { background: #A0A0A0; color: #FFFFFF; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
+body.dark-mode .heart-react { background: #808080; border-color: #404040; }
 
 /* ============================================================
-   17. SYNC INDICATOR
+   21.  SYNC INDICATOR
    ============================================================ */
 .sync-indicator {
-    background: #f0e4ff;
-    border: 2px solid #8b3ab8;
-    box-shadow: 2px 2px 0 #3d0060;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    color: #1a001a;
-}
-body.dark-mode .sync-indicator {
-    background: #1e0a30;
-    color: #f0d8ff;
-    border-color: #7b2faa;
-}
-
-/* ============================================================
-   18. MARK-ALL BUTTON
-   ============================================================ */
-.mark-all-btn {
-    background: rgba(0,128,96,0.2);
+    background: #C0C0C0;
     border: 2px solid;
-    border-color: #00c896 #006040 #006040 #00c896;
-    color: #00c896;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040, 2px 2px 0 #000000;
+    color: #000000;
+    font-weight: 700;
 }
-.mark-all-btn:hover { background: rgba(0,128,96,0.32); transform: none; }
+body.dark-mode .sync-indicator { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020, 2px 2px 0 #000000; }
 
 /* ============================================================
-   19. LOGIN / ACCESS-DENIED OVERLAY
+   22.  LOGIN / ACCESS-DENIED OVERLAY
    ============================================================ */
 #loginOverlay, #accessDeniedOverlay {
-    background: #1a0028;
+    background: #008080; /* Win95 teal desktop */
 }
-
 .user-card {
-    background: rgba(90,0,144,0.55);
+    background: #C0C0C0;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    backdrop-filter: none;
-    transition: none;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040, 4px 4px 0 #000000;
+    color: #000000;
 }
 .user-card:hover {
-    background: rgba(90,0,144,0.8);
+    background: #D0D0D0;
     transform: none;
-    box-shadow: 3px 3px 0 #000;
-    border-color: #e91e8c #2d006d #2d006d #e91e8c;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040, 4px 4px 0 #000000;
 }
-
 .google-signin-btn {
-    background: rgba(90,0,144,0.55);
+    background: #C0C0C0;
+    color: #000000;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    backdrop-filter: none;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
-.google-signin-btn:hover {
-    background: rgba(90,0,144,0.8);
-    transform: none;
-    box-shadow: 2px 2px 0 #000;
-    border-color: #e91e8c;
-}
+.google-signin-btn:hover { background: #D0D0D0; transform: none; box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040; }
 
 /* ============================================================
-   20. HEADER
+   23.  HEADER
    ============================================================ */
 .header-title {
-    text-shadow: 2px 2px 0 #3d0060;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    font-size: 16px;
+    font-weight: 900;
+    color: #000000;
+    text-shadow: none;
     letter-spacing: 0;
 }
+body.dark-mode .header-title { color: #FFFFFF; }
+
 .user-indicator-btn {
-    background: rgba(90,0,144,0.5);
+    background: #C0C0C0;
+    color: #000000;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
-.user-indicator-btn:hover { background: rgba(90,0,144,0.75); }
+.user-indicator-btn:hover { background: #D0D0D0; }
+body.dark-mode .user-indicator-btn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
 
 /* ============================================================
-   21. ACTIVE FILTERS BANNER
+   24.  ACTIVE FILTERS BANNER
    ============================================================ */
 .filters-banner-inner {
-    background: rgba(90,0,144,0.55);
+    background: #C0C0C0;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
-.filters-label { font-family: Tahoma, Verdana, system-ui, sans-serif; }
 .clear-filters-btn {
-    background: rgba(90,0,144,0.4);
+    background: #C0C0C0;
+    color: #000000;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
-.clear-filters-btn:hover { background: rgba(90,0,144,0.65); }
+.clear-filters-btn:hover { background: #D0D0D0; }
+body.dark-mode .filters-banner-inner { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+body.dark-mode .clear-filters-btn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
 
 /* ============================================================
-   22. TOAST
+   25.  TOAST
    ============================================================ */
 .toast {
-    background: #1a0028;
-    color: #f0d8ff;
-    border: 2px solid #8b3ab8;
-    box-shadow: 3px 3px 0 #000;
-    backdrop-filter: none;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    background: #C0C0C0;
+    color: #000000;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040, 4px 4px 0 #000000;
+    font-weight: 700;
 }
+body.dark-mode .toast { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020, 4px 4px 0 #000000; }
 
 /* ============================================================
-   23. EMPTY STATE + ADD SECTION
+   26.  EMPTY STATE + ADD SECTION
    ============================================================ */
-.empty-state {
-    border: 2px solid #8b3ab8;
-    box-shadow: 3px 3px 0 #3d0060;
+.empty-state, .add-section {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
-.add-section {
-    border: 2px solid #8b3ab8;
-    box-shadow: 3px 3px 0 #3d0060;
-    background: var(--card-bg);
-}
+body.dark-mode .empty-state, body.dark-mode .add-section { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
 
 /* ============================================================
-   24. POLL
+   27.  POLL
    ============================================================ */
 .poll-vote-btn {
-    border: 1px solid #8b3ab8;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+    background: #C0C0C0;
+    color: #000000;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
-.poll-vote-btn:hover { background: rgba(139,58,184,0.10); border-color: #5a0090; }
-.poll-result       { border: 1px solid #8b3ab8; }
-.poll-result--voted { border-color: #5a0090; }
+.poll-vote-btn:hover { background: #D0D0D0; }
+.poll-result {
+    background: #FFFFFF;
+    border: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+}
+.poll-result-fill { background: #000080 !important; }
+.poll-result--voted .poll-result-fill { background: #808000 !important; }
+
+body.dark-mode .poll-vote-btn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+body.dark-mode .poll-result { background: #C0C0C0; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
 
 /* ============================================================
-   25. TYPE PICKER / TOGGLE
+   28.  TYPE PICKER / TOGGLE
    ============================================================ */
-.type-picker-btn {
-    border: 2px solid #8b3ab8;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+.type-picker-btn, .type-toggle-btn {
+    background: #C0C0C0;
+    color: #000000;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    font-weight: 700;
 }
-.type-picker-btn:hover { border-color: #5a0090; transform: none; }
-
-.type-toggle-btn {
-    border: 2px solid #8b3ab8;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+.type-picker-btn:hover, .type-toggle-btn:hover { background: #D0D0D0; transform: none; }
+.type-toggle-btn.active {
+    background: #000080;
+    color: #FFFFFF;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
 }
-.type-toggle-btn.active { border-color: #5a0090; background: rgba(139,58,184,0.15); }
+body.dark-mode .type-picker-btn, body.dark-mode .type-toggle-btn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
 
 /* ============================================================
-   26. IMAGE UPLOAD
+   29.  IMAGE UPLOAD
    ============================================================ */
 .image-upload-label {
-    border: 2px dashed #8b3ab8;
-    transition: none;
+    background: #FFFFFF;
+    border: 2px dashed #808080;
+    color: #404040;
 }
-.image-upload-label:hover { border-color: #5a0090; background: rgba(139,58,184,0.07); }
+.image-upload-label:hover { background: #F0F0F0; border-color: #000080; }
 
 /* ============================================================
-   27. LINK PREVIEW
-   ============================================================ */
-.link-favicon {
-    background: rgba(139,58,184,0.14);
-    border: 1px solid #8b3ab8;
-}
-.link-preview:hover { background: rgba(139,58,184,0.09); }
-.link-domain { color: #5a0090; }
-body.dark-mode .link-domain { color: #c8a0e8; }
-.link-arrow { color: #8b3ab8; }
-
-/* ============================================================
-   28. WATCH-LATER BUTTON
+   30.  WATCH-LATER BUTTON
    ============================================================ */
 .watch-later-btn {
-    border: 1px solid #8b3ab8;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
-}
-.watch-later-btn:hover { background: rgba(139,58,184,0.12); }
-.watch-later-btn.active { background: rgba(139,58,184,0.16); border-color: #8b3ab8; }
-body.dark-mode .watch-later-btn.active { color: #c8a0e8; border-color: #7b2faa; }
-
-/* ============================================================
-   29. KBD / SHORTCUT MODAL
-   ============================================================ */
-kbd {
-    background: #e8d8ff;
+    background: #C0C0C0;
     border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    color: #1a001a;
-    font-family: Tahoma, Verdana, 'Courier New', monospace;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    color: #000000;
 }
-body.dark-mode kbd {
-    background: #3d006d;
-    color: #f0d8ff;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+.watch-later-btn:hover { background: #D0D0D0; }
+.watch-later-btn.active {
+    background: #000080;
+    color: #FFFFFF;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
 }
+body.dark-mode .watch-later-btn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
 
 /* ============================================================
-   30. SCROLLBAR — Win98 style
-   ============================================================ */
-::-webkit-scrollbar       { width: 14px; height: 14px; }
-::-webkit-scrollbar-track { background: #c8a0e8; }
-::-webkit-scrollbar-thumb {
-    background: #8b3ab8;
-    border: 1px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    border-radius: 0;
-}
-::-webkit-scrollbar-thumb:hover { background: #6a1a9a; }
-::-webkit-scrollbar-button {
-    background: #9340c8;
-    border: 1px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    display: block;
-    height: 14px;
-}
-
-/* ============================================================
-   31. NOTIF PERMISSION MODAL
-   ============================================================ */
-.notif-perm-backdrop { backdrop-filter: none; background: rgba(0,0,0,0.78); }
-.notif-perm-card {
-    border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: 5px 5px 0 #000;
-    background: var(--card-bg);
-}
-.notif-perm-allow {
-    background: #9340c8;
-    border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
-}
-.notif-perm-allow:hover { opacity: 1; background: #7b2faa; }
-.notif-perm-deny {
-    border: 2px solid #8b3ab8;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
-}
-.notif-perm-deny:hover { background: rgba(139,58,184,0.10); }
-
-/* ============================================================
-   32. NET STATUS (offline pill)
-   ============================================================ */
-.net-status {
-    border: 2px solid #e91e8c;
-    box-shadow: 2px 2px 0 #000;
-    background: rgba(15,5,20,0.95);
-}
-
-/* ============================================================
-   33. ABOUT MODAL
-   ============================================================ */
-.about-backdrop { backdrop-filter: none; }
-.about-card {
-    border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: 5px 5px 0 #000;
-    background: var(--card-bg);
-}
-.about-close-btn {
-    background: #9340c8;
-    color: #fff;
-    border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
-}
-.about-close-btn:hover  { transform: none; background: #7b2faa; }
-.about-close-btn:active { border-color: #3d0060 #e8d0ff #e8d0ff #3d0060; }
-
-#aboutBtn {
-    background: #9340c8;
-    border: 2px solid;
-    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
-    box-shadow: none;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
-}
-#aboutBtn:hover { background: #7b2faa; transform: none; box-shadow: none; }
-
-/* ============================================================
-   34. BOARDS
-   ============================================================ */
-.board-card {
-    border: 2px solid #8b3ab8;
-    box-shadow: 2px 2px 0 #3d0060;
-    transition: none;
-}
-.board-card:hover { transform: none; box-shadow: 3px 3px 0 #3d0060; }
-
-.board-back-btn {
-    color: #8b3ab8;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-}
-.board-picker-item {
-    border: 1px solid #8b3ab8;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
-}
-.board-picker-item:hover { background: rgba(139,58,184,0.12); }
-.board-picker-item.board-picker-saved { border-color: #5a0090; color: #5a0090; }
-body.dark-mode .board-picker-item.board-picker-saved { color: #c8a0e8; }
-
-/* ============================================================
-   35. MAILBOX
-   ============================================================ */
-.mailbox-tabs {
-    background: rgba(139,58,184,0.12);
-    border: 1px solid #8b3ab8;
-    padding: 3px;
-    gap: 2px;
-}
-.mailbox-tab {
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
-}
-.mailbox-tab.active {
-    background: var(--card-bg);
-    color: var(--text-primary);
-    border: 1px solid #8b3ab8;
-    box-shadow: none;
-}
-
-.letter-item {
-    border: 2px solid #8b3ab8;
-    transition: none;
-}
-.letter-item:hover { transform: none; box-shadow: 2px 2px 0 #3d0060; }
-.letter-item.unread {
-    border-color: #5a0090;
-    background: rgba(139,58,184,0.07);
-}
-.letter-full { border: 2px solid #8b3ab8; }
-
-/* ============================================================
-   36. NOW LISTENING
-   ============================================================ */
-.now-listening-bar {
-    border: 2px solid #8b3ab8;
-    box-shadow: 2px 2px 0 #3d0060;
-}
-.nl-card { border: 1px solid #8b3ab8; }
-.nl-card.nl-playing { border-color: #e91e8c; }
-.nl-status { color: #e91e8c; }
-
-/* ============================================================
-   37. EDIT PILL
+   31.  EDIT PILL
    ============================================================ */
 .edit-pill {
-    border: 1px solid #8b3ab8;
-    background: rgba(139,58,184,0.14);
-    color: #5a0090;
-    font-family: Tahoma, Verdana, system-ui, sans-serif;
-    transition: none;
+    background: #C0C0C0;
+    color: #000000;
+    border: 1px solid #808080;
+    box-shadow: none;
+    font-weight: 700;
 }
-.edit-pill:hover { transform: none; background: rgba(139,58,184,0.24); }
-body.dark-mode .edit-pill { color: #c8a0e8; }
+.edit-pill:hover { background: #D0D0D0; transform: none; }
+body.dark-mode .edit-pill { background: #808080; color: #FFFFFF; border-color: #404040; }
 
 /* ============================================================
-   38. MISC
+   32.  KBD
    ============================================================ */
-.link-favicon img { border-radius: 0 !important; }
-.rec-type-badge {
-    background: rgba(139,58,184,0.15);
-    border: 1px solid #8b3ab8;
+kbd {
+    background: #C0C0C0;
+    color: #000000;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    font-family: 'Nunito', sans-serif !important;
+    font-size: 12px;
 }
-.history-box {
-    background: rgba(139,58,184,0.07);
-    border: 1px solid #8b3ab8;
-}
-.image-preview-thumb { border-radius: 0 !important; }
+body.dark-mode kbd { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
 
 /* ============================================================
-   39. FOCUS STATES — keep accessible, just re-colour
+   33.  SCROLLBAR — Win95 style
+   ============================================================ */
+::-webkit-scrollbar       { width: 17px; height: 17px; }
+::-webkit-scrollbar-track { background: #C0C0C0; }
+::-webkit-scrollbar-thumb {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+}
+::-webkit-scrollbar-button {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    display: block;
+    height: 17px;
+}
+body.dark-mode ::-webkit-scrollbar-track  { background: #808080; }
+body.dark-mode ::-webkit-scrollbar-thumb  { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+body.dark-mode ::-webkit-scrollbar-button { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; }
+
+/* ============================================================
+   34.  NOTIF PERMISSION MODAL
+   ============================================================ */
+.notif-perm-backdrop { background: rgba(0,0,0,0.65); }
+.notif-perm-card {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #404040 #404040 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #808080, 4px 4px 0 #000000;
+}
+.notif-perm-allow {
+    background: #C0C0C0;
+    color: #000000;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+}
+.notif-perm-allow:hover { opacity: 1; background: #D0D0D0; }
+.notif-perm-deny {
+    background: #C0C0C0;
+    color: #000000;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+}
+.notif-perm-deny:hover { background: #D0D0D0; }
+body.dark-mode .notif-perm-card { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020, 4px 4px 0 #000000; }
+body.dark-mode .notif-perm-allow, body.dark-mode .notif-perm-deny { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+
+/* ============================================================
+   35.  NET STATUS
+   ============================================================ */
+.net-status {
+    background: #C00000;
+    color: #FFFFFF;
+    border: 2px solid;
+    border-color: #FF8080 #800000 #800000 #FF8080;
+    box-shadow: 2px 2px 0 #000000;
+}
+
+/* ============================================================
+   36.  ABOUT MODAL
+   ============================================================ */
+.about-card {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #404040 #404040 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #808080, 4px 4px 0 #000000;
+}
+.about-close-btn {
+    background: #C0C0C0;
+    color: #000000;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    font-weight: 700;
+}
+.about-close-btn:hover { background: #D0D0D0; transform: none; }
+.about-close-btn:active { border-color: #808080 #FFFFFF #FFFFFF #808080; box-shadow: inset 1px 1px 0 #404040; }
+body.dark-mode .about-card { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020, 4px 4px 0 #000000; }
+body.dark-mode .about-close-btn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+
+#aboutBtn {
+    background: #C0C0C0;
+    color: #000000;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+    font-weight: 700;
+}
+#aboutBtn:hover { background: #D0D0D0; transform: none; box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040; }
+body.dark-mode #aboutBtn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+
+/* ============================================================
+   37.  BOARDS
+   ============================================================ */
+.board-card {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+}
+.board-card:hover { transform: none; box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040; background: #D0D0D0; }
+.board-back-btn { color: #000080; font-weight: 700; }
+.board-picker-item {
+    background: #C0C0C0;
+    border: 1px solid #808080;
+    color: #000000;
+    font-weight: 700;
+}
+.board-picker-item:hover { background: #D0D0D0; }
+.board-picker-item.board-picker-saved { background: #000080; color: #FFFFFF; border-color: #000080; }
+.boards-action-btn {
+    background: #C0C0C0 !important;
+    color: #000000 !important;
+    border: 2px solid !important;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF !important;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040 !important;
+    font-weight: 700;
+}
+.boards-action-btn:hover { background: #D0D0D0 !important; }
+
+body.dark-mode .board-card { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+body.dark-mode .board-picker-item { background: #808080; color: #FFFFFF; border-color: #404040; }
+body.dark-mode .boards-action-btn { background: #808080 !important; color: #FFFFFF !important; border-color: #C0C0C0 #404040 #404040 #C0C0C0 !important; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020 !important; }
+
+/* ============================================================
+   38.  MAILBOX
+   ============================================================ */
+.mailbox-tabs {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+    padding: 3px;
+}
+.mailbox-tab {
+    background: #C0C0C0;
+    color: #000000;
+    border: 1px solid #808080;
+    font-weight: 700;
+}
+.mailbox-tab.active {
+    background: #FFFFFF;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    border-bottom-color: #FFFFFF;
+}
+.letter-item {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+}
+.letter-item:hover { transform: none; background: #D0D0D0; }
+.letter-item.unread { border-left: 3px solid #000080; background: #DFDFFF; }
+.letter-full {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+}
+
+body.dark-mode .mailbox-tabs { background: #808080; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
+body.dark-mode .mailbox-tab { background: #808080; color: #FFFFFF; border-color: #404040; }
+body.dark-mode .mailbox-tab.active { background: #C0C0C0; color: #000000; }
+body.dark-mode .letter-item { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+body.dark-mode .letter-item.unread { border-left: 3px solid #8080FF; background: #404060; }
+
+/* ============================================================
+   39.  NOW LISTENING
+   ============================================================ */
+.now-listening-bar {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+}
+.nl-card {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+}
+.nl-card.nl-playing { border-color: #000080 #FFFFFF #FFFFFF #000080; }
+.nl-status { color: #000080; }
+.nl-art { border: 1px solid #808080 !important; }
+
+body.dark-mode .now-listening-bar { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
+body.dark-mode .nl-card { background: #808080; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
+
+/* ============================================================
+   40.  MISC
+   ============================================================ */
+.history-box {
+    background: #FFFFFF;
+    border: 2px solid;
+    border-color: #808080 #FFFFFF #FFFFFF #808080;
+    box-shadow: inset 1px 1px 0 #404040;
+}
+.rec-type-badge {
+    background: #C0C0C0;
+    border: 1px solid #808080;
+    color: #000000;
+}
+.delete-btn { color: #800000; }
+body.dark-mode .delete-btn { color: #FF8080; }
+
+/* ============================================================
+   41.  FOCUS STATES — accessible, Win95 dotted style
    ============================================================ */
 :focus-visible {
-    outline: 2px solid #e91e8c !important;
+    outline: 2px dotted #000000 !important;
     outline-offset: 2px !important;
     box-shadow: none !important;
 }
+body.dark-mode :focus-visible { outline-color: #FFFFFF !important; }
 
 /* ============================================================
-   40. REDUCED-MOTION COMPAT
+   42.  REDUCED MOTION
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
     body { animation: none; }
-    .chat-panel, .activity-panel { transition: opacity 0.01ms, visibility 0.01ms; }
+    .link-preview.lp-loading .link-domain,
+    .link-preview.lp-loading .link-url { animation: none; background-color: #C0C0C0; }
 }
