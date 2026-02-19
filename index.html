@@ -333,6 +333,20 @@
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
     <script async src="https://www.instagram.com/embed.js"></script>
 
+    <style>
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0px rgba(0,0,0,0); }
+  50% { box-shadow: 0 0 8px rgba(255, 105, 180, 0.5); }
+  100% { box-shadow: 0 0 0px rgba(0,0,0,0); }
+}
+
+#chatInput:focus {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+</style>
+
+
     <script type="module" src="app.js"></script>
 </body>
 </html>
+
