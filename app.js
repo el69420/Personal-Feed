@@ -120,6 +120,26 @@ function youtubeThumb(url) {
     if (!id) return null;
     return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 }
+function burstEmoji(emoji, sourceEl) {
+    const rect = sourceEl.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const count = 7;
+    for (let i = 0; i < count; i++) {
+        const el = document.createElement('div');
+        el.textContent = emoji;
+        el.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;font-size:${13 + Math.random() * 10}px;pointer-events:none;z-index:9999;user-select:none;transform:translate(-50%,-50%);`;
+        document.body.appendChild(el);
+        const dx = (Math.random() - 0.5) * 70;
+        const dy = -(55 + Math.random() * 65);
+        el.animate(
+            [{ opacity: 1, transform: `translate(-50%,-50%) translate(0,0) scale(1)` },
+             { opacity: 0, transform: `translate(-50%,-50%) translate(${dx}px,${dy}px) scale(${0.7 + Math.random() * 0.7})` }],
+            { duration: 650 + Math.random() * 300, delay: i * 35, easing: 'cubic-bezier(0.25,0.46,0.45,0.94)', fill: 'forwards' }
+        ).onfinish = () => el.remove();
+    }
+}
+
 function ensureAudio() {
     if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (_audioCtx.state === 'suspended') _audioCtx.resume();
@@ -741,10 +761,11 @@ window.deletePost = function(id) {
 };
 
 // ---- REACTIONS ----
-window.toggleReaction = async function(postId, emoji) {
+window.toggleReaction = async function(postId, emoji, btn) {
     if (!throttle(`react-${postId}-${emoji}`, 500)) return;
     const post = allPosts[postId];
     if (!post) return;
+    if (btn) burstEmoji(emoji, btn);
 
     const reactionsBy = structuredClone(post.reactionsBy || {});
     reactionsBy[emoji] = reactionsBy[emoji] || {};
@@ -760,10 +781,11 @@ window.toggleReaction = async function(postId, emoji) {
     sparkSound('react');
 };
 
-window.toggleCommentReaction = async function(postId, replyId, emoji) {
+window.toggleCommentReaction = async function(postId, replyId, emoji, btn) {
     if (!throttle(`cmtreact-${postId}-${replyId}-${emoji}`, 500)) return;
     const post = allPosts[postId];
     if (!post) return;
+    if (btn) burstEmoji(emoji, btn);
 
     const replies = (post.replies || []).map(r => {
         if (r.id !== replyId) return r;
@@ -865,7 +887,7 @@ function renderReplies(postId, replies) {
             const who = users.sort().join(' & ');
             return `
                 <button class="comment-reaction-btn${active ? ' active' : ''}"
-                        onclick="toggleCommentReaction('${postId}','${replyId}','${e}')">
+                        onclick="toggleCommentReaction('${postId}','${replyId}','${e}',this)">
                     ${e}${who ? `<span class="reaction-people">${who}</span>` : ''}
                 </button>
             `;
@@ -1017,7 +1039,7 @@ function createPostCard(post) {
         const who = users.sort().join(' & ');
         return `
             <button class="reaction-btn${active ? ' active' : ''}"
-                    onclick="toggleReaction('${post.id}','${e}')">
+                    onclick="toggleReaction('${post.id}','${e}',this)">
                 <span>${e}</span>
                 ${who ? `<span class="reaction-people">${who}</span>` : ''}
             </button>
