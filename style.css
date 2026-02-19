@@ -1227,6 +1227,10 @@ body.dark-mode .activity-fab {
     background: rgba(139,92,246,0.07);
 }
 
+.activity-item.seen {
+    opacity: 0.4;
+}
+
 .activity-item-action {
     font-size: 12px;
     font-weight: 800;

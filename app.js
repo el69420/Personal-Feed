@@ -1835,16 +1835,17 @@ function loadPosts() {
 // ---- ACTIVITY FEED ----
 function computeActivity() {
     if (!currentUser) return [];
+    const cutoff = Date.now() - 72 * 60 * 60 * 1000;
     const items = [];
     for (const [id, post] of Object.entries(allPosts)) {
-        if (post.timestamp > activitySeenTs && post.author && post.author !== currentUser) {
+        if (post.timestamp > cutoff && post.author && post.author !== currentUser) {
             let preview = post.note || '';
             if (!preview) { try { preview = new URL(post.url).hostname.replace('www.', ''); } catch { preview = post.url || ''; } }
-            items.push({ type: 'post', postId: id, author: post.author, timestamp: post.timestamp, preview });
+            items.push({ type: 'post', postId: id, author: post.author, timestamp: post.timestamp, preview, seen: post.timestamp <= activitySeenTs });
         }
         for (const reply of (post.replies || [])) {
-            if (reply.timestamp > activitySeenTs && reply.author && reply.author !== currentUser) {
-                items.push({ type: 'reply', postId: id, author: reply.author, timestamp: reply.timestamp, preview: reply.text || '' });
+            if (reply.timestamp > cutoff && reply.author && reply.author !== currentUser) {
+                items.push({ type: 'reply', postId: id, author: reply.author, timestamp: reply.timestamp, preview: reply.text || '', seen: reply.timestamp <= activitySeenTs });
             }
         }
     }
@@ -1856,7 +1857,7 @@ function updateActivityBadge() {
     if (!currentUser) return;
     const badge = document.getElementById('activityBadge');
     if (!badge) return;
-    const count = computeActivity().length;
+    const count = computeActivity().filter(i => !i.seen).length;
     if (count > 0) {
         badge.textContent = count > 99 ? '99+' : count;
         badge.classList.remove('hidden');
@@ -1878,7 +1879,7 @@ function renderActivityPanel() {
         const action = item.type === 'post' ? 'shared a post' : 'commented';
         const preview = (item.preview || '').slice(0, 90);
         return `
-            <div class="activity-item" onclick="scrollToPost('${item.postId}');closeActivityPanel();" title="${safeText(exactTimestamp(item.timestamp))}">
+            <div class="activity-item${item.seen ? ' seen' : ''}" onclick="scrollToPost('${item.postId}');closeActivityPanel();" title="${safeText(exactTimestamp(item.timestamp))}">
                 <div class="activity-item-action">${emoji} <strong>${safeText(item.author)}</strong> ${safeText(action)}</div>
                 ${preview ? `<div class="activity-item-preview">${safeText(preview)}</div>` : ''}
                 <div class="activity-item-time">${safeText(timeAgo(item.timestamp))}</div>
