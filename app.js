@@ -1,11 +1,14 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { firebaseConfig } from './firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const storage  = getStorage(app);
+const auth     = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 const postsRef = ref(database, 'posts');
 const chatRef  = ref(database, 'chat');
 
@@ -336,20 +339,41 @@ window.clearAllExtraFilters = function() {
     loadPosts();
 };
 
+// ---- ALLOWED USERS ----
+// Map each authorised Google account email → display name used throughout the app.
+// Edit the two email addresses below — nothing else needs to change.
+const ALLOWED_USERS = {
+    'YOUR_EMAIL@gmail.com':   'El',
+    'THEIR_EMAIL@gmail.com':  'Tero',
+};
+
 // ---- AUTH ----
-window.login = function(user) {
-    currentUser = user;
-    localStorage.setItem('currentUser', user);
+window.signInWithGoogle = async function() {
+    try {
+        await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+        if (err.code !== 'auth/popup-closed-by-user') {
+            console.error('Sign-in error:', err);
+            showToast('Sign-in failed. Please try again.');
+        }
+    }
+};
+
+// Called after onAuthStateChanged confirms an authorised user.
+function login(displayName, email) {
+    currentUser = displayName;
+    localStorage.setItem('currentUser', displayName);
 
     ensureAudio();
     document.getElementById('loginOverlay').style.display = 'none';
 
-    const emoji = AUTHOR_EMOJI[user] || '💬';
-    document.getElementById('userIndicator').textContent = `${emoji} ${user} · switch`;
+    const emoji = AUTHOR_EMOJI[displayName] || '💬';
+    document.getElementById('userIndicator').textContent = `${emoji} ${displayName} · sign out`;
+    document.getElementById('userIndicator').title = `Signed in as ${email}`;
 
     const otherBtn = document.getElementById('btnOtherUser');
-    if (user === 'El' || user === 'Tero') {
-        const other = user === 'El' ? 'Tero' : 'El';
+    if (displayName === 'El' || displayName === 'Tero') {
+        const other = displayName === 'El' ? 'Tero' : 'El';
         otherBtn.textContent = `${AUTHOR_EMOJI[other]} Just ${other}`;
         otherBtn.classList.remove('hidden');
     } else {
@@ -357,22 +381,132 @@ window.login = function(user) {
         if (currentFilter === 'just-other') setFilter('all');
     }
 
-    activitySeenTs = Number(localStorage.getItem(`activitySeenTs-${user}`) || String(Date.now() - 86400000));
+    activitySeenTs = Number(localStorage.getItem(`activitySeenTs-${displayName}`) || String(Date.now() - 86400000));
     updateNewCount();
     loadPosts();
     setupTypingCleanup();
-};
+}
 
 window.logout = function() {
-    stopChatTyping();          // clear typing flag before losing currentUser
-    currentUser = null;
-    localStorage.removeItem('currentUser');
-    document.getElementById('loginOverlay').style.display = 'flex';
-    closeChat(true);
+    stopChatTyping();
+    signOut(auth);
+    // onAuthStateChanged(null) will clear currentUser and show the login screen
 };
 
-const savedUser = localStorage.getItem('currentUser');
-if (savedUser) login(savedUser);
+// ---- DB LISTENERS ----
+// Started exactly once, after the first successful authentication.
+let _dbListenersStarted = false;
+
+function setupDBListeners() {
+    if (_dbListenersStarted) return;
+    _dbListenersStarted = true;
+
+    onValue(postsRef, (snapshot) => {
+        const newPosts = snapshot.val() || {};
+        const sig = dataSig(newPosts);
+
+        if (!isInitialLoad && sig !== prevDataSig) {
+            sparkSound('ping');
+
+            // Desktop notification for brand-new posts
+            const newIds = Object.keys(newPosts).filter(id => !seenPostIds.has(id));
+            if (newIds.length > 0) {
+                const p = newPosts[newIds[0]];
+                const author = p.author || 'Someone';
+                const label = p.note || p.url || 'A new post was shared';
+                sendNotification(`New post from ${author} 💜`, label, 'new-post');
+            }
+        }
+
+        seenPostIds = new Set(Object.keys(newPosts));
+        prevDataSig = sig;
+        isInitialLoad = false;
+
+        allPosts = newPosts;
+
+        const vSig = visualSig(newPosts);
+        if (vSig !== prevVisualSig) {
+            prevVisualSig = vSig;
+            loadPosts();
+        }
+        updateNewCount();
+        updateActivityBadge();
+        updateSyncStatus('Synced');
+        setTimeout(() => updateSyncStatus('Live'), 2000);
+    });
+
+    onValue(ref(database, 'typing/chat'), snapshot => {
+        _cachedChatTyping = snapshot.val() || {};
+        updateChatTypingUI();
+    });
+
+    onValue(ref(database, 'typing/comments'), snapshot => {
+        _cachedCommentTyping = snapshot.val() || {};
+        updateCommentTypingUI();
+    });
+
+    onValue(query(chatRef, limitToLast(80)), (snapshot) => {
+        const raw = snapshot.val() || {};
+        const messages = Object.entries(raw)
+            .map(([id, m]) => ({ id, ...m }))
+            .sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
+        lastChatMessages = messages;
+
+        // Seed seen-timestamp from the user's own last message so history
+        // doesn't appear as 38 unread messages on a fresh device/browser.
+        if (lastChatSeenTs === 0 && currentUser) {
+            const myLast = [...messages].reverse().find(m => m.author === currentUser);
+            lastChatSeenTs = myLast ? myLast.timestamp : Date.now();
+            localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
+        }
+
+        if (chatOpen) {
+            const newest = messages[messages.length - 1]?.timestamp || lastChatSeenTs;
+            lastChatSeenTs = Math.max(lastChatSeenTs, newest);
+            localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
+        } else {
+            const newest = messages[messages.length - 1]?.timestamp || 0;
+            const newestAuthor = messages[messages.length - 1]?.author || '';
+            if (newest > lastChatSeenTs && newestAuthor && newestAuthor !== currentUser) {
+                sparkSound('chat');
+                const lastMsg = messages[messages.length - 1];
+                sendNotification(`💬 ${lastMsg.author}`, lastMsg.text, 'chat-message');
+            }
+        }
+
+        updateChatUnread(messages);
+        if (chatOpen) renderChat(messages);
+    });
+}
+
+// ---- AUTH STATE OBSERVER ----
+// Single entry point for starting/stopping a session. All DB access is gated here.
+onAuthStateChanged(auth, (firebaseUser) => {
+    if (!firebaseUser) {
+        // Signed out — reset and show login
+        currentUser = null;
+        localStorage.removeItem('currentUser');
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('accessDeniedOverlay').style.display = 'none';
+        closeChat(true);
+        return;
+    }
+
+    const email = firebaseUser.email || '';
+    const displayName = ALLOWED_USERS[email];
+
+    if (!displayName) {
+        // Authenticated but not on the allowlist
+        currentUser = null;
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('accessDeniedOverlay').style.display = 'flex';
+        return;
+    }
+
+    // Authorised — start DB listeners (once) then load the feed
+    setupDBListeners();
+    login(displayName, email);
+});
 
 // Scroll to top button
 window.addEventListener('scroll', () => {
@@ -858,39 +992,7 @@ if (notificationsEnabled && notifSupported() && Notification.permission !== 'gra
 setTimeout(updateNotifBtn, 0);
 
 // ---- DATA ----
-onValue(postsRef, (snapshot) => {
-    const newPosts = snapshot.val() || {};
-    const sig = dataSig(newPosts);
-
-    if (!isInitialLoad && sig !== prevDataSig) {
-        sparkSound('ping');
-
-        // Desktop notification for brand-new posts
-        const newIds = Object.keys(newPosts).filter(id => !seenPostIds.has(id));
-        if (newIds.length > 0) {
-            const p = newPosts[newIds[0]];
-            const author = p.author || 'Someone';
-            const label = p.note || p.url || 'A new post was shared';
-            sendNotification(`New post from ${author} 💜`, label, 'new-post');
-        }
-    }
-
-    seenPostIds = new Set(Object.keys(newPosts));
-    prevDataSig = sig;
-    isInitialLoad = false;
-
-    allPosts = newPosts;
-
-    const vSig = visualSig(newPosts);
-    if (vSig !== prevVisualSig) {
-        prevVisualSig = vSig;
-        loadPosts();
-    }
-    updateNewCount();
-    updateActivityBadge();
-    updateSyncStatus('Synced');
-    setTimeout(() => updateSyncStatus('Live'), 2000);
-});
+// (onValue listeners are registered in setupDBListeners(), called after auth)
 
 function updateNewCount() {
     const newPosts = Object.values(allPosts).filter(p => !isRead(p)).length;
@@ -1885,17 +1987,7 @@ function updateCommentTypingUI() {
     });
 }
 
-// --- Firebase listeners for /typing ---
-
-onValue(ref(database, 'typing/chat'), snapshot => {
-    _cachedChatTyping = snapshot.val() || {};
-    updateChatTypingUI();
-});
-
-onValue(ref(database, 'typing/comments'), snapshot => {
-    _cachedCommentTyping = snapshot.val() || {};
-    updateCommentTypingUI();
-});
+// (typing onValue listeners are in setupDBListeners())
 
 // ---- CHAT ----
 function formatChatTime(ts) {
@@ -1956,38 +2048,7 @@ function updateChatUnread(messages) {
     }
 }
 
-onValue(query(chatRef, limitToLast(80)), (snapshot) => {
-    const raw = snapshot.val() || {};
-    const messages = Object.entries(raw)
-        .map(([id, m]) => ({ id, ...m }))
-        .sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
-    lastChatMessages = messages;
-
-    // Seed seen-timestamp from the user's own last message so history
-    // doesn't appear as 38 unread messages on a fresh device/browser.
-    if (lastChatSeenTs === 0 && currentUser) {
-        const myLast = [...messages].reverse().find(m => m.author === currentUser);
-        lastChatSeenTs = myLast ? myLast.timestamp : Date.now();
-        localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
-    }
-
-    if (chatOpen) {
-        const newest = messages[messages.length - 1]?.timestamp || lastChatSeenTs;
-        lastChatSeenTs = Math.max(lastChatSeenTs, newest);
-        localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
-    } else {
-        const newest = messages[messages.length - 1]?.timestamp || 0;
-        const newestAuthor = messages[messages.length - 1]?.author || '';
-        if (newest > lastChatSeenTs && newestAuthor && newestAuthor !== currentUser) {
-            sparkSound('chat');
-            const lastMsg = messages[messages.length - 1];
-            sendNotification(`💬 ${lastMsg.author}`, lastMsg.text, 'chat-message');
-        }
-    }
-
-    updateChatUnread(messages);
-    if (chatOpen) renderChat(messages);
-});
+// (chat onValue listener is in setupDBListeners())
 
 window.heartChatMessage = async function(msgId) {
     window.getSelection()?.removeAllRanges(); // clear the text selection dblclick produces
@@ -2115,9 +2176,8 @@ function showToast(msg) {
 // ============================================================
 
 // Login
-document.getElementById('loginEl')?.addEventListener('click', () => login('El'));
-document.getElementById('loginTero')?.addEventListener('click', () => login('Tero'));
-document.getElementById('loginGuest')?.addEventListener('click', () => login('Guest'));
+document.getElementById('loginGoogleBtn')?.addEventListener('click', () => signInWithGoogle());
+document.getElementById('signOutDeniedBtn')?.addEventListener('click', () => signOut(auth));
 
 // Header
 document.getElementById('feedTitle')?.addEventListener('click', () => resetToAll());

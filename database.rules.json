@@ -1,43 +1,18 @@
 {
   "rules": {
     // -------------------------------------------------------
-    // NOTE: This app uses localStorage for user identity, not
-    // Firebase Authentication.  The auth.uid-based rules below
-    // are IDEAL and should be enabled if you add Firebase Auth.
-    // For now the rules are structured but permissive within the
-    // /typing subtree so only El / Tero paths exist.
+    // Firebase Auth is now required for all access.
+    //
+    // Replace the two placeholder emails below with the real
+    // Google account emails for El and Tero, then deploy with:
+    //
+    //   firebase deploy --only database
+    //
+    // The email values must be duplicated here because Firebase
+    // rules do not support dynamic allowlist lookups.
     // -------------------------------------------------------
 
-    "posts": {
-      ".read":  true,
-      ".write": true
-    },
-
-    "chat": {
-      ".read":  true,
-      ".write": true
-    },
-
-    "typing": {
-      // Chat typing: each user writes only to their own key.
-      // Ideal rule (requires Firebase Auth):
-      //   "$uid": { ".write": "auth != null && auth.uid === $uid" }
-      "chat": {
-        "$username": {
-          ".read":  true,
-          ".write": true
-        }
-      },
-
-      // Comment typing: per-post, per-user key.
-      "comments": {
-        "$postId": {
-          "$username": {
-            ".read":  true,
-            ".write": true
-          }
-        }
-      }
-    }
+    ".read":  "auth != null && (auth.token.email === 'YOUR_EMAIL@gmail.com' || auth.token.email === 'THEIR_EMAIL@gmail.com')",
+    ".write": "auth != null && (auth.token.email === 'YOUR_EMAIL@gmail.com' || auth.token.email === 'THEIR_EMAIL@gmail.com')"
   }
 }
