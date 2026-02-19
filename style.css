@@ -2573,3 +2573,94 @@ select { cursor: pointer; }
     /* chatInput glow */
     #chatInput:focus { animation: none; }
 }
+
+/* ======================================
+   NOW LISTENING
+   ====================================== */
+.now-listening-bar {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+}
+
+.nl-label {
+    font-size: 10px;
+    font-weight: 900;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    opacity: 0.55;
+    margin-bottom: 10px;
+    font-family: 'Nunito', sans-serif;
+}
+
+.nl-cards {
+    display: flex;
+    gap: 10px;
+}
+
+.nl-card {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: var(--section-bg);
+    border-radius: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--card-border);
+    transition: border-color 0.2s;
+    min-width: 0;
+}
+
+.nl-card.nl-playing {
+    border-color: rgba(139, 92, 246, 0.5);
+}
+
+.nl-art {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.nl-info { min-width: 0; flex: 1; }
+
+.nl-user-badge {
+    font-size: 10px;
+    font-weight: 900;
+    color: var(--text-secondary);
+    opacity: 0.65;
+    margin-bottom: 3px;
+    font-family: 'Nunito', sans-serif;
+}
+
+.nl-track {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'Nunito', sans-serif;
+}
+
+.nl-artist {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'Nunito', sans-serif;
+}
+
+.nl-status {
+    font-size: 10px;
+    font-weight: 800;
+    color: #a855f7;
+    margin-top: 2px;
+    font-family: 'Nunito', sans-serif;
+}

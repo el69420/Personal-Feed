@@ -385,6 +385,7 @@ function login(displayName, email) {
     updateNewCount();
     loadPosts();
     setupTypingCleanup();
+    startNowListening();
 }
 
 window.logout = function() {
@@ -392,6 +393,60 @@ window.logout = function() {
     signOut(auth);
     // onAuthStateChanged(null) will clear currentUser and show the login screen
 };
+
+// ---- NOW PLAYING ----
+async function fetchNowPlaying(userKey) {
+    try {
+        const r = await fetch(`/api/now-playing?user=${userKey}`);
+        if (!r.ok) return null;
+        return await r.json();
+    } catch { return null; }
+}
+
+function renderNLCard(suffix, data) {
+    const artEl    = document.getElementById(`nlArt${suffix}`);
+    const trackEl  = document.getElementById(`nlTrack${suffix}`);
+    const artistEl = document.getElementById(`nlArtist${suffix}`);
+    const statusEl = document.getElementById(`nlStatus${suffix}`);
+    const cardEl   = document.getElementById(`nlCard${suffix}`);
+    if (!cardEl) return;
+
+    if (!data || data.status === 'none') {
+        trackEl.textContent  = '—';
+        artistEl.textContent = '';
+        statusEl.textContent = '';
+        artEl.style.display  = 'none';
+        cardEl.classList.remove('nl-playing');
+        return;
+    }
+
+    trackEl.textContent  = data.track  || '—';
+    artistEl.textContent = data.artist || '';
+    cardEl.classList.toggle('nl-playing', !!data.nowPlaying);
+    statusEl.textContent = data.nowPlaying
+        ? '▶ Now playing'
+        : (data.timestamp ? `Last: ${timeAgo(data.timestamp)}` : '');
+
+    if (data.image) { artEl.src = data.image; artEl.style.display = ''; }
+    else            { artEl.style.display = 'none'; }
+}
+
+async function pollNowListening() {
+    const [elData, teroData] = await Promise.all([
+        fetchNowPlaying('el'),
+        fetchNowPlaying('tero'),
+    ]);
+    const bar = document.getElementById('nowListeningBar');
+    if (!bar) return;
+    if (elData || teroData) bar.classList.remove('hidden');
+    if (elData)   renderNLCard('El',   elData);
+    if (teroData) renderNLCard('Tero', teroData);
+}
+
+function startNowListening() {
+    pollNowListening();
+    setInterval(pollNowListening, 60_000);
+}
 
 // ---- DB LISTENERS ----
 // Started exactly once, after the first successful authentication.
