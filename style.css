@@ -1337,3 +1337,5 @@ body.dark-mode .chat-group--other .chat-bubble {
 #chatInput:focus {
   animation: pulseGlow 2.5s infinite ease-in-out;
 }
+
+body { outline: 5px solid red !important; }
