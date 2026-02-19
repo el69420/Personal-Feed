@@ -1,0 +1,939 @@
+/* ============================================================
+   theme-mskuromi.css — Kuromi / early-2000s web overlay
+   Load AFTER style.css. Overrides only. No structural changes.
+   ============================================================ */
+
+/* ---- PALETTE ----
+   Deep purple  #2a0045
+   Mid purple   #5a0090
+   Btn face     #9340c8
+   Lavender     #c8a0e8
+   Card light   #f7f0ff
+   Card dark    #160a28
+   Pink accent  #e91e8c
+   Mint accent  #00c896
+   Hi edge      #e8d0ff   (Win98 top/left highlight)
+   Sh edge      #3d0060   (Win98 bottom/right shadow)
+   ---- */
+
+/* ============================================================
+   1. VARIABLE OVERRIDES
+   ============================================================ */
+:root {
+    --card-bg:        #f7f0ff;
+    --card-border:    #8b3ab8;
+    --section-bg:     #eedeff;
+    --text-primary:   #1a001a;
+    --text-secondary: #6b2a8c;
+    --input-bg:       #ffffff;
+    --input-border:   #8b3ab8;
+}
+
+body.dark-mode {
+    --card-bg:        #160a28;
+    --card-border:    #7b2faa;
+    --section-bg:     #0e0520;
+    --text-primary:   #f2e8ff;
+    --text-secondary: #b090cc;
+    --input-bg:       #0e0520;
+    --input-border:   #7b2faa;
+}
+
+/* ============================================================
+   2. BODY — tiled background, kill animation & blur
+   ============================================================ */
+html { background-color: #0d000d; }
+
+body {
+    font-family: Tahoma, Verdana, 'MS Sans Serif', system-ui, sans-serif;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 20px 20px, 20px 20px;
+    background-color: #2a0045;
+    animation: none;
+    cursor: auto;
+}
+
+body.dark-mode {
+    background-color: #0d000d;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 20px 20px, 20px 20px;
+}
+
+/* kill star field */
+body.dark-mode::before { display: none; }
+
+/* kill original cursor elements */
+.custom-cursor { display: none; }
+.star-trail    { display: none; }
+.particle      { display: none; }
+
+/* ============================================================
+   3. GLOBAL — nuke all border-radius + backdrop-filter
+   ============================================================ */
+.nav-glass, .nav-btn,
+.filter-glass, .filter-btn,
+.post-card,
+.modal-content, .modal-x,
+.btn-primary, .btn-secondary, .btn-primary-dark,
+.reaction-btn, .comment-reaction-btn,
+.reply-send-btn, .reply-input, .chat-input,
+.chat-fab, .activity-fab, #scrollTopBtn,
+.chat-panel, .activity-panel,
+.search-input, .search-clear,
+.form-field input, .form-field select, .form-field textarea,
+.coll-pick-btn, .collection-badge,
+.badge-el, .badge-tero, .badge-guest, .new-badge,
+.user-card, .collection-item,
+.reply-item, .inline-reply-form, .reply-child,
+.type-picker-btn, .type-toggle-btn,
+.poll-vote-btn, .poll-result, .poll-result-fill,
+.board-card, .board-picker-item,
+.mailbox-tabs, .mailbox-tab, .letter-item, .letter-full,
+.notif-perm-card, .notif-perm-allow, .notif-perm-deny,
+.about-card, .about-close-btn,
+.watch-later-btn, .icon-btn, .delete-btn,
+.sync-indicator, .mark-all-btn, .edit-pill,
+.link-favicon, .rec-type-badge, .rec-poster,
+.nl-card, .nl-art, .now-listening-bar,
+.post-image, .image-preview-thumb, .image-upload-label,
+.toast, kbd,
+.clear-filters-btn, .user-indicator-btn,
+.filters-banner-inner, .google-signin-btn,
+.chat-group--other .chat-bubble,
+.chat-group--me .chat-bubble,
+.heart-react,
+.history-box, .seen-dot,
+.boards-action-btn,
+#aboutBtn,
+#pollOpt0, #pollOpt1, #pollOpt2, #pollOpt3, #pollEndsAt {
+    border-radius: 0 !important;
+}
+
+/* Backdrop-filter: remove all blur/glass effects */
+.nav-glass, .filter-glass,
+.chat-fab, .activity-fab, #scrollTopBtn,
+.sync-indicator, .modal, .google-signin-btn,
+.user-card, .about-card, .notif-perm-card,
+.modal-content, .notif-perm-backdrop {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ============================================================
+   4. NAVIGATION BAR
+   ============================================================ */
+.nav-glass {
+    background: #5a0090;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: none;
+}
+
+.nav-btn {
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    color: #f0d8ff;
+    border: 2px solid transparent;
+    transition: none;
+}
+
+.nav-btn:hover {
+    background: #7a30b0;
+    color: #fff;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+}
+
+.nav-btn.active {
+    background: #f0e8ff;
+    color: #3d006d;
+    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
+    box-shadow: none;
+}
+
+/* ============================================================
+   5. FILTER PILLS
+   ============================================================ */
+.filter-glass {
+    background: rgba(90,0,144,0.75);
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: none;
+}
+
+.filter-btn {
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    color: #f0d8ff;
+    border: 1px solid transparent;
+    transition: none;
+}
+
+.filter-btn:hover {
+    background: #7a30b0;
+    color: #fff;
+}
+
+.filter-btn.active {
+    background: #f0e8ff;
+    color: #3d006d;
+    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
+    box-shadow: none;
+}
+
+/* ============================================================
+   6. SEARCH
+   ============================================================ */
+.search-input {
+    background: rgba(255,255,255,0.10);
+    border: 2px solid;
+    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
+    transition: none;
+}
+
+.search-input:focus {
+    border-color: #e91e8c;
+    background: rgba(255,255,255,0.14);
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+.search-clear {
+    background: rgba(200,160,232,0.3);
+    border: 1px solid #8b3ab8;
+    transition: none;
+}
+.search-clear:hover { background: rgba(200,160,232,0.5); }
+
+/* ============================================================
+   7. SCROLL-TO-TOP + CHAT/ACTIVITY FABs
+   ============================================================ */
+#scrollTopBtn {
+    background: #9340c8;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: none;
+    color: #f0d8ff;
+}
+body.dark-mode #scrollTopBtn {
+    background: #5a0090;
+    color: #f0d8ff;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+}
+
+.chat-fab, .activity-fab {
+    background: #9340c8;
+    color: #f0d8ff;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: none;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+}
+body.dark-mode .chat-fab,
+body.dark-mode .activity-fab {
+    background: #5a0090;
+    color: #f0d8ff;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+}
+
+/* ============================================================
+   8. POST CARDS
+   ============================================================ */
+.post-card {
+    border: 2px solid #8b3ab8;
+    box-shadow: 3px 3px 0 #3d0060;
+    transition: none;
+}
+.post-card:hover {
+    transform: none;
+    box-shadow: 3px 3px 0 #3d0060;
+}
+.post-card.post-focused {
+    outline: 2px solid #e91e8c !important;
+    outline-offset: 2px;
+    box-shadow: 3px 3px 0 #3d0060;
+}
+
+.post-header { border-bottom: 2px solid #8b3ab8; }
+.post-actions { border-top: 2px solid #8b3ab8; }
+.reactions-bar { border-top: 2px solid #8b3ab8; }
+.reply-section { border-top: 2px solid #8b3ab8; }
+
+.post-note {
+    background: rgba(139,58,184,0.09);
+    border-left: 3px solid #8b3ab8;
+}
+
+/* ============================================================
+   9. BUTTONS — Win98 raised/pressed style
+   ============================================================ */
+.btn-primary {
+    background: #9340c8;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: none;
+    transition: none;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+}
+.btn-primary:hover { background: #7b2faa; box-shadow: none; transform: none; }
+.btn-primary:active { border-color: #3d0060 #e8d0ff #e8d0ff #3d0060; }
+
+.btn-primary-dark {
+    background: #3d006d;
+    border: 2px solid;
+    border-color: #e8d0ff #1a0030 #1a0030 #e8d0ff;
+}
+
+.btn-secondary {
+    background: #f0e4ff;
+    color: #3d006d;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: none;
+    transition: none;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+}
+.btn-secondary:hover { background: #e8d8ff; }
+.btn-secondary:active { border-color: #3d0060 #e8d0ff #e8d0ff #3d0060; }
+body.dark-mode .btn-secondary {
+    background: #3d006d;
+    color: #f0d8ff;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+}
+
+.delete-btn { font-family: Tahoma, Verdana, system-ui, sans-serif; transition: none; }
+.icon-btn   { font-family: Tahoma, Verdana, system-ui, sans-serif; transition: none; }
+.icon-btn:hover { color: #5a0090; background: rgba(139,58,184,0.12); }
+
+/* ============================================================
+   10. REACTION BUTTONS
+   ============================================================ */
+.reaction-btn {
+    border: 1px solid #8b3ab8;
+    background: rgba(139,58,184,0.07);
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.reaction-btn:hover { transform: none; background: rgba(139,58,184,0.18); border-color: #5a0090; }
+.reaction-btn.active { background: #f0e4ff; border-color: #8b3ab8; color: #3d006d; }
+body.dark-mode .reaction-btn.active { color: #c8a0e8; }
+
+.comment-reaction-btn {
+    border: 1px solid #8b3ab8;
+    background: rgba(139,58,184,0.06);
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.comment-reaction-btn:hover { transform: none; background: rgba(139,58,184,0.15); }
+body.dark-mode .comment-reaction-btn.active { color: #c8a0e8; }
+
+/* ============================================================
+   11. REPLY AREA
+   ============================================================ */
+.reply-item {
+    border: 1px solid #8b3ab8;
+    border-left: 3px solid #8b3ab8;
+    background: rgba(139,58,184,0.06);
+}
+.reply-child {
+    border-left: 3px solid #8b3ab8;
+    background: rgba(139,58,184,0.04);
+}
+.inline-reply-form {
+    border: 1px dashed #8b3ab8;
+    background: rgba(139,58,184,0.04);
+}
+.reply-input {
+    border: 2px solid;
+    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.18);
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.reply-input:focus { border-color: #e91e8c; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.18); }
+.reply-input::placeholder { color: rgba(139,58,184,0.4); }
+
+.reply-send-btn {
+    background: #9340c8;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: none;
+    transition: none;
+}
+.reply-send-btn:hover { transform: none; box-shadow: none; background: #7b2faa; }
+.reply-send-btn:active { border-color: #3d0060 #e8d0ff #e8d0ff #3d0060; }
+
+/* ============================================================
+   12. FORM INPUTS
+   ============================================================ */
+.form-field input,
+.form-field select,
+.form-field textarea {
+    border: 2px solid;
+    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.15);
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+    border-color: #e91e8c;
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.15);
+}
+
+#pollOpt0, #pollOpt1, #pollOpt2, #pollOpt3, #pollEndsAt {
+    border: 2px solid;
+    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.12);
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+#pollOpt0:focus, #pollOpt1:focus, #pollOpt2:focus, #pollOpt3:focus, #pollEndsAt:focus {
+    border-color: #e91e8c;
+}
+body.dark-mode #pollOpt0,
+body.dark-mode #pollOpt1,
+body.dark-mode #pollOpt2,
+body.dark-mode #pollOpt3,
+body.dark-mode #pollEndsAt { background: rgba(255,255,255,0.05); }
+
+/* ============================================================
+   13. MODAL
+   ============================================================ */
+.modal {
+    backdrop-filter: none;
+    background: rgba(0,0,0,0.78);
+}
+.modal-content {
+    border: 3px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: 5px 5px 0 #000;
+    background: var(--card-bg);
+}
+.modal-x {
+    background: #9340c8;
+    color: #fff;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    transition: none;
+}
+.modal-x:hover  { background: #7b2faa; transform: none; }
+.modal-x:active { border-color: #3d0060 #e8d0ff #e8d0ff #3d0060; }
+
+/* ============================================================
+   14. COLLECTIONS
+   ============================================================ */
+.collection-item {
+    border: 2px solid #8b3ab8;
+    background: rgba(139,58,184,0.06);
+    transition: none;
+}
+.collection-item:hover {
+    transform: none;
+    border-color: #5a0090;
+    background: rgba(139,58,184,0.14);
+    box-shadow: 2px 2px 0 #3d0060;
+}
+
+.coll-pick-btn {
+    border: 1px solid #8b3ab8;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.coll-pick-btn:hover { background: rgba(139,58,184,0.13); border-color: #5a0090; }
+.coll-pick-btn.selected { background: #9340c8; color: #fff; border-color: #3d0060; box-shadow: none; }
+body.dark-mode .coll-pick-btn.selected { color: #fff; }
+
+.collection-badge {
+    border: 1px solid #8b3ab8;
+    background: rgba(139,58,184,0.12);
+    color: #3d006d;
+    transition: none;
+}
+.collection-badge:hover { transform: none; background: rgba(139,58,184,0.2); }
+body.dark-mode .collection-badge { color: #c8a0e8; }
+
+/* ============================================================
+   15. BADGES
+   ============================================================ */
+.badge-el    { background: #d01080; box-shadow: none; }
+.badge-tero  { background: #5a0090; box-shadow: none; }
+.badge-guest { background: #007850; box-shadow: none; }
+.new-badge   { background: #e91e8c; }
+
+/* ============================================================
+   16. CHAT + ACTIVITY PANELS
+   ============================================================ */
+.chat-panel, .activity-panel {
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: 5px 5px 0 rgba(0,0,0,0.6);
+}
+
+.chat-header {
+    background: #5a0090;
+    border-bottom: 2px solid #3d0060;
+}
+.chat-title {
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    -webkit-text-fill-color: #f0d8ff;
+    color: #f0d8ff;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+}
+
+.activity-header {
+    background: #5a0090;
+    border-bottom: 2px solid #3d0060;
+}
+.activity-title {
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    -webkit-text-fill-color: #f0d8ff;
+    color: #f0d8ff;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+}
+
+.chat-input {
+    border: 2px solid;
+    border-color: #3d0060 #e8d0ff #e8d0ff #3d0060;
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2);
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.chat-input:focus { border-color: #e91e8c; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2); }
+
+/* Chat bubbles — all corners square */
+.chat-group--other .chat-bubble,
+.chat-group--other .chat-bubble:only-child,
+.chat-group--other .chat-bubble:first-child:not(:only-child),
+.chat-group--other .chat-bubble:last-child:not(:only-child) {
+    border-radius: 0 !important;
+    border: 1px solid #8b3ab8;
+    background: rgba(139,58,184,0.10);
+}
+body.dark-mode .chat-group--other .chat-bubble {
+    background: rgba(139,58,184,0.22);
+    border-color: #7b2faa;
+}
+
+.chat-group--me .chat-bubble,
+.chat-group--me .chat-bubble:only-child,
+.chat-group--me .chat-bubble:first-child:not(:only-child),
+.chat-group--me .chat-bubble:last-child:not(:only-child) {
+    border-radius: 0 !important;
+    background: #5a0090;
+    border: none;
+}
+
+.heart-react {
+    border: 1px solid #8b3ab8;
+    background: var(--card-bg, #f7f0ff);
+}
+body.dark-mode .heart-react {
+    background: var(--card-bg, #160a28);
+    border-color: #7b2faa;
+}
+
+.activity-item:hover { background: rgba(139,58,184,0.09); }
+
+/* ============================================================
+   17. SYNC INDICATOR
+   ============================================================ */
+.sync-indicator {
+    background: #f0e4ff;
+    border: 2px solid #8b3ab8;
+    box-shadow: 2px 2px 0 #3d0060;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    color: #1a001a;
+}
+body.dark-mode .sync-indicator {
+    background: #1e0a30;
+    color: #f0d8ff;
+    border-color: #7b2faa;
+}
+
+/* ============================================================
+   18. MARK-ALL BUTTON
+   ============================================================ */
+.mark-all-btn {
+    background: rgba(0,128,96,0.2);
+    border: 2px solid;
+    border-color: #00c896 #006040 #006040 #00c896;
+    color: #00c896;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.mark-all-btn:hover { background: rgba(0,128,96,0.32); transform: none; }
+
+/* ============================================================
+   19. LOGIN / ACCESS-DENIED OVERLAY
+   ============================================================ */
+#loginOverlay, #accessDeniedOverlay {
+    background: #1a0028;
+}
+
+.user-card {
+    background: rgba(90,0,144,0.55);
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    backdrop-filter: none;
+    transition: none;
+}
+.user-card:hover {
+    background: rgba(90,0,144,0.8);
+    transform: none;
+    box-shadow: 3px 3px 0 #000;
+    border-color: #e91e8c #2d006d #2d006d #e91e8c;
+}
+
+.google-signin-btn {
+    background: rgba(90,0,144,0.55);
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    backdrop-filter: none;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.google-signin-btn:hover {
+    background: rgba(90,0,144,0.8);
+    transform: none;
+    box-shadow: 2px 2px 0 #000;
+    border-color: #e91e8c;
+}
+
+/* ============================================================
+   20. HEADER
+   ============================================================ */
+.header-title {
+    text-shadow: 2px 2px 0 #3d0060;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    letter-spacing: 0;
+}
+.user-indicator-btn {
+    background: rgba(90,0,144,0.5);
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.user-indicator-btn:hover { background: rgba(90,0,144,0.75); }
+
+/* ============================================================
+   21. ACTIVE FILTERS BANNER
+   ============================================================ */
+.filters-banner-inner {
+    background: rgba(90,0,144,0.55);
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+}
+.filters-label { font-family: Tahoma, Verdana, system-ui, sans-serif; }
+.clear-filters-btn {
+    background: rgba(90,0,144,0.4);
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.clear-filters-btn:hover { background: rgba(90,0,144,0.65); }
+
+/* ============================================================
+   22. TOAST
+   ============================================================ */
+.toast {
+    background: #1a0028;
+    color: #f0d8ff;
+    border: 2px solid #8b3ab8;
+    box-shadow: 3px 3px 0 #000;
+    backdrop-filter: none;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+}
+
+/* ============================================================
+   23. EMPTY STATE + ADD SECTION
+   ============================================================ */
+.empty-state {
+    border: 2px solid #8b3ab8;
+    box-shadow: 3px 3px 0 #3d0060;
+}
+.add-section {
+    border: 2px solid #8b3ab8;
+    box-shadow: 3px 3px 0 #3d0060;
+    background: var(--card-bg);
+}
+
+/* ============================================================
+   24. POLL
+   ============================================================ */
+.poll-vote-btn {
+    border: 1px solid #8b3ab8;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.poll-vote-btn:hover { background: rgba(139,58,184,0.10); border-color: #5a0090; }
+.poll-result       { border: 1px solid #8b3ab8; }
+.poll-result--voted { border-color: #5a0090; }
+
+/* ============================================================
+   25. TYPE PICKER / TOGGLE
+   ============================================================ */
+.type-picker-btn {
+    border: 2px solid #8b3ab8;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.type-picker-btn:hover { border-color: #5a0090; transform: none; }
+
+.type-toggle-btn {
+    border: 2px solid #8b3ab8;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.type-toggle-btn.active { border-color: #5a0090; background: rgba(139,58,184,0.15); }
+
+/* ============================================================
+   26. IMAGE UPLOAD
+   ============================================================ */
+.image-upload-label {
+    border: 2px dashed #8b3ab8;
+    transition: none;
+}
+.image-upload-label:hover { border-color: #5a0090; background: rgba(139,58,184,0.07); }
+
+/* ============================================================
+   27. LINK PREVIEW
+   ============================================================ */
+.link-favicon {
+    background: rgba(139,58,184,0.14);
+    border: 1px solid #8b3ab8;
+}
+.link-preview:hover { background: rgba(139,58,184,0.09); }
+.link-domain { color: #5a0090; }
+body.dark-mode .link-domain { color: #c8a0e8; }
+.link-arrow { color: #8b3ab8; }
+
+/* ============================================================
+   28. WATCH-LATER BUTTON
+   ============================================================ */
+.watch-later-btn {
+    border: 1px solid #8b3ab8;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.watch-later-btn:hover { background: rgba(139,58,184,0.12); }
+.watch-later-btn.active { background: rgba(139,58,184,0.16); border-color: #8b3ab8; }
+body.dark-mode .watch-later-btn.active { color: #c8a0e8; border-color: #7b2faa; }
+
+/* ============================================================
+   29. KBD / SHORTCUT MODAL
+   ============================================================ */
+kbd {
+    background: #e8d8ff;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    color: #1a001a;
+    font-family: Tahoma, Verdana, 'Courier New', monospace;
+}
+body.dark-mode kbd {
+    background: #3d006d;
+    color: #f0d8ff;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+}
+
+/* ============================================================
+   30. SCROLLBAR — Win98 style
+   ============================================================ */
+::-webkit-scrollbar       { width: 14px; height: 14px; }
+::-webkit-scrollbar-track { background: #c8a0e8; }
+::-webkit-scrollbar-thumb {
+    background: #8b3ab8;
+    border: 1px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover { background: #6a1a9a; }
+::-webkit-scrollbar-button {
+    background: #9340c8;
+    border: 1px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    display: block;
+    height: 14px;
+}
+
+/* ============================================================
+   31. NOTIF PERMISSION MODAL
+   ============================================================ */
+.notif-perm-backdrop { backdrop-filter: none; background: rgba(0,0,0,0.78); }
+.notif-perm-card {
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: 5px 5px 0 #000;
+    background: var(--card-bg);
+}
+.notif-perm-allow {
+    background: #9340c8;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.notif-perm-allow:hover { opacity: 1; background: #7b2faa; }
+.notif-perm-deny {
+    border: 2px solid #8b3ab8;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.notif-perm-deny:hover { background: rgba(139,58,184,0.10); }
+
+/* ============================================================
+   32. NET STATUS (offline pill)
+   ============================================================ */
+.net-status {
+    border: 2px solid #e91e8c;
+    box-shadow: 2px 2px 0 #000;
+    background: rgba(15,5,20,0.95);
+}
+
+/* ============================================================
+   33. ABOUT MODAL
+   ============================================================ */
+.about-backdrop { backdrop-filter: none; }
+.about-card {
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: 5px 5px 0 #000;
+    background: var(--card-bg);
+}
+.about-close-btn {
+    background: #9340c8;
+    color: #fff;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.about-close-btn:hover  { transform: none; background: #7b2faa; }
+.about-close-btn:active { border-color: #3d0060 #e8d0ff #e8d0ff #3d0060; }
+
+#aboutBtn {
+    background: #9340c8;
+    border: 2px solid;
+    border-color: #e8d0ff #3d0060 #3d0060 #e8d0ff;
+    box-shadow: none;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+#aboutBtn:hover { background: #7b2faa; transform: none; box-shadow: none; }
+
+/* ============================================================
+   34. BOARDS
+   ============================================================ */
+.board-card {
+    border: 2px solid #8b3ab8;
+    box-shadow: 2px 2px 0 #3d0060;
+    transition: none;
+}
+.board-card:hover { transform: none; box-shadow: 3px 3px 0 #3d0060; }
+
+.board-back-btn {
+    color: #8b3ab8;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+}
+.board-picker-item {
+    border: 1px solid #8b3ab8;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.board-picker-item:hover { background: rgba(139,58,184,0.12); }
+.board-picker-item.board-picker-saved { border-color: #5a0090; color: #5a0090; }
+body.dark-mode .board-picker-item.board-picker-saved { color: #c8a0e8; }
+
+/* ============================================================
+   35. MAILBOX
+   ============================================================ */
+.mailbox-tabs {
+    background: rgba(139,58,184,0.12);
+    border: 1px solid #8b3ab8;
+    padding: 3px;
+    gap: 2px;
+}
+.mailbox-tab {
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.mailbox-tab.active {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid #8b3ab8;
+    box-shadow: none;
+}
+
+.letter-item {
+    border: 2px solid #8b3ab8;
+    transition: none;
+}
+.letter-item:hover { transform: none; box-shadow: 2px 2px 0 #3d0060; }
+.letter-item.unread {
+    border-color: #5a0090;
+    background: rgba(139,58,184,0.07);
+}
+.letter-full { border: 2px solid #8b3ab8; }
+
+/* ============================================================
+   36. NOW LISTENING
+   ============================================================ */
+.now-listening-bar {
+    border: 2px solid #8b3ab8;
+    box-shadow: 2px 2px 0 #3d0060;
+}
+.nl-card { border: 1px solid #8b3ab8; }
+.nl-card.nl-playing { border-color: #e91e8c; }
+.nl-status { color: #e91e8c; }
+
+/* ============================================================
+   37. EDIT PILL
+   ============================================================ */
+.edit-pill {
+    border: 1px solid #8b3ab8;
+    background: rgba(139,58,184,0.14);
+    color: #5a0090;
+    font-family: Tahoma, Verdana, system-ui, sans-serif;
+    transition: none;
+}
+.edit-pill:hover { transform: none; background: rgba(139,58,184,0.24); }
+body.dark-mode .edit-pill { color: #c8a0e8; }
+
+/* ============================================================
+   38. MISC
+   ============================================================ */
+.link-favicon img { border-radius: 0 !important; }
+.rec-type-badge {
+    background: rgba(139,58,184,0.15);
+    border: 1px solid #8b3ab8;
+}
+.history-box {
+    background: rgba(139,58,184,0.07);
+    border: 1px solid #8b3ab8;
+}
+.image-preview-thumb { border-radius: 0 !important; }
+
+/* ============================================================
+   39. FOCUS STATES — keep accessible, just re-colour
+   ============================================================ */
+:focus-visible {
+    outline: 2px solid #e91e8c !important;
+    outline-offset: 2px !important;
+    box-shadow: none !important;
+}
+
+/* ============================================================
+   40. REDUCED-MOTION COMPAT
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+    body { animation: none; }
+    .chat-panel, .activity-panel { transition: opacity 0.01ms, visibility 0.01ms; }
+}
