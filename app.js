@@ -26,6 +26,7 @@ let _audioCtx = null;
 let chatOpen = false;
 let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
 let lastChatMessages = [];
+let activitySeenTs = 0;
 
 
 // Edit/Delete modal state
@@ -272,6 +273,7 @@ window.login = function(user) {
         if (currentFilter === 'just-other') setFilter('all');
     }
 
+    activitySeenTs = Number(localStorage.getItem(`activitySeenTs-${user}`) || String(Date.now() - 86400000));
     updateNewCount();
     loadPosts();
 };
@@ -677,6 +679,7 @@ onValue(postsRef, (snapshot) => {
 
     loadPosts();
     updateNewCount();
+    updateActivityBadge();
     updateSyncStatus('Synced');
     setTimeout(() => updateSyncStatus('Live'), 2000);
 });
@@ -1081,7 +1084,7 @@ function createPostCard(post) {
     }
 
     return `
-        <div class="post-card fade-in">
+        <div class="post-card fade-in" data-post-id="${post.id}">
             <div class="post-header">
                 <div class="post-author-row">
                     <span class="${badgeClass}">${safeText(author)} ${emoji}</span>
@@ -1248,6 +1251,94 @@ function loadPosts() {
     }, 120);
 }
 
+// ---- ACTIVITY FEED ----
+function computeActivity() {
+    if (!currentUser) return [];
+    const items = [];
+    for (const [id, post] of Object.entries(allPosts)) {
+        if (post.timestamp > activitySeenTs && post.author && post.author !== currentUser) {
+            let preview = post.note || '';
+            if (!preview) { try { preview = new URL(post.url).hostname.replace('www.', ''); } catch { preview = post.url || ''; } }
+            items.push({ type: 'post', postId: id, author: post.author, timestamp: post.timestamp, preview });
+        }
+        for (const reply of (post.replies || [])) {
+            if (reply.timestamp > activitySeenTs && reply.author && reply.author !== currentUser) {
+                items.push({ type: 'reply', postId: id, author: reply.author, timestamp: reply.timestamp, preview: reply.text || '' });
+            }
+        }
+    }
+    items.sort((a, b) => b.timestamp - a.timestamp);
+    return items;
+}
+
+function updateActivityBadge() {
+    if (!currentUser) return;
+    const badge = document.getElementById('activityBadge');
+    if (!badge) return;
+    const count = computeActivity().length;
+    if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+function renderActivityPanel() {
+    const items = computeActivity();
+    const body = document.getElementById('activityBody');
+    if (!body) return;
+    if (items.length === 0) {
+        body.innerHTML = '<div class="activity-empty">All caught up! ✨</div>';
+        return;
+    }
+    body.innerHTML = items.map(item => {
+        const emoji = AUTHOR_EMOJI[item.author] || '💬';
+        const action = item.type === 'post' ? 'shared a post' : 'commented';
+        const preview = (item.preview || '').slice(0, 90);
+        return `
+            <div class="activity-item" onclick="scrollToPost('${item.postId}');closeActivityPanel();" title="${safeText(exactTimestamp(item.timestamp))}">
+                <div class="activity-item-action">${emoji} <strong>${safeText(item.author)}</strong> ${safeText(action)}</div>
+                ${preview ? `<div class="activity-item-preview">${safeText(preview)}</div>` : ''}
+                <div class="activity-item-time">${safeText(timeAgo(item.timestamp))}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.toggleActivityPanel = function() {
+    if (!currentUser) return;
+    const panel = document.getElementById('activityPanel');
+    if (panel.classList.contains('show')) { closeActivityPanel(); return; }
+    panel.classList.add('show');
+    renderActivityPanel();
+    activitySeenTs = Date.now();
+    localStorage.setItem(`activitySeenTs-${currentUser}`, String(activitySeenTs));
+    document.getElementById('activityBadge').classList.add('hidden');
+};
+
+window.closeActivityPanel = function() {
+    document.getElementById('activityPanel').classList.remove('show');
+};
+
+window.scrollToPost = function(postId) {
+    if (currentFilter !== 'all' || currentCollection || currentSource || searchQuery) {
+        currentFilter = 'all';
+        currentCollection = null;
+        currentSource = null;
+        searchQuery = '';
+        const inp = document.getElementById('searchInput');
+        if (inp) inp.value = '';
+        document.getElementById('searchClear')?.classList.add('hidden');
+        updateActiveFiltersBanner();
+        loadPosts();
+    }
+    setTimeout(() => {
+        const el = document.querySelector(`[data-post-id="${postId}"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+};
+
 // ---- CHAT ----
 function formatChatTime(ts) {
     if (!ts) return '';
@@ -1314,6 +1405,13 @@ onValue(query(chatRef, limitToLast(80)), (snapshot) => {
         .sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
     lastChatMessages = messages;
 
+    // Seed seen-timestamp from the user's own last message so history
+    // doesn't appear as 38 unread messages on a fresh device/browser.
+    if (lastChatSeenTs === 0 && currentUser) {
+        const myLast = [...messages].reverse().find(m => m.author === currentUser);
+        lastChatSeenTs = myLast ? myLast.timestamp : Date.now();
+        localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
+    }
 
     if (chatOpen) {
         const newest = messages[messages.length - 1]?.timestamp || lastChatSeenTs;
@@ -1404,10 +1502,14 @@ chatInput.addEventListener('keydown', async (e) => {
     sparkSound('chat');
 });
 
-// Close chat when clicking outside the panel or FAB
+// Close chat / activity panel when clicking outside
 document.addEventListener('click', (e) => {
     if (chatOpen && !e.target.closest('#chatPanel') && !e.target.closest('.chat-fab')) {
         closeChat();
+    }
+    const actPanel = document.getElementById('activityPanel');
+    if (actPanel?.classList.contains('show') && !e.target.closest('#activityPanel') && !e.target.closest('.activity-fab')) {
+        closeActivityPanel();
     }
 });
 
