@@ -1,15 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBB0O3pcsHQt5mWVUFZqnbB0kY3Z9d8k304",
-    authDomain: "personal-feed-149ce.firebaseapp.com",
-    databaseURL: "https://personal-feed-149ce-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "personal-feed-149ce",
-    storageBucket: "personal-feed-149ce.firebasestorage.app",
-    messagingSenderId: "687986584760",
-    appId: "1:687986584760:web:016afc08C44371f1985285"
-};
+import { firebaseConfig } from './firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
@@ -41,11 +32,23 @@ let lastChatMessages = [];
 let editTarget = null;   // { type:'post'|'reply', postId, replyId }
 let deleteTarget = null; // { type:'post'|'reply', postId, replyId }
 
+// ---- RATE LIMITING ----
+const _lastAction = {};
+function throttle(key, minMs) {
+    const now = Date.now();
+    if (_lastAction[key] && now - _lastAction[key] < minMs) return false;
+    _lastAction[key] = now;
+    return true;
+}
+
 const COLLECTION_EMOJIS = { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' };
 const COLLECTION_LABELS = { funny: 'Funny', cute: 'Cute', news: 'News', inspiration: 'Inspiration', music: 'Music', 'idiot-drivers': 'Idiot Drivers', other: 'Other' };
 
 const SOURCE_EMOJIS = { instagram: '📷', reddit: '👽', x: '𝕏', youtube: '▶️', tiktok: '🎵', spotify: '🎧', 'news-site': '📰', other: '🔗' };
 const SOURCE_LABELS = { instagram: 'Instagram', reddit: 'Reddit', x: 'X', youtube: 'YouTube', tiktok: 'TikTok', spotify: 'Spotify', 'news-site': 'News site', other: 'Other' };
+
+const AUTHOR_EMOJI = { 'El': '💖', 'Tero': '💜', 'Guest': '🌟' };
+const AUTHOR_BADGE = { 'El': 'badge-el', 'Tero': 'badge-tero', 'Guest': 'badge-guest' };
 
 function safeText(s) {
     return (s || '')
@@ -236,12 +239,18 @@ window.login = function(user) {
     ensureAudio();
     document.getElementById('loginOverlay').style.display = 'none';
 
-    const emoji = user === 'El' ? '💖' : '💜';
+    const emoji = AUTHOR_EMOJI[user] || '💬';
     document.getElementById('userIndicator').textContent = `${emoji} ${user} · switch`;
 
-    const other = user === 'El' ? 'Tero' : 'El';
-    const otherEmoji = user === 'El' ? '💜' : '💖';
-    document.getElementById('btnOtherUser').textContent = `${otherEmoji} Just ${other}`;
+    const otherBtn = document.getElementById('btnOtherUser');
+    if (user === 'El' || user === 'Tero') {
+        const other = user === 'El' ? 'Tero' : 'El';
+        otherBtn.textContent = `${AUTHOR_EMOJI[other]} Just ${other}`;
+        otherBtn.classList.remove('hidden');
+    } else {
+        otherBtn.classList.add('hidden');
+        if (currentFilter === 'just-other') setFilter('all');
+    }
 
     updateNewCount();
     loadPosts();
@@ -690,7 +699,10 @@ window.addPost = async function() {
     const note = document.getElementById('postNote').value.trim();
     const author = currentUser;
     const collections = getSelectedCollections();
-    if (!url) { alert('Please enter a URL'); return; }
+    if (!url) { showToast('Please enter a URL'); return; }
+    try { const u = new URL(url); if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error(); }
+    catch { showToast('Please enter a valid URL (starting with https://)'); return; }
+    if (!throttle('add-post', 2000)) return;
 
     const source = detectSource(url);
 
@@ -715,7 +727,7 @@ window.addPost = async function() {
         showToast('Post added');
         sparkSound('post');
     } catch (error) {
-        alert('Failed to add post. Check your internet connection.');
+        showToast('Failed to add post. Check your internet connection.');
     }
 };
 
@@ -730,6 +742,7 @@ window.deletePost = function(id) {
 
 // ---- REACTIONS ----
 window.toggleReaction = async function(postId, emoji) {
+    if (!throttle(`react-${postId}-${emoji}`, 500)) return;
     const post = allPosts[postId];
     if (!post) return;
 
@@ -748,6 +761,7 @@ window.toggleReaction = async function(postId, emoji) {
 };
 
 window.toggleCommentReaction = async function(postId, replyId, emoji) {
+    if (!throttle(`cmtreact-${postId}-${replyId}-${emoji}`, 500)) return;
     const post = allPosts[postId];
     if (!post) return;
 
@@ -859,7 +873,7 @@ function renderReplies(postId, replies) {
     };
 
     const renderItem = (reply, isChild) => {
-        const ae = reply.author === 'Tero' ? '💜' : '💖';
+        const ae = AUTHOR_EMOJI[reply.author] || '💬';
         const ts = reply.timestamp ? timeAgo(reply.timestamp) : '';
         const tsFull = reply.timestamp ? exactTimestamp(reply.timestamp) : '';
         const children = byParent[reply.id] || [];
@@ -977,8 +991,8 @@ function createPostCard(post) {
     const tweetId = post.url.match(/(?:twitter|x)\.com\/.*\/status\/(\d+)/)?.[1];
 
     const author = post.author || 'Unknown';
-    const badgeClass = author === 'Tero' ? 'badge-tero' : 'badge-el';
-    const emoji = author === 'Tero' ? '💜' : '💖';
+    const badgeClass = AUTHOR_BADGE[author] || 'badge-el';
+    const emoji = AUTHOR_EMOJI[author] || '💬';
 
     const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 
@@ -1146,8 +1160,7 @@ function loadPosts() {
         posts.sort((a, b) => (b.watchLaterBy[currentUser] || 0) - (a.watchLaterBy[currentUser] || 0));
     }
     else if (currentFilter === 'just-other') {
-        const other = currentUser === 'El' ? 'Tero' : 'El';
-        posts = posts.filter(p => p.author === other);
+        posts = posts.filter(p => p.author !== currentUser);
     }
 
     if (searchQuery) {
@@ -1192,7 +1205,7 @@ function loadPosts() {
             h3.textContent = 'Watch Later is empty';
             p.textContent  = 'Hit 🕐 under any YouTube video to save it here.';
         } else if (currentFilter === 'just-other') {
-            const other = currentUser === 'El' ? 'Tero' : 'El';
+            const other = currentUser === 'El' ? 'Tero' : currentUser === 'Tero' ? 'El' : 'El or Tero';
             h3.textContent = `No Posts from ${other}`;
             p.textContent  = `${other} hasn't shared anything yet.`;
         } else {
@@ -1218,8 +1231,6 @@ function formatChatTime(ts) {
     if (!ts) return '';
     return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
-
-const AUTHOR_EMOJI = { 'Tero': '💜', 'El': '💖' };
 
 function renderChat(messages) {
     const body = document.getElementById('chatBody');
@@ -1329,7 +1340,8 @@ window.toggleChat = function() {
         // One-time hint so the double-click affordance is discoverable
         if (!localStorage.getItem('chatHeartHintSeen')) {
             localStorage.setItem('chatHeartHintSeen', '1');
-            setTimeout(() => showToast('Double-click Tero\'s messages to ❤️ them'), 900);
+            const hintOther = currentUser === 'El' ? "Tero's" : currentUser === 'Tero' ? "El's" : "others'";
+            setTimeout(() => showToast(`Double-click ${hintOther} messages to ❤️ them`), 900);
         }
 
         setTimeout(() => document.getElementById('chatInput')?.focus(), 80);
@@ -1357,6 +1369,7 @@ chatInput.addEventListener('keydown', async (e) => {
 
     const text = chatInput.value.trim();
     if (!text) return;
+    if (!throttle('chat-send', 800)) return;
 
     await push(chatRef, {
         author: currentUser,
