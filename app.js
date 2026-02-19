@@ -24,6 +24,7 @@ let isDarkMode = false;
 let isInitialLoad = true;
 let focusedPostId = null;
 let prevDataSig = null;
+let prevVisualSig = null;
 
 let _audioCtx = null;
 let chatOpen = false;
@@ -198,6 +199,26 @@ function dataSig(posts) {
         const replies = p.replies || [];
         const rx = p.reactionsBy ? Object.keys(p.reactionsBy).length : 0;
         out += `${id}:${replies.length}:${rx}|`;
+    }
+    return out;
+}
+
+// Includes comment-level reaction data; used to skip loadPosts() when only
+// comment reactions changed (we do an in-place DOM update instead).
+function visualSig(posts) {
+    let out = '';
+    for (const [id, p] of Object.entries(posts)) {
+        const replies = p.replies || [];
+        const postRx = Object.keys(p.reactionsBy || {}).sort()
+            .map(e => `${e}:${Object.keys((p.reactionsBy || {})[e] || {}).sort().join(',')}`)
+            .join(';');
+        const cRx = replies.map(r => {
+            const rx = r.reactionsBy || {};
+            return `${r.id}:` + Object.keys(rx).sort()
+                .map(e => `${e}:${Object.keys(rx[e] || {}).sort().join(',')}`)
+                .join(';');
+        }).join('|');
+        out += `${id}:${replies.length}:[${postRx}]:[${cRx}]+`;
     }
     return out;
 }
@@ -795,7 +816,11 @@ onValue(postsRef, (snapshot) => {
 
     allPosts = newPosts;
 
-    loadPosts();
+    const vSig = visualSig(newPosts);
+    if (vSig !== prevVisualSig) {
+        prevVisualSig = vSig;
+        loadPosts();
+    }
     updateNewCount();
     updateActivityBadge();
     updateSyncStatus('Synced');
@@ -952,24 +977,46 @@ window.previewImage = function(input) {
     }
 };
 
+async function fetchLetterboxdMeta(url) {
+    try {
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        if (!res.ok) return null;
+        const { contents } = await res.json();
+        const match = (prop) =>
+            contents.match(new RegExp(`<meta[^>]+property="${prop}"[^>]+content="([^"]+)"`))?.[1] ||
+            contents.match(new RegExp(`<meta[^>]+content="([^"]+)"[^>]+property="${prop}"`))?.[1] || null;
+        return { posterUrl: match('og:image'), description: match('og:description') };
+    } catch { return null; }
+}
+
 window.addMovieRec = async function() {
     const title = document.getElementById('recTitle').value.trim();
     const mediaType = document.getElementById('recMediaType').value || 'show';
     const streamingService = document.getElementById('recService').value.trim();
     const rating = parseInt(document.getElementById('recRating').value || '0', 10);
     const note = document.getElementById('recNote').value.trim();
+    const letterboxdUrl = document.getElementById('recLetterboxd').value.trim();
 
     if (!title) { showToast('Please enter a title'); return; }
     if (!throttle('add-rec', 2000)) return;
 
     try {
+        let posterUrl = null, letterboxdDescription = null;
+        if (letterboxdUrl) {
+            const meta = await fetchLetterboxdMeta(letterboxdUrl);
+            if (meta) { posterUrl = meta.posterUrl; letterboxdDescription = meta.description; }
+        }
+
         await push(postsRef, {
             type: 'recommendation', title, mediaType, streamingService, rating, note,
+            letterboxdUrl: letterboxdUrl || null,
+            posterUrl: posterUrl || null,
+            letterboxdDescription: letterboxdDescription || null,
             author: currentUser, collections: [],
             timestamp: Date.now(), readBy: { [currentUser]: true },
             reactionsBy: {}, replies: []
         });
-        ['recTitle','recService','recNote'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        ['recTitle','recService','recNote','recLetterboxd'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         document.getElementById('recRating').value = '0';
         document.querySelectorAll('#starPicker button').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('#mediaTypePicker .type-toggle-btn').forEach((b,i) => b.classList.toggle('active', i === 0));
@@ -1039,6 +1086,28 @@ window.toggleCommentReaction = async function(postId, replyId, emoji, btn) {
         }
         return { ...r, reactionsBy };
     });
+
+    // In-place DOM update — avoids a full loadPosts() rebuild and scroll shift.
+    const newReply = replies.find(r => r.id === replyId);
+    if (newReply) {
+        const rxEl = document.getElementById(`comment-rx-${postId}-${replyId}`);
+        if (rxEl) {
+            const cmtEmojis = ['❤️', '😂', '😮', '🔥'];
+            rxEl.innerHTML = cmtEmojis.map(e => {
+                const rxBy = newReply.reactionsBy || {};
+                const users = Object.keys(rxBy[e] || {});
+                const active = !!(rxBy[e]?.[currentUser]);
+                const who = users.sort().join(' & ');
+                return `<button class="comment-reaction-btn${active ? ' active' : ''}"
+                    onclick="toggleCommentReaction('${postId}','${replyId}','${e}',this)"
+                    >${e}${who ? `<span class="reaction-people">${who}</span>` : ''}</button>`;
+            }).join('');
+        }
+    }
+
+    // Pre-set prevVisualSig so the Firebase echo doesn't trigger a redundant loadPosts().
+    const updatedPosts = { ...allPosts, [postId]: { ...allPosts[postId], replies } };
+    prevVisualSig = visualSig(updatedPosts);
 
     await update(ref(database, `posts/${postId}`), { replies });
     sparkSound('react');
@@ -1160,7 +1229,7 @@ function renderReplies(postId, replies) {
 
                 <div style="font-size:13px;color:var(--text-primary);line-height:1.55;white-space:pre-wrap;font-family:'Nunito',sans-serif;font-weight:700;">${safeText(reply.text)}</div>
 
-                <div class="comment-reactions">
+                <div class="comment-reactions" id="comment-rx-${postId}-${reply.id}">
                     ${renderRxButtons(reply.reactionsBy, postId, reply.id)}
                 </div>
             </div>
@@ -1298,11 +1367,16 @@ function renderRecommendationContent(post) {
     const mediaLabel = post.mediaType === 'movie' ? '🎬 Movie' : '📺 Show';
     const stars = Array.from({length: 5}, (_, i) => i < (post.rating || 0) ? '★' : '☆').join('');
     return `
-        <div class="post-content rec-content">
-            <div class="rec-type-badge">${mediaLabel}</div>
-            <div class="rec-title">${safeText(post.title)}</div>
-            ${post.streamingService ? `<div class="rec-service">📍 ${safeText(post.streamingService)}</div>` : ''}
-            ${post.rating ? `<div class="rec-rating" title="${post.rating} out of 5">${stars}</div>` : ''}
+        <div class="post-content rec-content${post.posterUrl ? ' rec-has-poster' : ''}">
+            ${post.posterUrl ? `<img src="${safeText(post.posterUrl)}" class="rec-poster" alt="${safeText(post.title)} poster" loading="lazy">` : ''}
+            <div class="rec-details">
+                <div class="rec-type-badge">${mediaLabel}</div>
+                <div class="rec-title">${safeText(post.title)}</div>
+                ${post.streamingService ? `<div class="rec-service">📍 ${safeText(post.streamingService)}</div>` : ''}
+                ${post.rating ? `<div class="rec-rating" title="${post.rating} out of 5">${stars}</div>` : ''}
+                ${post.letterboxdDescription ? `<div class="rec-lb-desc">${safeText(post.letterboxdDescription)}</div>` : ''}
+                ${post.letterboxdUrl ? `<a href="${safeText(post.letterboxdUrl)}" target="_blank" rel="noopener" class="rec-lb-link">View on Letterboxd ↗</a>` : ''}
+            </div>
         </div>
     `;
 }
@@ -1325,7 +1399,7 @@ function createPostCard(post) {
         .map(c => `<button class="collection-badge" onclick="filterByCollection('${safeText(c)}')" title="Filter by collection">${getCollectionEmoji(c)} ${safeText(COLLECTION_LABELS[c] || c)}</button>`)
         .join('');
 
-    const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍'];
+    const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍', '😭', '🥹'];
     const rb = post.reactionsBy || {};
     const reactionButtons = reactionEmojis.map(e => {
         const users = Object.keys(rb[e] || {});
