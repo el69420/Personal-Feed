@@ -46,6 +46,57 @@ function throttle(key, minMs) {
     return true;
 }
 
+// ---- REDUCED MOTION HELPER ----
+function prefersReducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+// ---- MODAL FOCUS MANAGEMENT ----
+// Stack so nested/sequential modals each restore focus correctly.
+const _modalStack = [];
+
+function getFocusables(container) {
+    return [...container.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )].filter(el => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length));
+}
+
+function openModal(modalEl) {
+    const opener = document.activeElement;
+    modalEl.classList.add('show');
+
+    // Prefer first input/textarea, fall back to first focusable (e.g. close button)
+    const focusables = getFocusables(modalEl);
+    const firstInput = focusables.find(el => ['INPUT','TEXTAREA','SELECT'].includes(el.tagName));
+    setTimeout(() => (firstInput || focusables[0])?.focus(), 50);
+
+    function trapFn(e) {
+        if (e.key !== 'Tab') return;
+        const focs = getFocusables(modalEl);
+        if (!focs.length) { e.preventDefault(); return; }
+        const first = focs[0], last = focs[focs.length - 1];
+        if (e.shiftKey) {
+            if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+            if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+    }
+    modalEl.addEventListener('keydown', trapFn);
+    _modalStack.push({ el: modalEl, opener, trapFn });
+}
+
+function closeModal(modalEl) {
+    modalEl.classList.remove('show');
+    const idx = _modalStack.findIndex(e => e.el === modalEl);
+    if (idx !== -1) {
+        const { opener, trapFn } = _modalStack[idx];
+        modalEl.removeEventListener('keydown', trapFn);
+        _modalStack.splice(idx, 1);
+        // Restore focus after paint so the element is no longer hidden
+        setTimeout(() => opener?.focus(), 0);
+    }
+}
+
 const COLLECTION_EMOJIS = { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' };
 const COLLECTION_LABELS = { funny: 'Funny', cute: 'Cute', news: 'News', inspiration: 'Inspiration', music: 'Music', 'idiot-drivers': 'Idiot Drivers', other: 'Other' };
 
@@ -126,6 +177,7 @@ function youtubeThumb(url) {
     return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 }
 function burstEmoji(emoji, sourceEl) {
+    if (prefersReducedMotion()) return;
     const rect = sourceEl.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
@@ -344,7 +396,13 @@ function getCurrentFocusedIndex() {
 }
 
 function closeEverything() {
-    document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
+    // Close managed modals (restores focus via stack)
+    [..._modalStack].forEach(({ el }) => closeModal(el));
+    // Close non-stack overlays
+    const aboutM = document.getElementById('aboutModal');
+    if (aboutM?.classList.contains('show')) closeAbout();
+    const notifM = document.getElementById('notifPermModal');
+    if (notifM?.classList.contains('show')) closeNotifPermModal();
     if (chatOpen) toggleChat();
     closeActivityPanel();
     // Clear focused post highlight
@@ -353,10 +411,10 @@ function closeEverything() {
 }
 
 window.openShortcutsModal = function() {
-    document.getElementById('shortcutsModal').classList.add('show');
+    openModal(document.getElementById('shortcutsModal'));
 };
 window.closeShortcutsModal = function() {
-    document.getElementById('shortcutsModal').classList.remove('show');
+    closeModal(document.getElementById('shortcutsModal'));
 };
 
 document.addEventListener('keydown', e => {
@@ -419,7 +477,7 @@ document.addEventListener('mousemove', (e) => {
     cursor.style.left = e.clientX + 'px';
     cursor.style.top = e.clientY + 'px';
     trailCounter++;
-    if (trailCounter % 2 === 0) createStarTrail(e.clientX, e.clientY);
+    if (trailCounter % 2 === 0 && !prefersReducedMotion()) createStarTrail(e.clientX, e.clientY);
 });
 
 function createStarTrail(x, y) {
@@ -436,6 +494,7 @@ function createStarTrail(x, y) {
 }
 
 function createParticles() {
+    if (prefersReducedMotion()) return;
     const purpleEmojis = ['💜', '✨', '💫', '⭐', '🌟', '✦', '🔮', '🪻'];
     for (let i = 0; i < 65; i++) {
         const particle = document.createElement('div');
@@ -484,65 +543,62 @@ window.openHistory = function(payloadJson) {
     const p = JSON.parse(payloadJson || '{}');
     document.getElementById('historyMeta').textContent = p.meta || '';
     document.getElementById('historyText').textContent = p.text || '';
-    document.getElementById('historyModal').classList.add('show');
+    openModal(document.getElementById('historyModal'));
 };
 
 window.closeHistoryModal = function() {
-    document.getElementById('historyModal').classList.remove('show');
+    closeModal(document.getElementById('historyModal'));
 };
 
 window.openAddPostModal = function() {
-    document.getElementById('addPostModal').classList.add('show');
-    setTimeout(() => document.getElementById('postUrl')?.focus(), 50);
+    openModal(document.getElementById('addPostModal'));
 };
 window.closeAddPostModal = function() {
-    document.getElementById('addPostModal').classList.remove('show');
+    closeModal(document.getElementById('addPostModal'));
 };
 
 window.openTypePickerModal = function() {
-    document.getElementById('typePickerModal').classList.add('show');
+    openModal(document.getElementById('typePickerModal'));
 };
 window.closeTypePickerModal = function() {
-    document.getElementById('typePickerModal').classList.remove('show');
+    closeModal(document.getElementById('typePickerModal'));
 };
 window.openPollModal = function() {
     const dt = new Date(Date.now() + 86400000);
     const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('pollEndsAt').value = local;
-    document.getElementById('pollModal').classList.add('show');
-    setTimeout(() => document.getElementById('pollQuestion')?.focus(), 50);
+    openModal(document.getElementById('pollModal'));
 };
 window.closePollModal = function() {
-    document.getElementById('pollModal').classList.remove('show');
+    closeModal(document.getElementById('pollModal'));
 };
 window.openImageModal = function() {
-    document.getElementById('imageModal').classList.add('show');
+    openModal(document.getElementById('imageModal'));
 };
 window.closeImageModal = function() {
-    document.getElementById('imageModal').classList.remove('show');
+    closeModal(document.getElementById('imageModal'));
     document.getElementById('imagePreview').innerHTML = '';
     document.getElementById('imageFile').value = '';
 };
 window.openMovieModal = function() {
-    document.getElementById('movieModal').classList.add('show');
-    setTimeout(() => document.getElementById('recTitle')?.focus(), 50);
+    openModal(document.getElementById('movieModal'));
 };
 window.closeMovieModal = function() {
-    document.getElementById('movieModal').classList.remove('show');
+    closeModal(document.getElementById('movieModal'));
 };
 
 window.openCollectionsModal = function() {
-    document.getElementById('collectionsModal').classList.add('show');
+    openModal(document.getElementById('collectionsModal'));
 };
 window.closeCollectionsModal = function() {
-    document.getElementById('collectionsModal').classList.remove('show');
+    closeModal(document.getElementById('collectionsModal'));
 };
 
 window.openSourcesModal = function() {
-    document.getElementById('sourcesModal').classList.add('show');
+    openModal(document.getElementById('sourcesModal'));
 };
 window.closeSourcesModal = function() {
-    document.getElementById('sourcesModal').classList.remove('show');
+    closeModal(document.getElementById('sourcesModal'));
 };
 
 // Edit/Delete modal controls
@@ -550,23 +606,22 @@ window.openEditModal = function(label, initialValue, target) {
     editTarget = target;
     document.getElementById('editLabel').textContent = label;
     document.getElementById('editTextarea').value = initialValue || '';
-    document.getElementById('editModal').classList.add('show');
-    setTimeout(() => document.getElementById('editTextarea')?.focus(), 50);
+    openModal(document.getElementById('editModal'));
 };
 
 window.closeEditModal = function() {
     editTarget = null;
-    document.getElementById('editModal').classList.remove('show');
+    closeModal(document.getElementById('editModal'));
 };
 
 window.openDeleteModal = function(target) {
     deleteTarget = target;
-    document.getElementById('deleteModal').classList.add('show');
+    openModal(document.getElementById('deleteModal'));
 };
 
 window.closeDeleteModal = function() {
     deleteTarget = null;
-    document.getElementById('deleteModal').classList.remove('show');
+    closeModal(document.getElementById('deleteModal'));
 };
 
 function collectReplyDescendants(replies, rootId) {
@@ -762,7 +817,7 @@ window.doRequestNotifPermission = function() {
 };
 
 window.closeNotifPermModal = function() {
-    document.getElementById('notifPermModal').style.display = 'none';
+    document.getElementById('notifPermModal').classList.remove('show');
 };
 
 window.toggleNotifications = function() {
@@ -782,7 +837,7 @@ window.toggleNotifications = function() {
         return;
     }
     // Show our custom explanation modal before triggering the browser prompt
-    document.getElementById('notifPermModal').style.display = 'flex';
+    document.getElementById('notifPermModal').classList.add('show');
 };
 
 // Sync stored preference with actual browser permission on load
@@ -1212,13 +1267,13 @@ function renderReplies(postId, replies) {
         return `
             <div class="reply-item${isChild ? ' reply-child' : ''}">
                 <div class="reply-item-header">
-                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                        <span style="font-size:11px;font-weight:900;color:var(--text-secondary);font-family:'Nunito',sans-serif;">${safeText(reply.author)} ${ae}</span>
-                        ${ts ? `<span style="font-size:10px;color:var(--text-secondary);opacity:0.65;font-family:'Nunito',sans-serif;font-weight:800;" title="${safeText(tsFull)}">${safeText(ts)}</span>` : ''}
+                    <div class="reply-author-info">
+                        <span class="reply-author-name">${safeText(reply.author)} ${ae}</span>
+                        ${ts ? `<span class="reply-timestamp" title="${safeText(tsFull)}">${safeText(ts)}</span>` : ''}
                         ${reply.editedAt && reply.editHistory ? `<button class="edit-pill" onclick="openHistory('${safeText(JSON.stringify({ meta: 'Original, ' + exactTimestamp(reply.editHistory.originalTs), text: reply.editHistory.originalNote || '' }))}')" title="View original">edited</button>` : ''}
                     </div>
 
-                    <div style="display:flex;align-items:center;gap:6px;">
+                    <div class="reply-action-btns">
                         <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}')">↩ Reply</button>
                         ${reply.author === currentUser ? `
                             <button class="reply-btn" onclick="openEditComment('${postId}','${reply.id}')" title="Edit">✏️</button>
@@ -1227,7 +1282,7 @@ function renderReplies(postId, replies) {
                     </div>
                 </div>
 
-                <div style="font-size:13px;color:var(--text-primary);line-height:1.55;white-space:pre-wrap;font-family:'Nunito',sans-serif;font-weight:700;">${safeText(reply.text)}</div>
+                <div class="reply-text">${safeText(reply.text)}</div>
 
                 <div class="comment-reactions" id="comment-rx-${postId}-${reply.id}">
                     ${renderRxButtons(reply.reactionsBy, postId, reply.id)}
@@ -1237,7 +1292,7 @@ function renderReplies(postId, replies) {
             ${children.length ? children.map(c => renderItem(c, true)).join('') : ''}
 
             <div id="inline-reply-${postId}-${reply.id}" class="inline-reply-form hidden">
-                <div style="font-size:11px;font-weight:900;color:var(--text-secondary);margin-bottom:6px;font-family:'Nunito',sans-serif;">Replying to ${safeText(reply.author)}</div>
+                <div class="inline-reply-label">Replying to ${safeText(reply.author)}</div>
                 <div class="reply-input-row">
                     <textarea
                         id="inline-input-${postId}-${reply.id}"
@@ -1303,12 +1358,12 @@ function createYouTubeEmbed(post) {
 
 function createInstagramEmbed(url) {
     return `
-        <div style="padding:14px 18px;">
+        <div class="instagram-wrap">
             <blockquote class="instagram-media" data-instgrm-permalink="${safeText(url)}" data-instgrm-version="14"
                 style="margin: 0; width: 100%; background: transparent; border: none;">
             </blockquote>
-            <div style="font-size:11px;color:var(--text-secondary);opacity:0.7;margin-top:8px;font-family:'Nunito',sans-serif;font-weight:800;">
-                If the caption doesn’t show, Instagram is blocking it for that post.
+            <div class="ig-note">
+                If the caption doesn't show, Instagram is blocking it for that post.
             </div>
         </div>
     `;
@@ -1471,8 +1526,8 @@ function createPostCard(post) {
             <div class="post-header">
                 <div class="post-author-row">
                     <span class="${badgeClass}">${safeText(author)} ${emoji}</span>
-                    <span style="color: var(--text-secondary); font-size: 12px; font-family:'Nunito',sans-serif; font-weight:900;">•</span>
-                    <span style="color: var(--text-secondary); font-size: 12px; font-weight: 900; font-family:'Nunito',sans-serif;" title="${safeText(dateFull)}">${safeText(date)}</span>
+                    <span class="post-meta-dot">•</span>
+                    <span class="post-meta-date" title="${safeText(dateFull)}">${safeText(date)}</span>
                     ${collectionBadge}
                     ${sourceBadge}
                     ${isRead(post) ? '<span class="seen-dot" title="Seen"></span>' : ''}
@@ -1489,7 +1544,7 @@ text: post.editHistory.originalNote || ''
 
                 </div>
 
-                <div style="display:flex;gap:4px;align-items:center;">
+                <div class="post-header-actions">
                     <button class="icon-btn${isFav ? ' fav-active' : ''}" onclick="toggleFavorite('${post.id}')" title="${isFav ? 'Unsave' : 'Save'}">
                         ${isFav ? '♥' : '♡'}
                     </button>
@@ -1533,12 +1588,12 @@ text: post.editHistory.originalNote || ''
                         </svg>
                     </button>
                 </div>
-                <div style="font-size:10px;color:var(--text-secondary);opacity:0.7;margin-top:6px;font-family:'Nunito',sans-serif;font-weight:800;">Enter to send, Shift+Enter for a new line</div>
+                <div class="reply-hint">Enter to send, Shift+Enter for a new line</div>
             </div>
 
             ${!isRead(post) ? `
                 <div class="post-actions">
-                    <button onclick="markSeen('${post.id}')" class="btn-secondary px-4 py-2 text-sm font-semibold rounded-xl" style="display:flex;align-items:center;gap:6px;white-space:nowrap;width:100%;justify-content:center;">
+                    <button onclick="markSeen('${post.id}')" class="btn-secondary px-4 py-2 text-sm font-semibold rounded-xl mark-seen-btn">
                         <span class="seen-dot"></span> Mark Seen
                     </button>
                 </div>
@@ -1900,28 +1955,202 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// ---- ABOUT MODAL ----
+function openAbout() {
+    document.getElementById('aboutModal').classList.add('show');
+    setTimeout(() => document.getElementById('aboutClose')?.focus(), 50);
+}
+function closeAbout() {
+    document.getElementById('aboutModal').classList.remove('show');
+}
+
+// ---- NET STATUS ----
+(function initNetStatus() {
+    const ns = document.getElementById('netStatus');
+    function update() {
+        if (navigator.onLine) ns.classList.remove('offline');
+        else ns.classList.add('offline');
+    }
+    window.addEventListener('online',  update);
+    window.addEventListener('offline', update);
+    update();
+})();
+
 // ---- TOAST ----
 function showToast(msg) {
     const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed; bottom: 28px; right: 28px;
-        background: rgba(18, 9, 42, 0.96);
-        color: #ede9fe;
-        padding: 12px 20px;
-        border-radius: 14px;
-        font-size: 14px; font-weight: 900;
-        font-family: 'Nunito', sans-serif;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(139,92,246,0.35);
-        z-index: 9999;
-        backdrop-filter: blur(14px);
-        transition: opacity 0.3s ease, transform 0.3s ease;
-        letter-spacing: -0.01em;
-    `;
+    toast.className = 'toast';
     toast.textContent = msg;
     document.body.appendChild(toast);
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
+        toast.classList.add('hiding');
         setTimeout(() => toast.remove(), 300);
     }, 2200);
 }
+
+// ============================================================
+//  STATIC HTML EVENT WIRING
+//  Replaces all inline onclick / oninput / onchange attributes
+//  that were removed from index.html.
+// ============================================================
+
+// Login
+document.getElementById('loginEl')?.addEventListener('click', () => login('El'));
+document.getElementById('loginTero')?.addEventListener('click', () => login('Tero'));
+document.getElementById('loginGuest')?.addEventListener('click', () => login('Guest'));
+
+// Header
+document.getElementById('feedTitle')?.addEventListener('click', () => resetToAll());
+document.getElementById('darkModeBtn')?.addEventListener('click', () => toggleDarkMode());
+document.getElementById('notifBtn')?.addEventListener('click', () => toggleNotifications());
+document.getElementById('userIndicator')?.addEventListener('click', () => logout());
+
+// Main nav
+document.getElementById('navAddPost')?.addEventListener('click', () => openTypePickerModal());
+document.getElementById('navCollections')?.addEventListener('click', () => openCollectionsModal());
+document.getElementById('navSources')?.addEventListener('click', () => openSourcesModal());
+
+// Active filters banner
+document.getElementById('clearFiltersBtn')?.addEventListener('click', () => clearAllExtraFilters());
+
+// Filter tabs
+document.getElementById('btnAll')?.addEventListener('click', () => setFilter('all'));
+document.getElementById('btnNew')?.addEventListener('click', () => setFilter('new'));
+document.getElementById('btnSeen')?.addEventListener('click', () => setFilter('seen'));
+document.getElementById('btnFav')?.addEventListener('click', () => setFilter('fav'));
+document.getElementById('btnWatchLater')?.addEventListener('click', () => setFilter('watch-later'));
+document.getElementById('btnOtherUser')?.addEventListener('click', () => setFilter('just-other'));
+document.getElementById('btnMarkAll')?.addEventListener('click', () => markAllSeen());
+
+// Search
+document.getElementById('searchInput')?.addEventListener('input', e => setSearch(e.target.value));
+document.getElementById('searchClear')?.addEventListener('click', () => clearSearch());
+
+// Empty state
+document.getElementById('emptyStateAddBtn')?.addEventListener('click', () => openTypePickerModal());
+
+// Keyboard shortcuts modal
+document.getElementById('shortcutsModalClose')?.addEventListener('click', () => closeShortcutsModal());
+document.getElementById('shortcutsModal')?.addEventListener('click', e => {
+    if (e.target.id === 'shortcutsModal') closeShortcutsModal();
+});
+
+// Type picker modal
+document.getElementById('typePickerModalClose')?.addEventListener('click', () => closeTypePickerModal());
+document.getElementById('typePickerModal')?.addEventListener('click', e => {
+    if (e.target.id === 'typePickerModal') closeTypePickerModal();
+});
+document.getElementById('typePickLink')?.addEventListener('click', () => {
+    closeTypePickerModal(); openAddPostModal();
+});
+document.getElementById('typePickPhoto')?.addEventListener('click', () => {
+    closeTypePickerModal(); openImageModal();
+});
+document.getElementById('typePickPoll')?.addEventListener('click', () => {
+    closeTypePickerModal(); openPollModal();
+});
+document.getElementById('typePickMovie')?.addEventListener('click', () => {
+    closeTypePickerModal(); openMovieModal();
+});
+
+// Poll modal
+document.getElementById('pollModalClose')?.addEventListener('click', () => closePollModal());
+document.getElementById('pollModal')?.addEventListener('click', e => {
+    if (e.target.id === 'pollModal') closePollModal();
+});
+document.getElementById('createPollBtn')?.addEventListener('click', () => addPoll());
+
+// Image modal
+document.getElementById('imageModalClose')?.addEventListener('click', () => closeImageModal());
+document.getElementById('imageModal')?.addEventListener('click', e => {
+    if (e.target.id === 'imageModal') closeImageModal();
+});
+document.getElementById('imageFile')?.addEventListener('change', function() { previewImage(this); });
+document.getElementById('sharePhotoBtn')?.addEventListener('click', () => addImagePost());
+
+// Movie / rec modal
+document.getElementById('movieModalClose')?.addEventListener('click', () => closeMovieModal());
+document.getElementById('movieModal')?.addEventListener('click', e => {
+    if (e.target.id === 'movieModal') closeMovieModal();
+});
+document.getElementById('mediaTypeMovie')?.addEventListener('click', function() { setMediaType('movie', this); });
+document.getElementById('mediaTypeShow')?.addEventListener('click',  function() { setMediaType('show',  this); });
+[1, 2, 3, 4, 5].forEach(n => {
+    document.getElementById(`star${n}`)?.addEventListener('click', () => setRating(n));
+});
+document.getElementById('addMovieRecBtn')?.addEventListener('click', () => addMovieRec());
+
+// Add post modal
+document.getElementById('addPostModalClose')?.addEventListener('click', () => closeAddPostModal());
+document.getElementById('addPostModal')?.addEventListener('click', e => {
+    if (e.target.id === 'addPostModal') closeAddPostModal();
+});
+document.getElementById('addPostBtn')?.addEventListener('click', () => addPost());
+
+// Collection picker pills (event delegation on static picker in add-post modal)
+document.getElementById('collectionPicker')?.addEventListener('click', e => {
+    const btn = e.target.closest('.coll-pick-btn');
+    if (btn) toggleCollPick(btn);
+});
+
+// Collections modal
+document.getElementById('collectionsModalClose')?.addEventListener('click', () => closeCollectionsModal());
+document.getElementById('collectionsModal')?.addEventListener('click', e => {
+    if (e.target.id === 'collectionsModal') { closeCollectionsModal(); return; }
+    const item = e.target.closest('[data-collection]');
+    if (item && item.closest('#collectionsModal')) filterByCollection(item.dataset.collection || null);
+});
+
+// Sources modal
+document.getElementById('sourcesModalClose')?.addEventListener('click', () => closeSourcesModal());
+document.getElementById('sourcesModal')?.addEventListener('click', e => {
+    if (e.target.id === 'sourcesModal') { closeSourcesModal(); return; }
+    const item = e.target.closest('[data-source]');
+    if (item && item.closest('#sourcesModal')) filterBySource(item.dataset.source || null);
+});
+
+// Edit modal
+document.getElementById('editModalClose')?.addEventListener('click', () => closeEditModal());
+document.getElementById('editModal')?.addEventListener('click', e => {
+    if (e.target.id === 'editModal') closeEditModal();
+});
+document.getElementById('editCancelBtn')?.addEventListener('click', () => closeEditModal());
+document.getElementById('editSaveBtn')?.addEventListener('click',   () => saveEdit());
+
+// Delete modal
+document.getElementById('deleteModal')?.addEventListener('click', e => {
+    if (e.target.id === 'deleteModal') closeDeleteModal();
+});
+document.getElementById('deleteCancelBtn')?.addEventListener('click',  () => closeDeleteModal());
+document.getElementById('deleteConfirmBtn')?.addEventListener('click', () => confirmDelete());
+
+// History modal
+document.getElementById('historyModalClose')?.addEventListener('click', () => closeHistoryModal());
+document.getElementById('historyModal')?.addEventListener('click', e => {
+    if (e.target.id === 'historyModal') closeHistoryModal();
+});
+document.getElementById('historyCloseBtn')?.addEventListener('click', () => closeHistoryModal());
+
+// Notification permission modal
+document.getElementById('notifAllowBtn')?.addEventListener('click', () => doRequestNotifPermission());
+document.getElementById('notifDenyBtn')?.addEventListener('click',  () => closeNotifPermModal());
+
+// Scroll to top
+document.getElementById('scrollTopBtn')?.addEventListener('click', () =>
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+);
+
+// Activity panel
+document.getElementById('activityFab')?.addEventListener('click',       () => toggleActivityPanel());
+document.getElementById('activityPanelClose')?.addEventListener('click', () => closeActivityPanel());
+
+// Chat
+document.getElementById('chatFab')?.addEventListener('click',       () => toggleChat());
+document.getElementById('chatPanelClose')?.addEventListener('click', () => toggleChat());
+
+// About modal
+document.getElementById('aboutBtn')?.addEventListener('click',   () => openAbout());
+document.getElementById('aboutClose')?.addEventListener('click', () => closeAbout());
+document.getElementById('aboutModal')?.addEventListener('click', e => {
+    if (e.target === document.getElementById('aboutModal')) closeAbout();
+});

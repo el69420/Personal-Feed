@@ -1887,3 +1887,598 @@ body.dark-mode kbd {
     border-color: rgba(139,92,246,0.38);
 }
 
+/* ============================================================
+   CURSOR FIX
+   Override the inherited cursor:none from body so interactive
+   elements show appropriate system cursor.
+   ============================================================ */
+button { cursor: pointer; }
+a      { cursor: pointer; }
+input, textarea { cursor: text; }
+select { cursor: pointer; }
+
+/* ============================================================
+   LOGIN OVERLAY
+   ============================================================ */
+.login-box {
+    text-align: center;
+    max-width: 420px;
+    width: 100%;
+}
+.login-emoji {
+    font-size: 52px;
+    margin-bottom: 12px;
+}
+.login-title {
+    color: white;
+    font-size: 34px;
+    font-weight: 900;
+    margin-bottom: 8px;
+    letter-spacing: -0.03em;
+    font-family: 'Nunito', sans-serif;
+}
+.login-subtitle {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 15px;
+    margin-bottom: 40px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+}
+.login-users {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.login-separator {
+    margin-top: 28px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 22px;
+}
+.login-guest-wrap {
+    margin: 0 auto;
+    max-width: 140px;
+    opacity: 0.75;
+}
+.user-card-emoji {
+    font-size: 44px;
+    margin-bottom: 10px;
+}
+.user-card-emoji--sm {
+    font-size: 36px;
+    margin-bottom: 8px;
+}
+.user-card-name {
+    font-size: 20px;
+    font-weight: 900;
+    color: white;
+    font-family: 'Nunito', sans-serif;
+}
+.user-card-name--sm {
+    font-size: 15px;
+    font-weight: 900;
+    color: white;
+    font-family: 'Nunito', sans-serif;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.header-title {
+    letter-spacing: -0.03em;
+    text-shadow: 0 4px 28px rgba(147, 51, 234, 0.45);
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    padding: 0;
+}
+.header-emoji {
+    filter: drop-shadow(0 2px 8px rgba(236, 72, 153, 0.5));
+}
+.header-subtitle {
+    opacity: 0.7;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+}
+.user-indicator-btn {
+    margin-top: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 5px 14px;
+    color: white;
+    font-size: 13px;
+    font-weight: 900;
+    font-family: 'Nunito', sans-serif;
+    transition: background 0.15s;
+}
+.user-indicator-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+/* ============================================================
+   ACTIVE FILTERS BANNER
+   ============================================================ */
+.filters-banner-inner {
+    background: rgba(255, 255, 255, 0.10);
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    border-radius: 18px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.filters-pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.filters-label {
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    font-family: 'Nunito', sans-serif;
+}
+.clear-filters-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    padding: 7px 12px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    font-weight: 900;
+    transition: background 0.15s;
+    font-family: 'Nunito', sans-serif;
+}
+.clear-filters-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.empty-state-title {
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    font-family: 'Nunito', sans-serif;
+}
+.empty-state-text {
+    color: var(--text-secondary);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+}
+
+/* ============================================================
+   MODAL VARIANTS & TYPOGRAPHY
+   ============================================================ */
+/* Size variants override modal-content max-width */
+.modal-sm  { max-width: 400px; }
+.modal-xs  { max-width: 340px; text-align: center; }
+.modal-center { text-align: center; }
+
+.modal-heading {
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    font-family: 'Nunito', sans-serif;
+}
+.modal-subtext {
+    color: var(--text-secondary);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+}
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+.modal-actions > * { flex: 1; }
+
+/* ============================================================
+   HISTORY MODAL
+   ============================================================ */
+.history-box {
+    background: rgba(147, 51, 234, 0.06);
+    border: 1px solid rgba(192, 132, 252, 0.18);
+    border-radius: 16px;
+    padding: 14px;
+}
+.history-text {
+    white-space: pre-wrap;
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.65;
+    font-family: 'Nunito', sans-serif;
+}
+.history-footer {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* ============================================================
+   DELETE MODAL
+   ============================================================ */
+.delete-modal-icon {
+    font-size: 44px;
+    margin-bottom: 10px;
+}
+.btn-primary-dark {
+    background: linear-gradient(135deg, #111827, #7c3aed);
+}
+
+/* ============================================================
+   FORM / PICKER HELPERS
+   ============================================================ */
+.coll-pick-label {
+    font-weight: 700;
+    opacity: 0.6;
+}
+.coll-picker-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 4px;
+}
+.media-type-picker-wrap {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+.post-tip {
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    line-height: 1.5;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+}
+.collection-item-label {
+    color: var(--text-primary);
+    font-family: 'Nunito', sans-serif;
+}
+
+/* ============================================================
+   NOTIFICATION PERMISSION MODAL
+   ============================================================ */
+.notif-perm-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 3, 25, 0.72);
+    backdrop-filter: blur(6px);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    display: none;
+}
+.notif-perm-backdrop.show { display: flex; }
+.notif-perm-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(168, 85, 247, 0.25);
+    border-radius: 20px;
+    padding: 28px 28px 24px;
+    max-width: 360px;
+    width: 100%;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+.notif-perm-icon   { font-size: 2.4rem; margin-bottom: 12px; }
+.notif-perm-title  {
+    font-size: 17px; font-weight: 900;
+    font-family: 'Nunito', sans-serif;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+.notif-perm-body {
+    font-size: 13px;
+    font-family: 'Nunito', sans-serif;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin-bottom: 22px;
+}
+.notif-perm-allow {
+    width: 100%;
+    padding: 11px;
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 900;
+    font-family: 'Nunito', sans-serif;
+    margin-bottom: 10px;
+    transition: opacity 0.15s;
+}
+.notif-perm-allow:hover { opacity: 0.88; }
+.notif-perm-deny {
+    width: 100%;
+    padding: 9px;
+    background: none;
+    color: var(--text-secondary);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 900;
+    font-family: 'Nunito', sans-serif;
+    transition: background 0.15s;
+}
+.notif-perm-deny:hover { background: rgba(168, 85, 247, 0.08); }
+
+/* ============================================================
+   NET STATUS (offline pill)
+   ============================================================ */
+.net-status {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 10000;
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: 13px;
+    background: rgba(15, 15, 20, 0.92);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+    display: none;
+}
+.net-status.offline { display: block; }
+
+/* ============================================================
+   ABOUT MODAL
+   ============================================================ */
+.about-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    background: rgba(0, 0, 0, 0.55);
+    padding: 16px;
+    display: none;
+}
+.about-backdrop.show { display: block; }
+.about-card {
+    max-width: 560px;
+    margin: 10vh auto;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+.about-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.about-title { font-weight: 700; font-size: 18px; }
+.about-close-btn {
+    border: 0;
+    background: transparent;
+    font-size: 18px;
+    padding: 6px 10px;
+    border-radius: 10px;
+}
+.about-close-btn:hover { transform: translateY(-1px); background: rgba(0,0,0,0.06); }
+.about-body { margin-top: 12px; line-height: 1.35; }
+.about-body p { margin: 10px 0; }
+.about-tip { opacity: 0.8; font-size: 13px; }
+
+/* ============================================================
+   MISC UTILITY
+   ============================================================ */
+/* Screen-reader-only / visually hidden (replaces display:none on file inputs) */
+.sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+}
+/* Filters banner gap */
+.filters-banner-gap { margin-bottom: 14px; }
+/* Poll option inputs vertical spacing */
+.poll-opt-input { margin-top: 8px; }
+
+/* ============================================================
+   ABOUT BUTTON (fixed top-right)
+   ============================================================ */
+#aboutBtn {
+    position: fixed;
+    top: 70px;
+    right: 22px;
+    z-index: 10000;
+    background: linear-gradient(135deg, #6d28d9, #9333ea);
+    border: none;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    box-shadow: 0 8px 22px rgba(109, 40, 217, 0.4);
+    transition: all 0.15s ease;
+}
+#aboutBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(147, 51, 234, 0.6);
+    background: rgba(255, 255, 255, 0.10);
+}
+
+/* ============================================================
+   DYNAMICALLY-RENDERED POST / REPLY ELEMENTS
+   ============================================================ */
+.post-header-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+.post-meta-dot {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+}
+.post-meta-date {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 900;
+    font-family: 'Nunito', sans-serif;
+}
+.reply-hint {
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    margin-top: 6px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+}
+.reply-author-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.reply-author-name {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--text-secondary);
+    font-family: 'Nunito', sans-serif;
+}
+.reply-timestamp {
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.65;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+}
+.reply-action-btns {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.reply-text {
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.55;
+    white-space: pre-wrap;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+}
+.inline-reply-label {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-family: 'Nunito', sans-serif;
+}
+.instagram-wrap { padding: 14px 18px; }
+.ig-note {
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    margin-top: 8px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+}
+.mark-seen-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    width: 100%;
+    justify-content: center;
+}
+
+/* ============================================================
+   TOAST (for .toast class used in showToast)
+   ============================================================ */
+.toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(18, 9, 42, 0.96);
+    color: #ede9fe;
+    padding: 12px 20px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 900;
+    font-family: 'Nunito', sans-serif;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(139, 92, 246, 0.35);
+    z-index: 9999;
+    backdrop-filter: blur(14px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    max-width: calc(100vw - 48px);
+    text-align: center;
+}
+.toast.hiding {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+}
+
+/* ============================================================
+   FEED CONTAINER (z-index wrapper)
+   ============================================================ */
+.feed-container {
+    position: relative;
+    z-index: 10;
+}
+
+/* ============================================================
+   PREFERS-REDUCED-MOTION
+   Disable / significantly reduce non-essential animations.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+    /* Background gradient shift */
+    body { animation: none; }
+
+    /* Dark-mode star field */
+    body.dark-mode::before { animation: none; opacity: 0.35; }
+
+    /* Floating emoji particles */
+    .particle { animation: none; opacity: 0; pointer-events: none; }
+
+    /* Star trail (cursor) */
+    .star-trail { animation: none; opacity: 0; }
+
+    /* Post card fade-in */
+    .fade-in { animation: none; }
+
+    /* New-badge pulse */
+    .new-badge { animation: none; }
+
+    /* Heart pop */
+    .heart-react { animation: none !important; }
+
+    /* Chat/Activity panel slide */
+    .chat-panel,
+    .activity-panel {
+        transition: opacity 0.01ms, visibility 0.01ms;
+        transform: none !important;
+    }
+
+    /* Post card hover lift */
+    .post-card { transition: none; }
+    .post-card:hover { transform: none; }
+
+    /* Post focus glow */
+    .post-card.post-focused { transition: none; }
+
+    /* Button hover transforms */
+    .type-picker-btn:hover,
+    .collection-item:hover,
+    .mark-all-btn:hover,
+    .reaction-btn:hover,
+    .comment-reaction-btn:hover { transform: none; }
+
+    /* chatInput glow */
+    #chatInput:focus { animation: none; }
+}
