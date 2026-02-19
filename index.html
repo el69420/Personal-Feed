@@ -345,8 +345,119 @@
 }
 </style>
 
+    <!-- About Us button (fixed, top-right) -->
+<button id="aboutBtn" title="About us" style="
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 10000;
+  border: 0;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 999px;
+">
+  ℹ️ About us
+</button>
+
+<!-- Offline status pill (fixed, top-left) -->
+<div id="netStatus" style="
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 10000;
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: rgba(15,15,20,0.92);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.25);
+  display: none;
+">
+  Offline
+</div>
+
+<!-- About Us modal -->
+<div id="aboutModal" style="
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  background: rgba(0,0,0,0.55);
+  padding: 16px;
+  display: none;
+">
+  <div style="
+    max-width: 560px;
+    margin: 10vh auto;
+    background: rgba(255,255,255,0.95);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  ">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <div style="font-weight:700; font-size:18px;">About us</div>
+      <button id="aboutClose" aria-label="Close" style="
+        border:0;
+        background:transparent;
+        font-size:18px;
+        cursor:pointer;
+        padding:6px 10px;
+        border-radius:10px;
+      ">✕</button>
+    </div>
+
+    <div style="margin-top:12px; line-height:1.35;">
+      <p style="margin:10px 0;"><strong>El</strong>, and <strong>Tero</strong>.</p>
+      <p style="margin:10px 0;">
+        This is our wee corner of the internet, a personal feed for posts, chats, and experiments.
+      </p>
+      <p style="margin:10px 0;">
+        <a href="https://github.com/el69420/Personal-Feed" target="_blank" rel="noreferrer">Project on GitHub</a>
+      </p>
+      <p style="margin:10px 0; opacity:0.8; font-size:13px;">
+        Tip: press Escape to close this.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ABOUT MODAL
+  const aboutBtn = document.getElementById('aboutBtn');
+  const aboutModal = document.getElementById('aboutModal');
+  const aboutClose = document.getElementById('aboutClose');
+
+  function openAbout() { aboutModal.style.display = 'block'; }
+  function closeAbout() { aboutModal.style.display = 'none'; }
+
+  aboutBtn.addEventListener('click', openAbout);
+  aboutClose.addEventListener('click', closeAbout);
+
+  // click outside card closes
+  aboutModal.addEventListener('click', (e) => {
+    if (e.target === aboutModal) closeAbout();
+  });
+
+  // Escape closes
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAbout();
+  });
+
+  // OFFLINE PILL
+  const netStatus = document.getElementById('netStatus');
+
+  function updateNetStatus() {
+    if (navigator.onLine) netStatus.style.display = 'none';
+    else netStatus.style.display = 'block';
+  }
+
+  window.addEventListener('online', updateNetStatus);
+  window.addEventListener('offline', updateNetStatus);
+  updateNetStatus();
+</script>
+
 
     <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
