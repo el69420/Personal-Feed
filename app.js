@@ -9,8 +9,11 @@ const database = getDatabase(app);
 const storage  = getStorage(app);
 const auth     = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
-const postsRef = ref(database, 'posts');
-const chatRef  = ref(database, 'chat');
+const postsRef      = ref(database, 'posts');
+const chatRef       = ref(database, 'chat');
+const boardsRef     = ref(database, 'boards');
+const boardItemsRef = ref(database, 'board_items');
+const lettersRef    = ref(database, 'letters');
 
 let currentFilter = 'all';
 let currentCollection = null;
@@ -31,6 +34,11 @@ let prevVisualSig = null;
 
 let _audioCtx = null;
 let chatOpen = false;
+let currentSection = 'feed';   // 'feed' | 'boards' | 'mailbox'
+let allBoards = {};             // boardId → board object
+let _boardPickerPostId = null;  // postId being saved to a board
+let allLetters = {};            // letterId → letter object
+let mailboxTab = 'inbox';
 let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
 let lastChatMessages = [];
 let activitySeenTs = 0;
@@ -385,6 +393,7 @@ function login(displayName, email) {
     updateNewCount();
     loadPosts();
     setupTypingCleanup();
+    startNowListening();
 }
 
 window.logout = function() {
@@ -393,6 +402,279 @@ window.logout = function() {
     // onAuthStateChanged(null) will clear currentUser and show the login screen
 };
 
+// ---- SECTION MANAGER ----
+function showSection(name) {
+    currentSection = name;
+    const isFeed = name === 'feed';
+    document.getElementById('feedSection').classList.toggle('hidden', !isFeed);
+    document.getElementById('filterButtons').classList.toggle('hidden', !isFeed);
+    document.getElementById('searchWrap').classList.toggle('hidden', !isFeed);
+    document.getElementById('nowListeningBar')?.classList.toggle('hidden', !isFeed);
+    document.getElementById('boardsSection').classList.toggle('hidden', name !== 'boards');
+    document.getElementById('mailboxSection').classList.toggle('hidden', name !== 'mailbox');
+    document.getElementById('navBoards')?.classList.toggle('active', name === 'boards');
+    document.getElementById('navMailbox')?.classList.toggle('active', name === 'mailbox');
+    if (name === 'boards') renderBoardsList();
+    if (name === 'mailbox') renderMailbox();
+}
+
+// ---- BOARDS ----
+function setupBoardsListener() {
+    onValue(boardsRef, snap => {
+        allBoards = snap.val() || {};
+        if (currentSection === 'boards') renderBoardsList();
+    });
+}
+
+function renderBoardsList() {
+    const container = document.getElementById('boardsList');
+    const detail = document.getElementById('boardDetail');
+    if (!container) return;
+    detail.classList.add('hidden');
+    container.classList.remove('hidden');
+
+    const entries = Object.entries(allBoards)
+        .filter(([, b]) => b.owner === currentUser || b.isShared)
+        .sort((a, b) => b[1].createdAt - a[1].createdAt);
+
+    if (entries.length === 0) {
+        container.innerHTML = '<div class="boards-empty">No boards yet. Create one!</div>';
+        return;
+    }
+    container.innerHTML = entries.map(([id, board]) => `
+        <div class="board-card" onclick="openBoardDetail('${id}')">
+            <div class="board-card-title">${safeText(board.title)}</div>
+            <div class="board-card-meta">${board.isShared ? '👥 Shared' : '🔒 Personal'} · by ${safeText(board.owner)}</div>
+        </div>
+    `).join('');
+}
+
+window.openBoardDetail = async function(boardId) {
+    const board = allBoards[boardId];
+    if (!board) return;
+    document.getElementById('boardsList').classList.add('hidden');
+    const detail = document.getElementById('boardDetail');
+    detail.classList.remove('hidden');
+    document.getElementById('boardDetailHeader').innerHTML = `
+        <h3 class="boards-title">${safeText(board.title)}</h3>
+        <span class="board-card-meta">${board.isShared ? '👥 Shared' : '🔒 Personal'}</span>
+    `;
+    const snap = await get(ref(database, `board_items/${boardId}`));
+    const items = snap.val() || {};
+    const postIds = Object.keys(items).sort((a, b) => items[b].savedAt - items[a].savedAt);
+    const postsEl = document.getElementById('boardDetailPosts');
+    if (postIds.length === 0) {
+        postsEl.innerHTML = '<div class="boards-empty">No posts saved here yet.</div>';
+        return;
+    }
+    postsEl.innerHTML = postIds
+        .map(id => allPosts[id] ? createPostCard(allPosts[id]) : '')
+        .filter(Boolean)
+        .join('');
+};
+
+window.closeBoardDetail = function() {
+    document.getElementById('boardDetail').classList.add('hidden');
+    document.getElementById('boardsList').classList.remove('hidden');
+};
+
+window.openBoardPickerModal = function(postId) {
+    _boardPickerPostId = postId;
+    const post = allPosts[postId];
+    const isFav = !!(post?.favoritedBy?.[currentUser]);
+    const entries = Object.entries(allBoards)
+        .filter(([, b]) => b.owner === currentUser || b.isShared)
+        .sort((a, b) => a[1].title.localeCompare(b[1].title));
+
+    const list = document.getElementById('boardPickerList');
+    list.innerHTML = `
+        <button class="board-picker-item${isFav ? ' board-picker-saved' : ''}"
+                onclick="toggleFavorite('${postId}');closeModal(document.getElementById('boardPickerModal'))">
+            ⭐ Quick Save${isFav ? ' ✓' : ''}
+        </button>
+        ${entries.map(([id, board]) => `
+            <button class="board-picker-item" onclick="saveToBoard('${id}','${postId}')">
+                ${safeText(board.title)}
+                <span class="board-meta-tag">${board.isShared ? '👥' : '🔒'}</span>
+            </button>
+        `).join('')}
+    `;
+    openModal(document.getElementById('boardPickerModal'));
+};
+
+window.saveToBoard = async function(boardId, postId) {
+    await set(ref(database, `board_items/${boardId}/${postId}`), { savedAt: Date.now() });
+    closeModal(document.getElementById('boardPickerModal'));
+    showToast('Saved to board ✓');
+};
+
+window.openCreateBoardModal = function() {
+    closeModal(document.getElementById('boardPickerModal'));
+    openModal(document.getElementById('createBoardModal'));
+};
+
+window.createBoard = async function() {
+    const title = document.getElementById('boardNameInput').value.trim();
+    const isShared = document.getElementById('boardSharedToggle').checked;
+    if (!title) { showToast('Enter a board name'); return; }
+    await push(boardsRef, { title, owner: currentUser, isShared, createdAt: Date.now() });
+    document.getElementById('boardNameInput').value = '';
+    document.getElementById('boardSharedToggle').checked = false;
+    closeModal(document.getElementById('createBoardModal'));
+    showToast('Board created ✓');
+};
+
+// ---- MAILBOX ----
+function setupLettersListener() {
+    onValue(lettersRef, snap => {
+        allLetters = snap.val() || {};
+        updateMailboxBadge();
+        if (currentSection === 'mailbox') renderMailbox();
+    });
+}
+
+function updateMailboxBadge() {
+    const unread = Object.values(allLetters)
+        .filter(l => l.to === currentUser && !l.readAt).length;
+    const badge = document.getElementById('mailboxBadge');
+    const inboxBadge = document.getElementById('inboxUnread');
+    if (badge) {
+        if (unread > 0) { badge.textContent = unread; badge.classList.remove('hidden'); }
+        else { badge.classList.add('hidden'); }
+    }
+    if (inboxBadge) {
+        if (unread > 0) { inboxBadge.textContent = unread; inboxBadge.classList.remove('hidden'); }
+        else { inboxBadge.classList.add('hidden'); }
+    }
+}
+
+function renderMailbox() {
+    const body = document.getElementById('mailboxBody');
+    if (!body) return;
+    const letters = Object.entries(allLetters)
+        .map(([id, l]) => ({ id, ...l }))
+        .filter(l => mailboxTab === 'inbox' ? l.to === currentUser : l.from === currentUser)
+        .sort((a, b) => b.createdAt - a.createdAt);
+    if (letters.length === 0) {
+        body.innerHTML = `<div class="mailbox-empty">${mailboxTab === 'inbox' ? 'No letters yet 💌' : 'Nothing sent yet'}</div>`;
+        return;
+    }
+    body.innerHTML = letters.map(l => `
+        <div class="letter-item${!l.readAt && l.to === currentUser ? ' unread' : ''}" onclick="openLetter('${l.id}')">
+            <div class="letter-from">${mailboxTab === 'inbox' ? `from ${safeText(l.from)}` : `to ${safeText(l.to)}`}</div>
+            <div class="letter-subject">${safeText(l.subject || '(no subject)')}</div>
+            <div class="letter-preview">${safeText((l.body || '').slice(0, 80))}${(l.body || '').length > 80 ? '…' : ''}</div>
+            <div class="letter-time">${safeText(timeAgo(l.createdAt))}</div>
+        </div>
+    `).join('');
+}
+
+window.openLetter = async function(letterId) {
+    const letter = allLetters[letterId];
+    if (!letter) return;
+    if (!letter.readAt && letter.to === currentUser) {
+        await update(ref(database, `letters/${letterId}`), { readAt: Date.now() });
+    }
+    const body = document.getElementById('mailboxBody');
+    body.innerHTML = `
+        <button class="board-back-btn" onclick="renderMailbox()">← Back</button>
+        <div class="letter-full">
+            <div class="letter-full-meta">
+                <span>from ${safeText(letter.from)}</span>
+                <span>→ ${safeText(letter.to)}</span>
+                <span>${safeText(exactTimestamp(letter.createdAt))}</span>
+            </div>
+            ${letter.subject ? `<div class="letter-full-subject">${safeText(letter.subject)}</div>` : ''}
+            <div class="letter-full-body">${safeText(letter.body || '')}</div>
+            ${letter.from === currentUser ? `<button class="btn-secondary delete-letter-btn" onclick="deleteLetter('${letterId}')">Delete</button>` : ''}
+        </div>
+    `;
+};
+
+window.deleteLetter = async function(letterId) {
+    if (!allLetters[letterId] || allLetters[letterId].from !== currentUser) return;
+    await remove(ref(database, `letters/${letterId}`));
+    renderMailbox();
+    showToast('Deleted');
+};
+
+window.sendLetter = async function() {
+    const to = currentUser === 'El' ? 'Tero' : 'El';
+    const subject = document.getElementById('letterSubject').value.trim();
+    const body = document.getElementById('letterBody').value.trim();
+    if (!body) { showToast('Write something first'); return; }
+    await push(lettersRef, { from: currentUser, to, subject, body, createdAt: Date.now(), readAt: null });
+    document.getElementById('letterSubject').value = '';
+    document.getElementById('letterBody').value = '';
+    closeModal(document.getElementById('composeLetterModal'));
+    showToast('Letter sent 💌');
+};
+
+window.openComposeLetter = function() {
+    openModal(document.getElementById('composeLetterModal'));
+};
+
+window.switchMailboxTab = function(tab) {
+    mailboxTab = tab;
+    document.getElementById('tabInbox').classList.toggle('active', tab === 'inbox');
+    document.getElementById('tabSent').classList.toggle('active', tab === 'sent');
+    renderMailbox();
+};
+
+// ---- NOW PLAYING ----
+async function fetchNowPlaying(userKey) {
+    try {
+        const r = await fetch(`/api/now-playing?user=${userKey}`);
+        if (!r.ok) return null;
+        return await r.json();
+    } catch { return null; }
+}
+
+function renderNLCard(suffix, data) {
+    const artEl    = document.getElementById(`nlArt${suffix}`);
+    const trackEl  = document.getElementById(`nlTrack${suffix}`);
+    const artistEl = document.getElementById(`nlArtist${suffix}`);
+    const statusEl = document.getElementById(`nlStatus${suffix}`);
+    const cardEl   = document.getElementById(`nlCard${suffix}`);
+    if (!cardEl) return;
+
+    if (!data || data.status === 'none') {
+        trackEl.textContent  = '—';
+        artistEl.textContent = '';
+        statusEl.textContent = '';
+        artEl.style.display  = 'none';
+        cardEl.classList.remove('nl-playing');
+        return;
+    }
+
+    trackEl.textContent  = data.track  || '—';
+    artistEl.textContent = data.artist || '';
+    cardEl.classList.toggle('nl-playing', !!data.nowPlaying);
+    statusEl.textContent = data.nowPlaying
+        ? '▶ Now playing'
+        : (data.timestamp ? `Last: ${timeAgo(data.timestamp)}` : '');
+
+    if (data.image) { artEl.src = data.image; artEl.style.display = ''; }
+    else            { artEl.style.display = 'none'; }
+}
+
+async function pollNowListening() {
+    const [elData, teroData] = await Promise.all([
+        fetchNowPlaying('el'),
+        fetchNowPlaying('tero'),
+    ]);
+    const bar = document.getElementById('nowListeningBar');
+    if (!bar) return;
+    if (elData || teroData) bar.classList.remove('hidden');
+    if (elData)   renderNLCard('El',   elData);
+    if (teroData) renderNLCard('Tero', teroData);
+}
+
+function startNowListening() {
+    pollNowListening();
+    setInterval(pollNowListening, 60_000);
+}
+
 // ---- DB LISTENERS ----
 // Started exactly once, after the first successful authentication.
 let _dbListenersStarted = false;
@@ -400,6 +682,9 @@ let _dbListenersStarted = false;
 function setupDBListeners() {
     if (_dbListenersStarted) return;
     _dbListenersStarted = true;
+
+    setupBoardsListener();
+    setupLettersListener();
 
     onValue(postsRef, (snapshot) => {
         const newPosts = snapshot.val() || {};
@@ -842,6 +1127,7 @@ window.resetToAll = function() {
     const inp = document.getElementById('searchInput');
     if (inp) inp.value = '';
     document.getElementById('searchClear')?.classList.add('hidden');
+    showSection('feed');
     setFilter('all');
 };
 
@@ -1038,23 +1324,26 @@ window.addPost = async function() {
     if (!throttle('add-post', 2000)) return;
 
     const source = detectSource(url);
+    const capsuleToggle = document.getElementById('timeCapsuleToggle');
+    const capsulePicker = document.getElementById('timeCapsulePicker');
+    const unlockAt = capsuleToggle?.checked && capsulePicker?.value
+        ? new Date(capsulePicker.value).getTime() : null;
 
     try {
-        await push(postsRef, {
-            url,
-            note,
-            author,
-            collections,
-            source,
+        const postData = {
+            url, note, author, collections, source,
             timestamp: Date.now(),
             readBy: { [author]: true },
             reactionsBy: {},
             replies: []
-        });
+        };
+        if (unlockAt) postData.unlockAt = unlockAt;
+        await push(postsRef, postData);
 
         document.getElementById('postUrl').value = '';
         document.getElementById('postNote').value = '';
         document.querySelectorAll('#collectionPicker .coll-pick-btn').forEach(b => b.classList.remove('selected'));
+        if (capsuleToggle) { capsuleToggle.checked = false; capsulePicker.classList.add('hidden'); capsulePicker.value = ''; }
 
         closeAddPostModal();
         showToast('Post added');
@@ -1575,6 +1864,20 @@ function renderRecommendationContent(post) {
 // ---- CARD RENDERER ----
 
 function createPostCard(post) {
+    // Time capsule: non-owners see a locked placeholder until unlockAt passes
+    if (post.unlockAt && post.unlockAt > Date.now() && post.author !== currentUser) {
+        const unlockDate = exactTimestamp(post.unlockAt);
+        return `
+            <div class="post-card fade-in capsule-card" data-post-id="${post.id}">
+                <div class="capsule-lock">
+                    <div class="capsule-icon">🔒</div>
+                    <div class="capsule-label">Locked until</div>
+                    <div class="capsule-date">${safeText(unlockDate)}</div>
+                    <div class="capsule-author">from ${safeText(post.author || 'someone')}</div>
+                </div>
+            </div>`;
+    }
+
     const date = timeAgo(post.timestamp);
     const dateFull = exactTimestamp(post.timestamp);
     const author = post.author || 'Unknown';
@@ -1681,7 +1984,7 @@ text: post.editHistory.originalNote || ''
                 </div>
 
                 <div class="post-header-actions">
-                    <button class="icon-btn${isFav ? ' fav-active' : ''}" onclick="toggleFavorite('${post.id}')" title="${isFav ? 'Unsave' : 'Save'}">
+                    <button class="icon-btn${isFav ? ' fav-active' : ''}" onclick="openBoardPickerModal('${post.id}')" title="Save to board">
                         ${isFav ? '♥' : '♡'}
                     </button>
                     ${post.author === currentUser ? `
@@ -2346,6 +2649,18 @@ document.getElementById('aboutClose')?.addEventListener('click', () => closeAbou
 document.getElementById('aboutModal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('aboutModal')) closeAbout();
 });
+
+// Boards nav + modals
+document.getElementById('navBoards')?.addEventListener('click', () => showSection('boards'));
+document.getElementById('navMailbox')?.addEventListener('click', () => showSection('mailbox'));
+document.getElementById('boardPickerClose')?.addEventListener('click', () => closeModal(document.getElementById('boardPickerModal')));
+document.getElementById('boardPickerModal')?.addEventListener('click', e => { if (e.target.id === 'boardPickerModal') closeModal(e.target); });
+document.getElementById('createBoardClose')?.addEventListener('click', () => closeModal(document.getElementById('createBoardModal')));
+document.getElementById('createBoardModal')?.addEventListener('click', e => { if (e.target.id === 'createBoardModal') closeModal(e.target); });
+document.getElementById('createBoardConfirmBtn')?.addEventListener('click', () => createBoard());
+document.getElementById('composeLetterClose')?.addEventListener('click', () => closeModal(document.getElementById('composeLetterModal')));
+document.getElementById('composeLetterModal')?.addEventListener('click', e => { if (e.target.id === 'composeLetterModal') closeModal(e.target); });
+document.getElementById('sendLetterBtn')?.addEventListener('click', () => sendLetter());
 
 // Comment typing indicator (event delegation — survives loadPosts DOM rebuilds)
 document.getElementById('postsContainer')?.addEventListener('input', e => {

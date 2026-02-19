@@ -1,3 +1,6 @@
 # firebase-config.js is intentionally committed — Firebase client config is
 # designed to be public. Security comes from Firebase Security Rules, not
 # keeping these keys secret.
+
+.env
+node_modules/
