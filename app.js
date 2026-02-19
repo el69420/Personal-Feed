@@ -2125,16 +2125,7 @@ chatInput.addEventListener('keydown', async (e) => {
     sparkSound('chat');
 });
 
-// Close chat / activity panel when clicking outside
-document.addEventListener('click', (e) => {
-    if (chatOpen && !e.target.closest('#chatPanel') && !e.target.closest('.chat-fab')) {
-        closeChat();
-    }
-    const actPanel = document.getElementById('activityPanel');
-    if (actPanel?.classList.contains('show') && !e.target.closest('#activityPanel') && !e.target.closest('.activity-fab')) {
-        closeActivityPanel();
-    }
-});
+
 
 // ---- ABOUT MODAL ----
 function openAbout() {
@@ -2351,3 +2342,4 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     }
     if (postId) startCommentTyping(postId);
 });
+
