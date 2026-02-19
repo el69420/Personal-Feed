@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 import { firebaseConfig } from './firebase-config.js';
 
@@ -31,6 +31,14 @@ let chatOpen = false;
 let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
 let lastChatMessages = [];
 let activitySeenTs = 0;
+
+// ---- TYPING INDICATOR STATE ----
+let _chatTypingTimer    = null;
+let _chatIsTyping       = false;
+const _commentTypingTimers = {};        // postId → timerHandle
+const _commentOnDisconnectSet = new Set(); // postIds where onDisconnect is registered
+let _cachedChatTyping    = {};           // snapshot of /typing/chat
+let _cachedCommentTyping = {};           // snapshot of /typing/comments
 
 
 // Edit/Delete modal state
@@ -352,9 +360,11 @@ window.login = function(user) {
     activitySeenTs = Number(localStorage.getItem(`activitySeenTs-${user}`) || String(Date.now() - 86400000));
     updateNewCount();
     loadPosts();
+    setupTypingCleanup();
 };
 
 window.logout = function() {
+    stopChatTyping();          // clear typing flag before losing currentUser
     currentUser = null;
     localStorage.removeItem('currentUser');
     document.getElementById('loginOverlay').style.display = 'flex';
@@ -1174,6 +1184,8 @@ window.addReply = async function(postId) {
     const text  = input.value.trim();
     if (!text) return;
 
+    stopCommentTyping(postId);   // clear typing indicator immediately on send
+
     const author = currentUser;
     const post = allPosts[postId];
     const replies = post.replies || [];
@@ -1209,6 +1221,8 @@ window.submitInlineReply = async function(postId, replyToId) {
     const raw    = input.value;
     const text   = raw.trim();
     if (!text) return;
+
+    stopCommentTyping(postId);   // clear typing indicator immediately on send
 
     const author = currentUser;
     const post = allPosts[postId];
@@ -1575,6 +1589,7 @@ text: post.editHistory.originalNote || ''
             ${renderReplies(post.id, replies)}
 
             <div class="reply-section">
+                <div id="typing-comment-${post.id}" class="comment-typing-indicator hidden"></div>
                 <div class="reply-input-row">
                     <textarea
                         id="reply-${post.id}"
@@ -1686,6 +1701,8 @@ function loadPosts() {
     if (focusedPostId) {
         document.querySelector(`[data-post-id="${focusedPostId}"]`)?.classList.add('post-focused');
     }
+    // Re-stamp any active typing indicators (DOM was rebuilt)
+    updateCommentTypingUI();
 
     setTimeout(() => {
         window.twttr?.widgets?.load?.();
@@ -1780,6 +1797,105 @@ window.scrollToPost = function(postId) {
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 80);
 };
+
+// ---- TYPING INDICATORS ----
+
+// --- Chat typing ---
+
+function _chatTypingRef() {
+    return ref(database, `typing/chat/${currentUser}`);
+}
+
+function startChatTyping() {
+    if (!currentUser) return;
+    if (!_chatIsTyping) {
+        _chatIsTyping = true;
+        set(_chatTypingRef(), { typing: true });
+    }
+    // Reset the inactivity timer
+    clearTimeout(_chatTypingTimer);
+    _chatTypingTimer = setTimeout(stopChatTyping, 1200);
+}
+
+function stopChatTyping() {
+    clearTimeout(_chatTypingTimer);
+    _chatTypingTimer = null;
+    if (!currentUser || !_chatIsTyping) return;
+    _chatIsTyping = false;
+    set(_chatTypingRef(), { typing: false });
+}
+
+function setupTypingCleanup() {
+    if (!currentUser) return;
+    // Register server-side cleanup so the flag clears if the tab is closed
+    onDisconnect(_chatTypingRef()).set({ typing: false });
+}
+
+// --- Comment typing ---
+
+function startCommentTyping(postId) {
+    if (!currentUser) return;
+    const typRef = ref(database, `typing/comments/${postId}/${currentUser}`);
+    // Register onDisconnect once per post per session
+    if (!_commentOnDisconnectSet.has(postId)) {
+        onDisconnect(typRef).set({ typing: false });
+        _commentOnDisconnectSet.add(postId);
+    }
+    set(typRef, { typing: true });
+    clearTimeout(_commentTypingTimers[postId]);
+    _commentTypingTimers[postId] = setTimeout(() => stopCommentTyping(postId), 1200);
+}
+
+function stopCommentTyping(postId) {
+    clearTimeout(_commentTypingTimers[postId]);
+    delete _commentTypingTimers[postId];
+    if (!currentUser) return;
+    set(ref(database, `typing/comments/${postId}/${currentUser}`), { typing: false });
+}
+
+// --- Typing UI update helpers ---
+
+function updateChatTypingUI() {
+    const indicator = document.getElementById('chatTypingIndicator');
+    if (!indicator) return;
+    const other = Object.entries(_cachedChatTyping)
+        .find(([uid, v]) => uid !== currentUser && v?.typing);
+    if (other) {
+        indicator.textContent = `${other[0]} is typing…`;
+        indicator.classList.remove('hidden');
+    } else {
+        indicator.classList.add('hidden');
+    }
+}
+
+// Called by loadPosts() to re-stamp indicators after a DOM rebuild
+function updateCommentTypingUI() {
+    if (!currentUser) return;
+    document.querySelectorAll('[id^="typing-comment-"]').forEach(el => {
+        const postId = el.id.slice('typing-comment-'.length);
+        const typingData = _cachedCommentTyping[postId] || {};
+        const other = Object.entries(typingData)
+            .find(([uid, v]) => uid !== currentUser && v?.typing);
+        if (other) {
+            el.textContent = `${other[0]} is typing a comment…`;
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    });
+}
+
+// --- Firebase listeners for /typing ---
+
+onValue(ref(database, 'typing/chat'), snapshot => {
+    _cachedChatTyping = snapshot.val() || {};
+    updateChatTypingUI();
+});
+
+onValue(ref(database, 'typing/comments'), snapshot => {
+    _cachedCommentTyping = snapshot.val() || {};
+    updateCommentTypingUI();
+});
 
 // ---- CHAT ----
 function formatChatTime(ts) {
@@ -1911,6 +2027,7 @@ window.toggleChat = function() {
 };
 
 function closeChat(silent) {
+    stopChatTyping();
     chatOpen = false;
     document.getElementById('chatPanel').classList.remove('show');
     if (!silent) document.getElementById('chatUnread').classList.add('hidden');
@@ -1918,16 +2035,19 @@ function closeChat(silent) {
 
 const chatInput = document.getElementById('chatInput');
 
-// Auto-expand textarea as user types
+// Auto-expand textarea as user types; also start typing indicator
 chatInput.addEventListener('input', () => {
     chatInput.style.height = 'auto';
     chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
+    startChatTyping();
 });
 
 chatInput.addEventListener('keydown', async (e) => {
     if (e.key !== 'Enter') return;
     if (e.shiftKey) return;
     e.preventDefault();
+
+    stopChatTyping();          // clear "typing" immediately on send
 
     const text = chatInput.value.trim();
     if (!text) return;
@@ -2153,4 +2273,21 @@ document.getElementById('aboutBtn')?.addEventListener('click',   () => openAbout
 document.getElementById('aboutClose')?.addEventListener('click', () => closeAbout());
 document.getElementById('aboutModal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('aboutModal')) closeAbout();
+});
+
+// Comment typing indicator (event delegation — survives loadPosts DOM rebuilds)
+document.getElementById('postsContainer')?.addEventListener('input', e => {
+    if (!currentUser) return;
+    const ta = e.target.closest('textarea.reply-input');
+    if (!ta) return;
+    // Derive postId from the textarea's id:
+    //   "reply-{postId}"                  → top-level reply input
+    //   "inline-input-{postId}-{replyId}" → threaded reply input
+    let postId = null;
+    if (ta.id.startsWith('reply-')) {
+        postId = ta.id.slice('reply-'.length);
+    } else if (ta.id.startsWith('inline-input-')) {
+        postId = ta.id.split('-')[2];
+    }
+    if (postId) startCommentTyping(postId);
 });

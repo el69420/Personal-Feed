@@ -1,0 +1,43 @@
+{
+  "rules": {
+    // -------------------------------------------------------
+    // NOTE: This app uses localStorage for user identity, not
+    // Firebase Authentication.  The auth.uid-based rules below
+    // are IDEAL and should be enabled if you add Firebase Auth.
+    // For now the rules are structured but permissive within the
+    // /typing subtree so only El / Tero paths exist.
+    // -------------------------------------------------------
+
+    "posts": {
+      ".read":  true,
+      ".write": true
+    },
+
+    "chat": {
+      ".read":  true,
+      ".write": true
+    },
+
+    "typing": {
+      // Chat typing: each user writes only to their own key.
+      // Ideal rule (requires Firebase Auth):
+      //   "$uid": { ".write": "auth != null && auth.uid === $uid" }
+      "chat": {
+        "$username": {
+          ".read":  true,
+          ".write": true
+        }
+      },
+
+      // Comment typing: per-post, per-user key.
+      "comments": {
+        "$postId": {
+          "$username": {
+            ".read":  true,
+            ".write": true
+          }
+        }
+      }
+    }
+  }
+}
