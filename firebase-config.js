@@ -3,7 +3,7 @@
 // Copy firebase-config.example.js and fill in your values if setting up fresh
 
 export const firebaseConfig = {
-    apiKey: "AIzaSyBB0O3pcsHQt5mWVUFZqnbB0kY3Z9d8k304",
+    apiKey: "AIzaSyB0O3pcsHOt5eMYUFZqnb8okY3Z9d8k304",
     authDomain: "personal-feed-149ce.firebaseapp.com",
     databaseURL: "https://personal-feed-149ce-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "personal-feed-149ce",
