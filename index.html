@@ -514,6 +514,26 @@
         </div>
     </div>
 
+    <!-- Board Delete Request Modal (shown to the non-owner when a shared board deletion is pending) -->
+    <div id="boardDeleteRequestModal" class="modal">
+        <div class="modal-content modal-center">
+            <div class="delete-modal-icon">(o_o)</div>
+            <h2 class="text-xl font-black mb-2 modal-heading">board deletion request</h2>
+            <p class="text-sm mb-5 modal-subtext">
+                <span id="boardDeleteRequestUser"></span> wants to delete the shared board
+                "<span id="boardDeleteRequestTitle"></span>". This will remove it for both of you.
+            </p>
+            <div class="modal-actions">
+                <button class="btn-secondary px-4 py-3 text-sm font-semibold rounded-xl" onclick="denyBoardDeletion()">
+                    keep the board &lt;3
+                </button>
+                <button class="btn-primary btn-primary-dark px-4 py-3 text-sm font-semibold rounded-xl" onclick="confirmBoardDeletion()">
+                    yes, delete it (T_T)
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- History Modal -->
     <div id="historyModal" class="modal">
         <div class="modal-content">
