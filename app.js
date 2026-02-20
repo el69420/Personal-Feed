@@ -687,7 +687,7 @@ window.switchMailboxTab = function(tab) {
 
 // ---- NOW PLAYING ----
 // Map app user keys to Last.fm usernames.
-const LASTFM_USERS = { el: 'EL_LASTFM_USERNAME', tero: 'TERO_LASTFM_USERNAME' };
+const LASTFM_USERS = { el: 'elliotmakesart', tero: 'afduarte1' };
 
 async function fetchNowPlaying(userKey) {
     const username = LASTFM_USERS[userKey];
@@ -2773,4 +2773,5 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     }
     if (postId) startCommentTyping(postId);
 });
+
 
