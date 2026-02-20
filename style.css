@@ -1,11 +1,11 @@
 :root {
-    --bg-gradient-start: #6b46c1;
-    --bg-gradient-mid1: #9333ea;
-    --bg-gradient-mid2: #c026d3;
-    --bg-gradient-end: #db2777;
-    --card-bg: rgba(250, 245, 255, 0.94);
-    --card-border: rgba(192, 132, 252, 0.22);
-    --section-bg: rgba(245, 235, 255, 0.62);
+    --bg-gradient-start: #006868;
+    --bg-gradient-mid1: #008080;
+    --bg-gradient-mid2: #009898;
+    --bg-gradient-end: #006060;
+    --card-bg: rgba(240, 255, 255, 0.94);
+    --card-border: rgba(0, 160, 160, 0.22);
+    --section-bg: rgba(200, 240, 240, 0.55);
     --text-primary: #1e1b4b;
     --text-secondary: #6b7280;
     --input-bg: #fff;
@@ -13,17 +13,17 @@
 }
 
 body.dark-mode {
-    --bg-gradient-start: #0f0820;
-    --bg-gradient-mid1: #1a0b3e;
-    --bg-gradient-mid2: #2d1b69;
-    --bg-gradient-end: #1a0b3e;
-    --card-bg: rgba(20, 11, 46, 0.97);
-    --card-border: rgba(139, 92, 246, 0.35);
-    --section-bg: rgba(30, 17, 65, 0.6);
-    --text-primary: #ede9fe;
-    --text-secondary: #9d8fc8;
-    --input-bg: rgba(30, 17, 65, 0.9);
-    --input-border: rgba(139, 92, 246, 0.4);
+    --bg-gradient-start: #001a1a;
+    --bg-gradient-mid1: #0a2a2a;
+    --bg-gradient-mid2: #0d3535;
+    --bg-gradient-end: #001a1a;
+    --card-bg: rgba(8, 30, 30, 0.97);
+    --card-border: rgba(0, 180, 180, 0.35);
+    --section-bg: rgba(0, 50, 50, 0.6);
+    --text-primary: #e0fafa;
+    --text-secondary: #7ababa;
+    --input-bg: rgba(0, 40, 40, 0.9);
+    --input-border: rgba(0, 180, 180, 0.4);
 }
 
 .edit-pill {
@@ -52,7 +52,7 @@ body.dark-mode .edit-pill {
 * { box-sizing: border-box; }
 
 html {
-    background-color: #2d1555; /* prevents white flash on iOS overscroll */
+    background-color: #006868; /* prevents white flash on iOS overscroll */
 }
 
 body {
@@ -172,7 +172,7 @@ body.dark-mode::before {
 
 .nav-btn.active {
     background: white;
-    color: #6d28d9;
+    color: #006868;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
 }
 
@@ -361,7 +361,7 @@ body.dark-mode #scrollTopBtn {
     background: var(--card-bg);
     border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 2px 16px rgba(109, 40, 217, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 16px rgba(0, 128, 128, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
     border: 1px solid var(--card-border);
     position: relative;
     z-index: 10;
@@ -369,7 +369,7 @@ body.dark-mode #scrollTopBtn {
 
 .post-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 32px rgba(109, 40, 217, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 128, 128, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .post-header {
@@ -391,8 +391,8 @@ body.dark-mode #scrollTopBtn {
 
 .post-note {
     padding: 8px 14px;
-    background: linear-gradient(to right, rgba(168, 85, 247, 0.07), rgba(236, 72, 153, 0.07));
-    border-left: 3px solid #a855f7;
+    background: linear-gradient(to right, rgba(0, 128, 128, 0.07), rgba(0, 160, 160, 0.05));
+    border-left: 3px solid #008080;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -403,7 +403,7 @@ body.dark-mode #scrollTopBtn {
     font-weight: 900;
     letter-spacing: 0.10em;
     text-transform: uppercase;
-    color: #a855f7;
+    color: #008080;
     opacity: 0.95;
 }
 
@@ -454,7 +454,7 @@ body.dark-mode #scrollTopBtn {
     width: 30px;
     height: 30px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #f5f3ff, #fdf2f8);
+    background: linear-gradient(135deg, #e6fafa, #f0ffff);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -465,8 +465,8 @@ body.dark-mode #scrollTopBtn {
 }
 
 body.dark-mode .link-favicon {
-    background: linear-gradient(135deg, rgba(109, 40, 217, 0.25), rgba(168, 85, 247, 0.15));
-    border-color: rgba(139, 92, 246, 0.3);
+    background: linear-gradient(135deg, rgba(0, 128, 128, 0.25), rgba(0, 160, 160, 0.15));
+    border-color: rgba(0, 180, 180, 0.3);
 }
 
 .link-favicon img { width: 18px; height: 18px; object-fit: contain; }
@@ -476,14 +476,14 @@ body.dark-mode .link-favicon {
 .link-domain {
     font-size: 13px;
     font-weight: 900;
-    color: #7c3aed;
+    color: #007070;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     letter-spacing: -0.01em;
 }
 
-body.dark-mode .link-domain { color: #c084fc; }
+body.dark-mode .link-domain { color: #00cccc; }
 
 .link-url {
     font-size: 11px;
@@ -514,7 +514,7 @@ body.dark-mode .link-domain { color: #c084fc; }
     transition: all 0.15s ease;
     cursor: pointer;
     font-size: 13px;
-    background: rgba(147, 51, 234, 0.05);
+    background: rgba(0, 128, 128, 0.05);
     line-height: 1.2;
     font-weight: 900;
     font-family: 'Nunito', sans-serif;
@@ -526,17 +526,17 @@ body.dark-mode .link-domain { color: #c084fc; }
 
 .reaction-btn:hover {
     transform: scale(1.06);
-    background: rgba(192, 132, 252, 0.14);
-    border-color: rgba(192, 132, 252, 0.35);
+    background: rgba(0, 160, 160, 0.14);
+    border-color: rgba(0, 160, 160, 0.35);
 }
 
 .reaction-btn.active {
-    background: rgba(192, 132, 252, 0.16);
-    border-color: rgba(168, 85, 247, 0.55);
-    color: #7c3aed;
+    background: rgba(0, 160, 160, 0.16);
+    border-color: rgba(0, 128, 128, 0.55);
+    color: #007070;
 }
 
-body.dark-mode .reaction-btn.active { color: #c084fc; }
+body.dark-mode .reaction-btn.active { color: #00cccc; }
 
 .reaction-people {
     font-size: 11px;
@@ -553,7 +553,7 @@ body.dark-mode .reaction-btn.active { color: #c084fc; }
 }
 
 .comment-reaction-btn {
-    background: rgba(147, 51, 234, 0.06);
+    background: rgba(0, 128, 128, 0.06);
     border: 1px solid transparent;
     border-radius: 999px;
     padding: 4px 8px;
@@ -569,18 +569,18 @@ body.dark-mode .reaction-btn.active { color: #c084fc; }
 }
 
 .comment-reaction-btn:hover {
-    background: rgba(192, 132, 252, 0.14);
-    border-color: rgba(192, 132, 252, 0.35);
+    background: rgba(0, 160, 160, 0.14);
+    border-color: rgba(0, 160, 160, 0.35);
     transform: scale(1.05);
 }
 
 .comment-reaction-btn.active {
-    background: rgba(192, 132, 252, 0.16);
-    border-color: rgba(168, 85, 247, 0.55);
-    color: #7c3aed;
+    background: rgba(0, 160, 160, 0.16);
+    border-color: rgba(0, 128, 128, 0.55);
+    color: #007070;
 }
 
-body.dark-mode .comment-reaction-btn.active { color: #c084fc; }
+body.dark-mode .comment-reaction-btn.active { color: #00cccc; }
 
 .reply-section {
     padding: 8px 14px;
@@ -2935,7 +2935,7 @@ select { cursor: pointer; }
 }
 
 .nl-card.nl-playing {
-    border-color: rgba(139, 92, 246, 0.5);
+    border-color: rgba(0, 160, 160, 0.6);
 }
 
 .nl-art {
@@ -2980,7 +2980,7 @@ select { cursor: pointer; }
 .nl-status {
     font-size: 10px;
     font-weight: 800;
-    color: #a855f7;
+    color: #008080;
     margin-top: 2px;
     font-family: 'Nunito', sans-serif;
 }

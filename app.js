@@ -687,12 +687,30 @@ window.switchMailboxTab = function(tab) {
 
 // ---- NOW PLAYING ----
 
+const LASTFM_API_KEY = '4d927af2241b4f77b711972fb2112329';
+const LASTFM_USERS   = { el: 'elliotmakesart', tero: 'afduarte1' };
+
 async function fetchNowPlaying(userKey) {
+    const username = LASTFM_USERS[userKey];
+    if (!username) return null;
     try {
-        const r = await fetch(`/api/now-playing?user=${encodeURIComponent(userKey)}`, { cache: 'no-store' });
+        const lastfmUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(username)}&api_key=${LASTFM_API_KEY}&format=json&limit=1`;
+        const proxyUrl  = `https://api.allorigins.win/raw?url=${encodeURIComponent(lastfmUrl)}`;
+        const r = await fetch(proxyUrl, { cache: 'no-store' });
         if (!r.ok) return null;
-        const data = await r.json();
-        return (data.status === 'none' || !data.track) ? null : data;
+        const json = await r.json();
+        const tracks = json.recenttracks?.track;
+        if (!tracks) return null;
+        const track = Array.isArray(tracks) ? tracks[0] : tracks;
+        const nowPlaying = track['@attr']?.nowplaying === 'true';
+        const images = track.image || [];
+        return {
+            nowPlaying,
+            track:     track.name || '—',
+            artist:    track.artist?.['#text'] || '',
+            image:     images[images.length - 1]?.['#text'] || '',
+            timestamp: nowPlaying ? null : (track.date?.uts ? Number(track.date.uts) * 1000 : null),
+        };
     } catch { return null; }
 }
 
@@ -731,14 +749,16 @@ async function pollNowListening() {
     ]);
     const bar = document.getElementById('nowListeningBar');
     if (!bar) return;
-    if (elData || teroData) bar.classList.remove('hidden');
-    if (elData)   renderNLCard('El',   elData);
-    if (teroData) renderNLCard('Tero', teroData);
+    bar.classList.remove('hidden');
+    renderNLCard('El',   elData);
+    renderNLCard('Tero', teroData);
 }
 
+let _nlInterval = null;
 function startNowListening() {
+    if (_nlInterval) clearInterval(_nlInterval);
     pollNowListening();
-    setInterval(pollNowListening, 60_000);
+    _nlInterval = setInterval(pollNowListening, 60_000);
 }
 
 // ---- DB LISTENERS ----
