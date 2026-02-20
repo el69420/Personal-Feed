@@ -15,6 +15,7 @@ app.use(express.static(path.join(__dirname)));
 app.get('/api/now-playing', async (req, res) => {
     const key = req.query.user;
     if (!LASTFM_USERS[key]) return res.status(400).json({ error: 'invalid user' });
+    if (!LASTFM_API_KEY)   return res.json({ status: 'none' });
 
     const cached = cache[key];
     if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return res.json(cached.data);
