@@ -179,19 +179,19 @@ function closeModal(modalEl) {
     }
 }
 
-const COLLECTION_EMOJIS = { funny: '😂', cute: '🥰', news: '📰', inspiration: '✨', music: '🎵', 'idiot-drivers': '🚗', other: '📌' };
+const COLLECTION_EMOJIS = { funny: 'xD', cute: '^_^', news: '[news]', inspiration: '*', music: '♪', 'idiot-drivers': '>:(', other: '[+]' };
 const COLLECTION_LABELS = { funny: 'Funny', cute: 'Cute', news: 'News', inspiration: 'Inspiration', music: 'Music', 'idiot-drivers': 'Idiot Drivers', other: 'Other' };
 
-const SOURCE_EMOJIS = { instagram: '📷', reddit: '👽', x: '𝕏', youtube: '▶️', tiktok: '🎵', spotify: '🎧', 'news-site': '📰', other: '🔗' };
+const SOURCE_EMOJIS = { instagram: '[cam]', reddit: 'O_O', x: '[X]', youtube: '[>]', tiktok: '♪', spotify: '[~]', 'news-site': '[news]', other: '[url]' };
 const SOURCE_LABELS = { instagram: 'Instagram', reddit: 'Reddit', x: 'X', youtube: 'YouTube', tiktok: 'TikTok', spotify: 'Spotify', 'news-site': 'News site', other: 'Other' };
 
-const AUTHOR_EMOJI = { 'El': '💖', 'Tero': '💜', 'Guest': '🌟' };
+const AUTHOR_EMOJI = { 'El': '<3', 'Tero': ':)', 'Guest': '[*]' };
 const AUTHOR_BADGE = { 'El': 'badge-el', 'Tero': 'badge-tero', 'Guest': 'badge-guest' };
 
 // Maps stored emoji → retro text emoticon for display only (Firebase keeps the emoji)
 const EMOTICON_MAP = {
-    '❤️': '<3',  '😂': ":'D", '😮': 'O_O',  '😍': '*_*',
-    '🔥': '!!',  '👍': '(y)', '😭': 'T_T',  '🥹': ';_;',
+    '❤️': '<3', '😂': ':D', '😮': 'O_O', '😍': '*_*',
+    '🔥': '!!', '👍': '(y)', '😭': 'T_T', '🥹': ';_;',
 };
 
 function safeText(s) {
@@ -409,7 +409,7 @@ function updateActiveFiltersBanner() {
 
     if (hasColl) {
         collPill.classList.remove('hidden');
-        collPill.textContent = `${COLLECTION_EMOJIS[currentCollection] || '📁'} ${COLLECTION_LABELS[currentCollection] || currentCollection}`;
+        collPill.textContent = `${COLLECTION_EMOJIS[currentCollection] || '[+]'} ${COLLECTION_LABELS[currentCollection] || currentCollection}`;
         collPill.onclick = () => openCollectionsModal();
         collPill.title = 'Change collection filter';
     } else {
@@ -418,7 +418,7 @@ function updateActiveFiltersBanner() {
 
     if (hasSrc) {
         srcPill.classList.remove('hidden');
-        srcPill.textContent = `${SOURCE_EMOJIS[currentSource] || '🔗'} ${SOURCE_LABELS[currentSource] || currentSource}`;
+        srcPill.textContent = `${SOURCE_EMOJIS[currentSource] || '[url]'} ${SOURCE_LABELS[currentSource] || currentSource}`;
         srcPill.onclick = () => openSourcesModal();
         srcPill.title = 'Change source filter';
     } else {
@@ -461,7 +461,7 @@ function login(displayName, email) {
     ensureAudio();
     document.getElementById('loginOverlay').style.display = 'none';
 
-    const emoji = AUTHOR_EMOJI[displayName] || '💬';
+    const emoji = AUTHOR_EMOJI[displayName] || '[?]';
     document.getElementById('userIndicator').textContent = `${emoji} ${displayName} · sign out`;
     document.getElementById('userIndicator').title = `Signed in as ${email}`;
 
@@ -1765,7 +1765,7 @@ window.toggleReaction = async function(postId, emoji, btn) {
     // In-place DOM update — avoids a full loadPosts() rebuild and scroll shift.
     const rxEl = document.getElementById(`post-rx-${postId}`);
     if (rxEl) {
-        const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍', '😭', '🥹'];
+        const reactionEmojis = ['<3', ':D', 'O_O', '*_*', '!!', '(y)', 'T_T', ';_;'];
         rxEl.innerHTML = reactionEmojis.map(e => {
             const users = Object.keys(reactionsBy[e] || {});
             const active = !!(reactionsBy[e]?.[currentUser]);
@@ -1810,7 +1810,7 @@ window.toggleCommentReaction = async function(postId, replyId, emoji, btn) {
     if (newReply) {
         const rxEl = document.getElementById(`comment-rx-${postId}-${replyId}`);
         if (rxEl) {
-            const cmtEmojis = ['❤️', '😂', '😮', '🔥', '😭', '🥹'];
+            const cmtEmojis = ['<3', ':D', 'O_O', '!!', 'T_T', ';_;'];
             rxEl.innerHTML = cmtEmojis.map(e => {
                 const rxBy = newReply.reactionsBy || {};
                 const users = Object.keys(rxBy[e] || {});
@@ -1908,7 +1908,7 @@ function renderReplies(postId, replies) {
         (byParent[r.replyToId] = byParent[r.replyToId] || []).push(r);
     });
 
-    const cmtEmojis = ['❤️', '😂', '😮', '🔥', '😭', '🥹'];
+    const cmtEmojis = ['<3', ':D', 'O_O', '!!', 'T_T', ';_;'];
 
     const renderRxButtons = (rxBy, postId, replyId) => {
         const map = rxBy || {};
@@ -1926,7 +1926,7 @@ function renderReplies(postId, replies) {
     };
 
     const renderItem = (reply, isChild) => {
-        const ae = AUTHOR_EMOJI[reply.author] || '💬';
+        const ae = AUTHOR_EMOJI[reply.author] || '[?]';
         const ts = reply.timestamp ? timeAgo(reply.timestamp) : '';
         const tsFull = reply.timestamp ? exactTimestamp(reply.timestamp) : '';
         const children = byParent[reply.id] || [];
@@ -2021,7 +2021,7 @@ function getCollectionEmoji(collection) {
 
 function getSourceLabel(source) {
     const s = source || 'other';
-    return `${SOURCE_EMOJIS[s] || '🔗'} ${SOURCE_LABELS[s] || s}`;
+    return `${SOURCE_EMOJIS[s] || '[url]'} ${SOURCE_LABELS[s] || s}`;
 }
 
 function createYouTubeEmbed(post) {
@@ -2146,7 +2146,7 @@ function createPostCard(post) {
     const dateFull = exactTimestamp(post.timestamp);
     const author = post.author || 'Unknown';
     const badgeClass = AUTHOR_BADGE[author] || 'badge-el';
-    const emoji = AUTHOR_EMOJI[author] || '💬';
+    const emoji = AUTHOR_EMOJI[author] || '[?]';
     const isFav = !!(post.favoritedBy && post.favoritedBy[currentUser]);
 
     // Support both new (array) and legacy (string) collection formats
@@ -2157,7 +2157,7 @@ function createPostCard(post) {
         .map(c => `<button class="collection-badge" onclick="filterByCollection('${safeText(c)}')" title="Filter by collection">${getCollectionEmoji(c)} ${safeText(COLLECTION_LABELS[c] || c)}</button>`)
         .join('');
 
-    const reactionEmojis = ['❤️', '😂', '😮', '😍', '🔥', '👍', '😭', '🥹'];
+    const reactionEmojis = ['<3', ':D', 'O_O', '*_*', '!!', '(y)', 'T_T', ';_;'];
     const rb = post.reactionsBy || {};
     const reactionButtons = reactionEmojis.map(e => {
         const users = Object.keys(rb[e] || {});
@@ -2440,7 +2440,7 @@ function renderActivityPanel() {
         return;
     }
     body.innerHTML = items.map(item => {
-        const emoji = AUTHOR_EMOJI[item.author] || '💬';
+        const emoji = AUTHOR_EMOJI[item.author] || '[?]';
         const action = item.type === 'post' ? 'shared a post' : 'commented';
         const preview = (item.preview || '').slice(0, 90);
         return `
@@ -2598,7 +2598,7 @@ function renderChat(messages) {
 
     body.innerHTML = groups.map(g => {
         const me = g.author === currentUser;
-        const emoji = AUTHOR_EMOJI[g.author] || '💬';
+        const emoji = AUTHOR_EMOJI[g.author] || '[?]';
         const lastTs = g.msgs[g.msgs.length - 1].timestamp;
         const bubbles = g.msgs.map(m => {
             const canHeart = !me;
