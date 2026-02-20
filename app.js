@@ -749,7 +749,8 @@ async function pollNowListening() {
     ]);
     const bar = document.getElementById('nowListeningBar');
     if (!bar) return;
-    bar.classList.remove('hidden');
+    // Only un-hide when on the feed; don't fight showSection when on other tabs
+    if (currentSection === 'feed') bar.classList.remove('hidden');
     renderNLCard('El',   elData);
     renderNLCard('Tero', teroData);
 }
