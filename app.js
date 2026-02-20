@@ -686,6 +686,7 @@ window.switchMailboxTab = function(tab) {
 };
 
 // ---- NOW PLAYING ----
+
 async function fetchNowPlaying(userKey) {
     try {
         const r = await fetch(`/api/now-playing?user=${encodeURIComponent(userKey)}`, { cache: 'no-store' });
@@ -2744,4 +2745,5 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     }
     if (postId) startCommentTyping(postId);
 });
+
 
