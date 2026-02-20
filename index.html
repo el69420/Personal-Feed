@@ -246,6 +246,10 @@
                     <span class="type-picker-icon">[vid]</span>
                     <span class="type-picker-label">Movie / Show</span>
                 </button>
+                <button class="type-picker-btn" id="typePickText">
+                    <span class="type-picker-icon">[txt]</span>
+                    <span class="type-picker-label">Text</span>
+                </button>
             </div>
         </div>
     </div>
@@ -351,10 +355,6 @@
         <div class="modal-content">
             <button class="modal-x" id="addPostModalClose" title="Close">✕</button>
             <h2 class="text-2xl font-bold mb-4 modal-heading" id="addPostModalHeading">Add a Post</h2>
-            <div class="post-mode-toggle">
-                <button type="button" id="postModeLink" class="mode-btn active" onclick="switchPostMode('link')">URL</button>
-                <button type="button" id="postModeText" class="mode-btn" onclick="switchPostMode('text')">TXT</button>
-            </div>
             <div class="space-y-5">
                 <!-- Link-only fields -->
                 <div id="linkFields">

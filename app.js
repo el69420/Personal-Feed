@@ -1205,6 +1205,13 @@ window.closeHistoryModal = function() {
 };
 
 window.openAddPostModal = function() {
+    resetAddPostModal();
+    openModal(document.getElementById('addPostModal'));
+};
+window.openTextPostModal = function() {
+    resetAddPostModal();
+    switchPostMode('text');
+    document.getElementById('addPostModalHeading').textContent = 'Write a Post';
     openModal(document.getElementById('addPostModal'));
 };
 window.closeAddPostModal = function() {
@@ -2886,6 +2893,9 @@ document.getElementById('typePickPoll')?.addEventListener('click', () => {
 });
 document.getElementById('typePickMovie')?.addEventListener('click', () => {
     closeTypePickerModal(); openMovieModal();
+});
+document.getElementById('typePickText')?.addEventListener('click', () => {
+    closeTypePickerModal(); openTextPostModal();
 });
 
 // Poll modal
