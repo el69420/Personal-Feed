@@ -1,12 +1,10 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
-import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { firebaseConfig } from './firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
-const storage  = getStorage(app);
 const auth     = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const postsRef      = ref(database, 'posts');
@@ -1491,6 +1489,30 @@ window.castVote = async function(postId, optionIndex) {
     await update(ref(database, `posts/${postId}/votes`), { [currentUser]: optionIndex });
 };
 
+// Compress an image File to a JPEG data-URL (max 900px on longest side).
+// Stores the result directly in RTDB — no Firebase Storage needed.
+function compressImage(file) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            const MAX = 900;
+            let w = img.naturalWidth, h = img.naturalHeight;
+            if (w > MAX || h > MAX) {
+                if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+                else        { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.75));
+        };
+        img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read image file')); };
+        img.src = objectUrl;
+    });
+}
+
 window.addImagePost = async function() {
     const file = document.getElementById('imageFile').files[0];
     const caption = document.getElementById('imageCaption').value.trim();
@@ -1500,33 +1522,8 @@ window.addImagePost = async function() {
     const btn = document.getElementById('sharePhotoBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
 
-    const showUploadError = (msg) => {
-        console.error(msg);
-        const errEl = document.getElementById('imageUploadError');
-        if (errEl) errEl.textContent = 'Upload failed: ' + msg;
-        showToast('Upload failed: ' + msg);
-        if (btn) { btn.disabled = false; btn.textContent = 'Share Photo'; }
-    };
-
     try {
-        const ext = file.name.split('.').pop() || 'jpg';
-        const imgRef = sRef(storage, `uploads/${Date.now()}_${currentUser}.${ext}`);
-
-        // uploadBytesResumable fires a proper error event on any failure (auth,
-        // network, missing bucket) instead of leaving the promise pending forever.
-        const snapshot = await new Promise((resolve, reject) => {
-            const task = uploadBytesResumable(imgRef, file);
-            const timer = setTimeout(
-                () => { task.cancel(); reject(new Error('Timed out after 30 s — check Firebase Storage is enabled and rules are deployed')); },
-                30000
-            );
-            task.on('state_changed', null,
-                (err) => { clearTimeout(timer); reject(err); },
-                ()    => { clearTimeout(timer); resolve(task.snapshot); }
-            );
-        });
-
-        const imageUrl = await getDownloadURL(snapshot.ref);
+        const imageUrl = await compressImage(file);
 
         await push(postsRef, {
             type: 'image', imageUrl, note: caption,
@@ -1539,9 +1536,13 @@ window.addImagePost = async function() {
         closeImageModal();
         showToast('Photo shared!');
         sparkSound('post');
-        if (btn) { btn.disabled = false; btn.textContent = 'Share Photo'; }
     } catch (err) {
-        showUploadError(err.message || err.code || String(err));
+        console.error(err);
+        const errEl = document.getElementById('imageUploadError');
+        if (errEl) errEl.textContent = 'Failed: ' + (err.message || String(err));
+        showToast('Photo post failed: ' + (err.message || String(err)));
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Share Photo'; }
     }
 };
 
