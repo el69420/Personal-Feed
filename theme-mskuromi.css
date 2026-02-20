@@ -1294,10 +1294,9 @@ body.dark-mode .search-icon { color: #C0C0C0 !important; }
 .reply-input      { padding: 4px 10px !important; }
 .reply-input-row  { gap: 5px !important; }
 
-/* ── Post image: cap height so tall images don't dominate ── */
+/* ── Post image ── */
 .post-image {
-    max-height: 180px !important;
-    object-fit: cover !important;
+    height: auto !important;
 }
 
 /* ── Author badges ── */

@@ -1497,7 +1497,7 @@ function compressImage(file) {
         const objectUrl = URL.createObjectURL(file);
         img.onload = () => {
             URL.revokeObjectURL(objectUrl);
-            const MAX = 900;
+            const MAX = 1920;
             let w = img.naturalWidth, h = img.naturalHeight;
             if (w > MAX || h > MAX) {
                 if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
