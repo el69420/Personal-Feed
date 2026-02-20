@@ -1100,12 +1100,16 @@ window.closePollModal = function() {
     closeModal(document.getElementById('pollModal'));
 };
 window.openImageModal = function() {
+    const errEl = document.getElementById('imageUploadError');
+    if (errEl) errEl.textContent = '';
     openModal(document.getElementById('imageModal'));
 };
 window.closeImageModal = function() {
     closeModal(document.getElementById('imageModal'));
     document.getElementById('imagePreview').innerHTML = '';
     document.getElementById('imageFile').value = '';
+    const errEl = document.getElementById('imageUploadError');
+    if (errEl) errEl.textContent = '';
 };
 window.openMovieModal = function() {
     openModal(document.getElementById('movieModal'));
@@ -1498,7 +1502,7 @@ window.addImagePost = async function() {
 
     try {
         const ext = file.name.split('.').pop() || 'jpg';
-        const imgRef = sRef(storage, `images/${Date.now()}_${currentUser}.${ext}`);
+        const imgRef = sRef(storage, `uploads/${Date.now()}_${currentUser}.${ext}`);
         const snapshot = await uploadBytes(imgRef, file);
         const imageUrl = await getDownloadURL(snapshot.ref);
 
@@ -1515,7 +1519,9 @@ window.addImagePost = async function() {
         sparkSound('post');
     } catch (err) {
         console.error(err);
-        showToast('Upload failed — make sure Firebase Storage is enabled.');
+        const errEl = document.getElementById('imageUploadError');
+        if (errEl) errEl.textContent = 'Upload failed: ' + (err.message || err.code || err);
+        showToast('Upload failed: ' + (err.message || err.code || 'unknown error'));
     } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Share Photo'; }
     }
