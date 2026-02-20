@@ -1728,3 +1728,60 @@ body.dark-mode .watch-later-btn:active {
     box-shadow: inset 1px 1px 0 #202020 !important;
     background: #707070 !important;
 }
+
+/* ============================================================
+   48.  BUTTON CONSISTENCY + MAILBOX TAB ACTIVE-STATE FIX
+   Part A: .nav-btn / .filter-btn — always-on raised bevel to
+     match #navMailbox (previously only showed bevel on hover).
+   Part B: .mailbox-tab — non-active gets raised bevel;
+     .active gets sunken bevel (pressed look). Fixes the
+     "wrong tab looks pressed" bug from section 47 raised-active.
+   ============================================================ */
+
+/* --- Part A: Nav buttons always-on raised bevel --- */
+.nav-btn {
+    border: 2px solid !important;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF !important;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040 !important;
+}
+.nav-btn:hover { background: #D0D0D0 !important; }
+body.dark-mode .nav-btn {
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0 !important;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020 !important;
+}
+
+/* --- Part A: Filter buttons always-on raised bevel --- */
+.filter-btn {
+    border: 2px solid !important;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF !important;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040 !important;
+}
+.filter-btn:hover { background: #D0D0D0 !important; }
+body.dark-mode .filter-btn {
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0 !important;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020 !important;
+}
+
+/* --- Part B: Mailbox tabs — non-active raised, active sunken --- */
+.mailbox-tab {
+    border: 2px solid !important;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF !important;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040 !important;
+}
+/* Active tab = pressed/inset: dark top-left, light bottom-right */
+.mailbox-tab.active {
+    background: #C0C0C0 !important;
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    border-bottom-color: #C0C0C0 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+}
+body.dark-mode .mailbox-tab {
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0 !important;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020 !important;
+}
+body.dark-mode .mailbox-tab.active {
+    background: #808080 !important;
+    border-color: #404040 #C0C0C0 #C0C0C0 #404040 !important;
+    border-bottom-color: #808080 !important;
+    box-shadow: inset 1px 1px 0 #202020 !important;
+}
