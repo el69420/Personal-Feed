@@ -1641,3 +1641,90 @@ body.dark-mode #darkModeBtn:active {
     box-shadow: inset 1px 1px 0 #202020 !important;
 }
 body.dark-mode #darkModeIcon { color: #FFFFFF !important; }
+
+/* ============================================================
+   47.  MAILBOX BUTTON + PRESSED-STATE CORRECTIONS
+   — #navMailbox always-on raised bevel
+   — .mailbox-tab.active: grey background (not white)
+   — :active pseudo-state for all Win95 buttons (sunken bevel,
+     no white flash, same base background)
+   ============================================================ */
+
+/* Mailbox nav button: persistent raised bevel (other .nav-btn only
+   show bevel on hover; mailbox is always raised like a toolbar btn) */
+#navMailbox {
+    border: 2px solid !important;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF !important;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040 !important;
+}
+#navMailbox:hover { background: #D0D0D0 !important; }
+#navMailbox:active,
+#navMailbox.active {
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+}
+body.dark-mode #navMailbox {
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0 !important;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020 !important;
+}
+body.dark-mode #navMailbox:active,
+body.dark-mode #navMailbox.active {
+    border-color: #404040 #C0C0C0 #C0C0C0 #404040 !important;
+    box-shadow: inset 1px 1px 0 #202020 !important;
+}
+
+/* Fix: active mailbox tab must NOT be white — keep grey, raise top/left */
+.mailbox-tab.active {
+    background: #C0C0C0 !important;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF !important;
+    border-bottom-color: #C0C0C0 !important;  /* blends into panel below */
+}
+body.dark-mode .mailbox-tab.active {
+    background: #808080 !important;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0 !important;
+    border-bottom-color: #808080 !important;
+}
+
+/* Momentary press (:active) — sunken bevel, no white flash */
+.nav-btn:active {
+    border: 2px solid !important;
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+    background: #B8B8B8 !important;
+}
+.filter-btn:active {
+    border: 2px solid !important;
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+    background: #B8B8B8 !important;
+}
+.mailbox-tab:active {
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+    background: #B8B8B8 !important;
+}
+.coll-pick-btn:active,
+.type-picker-btn:active,
+.type-toggle-btn:active,
+.watch-later-btn:active {
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+    background: #B8B8B8 !important;
+}
+
+/* Dark-mode :active variants */
+body.dark-mode .nav-btn:active,
+body.dark-mode .filter-btn:active {
+    border-color: #404040 #C0C0C0 #C0C0C0 #404040 !important;
+    box-shadow: inset 1px 1px 0 #202020 !important;
+    background: #707070 !important;
+}
+body.dark-mode .mailbox-tab:active,
+body.dark-mode .coll-pick-btn:active,
+body.dark-mode .type-picker-btn:active,
+body.dark-mode .type-toggle-btn:active,
+body.dark-mode .watch-later-btn:active {
+    border-color: #404040 #C0C0C0 #C0C0C0 #404040 !important;
+    box-shadow: inset 1px 1px 0 #202020 !important;
+    background: #707070 !important;
+}
