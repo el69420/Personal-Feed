@@ -45,7 +45,8 @@ body.dark-mode {
 /* ============================================================
    2.  GLOBAL TYPOGRAPHY — match chat bubble exactly
    ============================================================ */
-body, button, input, textarea, select, label, a,
+body, h1, h2, h3, h4,
+button, input, textarea, select, label, a,
 .post-card, .nav-btn, .filter-btn, .btn-primary,
 .btn-secondary, .reply-send-btn, .chat-input,
 .reply-input, .search-input, .collection-badge,
@@ -55,10 +56,15 @@ body, button, input, textarea, select, label, a,
 .type-toggle-btn, .poll-vote-btn, .mailbox-tab,
 .board-back-btn, .form-field input,
 .form-field select, .form-field textarea {
-    font-family: 'Nunito', sans-serif !important;
+    font-family: Tahoma, Verdana, Geneva, sans-serif !important;
     font-size: 13px;
     line-height: 1.5;
 }
+
+h1 { font-size: 18px !important; font-weight: 700 !important; }
+h2 { font-size: 16px !important; font-weight: 700 !important; }
+h3 { font-size: 14px !important; font-weight: 700 !important; }
+h4 { font-size: 13px !important; font-weight: 700 !important; }
 
 /* ============================================================
    3.  BODY — Win95 grey + subtle grid, no animation
@@ -868,7 +874,7 @@ kbd {
     border: 2px solid;
     border-color: #FFFFFF #808080 #808080 #FFFFFF;
     box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
-    font-family: 'Nunito', sans-serif !important;
+    font-family: Tahoma, Verdana, Geneva, sans-serif !important;
     font-size: 12px;
 }
 body.dark-mode kbd { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
