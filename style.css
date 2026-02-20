@@ -1629,8 +1629,7 @@ body.dark-mode .chat-group--other .chat-bubble {
     width: 100%;
     border-radius: 12px;
     display: block;
-    max-height: 520px;
-    object-fit: cover;
+    height: auto;
 }
 
 .image-upload-label {
@@ -1660,8 +1659,7 @@ body.dark-mode .chat-group--other .chat-bubble {
     width: 100%;
     border-radius: 12px;
     margin-top: 10px;
-    max-height: 260px;
-    object-fit: cover;
+    height: auto;
     display: block;
 }
 
