@@ -2649,6 +2649,41 @@ select { cursor: pointer; }
     font-family: 'Nunito', sans-serif;
 }
 
+.board-delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--text-secondary);
+    opacity: 0.4;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.board-delete-btn:hover {
+    opacity: 1;
+    background: rgba(220, 70, 70, 0.1);
+    color: #c94444;
+}
+
+.board-delete-btn.board-delete-pending {
+    font-size: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    opacity: 0.65;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    border: 1px solid var(--card-border);
+}
+
+.board-delete-btn.board-delete-pending:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-primary);
+}
+
 /* Board picker modal */
 .board-picker-list {
     display: flex;

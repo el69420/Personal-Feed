@@ -9,8 +9,9 @@ const auth     = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const postsRef      = ref(database, 'posts');
 const chatRef       = ref(database, 'chat');
-const boardsRef     = ref(database, 'boards');
-const boardItemsRef = ref(database, 'board_items');
+const boardsRef             = ref(database, 'boards');
+const boardItemsRef         = ref(database, 'board_items');
+const boardDeleteRequestsRef = ref(database, 'board_delete_requests');
 const lettersRef    = ref(database, 'letters');
 const linkMetaRef   = ref(database, 'linkMeta');
 
@@ -97,6 +98,7 @@ let _audioCtx = null;
 let chatOpen = false;
 let currentSection = 'feed';   // 'feed' | 'boards' | 'mailbox'
 let allBoards = {};             // boardId → board object
+let allBoardDeleteRequests = {}; // boardId → { requestedBy, requestedAt, boardTitle }
 let _boardPickerPostId = null;  // postId being saved to a board
 let allLetters = {};            // letterId → letter object
 let mailboxTab = 'inbox';
@@ -494,6 +496,30 @@ function setupBoardsListener() {
     });
 }
 
+function setupBoardDeleteRequestsListener() {
+    onValue(boardDeleteRequestsRef, snap => {
+        allBoardDeleteRequests = snap.val() || {};
+        // Find a pending request directed at the current user (i.e. sent by the other user)
+        const pending = Object.entries(allBoardDeleteRequests)
+            .find(([, req]) => req.requestedBy !== currentUser);
+        const modal = document.getElementById('boardDeleteRequestModal');
+        if (!modal) return;
+        if (pending) {
+            const [boardId, req] = pending;
+            modal.dataset.boardId = boardId;
+            document.getElementById('boardDeleteRequestUser').textContent = req.requestedBy;
+            document.getElementById('boardDeleteRequestTitle').textContent = req.boardTitle;
+            if (!modal.classList.contains('show')) {
+                openModal(modal);
+                sparkSound('ping');
+                sendNotification('Board deletion request', `${req.requestedBy} wants to delete "${req.boardTitle}"`, 'board-delete');
+            }
+        } else {
+            if (modal.classList.contains('show')) closeModal(modal);
+        }
+    });
+}
+
 function renderBoardsList() {
     const container = document.getElementById('boardsList');
     const detail = document.getElementById('boardDetail');
@@ -523,9 +549,20 @@ window.openBoardDetail = async function(boardId) {
     document.getElementById('boardsList').classList.add('hidden');
     const detail = document.getElementById('boardDetail');
     detail.classList.remove('hidden');
+    const isOwner = board.owner === currentUser;
+    const pendingRequest = allBoardDeleteRequests[boardId];
+    let deleteBtn = '';
+    if (isOwner && pendingRequest) {
+        deleteBtn = `<button class="board-delete-btn board-delete-pending" onclick="cancelBoardDeleteRequest('${boardId}')" title="Cancel deletion request">⏳ Cancel request</button>`;
+    } else if (isOwner) {
+        deleteBtn = `<button class="board-delete-btn" onclick="requestDeleteBoard('${boardId}')" title="Delete board">🗑</button>`;
+    }
     document.getElementById('boardDetailHeader').innerHTML = `
-        <h3 class="boards-title">${safeText(board.title)}</h3>
-        <span class="board-card-meta">${board.isShared ? '👥 Shared' : '🔒 Personal'}</span>
+        <div>
+            <h3 class="boards-title">${safeText(board.title)}</h3>
+            <span class="board-card-meta">${board.isShared ? '👥 Shared' : '🔒 Personal'}</span>
+        </div>
+        ${deleteBtn}
     `;
     const snap = await get(ref(database, `board_items/${boardId}`));
     const items = snap.val() || {};
@@ -590,6 +627,50 @@ window.createBoard = async function() {
     document.getElementById('boardSharedToggle').checked = false;
     closeModal(document.getElementById('createBoardModal'));
     showToast('Board created ✓');
+};
+
+window.requestDeleteBoard = async function(boardId) {
+    const board = allBoards[boardId];
+    if (!board || board.owner !== currentUser) return;
+    if (!board.isShared) {
+        // Personal board: use the standard delete confirmation modal
+        openDeleteModal({ type: 'board', boardId });
+    } else {
+        // Shared board: send a deletion request to the other user
+        await set(ref(database, `board_delete_requests/${boardId}`), {
+            requestedBy: currentUser,
+            requestedAt: Date.now(),
+            boardTitle: board.title
+        });
+        showToast('Deletion request sent — waiting for their confirmation');
+    }
+};
+
+window.cancelBoardDeleteRequest = async function(boardId) {
+    await remove(ref(database, `board_delete_requests/${boardId}`));
+    showToast('Deletion request cancelled');
+    openBoardDetail(boardId);
+};
+
+window.confirmBoardDeletion = async function() {
+    const modal = document.getElementById('boardDeleteRequestModal');
+    const boardId = modal.dataset.boardId;
+    if (!boardId) return;
+    await remove(ref(database, `board_delete_requests/${boardId}`));
+    await remove(ref(database, `board_items/${boardId}`));
+    await remove(ref(database, `boards/${boardId}`));
+    closeModal(modal);
+    if (currentSection === 'boards') closeBoardDetail();
+    showToast('Board deleted');
+};
+
+window.denyBoardDeletion = async function() {
+    const modal = document.getElementById('boardDeleteRequestModal');
+    const boardId = modal.dataset.boardId;
+    if (!boardId) return;
+    await remove(ref(database, `board_delete_requests/${boardId}`));
+    closeModal(modal);
+    showToast('Board kept ♡');
 };
 
 // ---- MAILBOX ----
@@ -780,6 +861,7 @@ function setupDBListeners() {
     _dbListenersStarted = true;
 
     setupBoardsListener();
+    setupBoardDeleteRequestsListener();
     setupLettersListener();
 
     onValue(postsRef, (snapshot) => {
@@ -1201,7 +1283,13 @@ window.saveEdit = async function() {
 window.confirmDelete = async function() {
     if (!deleteTarget) return;
 
-    if (deleteTarget.type === 'post') {
+    if (deleteTarget.type === 'board') {
+        const boardId = deleteTarget.boardId;
+        await remove(ref(database, `board_items/${boardId}`));
+        await remove(ref(database, `boards/${boardId}`));
+        closeBoardDetail();
+        showToast('Board deleted');
+    } else if (deleteTarget.type === 'post') {
         await remove(ref(database, `posts/${deleteTarget.postId}`));
         showToast('Post deleted');
     } else {
