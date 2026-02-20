@@ -1163,10 +1163,24 @@ window.openEditComment = function(postId, replyId) {
     openEditModal('Edit comment', reply.text || '', { type: 'reply', postId, replyId });
 };
 
+// Normalises editHistory to [{ts, note}] regardless of whether the stored
+// value uses the old {originalTs, originalNote} object or the new array form.
+function normalizeHistory(obj) {
+    const h = obj.editHistory;
+    if (!h) return [];
+    if (Array.isArray(h)) return h;
+    return [{ ts: h.originalTs, note: h.originalNote || '' }];
+}
+
 window.openHistory = function(payloadJson) {
-    const p = JSON.parse(payloadJson || '{}');
-    document.getElementById('historyMeta').textContent = p.meta || '';
-    document.getElementById('historyText').textContent = p.text || '';
+    const entries = JSON.parse(payloadJson || '[]');
+    const list = document.getElementById('historyEntriesList');
+    list.innerHTML = entries.map((e, i) => `
+        <div class="history-entry">
+            <div class="history-entry-label">${i === 0 ? 'Original' : `Edit ${i}`} &middot; ${exactTimestamp(e.ts)}</div>
+            <div class="history-entry-text">${safeText(e.note || '')}</div>
+        </div>
+    `).join('');
     openModal(document.getElementById('historyModal'));
 };
 
@@ -1267,14 +1281,12 @@ window.saveEdit = async function() {
     if (editTarget.type === 'post') {
         const post = allPosts[editTarget.postId];
         if (!post) return;
-        const updateData = { note: val, editedAt: now };
-        // Preserve the very first original — don't overwrite on subsequent edits
-        if (!post.editHistory) {
-            updateData.editHistory = {
-                originalTs: post.timestamp || now,
-                originalNote: post.note || ''
-            };
-        }
+        const updateData = {
+            note: val,
+            editedAt: now,
+            // Append the current (pre-save) version so every revision is kept
+            editHistory: [...normalizeHistory(post), { ts: post.editedAt || post.timestamp || now, note: post.note || '' }]
+        };
         await update(ref(database, `posts/${editTarget.postId}`), updateData);
         showToast('Post updated');
     } else {
@@ -1283,11 +1295,12 @@ window.saveEdit = async function() {
 
         const replies = (post.replies || []).map(r => {
             if (r.id !== editTarget.replyId) return r;
-            const updated = { ...r, text: val, editedAt: now };
-            if (!r.editHistory) {
-                updated.editHistory = { originalTs: r.timestamp || now, originalNote: r.text || '' };
-            }
-            return updated;
+            return {
+                ...r,
+                text: val,
+                editedAt: now,
+                editHistory: [...normalizeHistory(r), { ts: r.editedAt || r.timestamp || now, note: r.text || '' }]
+            };
         });
 
         await update(ref(database, `posts/${editTarget.postId}`), { replies });
@@ -1924,7 +1937,7 @@ function renderReplies(postId, replies) {
                     <div class="reply-author-info">
                         <span class="reply-author-name">${safeText(reply.author)} ${ae}</span>
                         ${ts ? `<span class="reply-timestamp" title="${safeText(tsFull)}">${safeText(ts)}</span>` : ''}
-                        ${reply.editedAt && reply.editHistory ? `<button class="edit-pill" onclick="openHistory('${safeText(JSON.stringify({ meta: 'Original, ' + exactTimestamp(reply.editHistory.originalTs), text: reply.editHistory.originalNote || '' }))}')" title="View original">edited</button>` : ''}
+                        ${reply.editedAt && reply.editHistory ? `<button class="edit-pill" onclick="openHistory('${safeText(JSON.stringify(normalizeHistory(reply)))}')" title="View edit history">edited</button>` : ''}
                     </div>
 
                     <div class="reply-action-btns">
@@ -2223,11 +2236,8 @@ function createPostCard(post) {
                     ${isRead(post) ? '<span class="seen-dot" title="Seen"></span>' : ''}
                 ${post.editedAt && post.editHistory ? `
   <button class="edit-pill"
-    onclick="openHistory('${safeText(JSON.stringify({
-meta: `Original, ${exactTimestamp(post.editHistory.originalTs)}`,
-text: post.editHistory.originalNote || ''
-    }))}')"
-    title="View original">
+    onclick="openHistory('${safeText(JSON.stringify(normalizeHistory(post)))}')"
+    title="View edit history">
     edited
   </button>
 ` : ''}
