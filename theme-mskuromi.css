@@ -1241,3 +1241,67 @@ body.dark-mode .search-icon { color: #C0C0C0 !important; }
     align-items: center !important;
     justify-content: center !important;
 }
+
+/* ============================================================
+   44.  COMPACT POST CARDS
+   Reduces padding, image height, chip sizes and inter-card gap
+   by ~30–40%. CSS-only, no HTML/JS changes.
+   ============================================================ */
+
+/* ── Inter-card gap (Tailwind space-y-5 = 20px → 12px) ── */
+#postsContainer > * + * { margin-top: 12px !important; }
+
+/* ── Post header & author row ── */
+.post-header {
+    padding: 8px 12px !important;
+    gap: 6px !important;
+}
+.post-author-row { gap: 5px !important; }
+
+/* ── Curator note ── */
+.post-note {
+    padding: 8px 12px !important;
+    gap: 4px !important;
+}
+
+/* ── Link preview ── */
+.link-preview {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+}
+
+/* ── Reactions bar ── */
+.reactions-bar {
+    padding: 5px 10px !important;
+    gap: 4px !important;
+}
+.reaction-btn,
+.comment-reaction-btn {
+    padding: 3px 8px !important;
+    font-size: 12px !important;
+}
+
+/* ── Icon action row (share, delete…) ── */
+.post-actions {
+    padding: 5px 10px !important;
+    gap: 4px !important;
+}
+
+/* ── Reply section ── */
+.reply-section    { padding: 8px 12px !important; }
+.reply-item       { padding: 5px 10px !important; margin-bottom: 4px !important; }
+.reply-item-header { margin-bottom: 3px !important; }
+.reply-input      { padding: 4px 10px !important; }
+.reply-input-row  { gap: 5px !important; }
+
+/* ── Post image: cap height so tall images don't dominate ── */
+.post-image {
+    max-height: 180px !important;
+    object-fit: cover !important;
+}
+
+/* ── Author badges ── */
+.badge-el, .badge-tero, .badge-guest { padding: 2px 7px !important; }
+
+/* ── Collection / tag chips ── */
+.collection-badge { padding: 1px 6px !important; }
