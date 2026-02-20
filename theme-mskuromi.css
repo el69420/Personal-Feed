@@ -1305,3 +1305,177 @@ body.dark-mode .search-icon { color: #C0C0C0 !important; }
 
 /* ── Collection / tag chips ── */
 .collection-badge { padding: 1px 6px !important; }
+
+/* ============================================================
+   45.  RETRO / EARLY-2000s ENHANCEMENTS
+   Neopets + early Tumblr + Win95/XP energy.
+   CSS-only — no JS or logic changes.
+   ============================================================ */
+
+/* --- Desktop: Win95 classic teal instead of grey --- */
+html { background-color: #008080 !important; }
+body { background-color: #008080 !important; }
+body.dark-mode { background-color: #004040 !important; }
+
+/* Scrollbar tracks stay grey (window chrome, not desktop) */
+::-webkit-scrollbar-track { background: #C0C0C0 !important; }
+body.dark-mode ::-webkit-scrollbar-track { background: #808080 !important; }
+
+/* --- Header: legible white text on teal desktop --- */
+.header-title {
+    color: #FFFFFF !important;
+    text-shadow: 1px 1px 0 #004848 !important;
+    font-size: 20px !important;
+    letter-spacing: 1px !important;
+}
+body.dark-mode .header-title { color: #FFFFFF !important; }
+
+.header-subtitle {
+    color: rgba(255, 255, 255, 0.88) !important;
+    letter-spacing: 3px !important;
+    font-size: 10px !important;
+    text-transform: uppercase !important;
+}
+body.dark-mode .header-subtitle { color: rgba(180, 255, 255, 0.8) !important; }
+
+/* Header emoji: text emoticon, white on teal */
+.header-emoji {
+    color: #FFFFFF !important;
+    font-size: 18px !important;
+    font-family: Tahoma, Verdana, sans-serif !important;
+    letter-spacing: 0 !important;
+}
+
+/* --- Section headings on teal body --- */
+.boards-title {
+    color: #FFFFFF !important;
+    text-shadow: 1px 1px 0 #004848 !important;
+}
+body.dark-mode .boards-title { color: #FFFFFF !important; }
+
+/* ASCII bracket decorations on section headings */
+.boards-title::before {
+    content: '[ ';
+    font-weight: 400;
+    opacity: 0.65;
+    font-family: "Courier New", monospace !important;
+}
+.boards-title::after {
+    content: ' ]';
+    font-weight: 400;
+    opacity: 0.65;
+    font-family: "Courier New", monospace !important;
+}
+
+/* --- Post header: Win95 title-bar blue top stripe --- */
+.post-header {
+    border-top: 3px solid #000080 !important;
+}
+body.dark-mode .post-header { border-top-color: #4040B0 !important; }
+
+/* --- Modal: top blue accent stripe --- */
+.modal-content {
+    border-top: 3px solid #000080 !important;
+}
+body.dark-mode .modal-content { border-top-color: #4040B0 !important; }
+
+/* --- Chat/Activity panel title bar icons --- */
+.chat-title::before,
+.activity-title::before {
+    content: '\25A0  ';
+    font-size: 9px;
+    vertical-align: middle;
+    opacity: 0.75;
+}
+
+/* --- Now listening: retro uppercase label --- */
+.nl-label {
+    letter-spacing: 3px !important;
+    text-transform: uppercase !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+}
+.nl-label::before { content: '[ '; font-family: "Courier New", monospace !important; }
+.nl-label::after  { content: ' ]'; font-family: "Courier New", monospace !important; }
+
+/* --- Login box: retro colours on teal bg --- */
+.login-title {
+    color: #000080 !important;
+    font-size: 16px !important;
+    font-weight: 900 !important;
+    letter-spacing: 1px !important;
+}
+body.dark-mode .login-title { color: #8080FF !important; }
+
+/* --- ASCII retro divider element --- */
+.retro-divider {
+    text-align: center;
+    font-family: "Courier New", Tahoma, monospace !important;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.65);
+    letter-spacing: 2px;
+    padding: 3px 0;
+    pointer-events: none;
+    user-select: none;
+    line-height: 1.6;
+}
+body.dark-mode .retro-divider { color: rgba(0, 210, 210, 0.55); }
+
+/* --- Retro badge element (e.g. [ONLINE], [NEW]) --- */
+.retro-badge {
+    display: inline-block;
+    background: #000080;
+    color: #FFFFFF;
+    font-family: Tahoma, monospace !important;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border: 2px solid;
+    border-color: #8080FF #000040 #000040 #8080FF;
+    box-shadow: inset 1px 1px 0 #4040C0, inset -1px -1px 0 #000060;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    vertical-align: middle;
+    user-select: none;
+    margin: 0 2px;
+}
+body.dark-mode .retro-badge {
+    background: #000080;
+    border-color: #6060C0 #000020 #000020 #6060C0;
+}
+
+/* --- Blinking block cursor for inline retro-cursor spans --- */
+@keyframes w95Blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+.retro-cursor {
+    display: inline-block;
+    width: 7px;
+    height: 12px;
+    background: #FFFFFF;
+    animation: w95Blink 1s step-start infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+}
+body.dark-mode .retro-cursor { background: #00D8D8; }
+
+/* --- About button lowercase bracket style --- */
+#aboutBtn {
+    font-size: 11px !important;
+    letter-spacing: 1px !important;
+    text-transform: lowercase !important;
+}
+
+/* --- Unread letter: stronger teal border --- */
+.letter-item.unread { border-left-color: #008080 !important; background: #DFEFFF !important; }
+body.dark-mode .letter-item.unread { border-left-color: #00C0C0 !important; background: #002040 !important; }
+
+/* --- nl-user-badge text: readable on grey card --- */
+.nl-user-badge {
+    font-family: Tahoma, monospace !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
+}
