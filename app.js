@@ -1562,9 +1562,7 @@ window.switchPostMode = function(mode) {
     const isText = mode === 'text';
     document.getElementById('linkFields').classList.toggle('hidden', isText);
     document.getElementById('textFields').classList.toggle('hidden', !isText);
-    document.getElementById('postModeLink').classList.toggle('active', !isText);
-    document.getElementById('postModeText').classList.toggle('active', isText);
-    document.getElementById('linkTip').classList.toggle('hidden', isText);
+    document.getElementById('linkTip')?.classList.toggle('hidden', isText);
 };
 
 function resetAddPostModal() {
