@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
+import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { firebaseConfig } from './firebase-config.js';
 
@@ -1500,10 +1500,32 @@ window.addImagePost = async function() {
     const btn = document.getElementById('sharePhotoBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
 
+    const showUploadError = (msg) => {
+        console.error(msg);
+        const errEl = document.getElementById('imageUploadError');
+        if (errEl) errEl.textContent = 'Upload failed: ' + msg;
+        showToast('Upload failed: ' + msg);
+        if (btn) { btn.disabled = false; btn.textContent = 'Share Photo'; }
+    };
+
     try {
         const ext = file.name.split('.').pop() || 'jpg';
         const imgRef = sRef(storage, `uploads/${Date.now()}_${currentUser}.${ext}`);
-        const snapshot = await uploadBytes(imgRef, file);
+
+        // uploadBytesResumable fires a proper error event on any failure (auth,
+        // network, missing bucket) instead of leaving the promise pending forever.
+        const snapshot = await new Promise((resolve, reject) => {
+            const task = uploadBytesResumable(imgRef, file);
+            const timer = setTimeout(
+                () => { task.cancel(); reject(new Error('Timed out after 30 s — check Firebase Storage is enabled and rules are deployed')); },
+                30000
+            );
+            task.on('state_changed', null,
+                (err) => { clearTimeout(timer); reject(err); },
+                ()    => { clearTimeout(timer); resolve(task.snapshot); }
+            );
+        });
+
         const imageUrl = await getDownloadURL(snapshot.ref);
 
         await push(postsRef, {
@@ -1517,13 +1539,9 @@ window.addImagePost = async function() {
         closeImageModal();
         showToast('Photo shared!');
         sparkSound('post');
-    } catch (err) {
-        console.error(err);
-        const errEl = document.getElementById('imageUploadError');
-        if (errEl) errEl.textContent = 'Upload failed: ' + (err.message || err.code || err);
-        showToast('Upload failed: ' + (err.message || err.code || 'unknown error'));
-    } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Share Photo'; }
+    } catch (err) {
+        showUploadError(err.message || err.code || String(err));
     }
 };
 
