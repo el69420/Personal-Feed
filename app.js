@@ -293,42 +293,59 @@ function ensureAudio() {
 function sparkSound(type) {
     try {
         ensureAudio();
-        const t0 = _audioCtx.currentTime;
+        const ctx = _audioCtx;
+        const t0 = ctx.currentTime;
 
+        // Windows 95-style: square waves, sharp envelopes, named notes
+        // post  → "The Microsoft Sound" abbreviated (4-note ascending chime)
+        // reply → "Exclamation"  (descending two-note blip)
+        // react → "Asterisk"     (single high ding)
+        // chat  → "Notify"       (ascending two-tone)
+        // ping  → "Default Beep" (classic square blip at 750 Hz)
         const patterns = {
-            post:   [880, 1320, 1760],
-            reply:  [660, 990, 1320],
-            react:  [1046, 1568],
-            chat:   [784, 1175],
-            ping:   [880, 1320]
+            post: [
+                { f: 523.25, t: 0.00, dur: 0.12 },   // C5
+                { f: 659.25, t: 0.10, dur: 0.12 },   // E5
+                { f: 783.99, t: 0.20, dur: 0.12 },   // G5
+                { f: 1046.5, t: 0.30, dur: 0.22 }    // C6
+            ],
+            reply: [
+                { f: 880.00, t: 0.00, dur: 0.10 },   // A5
+                { f: 659.25, t: 0.12, dur: 0.12 }    // E5
+            ],
+            react: [
+                { f: 1046.5, t: 0.00, dur: 0.18 }    // C6
+            ],
+            chat: [
+                { f: 440.00, t: 0.00, dur: 0.10 },   // A4
+                { f: 880.00, t: 0.12, dur: 0.14 }    // A5
+            ],
+            ping: [
+                { f: 750.00, t: 0.00, dur: 0.25 }    // Default Beep
+            ]
         };
 
-        const freqs = patterns[type] || patterns.ping;
-        freqs.forEach((f, i) => {
-            const osc = _audioCtx.createOscillator();
-            const gain = _audioCtx.createGain();
-            const filter = _audioCtx.createBiquadFilter();
+        const notes = patterns[type] || patterns.ping;
+        notes.forEach(({ f, t, dur }) => {
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
 
-            osc.type = 'triangle';
-            filter.type = 'highpass';
-            filter.frequency.setValueAtTime(600, t0);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(f, t0 + t);
 
-            osc.connect(filter);
-            filter.connect(gain);
-            gain.connect(_audioCtx.destination);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
 
-            const start = t0 + i * 0.045;
-            const end = start + 0.18;
+            const s = t0 + t;
+            const e = s + dur;
 
-            osc.frequency.setValueAtTime(f, start);
-            osc.frequency.exponentialRampToValueAtTime(f * 1.08, start + 0.06);
+            gain.gain.setValueAtTime(0.0001, s);
+            gain.gain.linearRampToValueAtTime(0.08, s + 0.006);  // sharp attack
+            gain.gain.setValueAtTime(0.08, e - 0.018);
+            gain.gain.linearRampToValueAtTime(0.0001, e);         // sharp cutoff
 
-            gain.gain.setValueAtTime(0.0001, start);
-            gain.gain.exponentialRampToValueAtTime(0.18, start + 0.015);
-            gain.gain.exponentialRampToValueAtTime(0.0001, end);
-
-            osc.start(start);
-            osc.stop(end);
+            osc.start(s);
+            osc.stop(e);
         });
     } catch(e) {}
 }
