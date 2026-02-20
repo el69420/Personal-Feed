@@ -1248,8 +1248,8 @@ body.dark-mode .search-icon { color: #C0C0C0 !important; }
    by ~30–40%. CSS-only, no HTML/JS changes.
    ============================================================ */
 
-/* ── Inter-card gap (Tailwind space-y-5 = 20px → 12px) ── */
-#postsContainer > * + * { margin-top: 12px !important; }
+/* ── Inter-card gap (Tailwind space-y-5 = 20px → 18px) ── */
+#postsContainer > * + * { margin-top: 18px !important; }
 
 /* ── Post header & author row ── */
 .post-header {
@@ -1478,4 +1478,84 @@ body.dark-mode .letter-item.unread { border-left-color: #00C0C0 !important; back
     font-weight: 700 !important;
     letter-spacing: 1px !important;
     text-transform: uppercase !important;
+}
+
+/* --- Dark mode toggle: monospace ASCII symbols --- */
+#darkModeIcon {
+    font-family: "Courier New", Tahoma, monospace !important;
+    font-size: 16px !important;
+    color: #FFFFFF !important;
+    line-height: 1 !important;
+}
+#darkModeBtn {
+    opacity: 0.85 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+#darkModeBtn:hover { opacity: 1 !important; }
+
+/* --- Notif button: Win95 control box style --- */
+#notifBtn {
+    font-family: Tahoma, "Courier New", monospace !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+    background: #C0C0C0 !important;
+    border: 2px solid !important;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF !important;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040 !important;
+    padding: 1px 6px !important;
+    cursor: pointer !important;
+    letter-spacing: 1px !important;
+    vertical-align: middle !important;
+    line-height: 18px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+#notifBtn:hover { background: #D0D0D0 !important; }
+#notifBtn:active,
+#notifBtn.notif-active {
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+    background: #B0B0C8 !important;
+}
+body.dark-mode #notifBtn {
+    color: #FFFFFF !important;
+    background: #808080 !important;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0 !important;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020 !important;
+}
+body.dark-mode #notifBtn.notif-active {
+    background: #404080 !important;
+    border-color: #404040 #C0C0C0 #C0C0C0 #404040 !important;
+    box-shadow: inset 1px 1px 0 #202020 !important;
+}
+
+/* --- Show-more comments button --- */
+.show-more-comments-btn {
+    display: block;
+    font-family: Tahoma, "Courier New", monospace !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #000080 !important;
+    background: #C0C0C0 !important;
+    border: 2px solid !important;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF !important;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040 !important;
+    padding: 2px 10px !important;
+    margin: 4px 0 6px !important;
+    cursor: pointer !important;
+    letter-spacing: 0.5px !important;
+}
+.show-more-comments-btn:hover { background: #D0D0D0 !important; }
+.show-more-comments-btn:active {
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+}
+body.dark-mode .show-more-comments-btn {
+    color: #C0C0FF !important;
+    background: #808080 !important;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0 !important;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020 !important;
 }

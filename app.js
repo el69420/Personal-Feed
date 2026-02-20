@@ -188,6 +188,12 @@ const SOURCE_LABELS = { instagram: 'Instagram', reddit: 'Reddit', x: 'X', youtub
 const AUTHOR_EMOJI = { 'El': '💖', 'Tero': '💜', 'Guest': '🌟' };
 const AUTHOR_BADGE = { 'El': 'badge-el', 'Tero': 'badge-tero', 'Guest': 'badge-guest' };
 
+// Maps stored emoji → retro text emoticon for display only (Firebase keeps the emoji)
+const EMOTICON_MAP = {
+    '❤️': '<3',  '😂': ":'D", '😮': 'O_O',  '😍': '*_*',
+    '🔥': '!!',  '👍': '(y)', '😭': 'T_T',  '🥹': ';_;',
+};
+
 function safeText(s) {
     return (s || '')
         .replaceAll('&', '&amp;')
@@ -694,7 +700,7 @@ async function fetchNowPlaying(userKey) {
     const username = LASTFM_USERS[userKey];
     if (!username) return null;
     try {
-        const lastfmUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(username)}&api_key=${LASTFM_API_KEY}&format=json&limit=1`;
+        const lastfmUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(username)}&api_key=${LASTFM_API_KEY}&format=json&limit=1&t=${Date.now()}`;
         const proxyUrl  = `https://api.allorigins.win/raw?url=${encodeURIComponent(lastfmUrl)}`;
         const r = await fetch(proxyUrl, { cache: 'no-store' });
         if (!r.ok) return null;
@@ -715,6 +721,10 @@ async function fetchNowPlaying(userKey) {
 }
 
 function renderNLCard(suffix, data) {
+    const key = data ? `${data.track}|${data.artist}|${data.nowPlaying}` : 'none';
+    if (_nlLastTrack[suffix] === key) return;   // no change, skip DOM update
+    _nlLastTrack[suffix] = key;
+
     const artEl    = document.getElementById(`nlArt${suffix}`);
     const trackEl  = document.getElementById(`nlTrack${suffix}`);
     const artistEl = document.getElementById(`nlArtist${suffix}`);
@@ -751,15 +761,16 @@ async function pollNowListening() {
     if (!bar) return;
     // Only un-hide when on the feed; don't fight showSection when on other tabs
     if (currentSection === 'feed') bar.classList.remove('hidden');
-    renderNLCard('El',   elData);
-    renderNLCard('Tero', teroData);
+    if (elData   !== null) renderNLCard('El',   elData);
+    if (teroData !== null) renderNLCard('Tero', teroData);
 }
 
 let _nlInterval = null;
+const _nlLastTrack = {};   // cache: suffix -> "track|artist|nowPlaying"
 function startNowListening() {
     if (_nlInterval) clearInterval(_nlInterval);
     pollNowListening();
-    _nlInterval = setInterval(pollNowListening, 60_000);
+    _nlInterval = setInterval(pollNowListening, 35_000);
 }
 
 // ---- DB LISTENERS ----
@@ -1030,7 +1041,7 @@ createParticles();
 window.toggleDarkMode = function() {
     isDarkMode = !isDarkMode;
     document.body.classList.toggle('dark-mode');
-    document.getElementById('darkModeIcon').textContent = isDarkMode ? '☀️' : '🌙';
+    document.getElementById('darkModeIcon').textContent = isDarkMode ? '☼' : '☾';
     localStorage.setItem('darkMode', isDarkMode);
 };
 
@@ -1303,8 +1314,9 @@ function updateNotifBtn() {
     const btn = document.getElementById('notifBtn');
     if (!btn) return;
     const on = notifActive();
-    btn.textContent = on ? '🔔' : '🔕';
+    btn.textContent = on ? '[!]' : '[!]';
     btn.title = on ? 'Desktop notifications on — click to turn off' : 'Click to enable desktop notifications';
+    btn.classList.toggle('notif-active', on);
 }
 
 // Called once the user clicks "Allow" in our custom modal
@@ -1617,7 +1629,7 @@ window.toggleReaction = async function(postId, emoji, btn) {
             const who = users.sort().join(' & ');
             return `<button class="reaction-btn${active ? ' active' : ''}"
                     onclick="toggleReaction('${postId}','${e}',this)">
-                <span>${e}</span>
+                <span>${EMOTICON_MAP[e] || e}</span>
                 ${who ? `<span class="reaction-people">${who}</span>` : ''}
             </button>`;
         }).join('');
@@ -1663,7 +1675,7 @@ window.toggleCommentReaction = async function(postId, replyId, emoji, btn) {
                 const who = users.sort().join(' & ');
                 return `<button class="comment-reaction-btn${active ? ' active' : ''}"
                     onclick="toggleCommentReaction('${postId}','${replyId}','${e}',this)"
-                    >${e}${who ? `<span class="reaction-people">${who}</span>` : ''}</button>`;
+                    >${EMOTICON_MAP[e] || e}${who ? `<span class="reaction-people">${who}</span>` : ''}</button>`;
             }).join('');
         }
     }
@@ -1764,7 +1776,7 @@ function renderReplies(postId, replies) {
             return `
                 <button class="comment-reaction-btn${active ? ' active' : ''}"
                         onclick="toggleCommentReaction('${postId}','${replyId}','${e}',this)">
-                    ${e}${who ? `<span class="reaction-people">${who}</span>` : ''}
+                    ${EMOTICON_MAP[e] || e}${who ? `<span class="reaction-people">${who}</span>` : ''}
                 </button>
             `;
         }).join('');
@@ -1822,13 +1834,35 @@ function renderReplies(postId, replies) {
         `;
     };
 
+    const lastComment    = topLevel[topLevel.length - 1];
+    const olderComments  = topLevel.slice(0, topLevel.length - 1);
+    const collapseId     = `comments-collapse-${postId}`;
+
     return `
         <div class="reply-section">
             <div class="divider-text">Replies</div>
-            ${topLevel.map(r => renderItem(r, false)).join('')}
+            ${olderComments.length ? `
+                <div id="${collapseId}" class="hidden">
+                    ${olderComments.map(r => renderItem(r, false)).join('')}
+                </div>
+                <button class="show-more-comments-btn"
+                        onclick="toggleComments('${collapseId}', this, ${olderComments.length})">
+                    show ${olderComments.length} older comment${olderComments.length !== 1 ? 's' : ''}
+                </button>
+            ` : ''}
+            ${lastComment ? renderItem(lastComment, false) : ''}
         </div>
     `;
 }
+
+window.toggleComments = function(collapseId, btn, count) {
+    const el = document.getElementById(collapseId);
+    if (!el) return;
+    const isNowHidden = el.classList.toggle('hidden');
+    btn.textContent = isNowHidden
+        ? `show ${count} older comment${count !== 1 ? 's' : ''}`
+        : `hide older comments`;
+};
 
 window.handleReplyKey = function(e, postId, replyToId, isInline) {
     if (e.key !== 'Enter') return;
@@ -1989,7 +2023,7 @@ function createPostCard(post) {
         return `
             <button class="reaction-btn${active ? ' active' : ''}"
                     onclick="toggleReaction('${post.id}','${e}',this)">
-                <span>${e}</span>
+                <span>${EMOTICON_MAP[e] || e}</span>
                 ${who ? `<span class="reaction-people">${who}</span>` : ''}
             </button>
         `;
