@@ -457,6 +457,7 @@ function login(displayName, email) {
     loadPosts();
     setupTypingCleanup();
     startNowListening();
+    showSection('feed');
 }
 
 window.logout = function() {
@@ -685,11 +686,41 @@ window.switchMailboxTab = function(tab) {
 };
 
 // ---- NOW PLAYING ----
+// Map app user keys to Last.fm usernames.
+const LASTFM_USERS = { el: 'EL_LASTFM_USERNAME', tero: 'TERO_LASTFM_USERNAME' };
+
 async function fetchNowPlaying(userKey) {
+    const username = LASTFM_USERS[userKey];
+    if (!username) return null;
     try {
-        const r = await fetch(`/api/now-playing?user=${userKey}`);
+        const rssUrl  = `https://ws.audioscrobbler.com/1.0/user/${encodeURIComponent(username)}/recenttracks.rss`;
+        const proxied = `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`;
+        const r = await fetch(proxied, { cache: 'no-store' });
         if (!r.ok) return null;
-        return await r.json();
+        const text = await r.text();
+
+        // Parse XML; grab the first <item> (most recent track).
+        const doc  = new DOMParser().parseFromString(text, 'application/xml');
+        const item = doc.querySelector('item');
+        if (!item) return null;
+
+        // Last.fm titles are "Artist – Track" (en-dash).  Fall back to plain hyphen.
+        const titleRaw = item.querySelector('title')?.textContent?.trim() ?? '';
+        const sep      = titleRaw.includes(' \u2013 ') ? ' \u2013 ' : ' - ';
+        const sepIdx   = titleRaw.indexOf(sep);
+        const artist   = sepIdx >= 0 ? titleRaw.slice(0, sepIdx).trim()            : '';
+        const track    = sepIdx >= 0 ? titleRaw.slice(sepIdx + sep.length).trim()  : titleRaw;
+
+        // Album art: regex on the raw XML of the first item avoids namespace headaches.
+        const itemText   = text.slice(text.indexOf('<item>'), text.indexOf('</item>') + 7);
+        const imgMatches = [...itemText.matchAll(/<media:image[^>]*>([^<]+)<\/media:image>/g)];
+        const image      = imgMatches.at(-1)?.[1]?.trim() || null;
+
+        // Timestamp from pubDate.
+        const pubDateStr = item.querySelector('pubDate')?.textContent ?? '';
+        const timestamp  = pubDateStr ? new Date(pubDateStr).getTime() : null;
+
+        return { track, artist, image, nowPlaying: false, timestamp };
     } catch { return null; }
 }
 
