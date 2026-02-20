@@ -359,7 +359,7 @@ body.dark-mode #scrollTopBtn {
 .post-card {
     transition: transform 0.25s ease, box-shadow 0.25s ease;
     background: var(--card-bg);
-    border-radius: 20px;
+    border-radius: 14px;
     overflow: hidden;
     box-shadow: 0 2px 16px rgba(109, 40, 217, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
     border: 1px solid var(--card-border);
@@ -373,7 +373,7 @@ body.dark-mode #scrollTopBtn {
 }
 
 .post-header {
-    padding: 14px 18px;
+    padding: 9px 14px;
     background: var(--section-bg);
     border-bottom: 1px solid var(--card-border);
     display: flex;
@@ -390,12 +390,12 @@ body.dark-mode #scrollTopBtn {
 }
 
 .post-note {
-    padding: 14px 18px;
+    padding: 8px 14px;
     background: linear-gradient(to right, rgba(168, 85, 247, 0.07), rgba(236, 72, 153, 0.07));
     border-left: 3px solid #a855f7;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
 .note-author {
@@ -408,10 +408,10 @@ body.dark-mode #scrollTopBtn {
 }
 
 .note-text {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-primary);
-    line-height: 1.65;
+    line-height: 1.5;
     margin: 0;
     white-space: pre-wrap;
 }
@@ -419,8 +419,8 @@ body.dark-mode #scrollTopBtn {
 .link-preview {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 14px 18px;
+    gap: 10px;
+    padding: 9px 14px;
     text-decoration: none;
     transition: background 0.18s ease;
 }
@@ -451,9 +451,9 @@ body.dark-mode #scrollTopBtn {
 .yt-embed:hover .yt-play-overlay { background: rgba(0,0,0,0.28); }
 
 .link-favicon {
-    width: 42px;
-    height: 42px;
-    border-radius: 11px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
     background: linear-gradient(135deg, #f5f3ff, #fdf2f8);
     display: flex;
     align-items: center;
@@ -461,7 +461,7 @@ body.dark-mode #scrollTopBtn {
     flex-shrink: 0;
     overflow: hidden;
     border: 1px solid rgba(192, 132, 252, 0.18);
-    font-size: 18px;
+    font-size: 14px;
 }
 
 body.dark-mode .link-favicon {
@@ -469,12 +469,12 @@ body.dark-mode .link-favicon {
     border-color: rgba(139, 92, 246, 0.3);
 }
 
-.link-favicon img { width: 24px; height: 24px; object-fit: contain; }
+.link-favicon img { width: 18px; height: 18px; object-fit: contain; }
 
 .link-info { flex: 1; min-width: 0; }
 
 .link-domain {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 900;
     color: #7c3aed;
     white-space: nowrap;
@@ -498,7 +498,7 @@ body.dark-mode .link-domain { color: #c084fc; }
 .link-arrow { flex-shrink: 0; color: #c084fc; opacity: 0.7; }
 
 .reactions-bar {
-    padding: 10px 18px;
+    padding: 6px 14px;
     background: var(--section-bg);
     border-top: 1px solid var(--card-border);
     display: flex;
@@ -508,12 +508,12 @@ body.dark-mode .link-domain { color: #c084fc; }
 }
 
 .reaction-btn {
-    padding: 6px 10px;
+    padding: 4px 8px;
     border-radius: 999px;
     border: 1.5px solid transparent;
     transition: all 0.15s ease;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     background: rgba(147, 51, 234, 0.05);
     line-height: 1.2;
     font-weight: 900;
@@ -583,7 +583,7 @@ body.dark-mode .reaction-btn.active { color: #c084fc; }
 body.dark-mode .comment-reaction-btn.active { color: #c084fc; }
 
 .reply-section {
-    padding: 12px 18px;
+    padding: 8px 14px;
     background: var(--section-bg);
     border-top: 1px solid var(--card-border);
 }
@@ -744,7 +744,7 @@ body.dark-mode .watch-later-btn.active {
 }
 
 .post-actions {
-    padding: 12px 18px;
+    padding: 7px 14px;
     background: var(--section-bg);
     border-top: 1px solid var(--card-border);
     display: flex;
