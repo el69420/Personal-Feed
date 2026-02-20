@@ -1152,7 +1152,23 @@ if (localStorage.getItem('darkMode') === 'true') {
 window.openEditPost = function(postId) {
     const post = allPosts[postId];
     if (!post || post.author !== currentUser) return;
-    openEditModal('Edit note', post.note || '', { type: 'post', postId });
+    if (post.type === 'text') {
+        resetAddPostModal();
+        _editingTextPostId = postId;
+        switchPostMode('text');
+        document.getElementById('postHeading').value = post.heading || '';
+        document.getElementById('postBody').value = post.body || '';
+        const collArr = post.collections?.length ? post.collections : post.collection ? [post.collection] : [];
+        collArr.forEach(c => {
+            const btn = document.querySelector(`#collectionPicker .coll-pick-btn[data-val="${c}"]`);
+            if (btn) btn.classList.add('selected');
+        });
+        document.getElementById('addPostModalHeading').textContent = 'Edit Post';
+        document.getElementById('addPostBtn').textContent = 'Save Changes';
+        openModal(document.getElementById('addPostModal'));
+    } else {
+        openEditModal('Edit note', post.note || '', { type: 'post', postId });
+    }
 };
 
 window.openEditComment = function(postId, replyId) {
@@ -1193,6 +1209,7 @@ window.openAddPostModal = function() {
 };
 window.closeAddPostModal = function() {
     closeModal(document.getElementById('addPostModal'));
+    resetAddPostModal();
 };
 
 window.openTypePickerModal = function() {
@@ -1532,43 +1549,102 @@ function getSelectedCollections() {
         .map(b => b.dataset.val);
 }
 
+let _editingTextPostId = null;
+
+window.switchPostMode = function(mode) {
+    const isText = mode === 'text';
+    document.getElementById('linkFields').classList.toggle('hidden', isText);
+    document.getElementById('textFields').classList.toggle('hidden', !isText);
+    document.getElementById('postModeLink').classList.toggle('active', !isText);
+    document.getElementById('postModeText').classList.toggle('active', isText);
+    document.getElementById('linkTip').classList.toggle('hidden', isText);
+};
+
+function resetAddPostModal() {
+    _editingTextPostId = null;
+    document.getElementById('postUrl').value = '';
+    document.getElementById('postNote').value = '';
+    document.getElementById('postHeading').value = '';
+    document.getElementById('postBody').value = '';
+    document.querySelectorAll('#collectionPicker .coll-pick-btn').forEach(b => b.classList.remove('selected'));
+    const capsuleToggle = document.getElementById('timeCapsuleToggle');
+    const capsulePicker = document.getElementById('timeCapsulePicker');
+    if (capsuleToggle) { capsuleToggle.checked = false; capsulePicker.classList.add('hidden'); capsulePicker.value = ''; }
+    switchPostMode('link');
+    document.getElementById('addPostModalHeading').textContent = 'Add a Post';
+    document.getElementById('addPostBtn').textContent = 'Add to Feed';
+}
+
 window.addPost = async function() {
-    const url = document.getElementById('postUrl').value.trim();
-    const note = document.getElementById('postNote').value.trim();
+    const isText = !document.getElementById('textFields').classList.contains('hidden');
     const author = currentUser;
     const collections = getSelectedCollections();
-    if (!url) { showToast('Please enter a URL'); return; }
-    try { const u = new URL(url); if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error(); }
-    catch { showToast('Please enter a valid URL (starting with https://)'); return; }
-    if (!throttle('add-post', 2000)) return;
-
-    const source = detectSource(url);
     const capsuleToggle = document.getElementById('timeCapsuleToggle');
     const capsulePicker = document.getElementById('timeCapsulePicker');
     const unlockAt = capsuleToggle?.checked && capsulePicker?.value
         ? new Date(capsulePicker.value).getTime() : null;
 
-    try {
-        const postData = {
-            url, note, author, collections, source,
-            timestamp: Date.now(),
-            readBy: { [author]: true },
-            reactionsBy: {},
-            replies: []
-        };
-        if (unlockAt) postData.unlockAt = unlockAt;
-        await push(postsRef, postData);
-
-        document.getElementById('postUrl').value = '';
-        document.getElementById('postNote').value = '';
-        document.querySelectorAll('#collectionPicker .coll-pick-btn').forEach(b => b.classList.remove('selected'));
-        if (capsuleToggle) { capsuleToggle.checked = false; capsulePicker.classList.add('hidden'); capsulePicker.value = ''; }
-
-        closeAddPostModal();
-        showToast('Post added');
-        sparkSound('post');
-    } catch (error) {
-        showToast('Failed to add post. Check your internet connection.');
+    if (isText) {
+        const body = document.getElementById('postBody').value.trim();
+        const heading = document.getElementById('postHeading').value.trim();
+        if (!body) { showToast('Please enter some text'); return; }
+        if (!throttle('add-post', 2000)) return;
+        try {
+            if (_editingTextPostId) {
+                const existing = allPosts[_editingTextPostId];
+                if (!existing) return;
+                const updateData = {
+                    body, heading: heading || null,
+                    collections,
+                    editedAt: Date.now(),
+                    editHistory: [...normalizeHistory(existing), { ts: existing.editedAt || existing.timestamp || Date.now(), note: existing.body || '' }]
+                };
+                await update(ref(database, `posts/${_editingTextPostId}`), updateData);
+                showToast('Post updated');
+            } else {
+                const postData = {
+                    type: 'text', body, author, collections,
+                    timestamp: Date.now(),
+                    readBy: { [author]: true },
+                    reactionsBy: {},
+                    replies: []
+                };
+                if (heading) postData.heading = heading;
+                if (unlockAt) postData.unlockAt = unlockAt;
+                await push(postsRef, postData);
+                showToast('Post added');
+                sparkSound('post');
+            }
+            resetAddPostModal();
+            closeAddPostModal();
+        } catch {
+            showToast('Failed to save post. Check your internet connection.');
+        }
+    } else {
+        const url = document.getElementById('postUrl').value.trim();
+        const note = document.getElementById('postNote').value.trim();
+        if (!url) { showToast('Please enter a URL'); return; }
+        try { const u = new URL(url); if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error(); }
+        catch { showToast('Please enter a valid URL (starting with https://)'); return; }
+        if (!throttle('add-post', 2000)) return;
+        const source = detectSource(url);
+        try {
+            const postData = {
+                url, note, author, collections, source,
+                timestamp: Date.now(),
+                readBy: { [author]: true },
+                reactionsBy: {},
+                replies: []
+            };
+            if (unlockAt) postData.unlockAt = unlockAt;
+            await push(postsRef, postData);
+            resetAddPostModal();
+            closeAddPostModal();
+            showToast('Post added');
+            sparkSound('post');
+        } catch {
+            showToast('Failed to add post. Check your internet connection.');
+        }
     }
 };
 
@@ -2222,6 +2298,8 @@ function createPostCard(post) {
         contentHtml = renderPollContent(post);
     } else if (post.type === 'recommendation') {
         contentHtml = renderRecommendationContent(post);
+    } else if (post.type === 'text') {
+        contentHtml = `<div class="post-text-content">${post.heading ? `<div class="post-text-heading">${safeText(post.heading)}</div>` : ''}<p class="post-text-body">${safeText(post.body || '')}</p></div>`;
     }
 
     return `
