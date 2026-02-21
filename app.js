@@ -3163,3 +3163,67 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   });
 })();
 
+(() => {
+  const chatPanel = document.getElementById('chatPanel');
+  const activityPanel = document.getElementById('activityPanel');
+
+  const chatBody = document.getElementById('w95-chat-body');
+  const newBody = document.getElementById('w95-new-body');
+
+  const winChat = document.getElementById('w95-win-chat');
+  const winNew = document.getElementById('w95-win-new');
+
+  const btnChat = document.getElementById('w95-btn-chat');
+  const btnNew = document.getElementById('w95-btn-new');
+
+  const minChat = document.getElementById('w95-chat-min');
+  const minNew = document.getElementById('w95-new-min');
+
+  if (!chatPanel || !activityPanel || !chatBody || !newBody || !winChat || !winNew || !btnChat || !btnNew || !minChat || !minNew) return;
+
+  // Move existing panels into Win95 windows (keeps their current JS)
+  chatBody.appendChild(chatPanel);
+  newBody.appendChild(activityPanel);
+
+  // Stop any fixed positioning from fighting the window
+  chatPanel.style.position = 'static';
+  activityPanel.style.position = 'static';
+  chatPanel.style.display = 'block';
+  activityPanel.style.display = 'block';
+
+  function show(win, btn, key) {
+    win.classList.remove('is-hidden');
+    btn.classList.add('is-pressed');
+    localStorage.setItem(key, '1');
+  }
+
+  function hide(win, btn, key) {
+    win.classList.add('is-hidden');
+    btn.classList.remove('is-pressed');
+    localStorage.setItem(key, '0');
+  }
+
+  function toggle(win, btn, key) {
+    if (win.classList.contains('is-hidden')) show(win, btn, key);
+    else hide(win, btn, key);
+  }
+
+  btnChat.onclick = () => toggle(winChat, btnChat, 'w95_chat_open');
+  btnNew.onclick = () => toggle(winNew, btnNew, 'w95_new_open');
+
+  minChat.onclick = (e) => { e.stopPropagation(); hide(winChat, btnChat, 'w95_chat_open'); };
+  minNew.onclick = (e) => { e.stopPropagation(); hide(winNew, btnNew, 'w95_new_open'); };
+
+  // Make the existing X buttons minimise too
+  const chatClose = document.getElementById('chatPanelClose');
+  const newClose = document.getElementById('activityPanelClose');
+  if (chatClose) chatClose.onclick = (e) => { e.preventDefault(); hide(winChat, btnChat, 'w95_chat_open'); };
+  if (newClose) newClose.onclick = (e) => { e.preventDefault(); hide(winNew, btnNew, 'w95_new_open'); };
+
+  // Restore open state
+  if (localStorage.getItem('w95_chat_open') === '0') hide(winChat, btnChat, 'w95_chat_open');
+  else show(winChat, btnChat, 'w95_chat_open');
+
+  if (localStorage.getItem('w95_new_open') === '0') hide(winNew, btnNew, 'w95_new_open');
+  else show(winNew, btnNew, 'w95_new_open');
+})();
