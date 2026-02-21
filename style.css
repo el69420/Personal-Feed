@@ -3108,7 +3108,5 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 .is-hidden{display:none}
 body{padding-bottom:50px}
 
-#chatFab,
-#activityFab {
-  display: none !important;
-}
+
+
