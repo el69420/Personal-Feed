@@ -3107,3 +3107,8 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 .w95-stats{margin-top:10px;font:12px Tahoma,Verdana,Arial,sans-serif}
 .is-hidden{display:none}
 body{padding-bottom:50px}
+
+#chatFab,
+#activityFab {
+  display: none !important;
+}
