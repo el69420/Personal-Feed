@@ -3027,4 +3027,139 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     if (postId) startCommentTyping(postId);
 });
 
+// ===== Win95 Dog Window + Shared Firebase Dog =====
+(() => {
+  const btn = document.getElementById('w95-btn-dog');
+  const win = document.getElementById('w95-win-dog');
+  const min = document.getElementById('w95-dog-min');
+  const handle = document.getElementById('w95-dog-handle');
+
+  if (!btn || !win || !min || !handle) return;
+
+  const ascii = document.getElementById('dog-ascii');
+  const hungerEl = document.getElementById('dog-hunger');
+  const happyEl = document.getElementById('dog-happy');
+  const energyEl = document.getElementById('dog-energy');
+
+  const feedBtn = document.getElementById('dog-feed');
+  const petBtn = document.getElementById('dog-pet');
+  const sleepBtn = document.getElementById('dog-sleep');
+
+  const DOG_ASCII =
+`          "",_o
+!       ( (  _)
+\`\\ ,,,,_'),)=~
+ (          )
+  ,   ,,,,  ,
+  ) ,)   < (
+ < <      ",\\
+  ",)      "_)
+`;
+
+  if (ascii) ascii.textContent = DOG_ASCII;
+
+  const dogRef = ref(database, 'dog');
+
+  function clamp(n) {
+    return Math.max(0, Math.min(100, n));
+  }
+
+  // Initialise dog once if missing
+  onValue(dogRef, (snap) => {
+    if (!snap.exists()) {
+      set(dogRef, { hunger: 70, happy: 70, energy: 70 });
+    }
+  }, { onlyOnce: true });
+
+  // Live render
+  onValue(dogRef, (snap) => {
+    const d = snap.val();
+    if (!d) return;
+
+    if (hungerEl) hungerEl.textContent = String(d.hunger ?? 0);
+    if (happyEl) happyEl.textContent = String(d.happy ?? 0);
+    if (energyEl) energyEl.textContent = String(d.energy ?? 0);
+  });
+
+  async function applyDelta(delta) {
+    const snap = await get(dogRef);
+    const d = snap.val();
+    if (!d) return;
+
+    update(dogRef, {
+      hunger: clamp((d.hunger ?? 70) + (delta.hunger ?? 0)),
+      happy: clamp((d.happy ?? 70) + (delta.happy ?? 0)),
+      energy: clamp((d.energy ?? 70) + (delta.energy ?? 0)),
+    });
+  }
+
+  if (feedBtn) feedBtn.onclick = () => applyDelta({ hunger: 15, happy: 2, energy: -2 });
+  if (petBtn) petBtn.onclick = () => applyDelta({ hunger: -1, happy: 12, energy: -1 });
+  if (sleepBtn) sleepBtn.onclick = () => applyDelta({ hunger: -6, happy: 2, energy: 18 });
+
+  // Optional gentle decay every 10 minutes (shared, but driven by any open client)
+  setInterval(() => {
+    applyDelta({ hunger: -1, happy: -1, energy: -1 });
+  }, 10 * 60 * 1000);
+
+  // Minimise and toggle
+  function show() {
+    win.classList.remove('is-hidden');
+    btn.classList.add('is-pressed');
+    localStorage.setItem('w95_dog_open', '1');
+  }
+
+  function hide() {
+    win.classList.add('is-hidden');
+    btn.classList.remove('is-pressed');
+    localStorage.setItem('w95_dog_open', '0');
+  }
+
+  btn.onclick = () => {
+    const isHidden = win.classList.contains('is-hidden');
+    if (isHidden) show();
+    else hide();
+  };
+
+  min.onclick = (e) => {
+    e.stopPropagation();
+    hide();
+  };
+
+  // Restore open state
+  const savedOpen = localStorage.getItem('w95_dog_open');
+  if (savedOpen === '0') hide();
+  else show();
+
+  // Drag
+  let dragging = false;
+  let startX = 0;
+  let startY = 0;
+  let winStartX = 20;
+  let winStartY = 20;
+
+  handle.addEventListener('mousedown', (e) => {
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    const r = win.getBoundingClientRect();
+    winStartX = r.left;
+    winStartY = r.top;
+
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const nx = winStartX + (e.clientX - startX);
+    const ny = winStartY + (e.clientY - startY);
+    win.style.left = Math.max(0, nx) + 'px';
+    win.style.top = Math.max(0, ny) + 'px';
+  });
+
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+  });
+})();
 
