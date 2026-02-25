@@ -3386,7 +3386,7 @@ body.dark-mode .dog-btn:active {
     display: none !important;
 }
 
-/* Scroll-to-top should stay above taskbar */
+/* Scroll-to-top should stay above the 36px taskbar */
 #scrollTopBtn {
-    bottom: 48px;
+    bottom: 46px;
 }

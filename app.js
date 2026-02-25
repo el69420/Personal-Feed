@@ -3046,9 +3046,11 @@ function win95SaveState(id, patch) {
     localStorage.setItem('w95-' + id, JSON.stringify({ ...win95GetState(id), ...patch }));
 }
 
+const TASKBAR_H = 36;
+
 function win95DefaultPos(id) {
-    if (id === 'chat')     return { x: Math.max(0, window.innerWidth - 404), y: Math.max(0, window.innerHeight - 610) };
-    if (id === 'activity') return { x: 22, y: Math.max(0, window.innerHeight - 630) };
+    if (id === 'chat')     return { x: Math.max(0, window.innerWidth - 404), y: Math.max(0, window.innerHeight - TASKBAR_H - 574) };
+    if (id === 'activity') return { x: 22, y: Math.max(0, window.innerHeight - TASKBAR_H - 594) };
     return { x: Math.max(22, Math.floor((window.innerWidth - 380) / 2)), y: 80 };
 }
 
@@ -3101,9 +3103,13 @@ window.win95Restore = function(id) {
     const panel = document.getElementById(win95Config[id].panelId);
     if (!panel) return;
     if (id === 'chat') {
-        if (!panel.classList.contains('show')) { chatOpen = false; window.toggleChat(); }
+        // Always force a clean open so renderChat runs
+        chatOpen = false;
+        window.toggleChat();
     } else if (id === 'activity') {
-        if (!panel.classList.contains('show')) window.toggleActivityPanel();
+        // Remove .show first so toggleActivityPanel always opens (not closes)
+        panel.classList.remove('show');
+        window.toggleActivityPanel();
     } else {
         panel.classList.add('show');
     }
@@ -3132,7 +3138,7 @@ function makeDraggable95(titlebarId, panelId, winId) {
         const oy = e.clientY - rect.top;
         const onMove = e => {
             let nx = Math.max(0, Math.min(window.innerWidth  - 80,  e.clientX - ox));
-            let ny = Math.max(0, Math.min(window.innerHeight - 40,  e.clientY - oy));
+            let ny = Math.max(0, Math.min(window.innerHeight - TASKBAR_H - 28, e.clientY - oy));
             panel.style.left = nx + 'px';
             panel.style.top  = ny + 'px';
             win95SaveState(winId, { x: nx, y: ny });
@@ -3159,6 +3165,18 @@ function win95Init() {
                 .observe(panel, { attributes: true, attributeFilter: ['class'] });
         }
     }
+    // Replace X-button listeners on chat and activity panels so they route
+    // through win95Minimize and keep chatOpen + taskbar in sync.
+    // cloneNode strips the existing addEventListener-bound handlers.
+    const rewireClose = (btnId, winId) => {
+        const el = document.getElementById(btnId);
+        if (!el) return;
+        const clone = el.cloneNode(true);
+        el.replaceWith(clone);
+        clone.addEventListener('click', () => window.win95Minimize(winId));
+    };
+    rewireClose('chatPanelClose',     'chat');
+    rewireClose('activityPanelClose', 'activity');
     // Clock
     const clockEl = document.getElementById('win95-clock');
     const tick = () => {
