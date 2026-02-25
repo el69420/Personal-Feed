@@ -3105,7 +3105,7 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 .w95-pre{white-space:pre;font-family:"Courier New",monospace;overflow-x:auto;margin:0;padding:8px;background:#fff;border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #fff;border-bottom:2px solid #fff}
 .w95-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 .w95-stats{margin-top:10px;font:12px Tahoma,Verdana,Arial,sans-serif}
-.is-hidden{display:none}
+.is-hidden{display:none !important}
 body{padding-bottom:50px}
 #w95-win-chat,#w95-win-new{display:flex;flex-direction:column;}
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
