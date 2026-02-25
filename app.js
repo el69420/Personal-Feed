@@ -2989,7 +2989,7 @@ document.getElementById('activityPanelClose')?.addEventListener('click', () => c
 
 // Chat
 document.getElementById('chatFab')?.addEventListener('click',       () => toggleChat());
-document.getElementById('chatPanelClose')?.addEventListener('click', () => toggleChat());
+document.getElementById('chatPanelClose')?.addEventListener('click', () => closeChat(true));
 
 // About modal
 document.getElementById('aboutBtn')?.addEventListener('click',   () => openAbout());
