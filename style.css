@@ -3107,6 +3107,8 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 .w95-stats{margin-top:10px;font:12px Tahoma,Verdana,Arial,sans-serif}
 .is-hidden{display:none}
 body{padding-bottom:50px}
+#w95-win-chat,#w95-win-new{display:flex;flex-direction:column;}
+#w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 
 

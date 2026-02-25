@@ -3167,8 +3167,8 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   const chatPanel = document.getElementById('chatPanel');
   const activityPanel = document.getElementById('activityPanel');
 
-  const chatBody = document.getElementById('w95-chat-body');
-  const newBody = document.getElementById('w95-new-body');
+  const chatBodyW = document.getElementById('w95-chat-body');
+  const newBodyW = document.getElementById('w95-new-body');
 
   const winChat = document.getElementById('w95-win-chat');
   const winNew = document.getElementById('w95-win-new');
@@ -3179,39 +3179,66 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   const minChat = document.getElementById('w95-chat-min');
   const minNew = document.getElementById('w95-new-min');
 
-  if (!chatPanel || !activityPanel || !chatBody || !newBody || !winChat || !winNew || !btnChat || !btnNew || !minChat || !minNew) return;
+  if (!chatPanel || !activityPanel || !chatBodyW || !newBodyW || !winChat || !winNew || !btnChat || !btnNew || !minChat || !minNew) return;
 
-  // Move existing panels into Win95 windows (keeps their current JS)
-  chatBody.appendChild(chatPanel);
-  newBody.appendChild(activityPanel);
+  // Hide the old floating FABs — taskbar buttons replace them
+  const fabChat = document.getElementById('chatFab');
+  const fabActivity = document.getElementById('activityFab');
+  if (fabChat) fabChat.style.display = 'none';
+  if (fabActivity) fabActivity.style.display = 'none';
 
-  // Reset panel styles so they display properly inside the W95 windows
+  // Move existing panels into Win95 windows (keeps their current JS bindings)
+  chatBodyW.appendChild(chatPanel);
+  newBodyW.appendChild(activityPanel);
+
+  // Reset panel styles so they fill their W95 window body as flex columns
   for (const panel of [chatPanel, activityPanel]) {
     panel.style.position = 'static';
-    panel.style.display = 'block';
+    panel.style.display = 'flex';
+    panel.style.flex = '1';
     panel.style.opacity = '1';
     panel.style.visibility = 'visible';
     panel.style.pointerEvents = 'auto';
     panel.style.transform = 'none';
     panel.style.transition = 'none';
     panel.style.width = '100%';
-    panel.style.maxHeight = 'none';
+    panel.style.height = '100%';
+    panel.style.maxHeight = '100%';
     panel.style.zIndex = '';
     panel.style.borderRadius = '0';
     panel.style.boxShadow = 'none';
     panel.style.border = 'none';
+    panel.style.bottom = '';
+    panel.style.right = '';
+    panel.style.left = '';
+    panel.style.top = '';
   }
 
   function show(win, btn, key) {
     win.classList.remove('is-hidden');
     btn.classList.add('is-pressed');
     localStorage.setItem(key, '1');
+    if (win === winChat) {
+      chatOpen = true;
+      lastChatSeenTs = Date.now();
+      localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
+      document.getElementById('chatUnread')?.classList.add('hidden');
+      renderChat(lastChatMessages);
+      setTimeout(() => document.getElementById('chatInput')?.focus(), 80);
+    }
+    if (win === winNew) {
+      renderActivityPanel();
+    }
   }
 
   function hide(win, btn, key) {
     win.classList.add('is-hidden');
     btn.classList.remove('is-pressed');
     localStorage.setItem(key, '0');
+    if (win === winChat) {
+      chatOpen = false;
+      stopChatTyping();
+    }
   }
 
   function toggle(win, btn, key) {
@@ -3225,7 +3252,6 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   minChat.onclick = (e) => { e.stopPropagation(); hide(winChat, btnChat, 'w95_chat_open'); };
   minNew.onclick = (e) => { e.stopPropagation(); hide(winNew, btnNew, 'w95_new_open'); };
 
-  // Make the existing X buttons minimise too
   const chatClose = document.getElementById('chatPanelClose');
   const newClose = document.getElementById('activityPanelClose');
   if (chatClose) chatClose.onclick = (e) => { e.preventDefault(); hide(winChat, btnChat, 'w95_chat_open'); };
@@ -3237,4 +3263,27 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
   if (localStorage.getItem('w95_new_open') === '0') hide(winNew, btnNew, 'w95_new_open');
   else show(winNew, btnNew, 'w95_new_open');
+
+  // Drag support for both windows
+  function makeDraggable(winEl, handleEl) {
+    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+    handleEl.addEventListener('mousedown', (e) => {
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const r = winEl.getBoundingClientRect();
+      winStartX = r.left;
+      winStartY = r.top;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      winEl.style.left = Math.max(0, winStartX + (e.clientX - startX)) + 'px';
+      winEl.style.top = Math.max(0, winStartY + (e.clientY - startY)) + 'px';
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+  }
+
+  makeDraggable(winChat, document.getElementById('w95-chat-handle'));
+  makeDraggable(winNew, document.getElementById('w95-new-handle'));
 })();
