@@ -588,6 +588,10 @@
     </button>
 
     <div id="activityPanel" class="activity-panel">
+        <div class="win95-titlebar" id="activityWin95Bar">
+            <span class="win95-titlebar-title">** What's New</span>
+            <button class="win95-min-btn" onclick="win95Minimize('activity')">_</button>
+        </div>
         <div class="activity-header">
             <div class="activity-title">** what's new</div>
             <button class="delete-btn" id="activityPanelClose" title="Close">
@@ -605,6 +609,10 @@
     </button>
 
     <div id="chatPanel" class="chat-panel">
+        <div class="win95-titlebar" id="chatWin95Bar">
+            <span class="win95-titlebar-title">[~] Chat</span>
+            <button class="win95-min-btn" onclick="win95Minimize('chat')">_</button>
+        </div>
         <div class="chat-header">
             <div class="chat-title">&lt;3 el &amp; tero &lt;3</div>
             <button class="delete-btn" id="chatPanelClose" title="Close">
@@ -619,6 +627,33 @@
             <textarea id="chatInput" class="chat-input" placeholder="say something... ^_^" rows="1"></textarea>
             <div class="chat-hint">Enter ↵ to send · Shift+Enter for new line</div>
         </div>
+    </div>
+
+    <!-- Our Dog.exe window -->
+    <div id="dogPanel" class="win95-panel">
+        <div class="win95-titlebar" id="dogWin95Bar">
+            <span class="win95-titlebar-title">Our Dog.exe</span>
+            <button class="win95-min-btn" onclick="win95Minimize('dog')">_</button>
+        </div>
+        <div class="dog-body">
+            <pre id="dogAscii" style="white-space:pre;font-family:monospace;overflow-x:auto;font-size:10px;padding:10px 12px;margin:0;max-height:260px;overflow-y:auto;line-height:1.2;"></pre>
+            <div id="dogStats" class="dog-stats"></div>
+            <div class="dog-actions">
+                <button class="dog-btn" onclick="dogAction('feed')">Feed (+hunger)</button>
+                <button class="dog-btn" onclick="dogAction('pet')">Pet (+happiness)</button>
+                <button class="dog-btn" onclick="dogAction('sleep')">Sleep (+energy)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win95 Taskbar -->
+    <div id="win95-taskbar">
+        <div id="win95-tb-buttons">
+            <button class="win95-tb-btn" id="tb-dog" onclick="win95TaskbarClick('dog')">Our Dog.exe</button>
+            <button class="win95-tb-btn" id="tb-chat" onclick="win95TaskbarClick('chat')">[~] Chat</button>
+            <button class="win95-tb-btn" id="tb-activity" onclick="win95TaskbarClick('activity')">** What's New</button>
+        </div>
+        <div id="win95-clock"></div>
     </div>
 
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>

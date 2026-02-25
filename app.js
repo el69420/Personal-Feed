@@ -481,6 +481,7 @@ function login(displayName, email) {
     setupTypingCleanup();
     startNowListening();
     showSection('feed');
+    win95OnLogin();
 }
 
 window.logout = function() {
@@ -3027,4 +3028,223 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     if (postId) startCommentTyping(postId);
 });
 
+// ===== WIN95 WINDOW SYSTEM =====
 
+const win95Config = {
+    chat:     { panelId: 'chatPanel',     tbBtnId: 'tb-chat',     titlebarId: 'chatWin95Bar'     },
+    activity: { panelId: 'activityPanel', tbBtnId: 'tb-activity', titlebarId: 'activityWin95Bar' },
+    dog:      { panelId: 'dogPanel',      tbBtnId: 'tb-dog',      titlebarId: 'dogWin95Bar'      },
+};
+
+let win95FocusedId = null;
+let win95FocusOrder = []; // least-recently-focused first
+
+function win95GetState(id) {
+    try { return JSON.parse(localStorage.getItem('w95-' + id) || '{}'); } catch { return {}; }
+}
+function win95SaveState(id, patch) {
+    localStorage.setItem('w95-' + id, JSON.stringify({ ...win95GetState(id), ...patch }));
+}
+
+function win95DefaultPos(id) {
+    if (id === 'chat')     return { x: Math.max(0, window.innerWidth - 404), y: Math.max(0, window.innerHeight - 610) };
+    if (id === 'activity') return { x: 22, y: Math.max(0, window.innerHeight - 630) };
+    return { x: Math.max(22, Math.floor((window.innerWidth - 380) / 2)), y: 80 };
+}
+
+function win95SetPos(id) {
+    const s   = win95GetState(id);
+    const pos = (s.x != null) ? { x: s.x, y: s.y } : win95DefaultPos(id);
+    const panel = document.getElementById(win95Config[id].panelId);
+    if (!panel) return;
+    panel.style.left   = pos.x + 'px';
+    panel.style.top    = pos.y + 'px';
+    panel.style.right  = 'auto';
+    panel.style.bottom = 'auto';
+}
+
+function win95Focus(id) {
+    win95FocusOrder = win95FocusOrder.filter(x => x !== id);
+    win95FocusOrder.push(id);
+    win95FocusedId = id;
+    // Assign z-indexes 900–902; focused gets highest
+    const base = 900;
+    win95FocusOrder.forEach((wid, i) => {
+        const p = document.getElementById(win95Config[wid].panelId);
+        if (p) p.style.zIndex = base + i;
+    });
+    win95SaveState(id, { lastFocused: Date.now() });
+    updateWin95Taskbar();
+}
+
+function updateWin95Taskbar() {
+    for (const [id, cfg] of Object.entries(win95Config)) {
+        const btn   = document.getElementById(cfg.tbBtnId);
+        const panel = document.getElementById(cfg.panelId);
+        if (!btn || !panel) continue;
+        const isOpen = panel.classList.contains('show');
+        btn.classList.toggle('tb-open',    isOpen);
+        btn.classList.toggle('tb-focused', isOpen && win95FocusedId === id);
+    }
+}
+
+window.win95Minimize = function(id) {
+    if (id === 'chat')     { closeChat(true); }
+    else if (id === 'activity') { closeActivityPanel(); }
+    else { document.getElementById(win95Config[id].panelId).classList.remove('show'); }
+    win95SaveState(id, { minimized: true });
+    if (win95FocusedId === id) win95FocusedId = null;
+    // MutationObserver will call updateWin95Taskbar
+};
+
+window.win95Restore = function(id) {
+    const panel = document.getElementById(win95Config[id].panelId);
+    if (!panel) return;
+    if (id === 'chat') {
+        if (!panel.classList.contains('show')) { chatOpen = false; window.toggleChat(); }
+    } else if (id === 'activity') {
+        if (!panel.classList.contains('show')) window.toggleActivityPanel();
+    } else {
+        panel.classList.add('show');
+    }
+    win95SaveState(id, { minimized: false });
+    win95Focus(id);
+};
+
+window.win95TaskbarClick = function(id) {
+    const panel  = document.getElementById(win95Config[id].panelId);
+    const isOpen = panel.classList.contains('show');
+    if (isOpen && win95FocusedId === id) { window.win95Minimize(id); }
+    else if (isOpen)                      { win95Focus(id); }
+    else                                  { window.win95Restore(id); }
+};
+
+function makeDraggable95(titlebarId, panelId, winId) {
+    const tb    = document.getElementById(titlebarId);
+    const panel = document.getElementById(panelId);
+    if (!tb || !panel) return;
+    tb.addEventListener('mousedown', e => {
+        if (e.target.classList.contains('win95-min-btn')) return;
+        e.preventDefault();
+        win95Focus(winId);
+        const rect = panel.getBoundingClientRect();
+        const ox = e.clientX - rect.left;
+        const oy = e.clientY - rect.top;
+        const onMove = e => {
+            let nx = Math.max(0, Math.min(window.innerWidth  - 80,  e.clientX - ox));
+            let ny = Math.max(0, Math.min(window.innerHeight - 40,  e.clientY - oy));
+            panel.style.left = nx + 'px';
+            panel.style.top  = ny + 'px';
+            win95SaveState(winId, { x: nx, y: ny });
+        };
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup',   onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup',   onUp);
+    });
+}
+
+function win95Init() {
+    for (const id of Object.keys(win95Config)) {
+        win95SetPos(id);
+    }
+    for (const [id, cfg] of Object.entries(win95Config)) {
+        makeDraggable95(cfg.titlebarId, cfg.panelId, id);
+        const panel = document.getElementById(cfg.panelId);
+        if (panel) {
+            panel.addEventListener('mousedown', () => win95Focus(id));
+            new MutationObserver(() => updateWin95Taskbar())
+                .observe(panel, { attributes: true, attributeFilter: ['class'] });
+        }
+    }
+    // Clock
+    const clockEl = document.getElementById('win95-clock');
+    const tick = () => {
+        if (clockEl) clockEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+    tick();
+    setInterval(tick, 1000);
+    updateWin95Taskbar();
+}
+
+function win95OnLogin() {
+    // Set up dog game (needs auth)
+    setupDogGame();
+    // Restore previously-open windows
+    for (const id of Object.keys(win95Config)) {
+        const s = win95GetState(id);
+        if (s.minimized === false) window.win95Restore(id);
+    }
+}
+
+win95Init();
+
+// ===== DOG MINI-GAME =====
+
+const dogRef = ref(database, 'dog');
+let dogState  = {};
+let _dogGameStarted = false;
+
+function setupDogGame() {
+    if (_dogGameStarted) return;
+    _dogGameStarted = true;
+    onValue(dogRef, snap => {
+        dogState = snap.exists() ? snap.val() : { hunger: 50, happiness: 50, energy: 50 };
+        renderDogStats();
+    });
+    loadDogAscii();
+    // Client-side slow decay every 30 s
+    setInterval(async () => {
+        if (!currentUser || document.hidden) return;
+        await update(dogRef, {
+            hunger:    Math.max(0, Math.round((dogState.hunger    ?? 50) - 1)),
+            happiness: Math.max(0, Math.round((dogState.happiness ?? 50) - 1)),
+            energy:    Math.max(0, Math.round((dogState.energy    ?? 50) - 1)),
+        });
+    }, 30000);
+}
+
+function renderDogStats() {
+    const el = document.getElementById('dogStats');
+    if (!el) return;
+    const h = Math.round(dogState.hunger    ?? 50);
+    const p = Math.round(dogState.happiness ?? 50);
+    const e = Math.round(dogState.energy    ?? 50);
+    el.innerHTML = `
+        <div class="dog-stat">Hunger: ${h}/100</div>
+        <div class="dog-stat">Happy: ${p}/100</div>
+        <div class="dog-stat">Energy: ${e}/100</div>
+        ${dogState.lastActionBy ? `<div class="dog-lastaction">Last action: ${dogState.lastActionBy}</div>` : ''}
+    `;
+}
+
+window.dogAction = async function(action) {
+    if (!currentUser) return;
+    const updates = { lastActionBy: currentUser, lastActionAt: Date.now() };
+    if (action === 'feed')  updates.hunger    = Math.min(100, (dogState.hunger    ?? 50) + 20);
+    if (action === 'pet')   updates.happiness = Math.min(100, (dogState.happiness ?? 50) + 20);
+    if (action === 'sleep') updates.energy    = Math.min(100, (dogState.energy    ?? 50) + 20);
+    await update(dogRef, updates);
+};
+
+async function loadDogAscii() {
+    const pre = document.getElementById('dogAscii');
+    if (!pre) return;
+    pre.textContent = 'Fetching ASCII dog art…';
+    try {
+        const resp = await fetch('https://www.asciiart.eu/art/1fd05f1e33479bee');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const html = await resp.text();
+        const doc  = new DOMParser().parseFromString(html, 'text/html');
+        const art  = doc.querySelector('pre');
+        if (!art) throw new Error('<pre> element not found on page');
+        pre.textContent = art.textContent;
+    } catch (err) {
+        pre.textContent = '';
+        const body = document.querySelector('#dogPanel .dog-body');
+        if (body) body.insertAdjacentHTML('afterbegin',
+            `<div style="padding:14px;color:#c00;font-family:monospace;font-size:12px;">Error fetching ASCII dog art:<br>${err.message}</div>`);
+    }
+}

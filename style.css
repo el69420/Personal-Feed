@@ -3092,3 +3092,301 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     margin-top: 2px;
     font-family: 'Nunito', sans-serif;
 }
+
+/* ===== WIN95 TASKBAR ===== */
+body {
+    padding-bottom: 44px !important;
+}
+
+#win95-taskbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    box-shadow: 0 -1px 0 #808080;
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    gap: 4px;
+    z-index: 9000;
+}
+
+body.dark-mode #win95-taskbar {
+    background: #1a1a2e;
+    border-top-color: #3a3a5c;
+    box-shadow: 0 -1px 0 #0a0a1a;
+}
+
+#win95-tb-buttons {
+    display: flex;
+    gap: 3px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.win95-tb-btn {
+    height: 28px;
+    min-width: 80px;
+    max-width: 150px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+    color: #000;
+}
+
+.win95-tb-btn.tb-open {
+    background: #b8b8b8;
+    border-top-color: #808080;
+    border-left-color: #808080;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+}
+
+.win95-tb-btn.tb-focused {
+    background: #b0b0b0;
+    border-top-color: #808080;
+    border-left-color: #808080;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+}
+
+.win95-tb-btn:active {
+    border-top-color: #808080;
+    border-left-color: #808080;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    background: #a8a8a8;
+}
+
+body.dark-mode .win95-tb-btn {
+    background: #2a2a4a;
+    color: #e0e0ff;
+    border-top-color: #5a5a8a;
+    border-left-color: #5a5a8a;
+    border-right-color: #0a0a1a;
+    border-bottom-color: #0a0a1a;
+}
+
+body.dark-mode .win95-tb-btn.tb-open,
+body.dark-mode .win95-tb-btn.tb-focused,
+body.dark-mode .win95-tb-btn:active {
+    background: #1e1e3a;
+    border-top-color: #0a0a1a;
+    border-left-color: #0a0a1a;
+    border-right-color: #5a5a8a;
+    border-bottom-color: #5a5a8a;
+}
+
+#win95-clock {
+    font-size: 11px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    color: #000;
+    padding: 2px 8px;
+    white-space: nowrap;
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #fff;
+    border-bottom: 1px solid #fff;
+    flex-shrink: 0;
+}
+
+body.dark-mode #win95-clock {
+    color: #e0e0ff;
+    border-top-color: #0a0a1a;
+    border-left-color: #0a0a1a;
+    border-right-color: #5a5a8a;
+    border-bottom-color: #5a5a8a;
+}
+
+/* ===== WIN95 TITLE BAR ===== */
+.win95-titlebar {
+    display: flex;
+    align-items: center;
+    padding: 3px 5px 3px 8px;
+    background: linear-gradient(90deg, #000080, #1084d0);
+    color: #fff;
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    gap: 6px;
+    flex-shrink: 0;
+    cursor: move;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body.dark-mode .win95-titlebar {
+    background: linear-gradient(90deg, #000050, #0060a0);
+}
+
+.win95-titlebar-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.win95-min-btn {
+    width: 18px;
+    height: 16px;
+    background: #c0c0c0;
+    color: #000;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0 0 2px 0;
+    font-family: 'Arial', sans-serif;
+    border-radius: 0;
+}
+
+.win95-min-btn:active {
+    border-top-color: #808080;
+    border-left-color: #808080;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+}
+
+/* ===== DOG PANEL (standalone win95 window) ===== */
+.win95-panel {
+    position: fixed;
+    width: min(380px, calc(100vw - 44px));
+    max-height: 520px;
+    z-index: 902;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(14px) scale(0.96);
+    transform-origin: bottom center;
+    transition: opacity 0.22s ease, visibility 0.22s, transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+    pointer-events: none;
+}
+
+.win95-panel.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.dog-body {
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.dog-stats {
+    padding: 8px 14px;
+    font-size: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.dog-stat {
+    background: rgba(0,128,128,0.12);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+}
+
+.dog-lastaction {
+    width: 100%;
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    font-family: 'Nunito', sans-serif;
+}
+
+.dog-actions {
+    padding: 8px 14px;
+    display: flex;
+    gap: 6px;
+    border-top: 1px solid var(--card-border);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.dog-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    cursor: pointer;
+    color: #000;
+    border-radius: 0;
+}
+
+.dog-btn:active {
+    border-top-color: #808080;
+    border-left-color: #808080;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+}
+
+body.dark-mode .dog-btn {
+    background: #2a2a4a;
+    color: #e0e0ff;
+    border-top-color: #5a5a8a;
+    border-left-color: #5a5a8a;
+    border-right-color: #0a0a1a;
+    border-bottom-color: #0a0a1a;
+}
+
+body.dark-mode .dog-btn:active {
+    border-top-color: #0a0a1a;
+    border-left-color: #0a0a1a;
+    border-right-color: #5a5a8a;
+    border-bottom-color: #5a5a8a;
+}
+
+/* Hide original FABs — replaced by taskbar */
+#chatFab, #activityFab {
+    display: none !important;
+}
+
+/* Scroll-to-top should stay above taskbar */
+#scrollTopBtn {
+    bottom: 48px;
+}
