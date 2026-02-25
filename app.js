@@ -3038,97 +3038,101 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     if (postId) startCommentTyping(postId);
 });
 
-// ===== Win95 Dog Window + Shared Firebase Dog =====
+// ===== Win95 Our Garden Window + Shared Firebase Garden =====
 (() => {
-  const btn = document.getElementById('w95-btn-dog');
-  const win = document.getElementById('w95-win-dog');
-  const min = document.getElementById('w95-dog-min');
-  const handle = document.getElementById('w95-dog-handle');
+  const btn = document.getElementById('w95-btn-garden');
+  const win = document.getElementById('w95-win-garden');
+  const min = document.getElementById('w95-garden-min');
+  const handle = document.getElementById('w95-garden-handle');
 
   if (!btn || !win || !min || !handle) return;
 
-  const ascii = document.getElementById('dog-ascii');
-  const hungerEl = document.getElementById('dog-hunger');
-  const happyEl = document.getElementById('dog-happy');
-  const energyEl = document.getElementById('dog-energy');
+  const plantEl = document.getElementById('garden-plant');
+  const statusEl = document.getElementById('garden-status');
+  const waterBtn = document.getElementById('garden-water');
 
-  const feedBtn = document.getElementById('dog-feed');
-  const petBtn = document.getElementById('dog-pet');
-  const sleepBtn = document.getElementById('dog-sleep');
+  const gardenRef = ref(database, 'garden');
+  const MS_HOUR = 3600000;
 
-  const DOG_ASCII =
-`          "",_o
-!       ( (  _)
-\`\\ ,,,,_'),)=~
- (          )
-  ,   ,,,,  ,
-  ) ,)   < (
- < <      ",\\
-  ",)      "_)
-`;
+  function calculateStage(state) {
+    const now = Date.now();
+    const { plantedAt, lastWatered } = state;
+    const ageHrs = (now - plantedAt) / MS_HOUR;
+    const wateredHrsAgo = lastWatered ? (now - lastWatered) / MS_HOUR : Infinity;
 
-  if (ascii) ascii.textContent = DOG_ASCII;
+    // Wilted: was alive past seed stage but not watered for 48h
+    if (ageHrs >= 24 && wateredHrsAgo >= 48) return 'wilted';
 
-  const dogRef = ref(database, 'dog');
+    if (ageHrs < 24) return 'seed';
+    if (ageHrs < 48) return lastWatered ? 'sprout' : 'seed';
 
-  function clamp(n) {
-    return Math.max(0, Math.min(100, n));
+    // 48h+: bloom only if watered within last 24h
+    if (wateredHrsAgo < 24) return 'bloom';
+
+    // Watered but not recently enough for bloom
+    return lastWatered ? 'sprout' : 'seed';
   }
 
-  // Initialise dog once if missing
-  onValue(dogRef, (snap) => {
+  function renderGarden(state) {
+    if (!state) return;
+    const stage = calculateStage(state);
+
+    // Update plant visual
+    plantEl.className = 'garden-plant garden-plant--' + stage;
+
+    // Update status text
+    const wateredAgo = state.lastWatered
+      ? Math.round((Date.now() - state.lastWatered) / MS_HOUR)
+      : null;
+    const wateredText = wateredAgo === null
+      ? 'never watered'
+      : wateredAgo === 0
+        ? 'watered just now'
+        : `watered ${wateredAgo}h ago`;
+
+    const stageLabels = { seed: 'Seed', sprout: 'Sprout', bloom: 'Bloom', wilted: 'Wilted' };
+    statusEl.textContent = `Stage: ${stageLabels[stage] ?? stage} · ${wateredText}`;
+  }
+
+  // Initialise garden once if missing
+  onValue(gardenRef, (snap) => {
     if (!snap.exists()) {
-      set(dogRef, { hunger: 70, happy: 70, energy: 70 });
+      set(gardenRef, { plantedAt: Date.now(), lastWatered: null, currentStage: 'seed' });
     }
   }, { onlyOnce: true });
 
   // Live render
-  onValue(dogRef, (snap) => {
-    const d = snap.val();
-    if (!d) return;
-
-    if (hungerEl) hungerEl.textContent = String(d.hunger ?? 0);
-    if (happyEl) happyEl.textContent = String(d.happy ?? 0);
-    if (energyEl) energyEl.textContent = String(d.energy ?? 0);
+  onValue(gardenRef, (snap) => {
+    renderGarden(snap.val());
   });
 
-  async function applyDelta(delta) {
-    const snap = await get(dogRef);
-    const d = snap.val();
-    if (!d) return;
-
-    update(dogRef, {
-      hunger: clamp((d.hunger ?? 70) + (delta.hunger ?? 0)),
-      happy: clamp((d.happy ?? 70) + (delta.happy ?? 0)),
-      energy: clamp((d.energy ?? 70) + (delta.energy ?? 0)),
-    });
+  // Water button
+  if (waterBtn) {
+    waterBtn.onclick = async () => {
+      const snap = await get(gardenRef);
+      const state = snap.val();
+      if (!state) return;
+      const now = Date.now();
+      const newStage = calculateStage({ ...state, lastWatered: now });
+      await update(gardenRef, { lastWatered: now, currentStage: newStage });
+    };
   }
 
-  if (feedBtn) feedBtn.onclick = () => applyDelta({ hunger: 15, happy: 2, energy: -2 });
-  if (petBtn) petBtn.onclick = () => applyDelta({ hunger: -1, happy: 12, energy: -1 });
-  if (sleepBtn) sleepBtn.onclick = () => applyDelta({ hunger: -6, happy: 2, energy: 18 });
-
-  // Optional gentle decay every 10 minutes (shared, but driven by any open client)
-  setInterval(() => {
-    applyDelta({ hunger: -1, happy: -1, energy: -1 });
-  }, 10 * 60 * 1000);
-
-  // Minimise and toggle
+  // Show / hide
   function show() {
     win.classList.remove('is-hidden');
     btn.classList.add('is-pressed');
-    localStorage.setItem('w95_dog_open', '1');
+    localStorage.setItem('w95_garden_open', '1');
   }
 
   function hide() {
     win.classList.add('is-hidden');
     btn.classList.remove('is-pressed');
-    localStorage.setItem('w95_dog_open', '0');
+    localStorage.setItem('w95_garden_open', '0');
   }
 
   btn.onclick = () => {
-    const isHidden = win.classList.contains('is-hidden');
-    if (isHidden) show();
+    if (win.classList.contains('is-hidden')) show();
     else hide();
   };
 
@@ -3138,40 +3142,29 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   };
 
   // Restore open state
-  const savedOpen = localStorage.getItem('w95_dog_open');
-  if (savedOpen === '0') hide();
+  if (localStorage.getItem('w95_garden_open') === '0') hide();
   else show();
 
   // Drag
-  let dragging = false;
-  let startX = 0;
-  let startY = 0;
-  let winStartX = 20;
-  let winStartY = 20;
+  let dragging = false, startX = 0, startY = 0, winStartX = 20, winStartY = 20;
 
   handle.addEventListener('mousedown', (e) => {
     dragging = true;
     startX = e.clientX;
     startY = e.clientY;
-
     const r = win.getBoundingClientRect();
     winStartX = r.left;
     winStartY = r.top;
-
     e.preventDefault();
   });
 
   window.addEventListener('mousemove', (e) => {
     if (!dragging) return;
-    const nx = winStartX + (e.clientX - startX);
-    const ny = winStartY + (e.clientY - startY);
-    win.style.left = Math.max(0, nx) + 'px';
-    win.style.top = Math.max(0, ny) + 'px';
+    win.style.left = Math.max(0, winStartX + (e.clientX - startX)) + 'px';
+    win.style.top = Math.max(0, winStartY + (e.clientY - startY)) + 'px';
   });
 
-  window.addEventListener('mouseup', () => {
-    dragging = false;
-  });
+  window.addEventListener('mouseup', () => { dragging = false; });
 })();
 
 (() => {
