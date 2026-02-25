@@ -2539,16 +2539,17 @@ function renderActivityPanel() {
 window.toggleActivityPanel = function() {
     if (!currentUser) return;
     const panel = document.getElementById('activityPanel');
+    if (!panel) return;
     if (panel.classList.contains('show')) { closeActivityPanel(); return; }
     panel.classList.add('show');
     renderActivityPanel();
     activitySeenTs = Date.now();
     localStorage.setItem(`activitySeenTs-${currentUser}`, String(activitySeenTs));
-    document.getElementById('activityBadge').classList.add('hidden');
+    document.getElementById('activityBadge')?.classList.add('hidden');
 };
 
 window.closeActivityPanel = function() {
-    document.getElementById('activityPanel').classList.remove('show');
+    document.getElementById('activityPanel')?.classList.remove('show');
 };
 
 window.scrollToPost = function(postId) {
@@ -2666,6 +2667,7 @@ function formatChatTime(ts) {
 
 function renderChat(messages) {
     const body = document.getElementById('chatBody');
+    if (!body) return;
 
     // Group consecutive messages from the same author within 5 minutes
     const groups = [];
@@ -2709,6 +2711,7 @@ function renderChat(messages) {
 function updateChatUnread(messages) {
     const unread = messages.filter(m => m.timestamp > lastChatSeenTs && m.author !== currentUser).length;
     const badge = document.getElementById('chatUnread');
+    if (!badge) return;
     if (unread > 0 && !chatOpen) {
         badge.textContent = unread;
         badge.classList.remove('hidden');
@@ -2736,12 +2739,13 @@ window.toggleChat = function() {
     if (!currentUser) return;
     chatOpen = !chatOpen;
     const panel = document.getElementById('chatPanel');
+    if (!panel) return;
     panel.classList.toggle('show', chatOpen);
 
     if (chatOpen) {
         lastChatSeenTs = Date.now();
         localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
-        document.getElementById('chatUnread').classList.add('hidden');
+        document.getElementById('chatUnread')?.classList.add('hidden');
 
         renderChat(lastChatMessages);
 
@@ -2759,12 +2763,13 @@ window.toggleChat = function() {
 function closeChat(silent) {
     stopChatTyping();
     chatOpen = false;
-    document.getElementById('chatPanel').classList.remove('show');
-    if (!silent) document.getElementById('chatUnread').classList.add('hidden');
+    document.getElementById('chatPanel')?.classList.remove('show');
+    if (!silent) document.getElementById('chatUnread')?.classList.add('hidden');
 }
 
 const chatInput = document.getElementById('chatInput');
 
+if (chatInput) {
 // Auto-expand textarea as user types; also start typing indicator
 chatInput.addEventListener('input', () => {
     chatInput.style.height = 'auto';
@@ -2793,6 +2798,7 @@ chatInput.addEventListener('keydown', async (e) => {
     chatInput.style.height = 'auto';
     sparkSound('chat');
 });
+}
 
 
 
