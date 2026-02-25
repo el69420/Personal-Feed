@@ -3257,17 +3257,18 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   if (chatClose) chatClose.onclick = (e) => { e.preventDefault(); hide(winChat, btnChat, 'w95_chat_open'); };
   if (newClose) newClose.onclick = (e) => { e.preventDefault(); hide(winNew, btnNew, 'w95_new_open'); };
 
-  // Restore open state
-  if (localStorage.getItem('w95_chat_open') === '0') hide(winChat, btnChat, 'w95_chat_open');
-  else show(winChat, btnChat, 'w95_chat_open');
+  // Restore open state — default closed if no preference stored
+  if (localStorage.getItem('w95_chat_open') === '1') show(winChat, btnChat, 'w95_chat_open');
+  else hide(winChat, btnChat, 'w95_chat_open');
 
-  if (localStorage.getItem('w95_new_open') === '0') hide(winNew, btnNew, 'w95_new_open');
-  else show(winNew, btnNew, 'w95_new_open');
+  if (localStorage.getItem('w95_new_open') === '1') show(winNew, btnNew, 'w95_new_open');
+  else hide(winNew, btnNew, 'w95_new_open');
 
   // Drag support for both windows
   function makeDraggable(winEl, handleEl) {
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
     handleEl.addEventListener('mousedown', (e) => {
+      if (e.target.closest('button')) return; // let button clicks through
       dragging = true;
       startX = e.clientX;
       startY = e.clientY;
