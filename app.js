@@ -3185,11 +3185,22 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   chatBody.appendChild(chatPanel);
   newBody.appendChild(activityPanel);
 
-  // Stop any fixed positioning from fighting the window
-  chatPanel.style.position = 'static';
-  activityPanel.style.position = 'static';
-  chatPanel.style.display = 'block';
-  activityPanel.style.display = 'block';
+  // Reset panel styles so they display properly inside the W95 windows
+  for (const panel of [chatPanel, activityPanel]) {
+    panel.style.position = 'static';
+    panel.style.display = 'block';
+    panel.style.opacity = '1';
+    panel.style.visibility = 'visible';
+    panel.style.pointerEvents = 'auto';
+    panel.style.transform = 'none';
+    panel.style.transition = 'none';
+    panel.style.width = '100%';
+    panel.style.maxHeight = 'none';
+    panel.style.zIndex = '';
+    panel.style.borderRadius = '0';
+    panel.style.boxShadow = 'none';
+    panel.style.border = 'none';
+  }
 
   function show(win, btn, key) {
     win.classList.remove('is-hidden');
