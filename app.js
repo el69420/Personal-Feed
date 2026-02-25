@@ -911,6 +911,9 @@ function setupDBListeners() {
         }
         updateNewCount();
         updateActivityBadge();
+        if (!document.getElementById('w95-win-new')?.classList.contains('is-hidden')) {
+            renderActivityPanel();
+        }
         updateSyncStatus('Synced');
         setTimeout(() => updateSyncStatus('Live'), 2000);
     });
@@ -955,7 +958,9 @@ function setupDBListeners() {
         }
 
         updateChatUnread(messages);
-        if (chatOpen) renderChat(messages);
+        if (chatOpen || !document.getElementById('w95-win-chat')?.classList.contains('is-hidden')) {
+            renderChat(messages);
+        }
     });
 }
 
