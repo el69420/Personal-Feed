@@ -3565,15 +3565,18 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
   let _currentWeather = null;
 
-  function getTodayWeather() {
-    const today = localDateStr();
-    const key   = 'garden_weather_' + today;
+  function rollDailyWeather(dateKey) {
+    const key = 'garden_weather_' + dateKey;
     let w = localStorage.getItem(key);
     if (!w || !WEATHER_TYPES.includes(w)) {
       w = WEATHER_TYPES[Math.floor(Math.random() * WEATHER_TYPES.length)];
       localStorage.setItem(key, w);
     }
     return w;
+  }
+
+  function getTodayWeather() {
+    return rollDailyWeather(getLocalDateKey());
   }
 
   function applyWeather() {
@@ -3593,14 +3596,26 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     { emoji: '🐌', label: 'snail' },
     { emoji: '🐝', label: 'bee' },
     { emoji: '🦋', label: 'butterfly' },
-    { emoji: '✨🧚✨', label: 'fairy' },  // rare (~1-in-7)
   ];
   const CRITTER_MESSAGES = {
     snail:     ['A little snail says hi! 🐌', 'Slow and steady! 🐌', 'Look, a snail!'],
     bee:       ['A bee visits your flowers! 🐝', 'Bzzzz! 🐝', 'The bees love your garden!'],
     butterfly: ['A butterfly dances past! 🦋', 'How beautiful! 🦋', 'Flutter flutter! 🦋'],
-    fairy:     ['A garden fairy appeared! ✨', '✨ So rare! A wild fairy! ✨', 'The garden magic is strong today! ✨'],
   };
+
+  // Mythical critter pool — fairy and spirit moth (very rare, 0.5–1 %)
+  const MYTHICAL_POOL = [
+    {
+      emoji: '✨🧚✨',
+      label: 'fairy',
+      msgs:  ['A garden fairy appeared! ✨', '✨ So rare! A wild fairy! ✨', 'The garden magic is strong today! ✨'],
+    },
+    {
+      emoji: '🦋✨',
+      label: 'spirit_moth',
+      msgs:  ['A spirit moth drifts through… 🦋✨', 'So rare! The spirit moth visits! 🦋✨', 'The garden glows with the spirit moth\'s wings ✨'],
+    },
+  ];
 
   let _critterEl       = null;
   let _critterDespawn  = null;
@@ -3608,6 +3623,8 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
   function spawnCritter() {
     if (_critterEl) return;   // at most 1 critter at a time
+    // 0.5 % chance per spawn attempt: spawn mythical instead of regular
+    if (Math.random() < 0.005) { spawnMythicalCritter(); return; }
     const critter = CRITTER_POOL[Math.floor(Math.random() * CRITTER_POOL.length)];
     const el = document.createElement('div');
     el.className     = 'garden-critter';
@@ -3656,6 +3673,139 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     despawnCritter();
   }
 
+  // ---- Rare / Mythical layer ----
+
+  // Returns local date key "YYYY-MM-DD" (alias kept inside IIFE for clarity).
+  function getLocalDateKey() {
+    return localDateStr();
+  }
+
+  // Special dates keyed by "MM-DD" (day/month format from spec → stored as month-day).
+  const SPECIAL_DATES = {
+    '01-06': { type: 'anniversary',   msg: 'Happy anniversary 💚' },
+    '03-26': { type: 'birthday_tero', msg: 'Happy birthday Tero 🎂' },
+    '10-22': { type: 'birthday_el',   msg: 'Happy birthday El 🎂' },
+  };
+
+  // Returns the special-date descriptor { type, msg } or null.
+  function isSpecialDate(dateKey) {
+    const mmdd = dateKey.slice(5); // "YYYY-MM-DD" → "MM-DD"
+    return SPECIAL_DATES[mmdd] || null;
+  }
+
+  // Persist a keepsake entry to the Garden Journal (max 10, newest first).
+  function appendGardenJournalEntry(entry) {
+    const stored = JSON.parse(localStorage.getItem('garden_journal') || '[]');
+    stored.unshift(entry);
+    if (stored.length > 10) stored.length = 10;
+    localStorage.setItem('garden_journal', JSON.stringify(stored));
+    renderGardenJournal();
+  }
+
+  // Re-render the Garden Journal section from localStorage.
+  function renderGardenJournal() {
+    const journalEl  = document.getElementById('garden-journal');
+    const entriesEl  = document.getElementById('garden-journal-entries');
+    if (!journalEl || !entriesEl) return;
+    const stored = JSON.parse(localStorage.getItem('garden_journal') || '[]');
+    if (!stored.length) { journalEl.style.display = 'none'; return; }
+    journalEl.style.display = '';
+    entriesEl.innerHTML = stored.map(e =>
+      `<div class="garden-journal-row">` +
+        `<span class="garden-journal-date">${e.date}</span>` +
+        `<span class="garden-journal-msg">${e.msg}</span>` +
+      `</div>`
+    ).join('');
+  }
+
+  // Spawn a mythical critter unconditionally (caller controls the probability roll).
+  function spawnMythicalCritter() {
+    if (_critterEl) return false;
+    const mythical = MYTHICAL_POOL[Math.floor(Math.random() * MYTHICAL_POOL.length)];
+    const el = document.createElement('div');
+    el.className     = 'garden-critter garden-critter--mythical';
+    el.textContent   = mythical.emoji;
+    el.dataset.label = mythical.label;
+    el.style.left    = (4 + Math.random() * 210) + 'px';
+    el.style.top     = (6 + Math.random() * 55)  + 'px';
+    el.addEventListener('click', () => {
+      const msg = mythical.msgs[Math.floor(Math.random() * mythical.msgs.length)];
+      showToast(msg);
+      sparkSound('react');
+      // Persist critter counts
+      const counts = JSON.parse(localStorage.getItem('garden_critterCounts') || '{}');
+      counts[mythical.label] = (counts[mythical.label] || 0) + 1;
+      localStorage.setItem('garden_critterCounts', JSON.stringify(counts));
+      // Persist mythicalSeenCount
+      const seen = parseInt(localStorage.getItem('mythicalSeenCount') || '0', 10) + 1;
+      localStorage.setItem('mythicalSeenCount', String(seen));
+      // Keepsake journal entry
+      appendGardenJournalEntry({ date: getLocalDateKey(), msg });
+      despawnCritter();
+    });
+    tilesRowEl.appendChild(el);
+    _critterEl = el;
+    _critterDespawn = setTimeout(despawnCritter, 15000);
+    scheduleNextCritter();
+    return true;
+  }
+
+  // Called on garden open: handles special-date guarantees and normal 1 % on-open roll.
+  function maybeTriggerMythical(dateKey) {
+    const special = isSpecialDate(dateKey);
+
+    if (special) {
+      // Special toast (once per day)
+      const toastKey = 'garden_special_toast_' + dateKey;
+      if (!localStorage.getItem(toastKey)) {
+        localStorage.setItem(toastKey, '1');
+        setTimeout(() => { showToast(special.msg); sparkSound('ach'); }, 800);
+      }
+      // Guarantee mythical + keepsake the first time the garden opens this special day
+      const seenKey = 'garden_special_mythical_' + dateKey;
+      if (!localStorage.getItem(seenKey)) {
+        localStorage.setItem(seenKey, '1');
+        appendGardenJournalEntry({ date: dateKey, msg: special.msg });
+        setTimeout(() => spawnMythicalCritter(), 3000);
+      }
+      return;
+    }
+
+    // Normal day: 1 % chance for an immediate mythical spawn on garden open
+    if (Math.random() < 0.01) {
+      setTimeout(() => spawnMythicalCritter(), 3000 + Math.random() * 2000);
+    }
+  }
+
+  // Night shooting star (21:00–03:59, 3 % chance, once per day).
+  function maybeShootingStar(dateKey) {
+    const hr = new Date().getHours();
+    if (hr < 21 && hr >= 4) return;                           // only at night
+    const key = 'garden_shootingstar_' + dateKey;
+    if (localStorage.getItem(key)) return;                     // already seen today
+    if (Math.random() >= 0.03) return;                         // 3 % chance
+    localStorage.setItem(key, '1');
+    const el = document.createElement('div');
+    el.className   = 'garden-shooting-star';
+    el.textContent = '✨☄️';
+    gardenBodyEl.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+    showToast('A shooting star! ✨☄️');
+    sparkSound('ping');
+  }
+
+  // Glitch moment (0.2 % chance on garden open, CSS-only, 1–2 s).
+  function maybeGardenGlitch() {
+    if (Math.random() >= 0.002) return;
+    setTimeout(() => {
+      gardenBodyEl.classList.add('garden-glitch');
+      showToast('The garden shimmered strangely…');
+      sparkSound('ping');
+      gardenBodyEl.addEventListener('animationend', () =>
+        gardenBodyEl.classList.remove('garden-glitch'), { once: true });
+    }, 600);
+  }
+
   // ---- Show / hide ----
   function show() {
     win.classList.remove('is-hidden');
@@ -3669,6 +3819,12 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     checkVisitSpark();
     applyWeather();
     startCritters();
+    // Rare / Mythical layer — all checks run only on garden open, no polling.
+    const _dateKey = getLocalDateKey();
+    maybeShootingStar(_dateKey);
+    maybeTriggerMythical(_dateKey);
+    maybeGardenGlitch();
+    renderGardenJournal();
   }
 
   function hide() {

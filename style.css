@@ -3638,5 +3638,95 @@ body.dark-mode .achievement-item.is-unlocked .achievement-progress{color:#a0c8a0
   to  {opacity:1;transform:scale(1);}
 }
 
+/* ===== RARE / MYTHICAL LAYER ===== */
+
+/* Mythical critter — slightly bigger + colour-shifting glow */
+.garden-critter--mythical{
+  font-size:22px;
+  animation:garden-critter-appear 0.35s ease,garden-mythical-pulse 2s ease-in-out infinite alternate;
+}
+@keyframes garden-mythical-pulse{
+  from{filter:drop-shadow(0 0 3px #ffcc44);}
+  to  {filter:drop-shadow(0 0 7px #cc44ff);}
+}
+
+/* Shooting star — overlays the garden body */
+.garden-shooting-star{
+  position:absolute;
+  top:6px;
+  right:55px;
+  font-size:15px;
+  pointer-events:none;
+  z-index:20;
+  line-height:1;
+  animation:garden-shooting-star-fly 1.6s ease-out forwards;
+}
+@keyframes garden-shooting-star-fly{
+  0%  {opacity:1;transform:translate(0,0) rotate(-30deg);}
+  80% {opacity:1;transform:translate(90px,45px) rotate(-30deg);}
+  100%{opacity:0;transform:translate(110px,55px) rotate(-30deg);}
+}
+
+/* Glitch moment — brief CSS-only distortion */
+@keyframes garden-glitch-anim{
+  0%,100%{transform:translate(0);filter:none;}
+  10%{transform:translate(-2px,1px);filter:hue-rotate(80deg) contrast(1.04);}
+  20%{transform:translate(2px,-1px);filter:none;}
+  30%{transform:translate(-1px,2px);filter:hue-rotate(-30deg) brightness(1.03);}
+  40%{transform:translate(1px,0);filter:none;}
+  50%{transform:translate(-2px,-1px);filter:invert(5%) hue-rotate(20deg);}
+  60%{transform:translate(0,1px);filter:none;}
+  70%{transform:translate(2px,1px);filter:hue-rotate(50deg);}
+  80%{transform:translate(-1px,0);filter:none;}
+  90%{transform:translate(1px,-1px);filter:hue-rotate(-15deg);}
+}
+.garden-glitch{
+  animation:garden-glitch-anim 0.5s steps(1) 0s 2 !important;
+}
+
+/* Garden Journal */
+.garden-journal{
+  margin-top:6px;
+  border-top:1px solid #808080;
+  padding-top:4px;
+}
+.garden-journal-header{
+  font-size:10px;
+  font-weight:bold;
+  color:#000080;
+  margin-bottom:3px;
+  letter-spacing:0.02em;
+}
+.garden-journal-entries{
+  max-height:80px;
+  overflow-y:auto;
+}
+.garden-journal-row{
+  display:flex;
+  gap:5px;
+  align-items:baseline;
+  padding:1px 0;
+  border-bottom:1px solid #dfdfdf;
+  font-size:10px;
+}
+.garden-journal-date{
+  color:#808080;
+  flex-shrink:0;
+  font-size:9px;
+  white-space:nowrap;
+}
+.garden-journal-msg{
+  color:#000;
+  flex:1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+body.dark-mode .garden-journal{border-color:#555;}
+body.dark-mode .garden-journal-header{color:#8888ff;}
+body.dark-mode .garden-journal-row{border-color:#333;}
+body.dark-mode .garden-journal-date{color:#888;}
+body.dark-mode .garden-journal-msg{color:#d0d0d0;}
+
 
 
