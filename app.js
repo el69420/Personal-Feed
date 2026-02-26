@@ -3049,7 +3049,7 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   const statusEl   = document.getElementById('garden-status');
   const streakEl   = document.getElementById('garden-streak');
   const waterBtn   = document.getElementById('garden-water');
-  const plantSel   = document.getElementById('garden-plant-select');
+  const plantRow   = document.getElementById('garden-plant-row');
 
   const gardenRef  = ref(database, 'garden');
   const MS_HOUR    = 3600000;
@@ -3096,20 +3096,46 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     // Update plant visual — stage class + plant-type class
     plantEl.className = `garden-plant garden-plant--${stage} garden-plant--type-${plantType}`;
 
-    // Update dropdown options to reflect unlocked plants
-    if (plantSel) {
-      const currentVal = plantSel.value;
-      plantSel.innerHTML = `<option value="sunflower">${PLANT_LABELS.sunflower}</option>`;
-      for (const id of unlockedPlants) {
-        if (PLANT_LABELS[id]) {
-          const opt = document.createElement('option');
-          opt.value = id;
-          opt.textContent = PLANT_LABELS[id];
-          plantSel.appendChild(opt);
+    // Plant selector row: dropdown when 2+ options, static text when only default
+    if (plantRow) {
+      if (unlockedPlants.length === 0) {
+        // Nothing unlocked yet — show plain text + hint, no select
+        plantRow.innerHTML =
+          `<span class="garden-label">Plant: ${PLANT_LABELS[plantType] || PLANT_LABELS.sunflower}</span>` +
+          `<span class="garden-plant-hint">Water daily to unlock more</span>`;
+      } else {
+        // At least one unlock — render/reuse the select
+        let sel = plantRow.querySelector('select');
+        if (!sel) {
+          plantRow.innerHTML =
+            `<label for="garden-plant-select" class="garden-label">Plant:</label>` +
+            `<select id="garden-plant-select" class="w95-select"></select>`;
+          sel = plantRow.querySelector('select');
+          sel.onchange = async () => {
+            const chosen = sel.value;
+            const snap = await get(gardenRef);
+            const st = snap.val();
+            if (!st) return;
+            const resp = await fetch('/api/garden/select-plant', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ plantType: chosen, unlockedPlants: st.unlockedPlants ?? [] }),
+            });
+            if (resp.ok) await update(gardenRef, { selectedPlant: chosen });
+          };
         }
+        // Rebuild options to match current unlocked list
+        sel.innerHTML = `<option value="sunflower">${PLANT_LABELS.sunflower}</option>`;
+        for (const id of unlockedPlants) {
+          if (PLANT_LABELS[id]) {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = PLANT_LABELS[id];
+            sel.appendChild(opt);
+          }
+        }
+        sel.value = plantType;
       }
-      // Restore selection to match Firebase state (or keep if already matching)
-      plantSel.value = plantType;
     }
 
     // Update status text
@@ -3195,27 +3221,6 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     };
   }
 
-  // Plant selector — calls server to validate, then writes to Firebase
-  if (plantSel) {
-    plantSel.onchange = async () => {
-      const plantType = plantSel.value;
-      const snap = await get(gardenRef);
-      const state = snap.val();
-      if (!state) return;
-
-      const resp = await fetch('/api/garden/select-plant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plantType,
-          unlockedPlants: state.unlockedPlants ?? [],
-        }),
-      });
-      if (resp.ok) {
-        await update(gardenRef, { selectedPlant: plantType });
-      }
-    };
-  }
 
   // Show / hide
   function show() {
