@@ -91,6 +91,10 @@ let editState = null;
 let isDarkMode = false;
 let isInitialLoad = true;
 let currentWateringStreak = 0;
+// Per-user stats synced from Firebase /userStats/{user}/
+let totalWaterings    = 0;                                 // total water presses this user
+let gardenVisitDays   = {};                                // { "YYYY-MM-DD": true }
+let gardenVisitStreak = { current: 0, lastDate: null };    // consecutive-day visit streak
 let focusedPostId = null;
 let prevDataSig = null;
 let prevVisualSig = null;
@@ -3406,6 +3410,15 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
         [`tiles/${n}/events`]:      result.events,
       });
       if (result.wateringStreak >= 3) unlockAchievement('water_3_days');
+
+      // Per-user watering count → first_sprout + watering_can
+      totalWaterings++;
+      update(ref(database, 'userStats/' + currentUser), { totalWaterings });
+      unlockAchievement('first_sprout');
+      if (totalWaterings >= 5) unlockAchievement('watering_can');
+
+      // Time-of-day hidden achievements
+      checkTimeBasedAchievements();
     } finally {
       if (waterBtn) waterBtn.disabled = false;
     }
@@ -3612,6 +3625,22 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
 // ===== ACHIEVEMENTS =====
 
+// Returns local date as "YYYY-MM-DD" (optionally offset by `offsetDays`).
+function localDateStr(offsetDays = 0) {
+    const d = new Date();
+    if (offsetDays) d.setDate(d.getDate() + offsetDays);
+    return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+}
+
+// Unlock Night Owl or Early Bird based on the current local hour.
+function checkTimeBasedAchievements() {
+    const hr = new Date().getHours();
+    if (hr >= 0 && hr < 5) unlockAchievement('night_owl');
+    else if (hr >= 5 && hr < 8) unlockAchievement('early_bird');
+}
+
 // Achievement definitions.
 // Fields:
 //   id          – unique string key (matches Firebase key)
@@ -3626,11 +3655,20 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 //   { id: 'my_ach', title: 'My Achievement', desc: 'Do X things', icon: '[X]',
 //     target: 5, getProgress: () => /* live counter expression */ }
 const ACHIEVEMENTS = [
+    // ---- Posting ----
     {
         id: 'first_post',
         title: 'First Post!',
         desc:  'Create your first post',
         icon:  '[*]',
+    },
+    {
+        id:          'five_posts',
+        title:       'Five Posts',
+        desc:        'Create 5 posts',
+        icon:        '[5]',
+        target:      5,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
     },
     {
         id:          'ten_posts',
@@ -3641,12 +3679,70 @@ const ACHIEVEMENTS = [
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
     },
     {
+        id:          'twenty_posts',
+        title:       'Twenty Posts',
+        desc:        'Create 20 posts',
+        icon:        '[20]',
+        target:      20,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+    },
+
+    // ---- Garden actions ----
+    {
+        id:    'first_sprout',
+        title: 'First Sprout',
+        desc:  'Water the garden for the first time',
+        icon:  '[~]',
+    },
+    {
+        id:          'watering_can',
+        title:       'Watering Can',
+        desc:        'Water the garden 5 times',
+        icon:        '[W]',
+        target:      5,
+        getProgress: () => totalWaterings,
+    },
+    {
         id:          'water_3_days',
         title:       'Green Thumb',
         desc:        'Water your garden 3 days in a row',
         icon:        ':)',
         target:      3,
         getProgress: () => currentWateringStreak,
+    },
+
+    // ---- Visiting / consistency ----
+    {
+        id:          'checked_in',
+        title:       'Checked In',
+        desc:        'Open the garden on 7 different days',
+        icon:        '[7]',
+        target:      7,
+        getProgress: () => Object.keys(gardenVisitDays).length,
+    },
+    {
+        id:          'week_streak',
+        title:       'Week Streak',
+        desc:        'Visit 7 days in a row',
+        icon:        '[>]',
+        target:      7,
+        getProgress: () => gardenVisitStreak.current,
+    },
+
+    // ---- Hidden ----
+    {
+        id:     'night_owl',
+        title:  'Night Owl',
+        desc:   'Do something between midnight and 4:59 AM',
+        icon:   '[O]',
+        hidden: true,
+    },
+    {
+        id:     'early_bird',
+        title:  'Early Bird',
+        desc:   'Do something between 5:00 and 7:59 AM',
+        icon:   '[E]',
+        hidden: true,
     },
 ];
 
@@ -3691,7 +3787,10 @@ function afterPostCreated() {
     // allPosts hasn't yet received the Firebase onValue update for the just-pushed post,
     // so add 1 to the current count to include it.
     const myCount = Object.values(allPosts).filter(p => p.author === currentUser).length + 1;
+    if (myCount >= 5)  unlockAchievement('five_posts');
     if (myCount >= 10) unlockAchievement('ten_posts');
+    if (myCount >= 20) unlockAchievement('twenty_posts');
+    checkTimeBasedAchievements();
 }
 
 async function backfillAchievements() {
@@ -3701,8 +3800,10 @@ async function backfillAchievements() {
 
     // Count existing posts by the current user from the already-loaded allPosts.
     const myCount = Object.values(allPosts).filter(p => p.author === currentUser).length;
-    if (myCount >= 1) await unlockAchievement('first_post');
+    if (myCount >= 1)  await unlockAchievement('first_post');
+    if (myCount >= 5)  await unlockAchievement('five_posts');
     if (myCount >= 10) await unlockAchievement('ten_posts');
+    if (myCount >= 20) await unlockAchievement('twenty_posts');
 
     // Check garden watering streak directly from Firebase.
     try {
@@ -3716,6 +3817,43 @@ async function backfillAchievements() {
         }
     } catch (e) {
         console.error('backfillAchievements garden check failed', e);
+    }
+
+    // Load per-user stats (totalWaterings, garden visit tracking).
+    try {
+        const statsSnap = await get(ref(database, 'userStats/' + currentUser));
+        const stats = statsSnap.val() || {};
+
+        // ---- Watering count ----
+        totalWaterings = stats.totalWaterings || 0;
+        if (totalWaterings >= 1) await unlockAchievement('first_sprout');
+        if (totalWaterings >= 5) await unlockAchievement('watering_can');
+
+        // ---- Garden visit tracking ----
+        gardenVisitDays   = stats.gardenVisitDays   || {};
+        gardenVisitStreak = stats.gardenVisitStreak || { current: 0, lastDate: null };
+
+        const today     = localDateStr();
+        const yesterday = localDateStr(-1);
+
+        if (!gardenVisitDays[today]) {
+            // Compute new streak: extend if visited yesterday, otherwise reset to 1.
+            const newCurrent = gardenVisitStreak.lastDate === yesterday
+                ? gardenVisitStreak.current + 1
+                : 1;
+            gardenVisitDays[today] = true;
+            gardenVisitStreak = { current: newCurrent, lastDate: today };
+            await update(ref(database, 'userStats/' + currentUser), {
+                [`gardenVisitDays/${today}`]: true,
+                gardenVisitStreak: { current: newCurrent, lastDate: today },
+            });
+        }
+
+        const visitCount = Object.keys(gardenVisitDays).length;
+        if (visitCount >= 7)             await unlockAchievement('checked_in');
+        if (gardenVisitStreak.current >= 7) await unlockAchievement('week_streak');
+    } catch (e) {
+        console.error('backfillAchievements userStats check failed', e);
     }
 
     renderAchievementsWindow();

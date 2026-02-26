@@ -215,7 +215,12 @@ app.post('/api/garden/select-plant', (req, res) => {
 // ===== Achievements API =====
 
 const ACHIEVEMENTS_FILE = path.join(__dirname, 'achievements.json');
-const VALID_ACHIEVEMENT_IDS = new Set(['first_post', 'ten_posts', 'water_3_days']);
+const VALID_ACHIEVEMENT_IDS = new Set([
+    'first_post', 'five_posts', 'ten_posts', 'twenty_posts',
+    'first_sprout', 'watering_can', 'water_3_days',
+    'checked_in', 'week_streak',
+    'night_owl', 'early_bird',
+]);
 
 function loadAchievementsStore() {
     try {
