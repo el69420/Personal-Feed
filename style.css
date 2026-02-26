@@ -3171,7 +3171,34 @@ body{padding-bottom:50px}
 /* Empty-state placeholder */
 .achievement-placeholder{font:12px Tahoma,Verdana,Arial,sans-serif;color:#808080;}
 
+/* Toast notification history (in-session, shown above the main list) */
+.achievement-toast-history{
+    border-bottom:1px solid #b0b0b0;
+    margin-bottom:4px;
+    padding-bottom:4px;
+}
+.achievement-toast-history-header{
+    font:bold 10px Tahoma,Verdana,Arial,sans-serif;
+    color:#808080;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:3px 6px 2px;
+}
+.achievement-toast-history-row{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    padding:2px 6px;
+    font:11px Tahoma,Verdana,Arial,sans-serif;
+}
+.achievement-toast-history-icon{font-size:12px;flex-shrink:0;}
+.achievement-toast-history-title{flex:1;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.achievement-toast-history-time{color:#808080;font-size:10px;white-space:nowrap;flex-shrink:0;}
+
 /* Dark-mode overrides */
+body.dark-mode .achievement-toast-history{border-color:#3a3a3a;}
+body.dark-mode .achievement-toast-history-header{color:#909090;}
+body.dark-mode .achievement-toast-history-title{color:#d0d0d0;}
 body.dark-mode .achievement-item.unlocked{background:#1a3a1a;border-color:#3a6a3a;}
 body.dark-mode .achievement-item.unlocked .achievement-title{color:#c8e8c8;}
 body.dark-mode .achievement-item.unlocked .achievement-desc{color:#a0c8a0;}

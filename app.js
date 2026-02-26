@@ -3751,6 +3751,10 @@ const ACHIEVEMENTS = [
 let unlockedAchievements = new Map();
 let achievementsBackfilled = false;
 
+// In-session history of achievement toast notifications (newest first).
+// Each entry: { title, icon, ts } — kept in memory only (resets on page reload).
+const achievementToastHistory = [];
+
 async function initAchievements() {
     const body = document.getElementById('w95-achievements-body');
     if (!currentUser) {
@@ -3775,7 +3779,11 @@ async function unlockAchievement(id) {
         await set(ref(database, 'achievements/' + currentUser + '/' + id), ts);
         unlockedAchievements.set(id, ts);
         const achievement = ACHIEVEMENTS.find(a => a.id === id);
-        if (achievement) showToast(`Achievement unlocked: ${achievement.title}`);
+        if (achievement) {
+            showToast(`Achievement unlocked: ${achievement.title}`);
+            achievementToastHistory.unshift({ title: achievement.title, icon: achievement.icon, ts: Date.now() });
+            if (achievementToastHistory.length > 20) achievementToastHistory.pop();
+        }
         renderAchievementsWindow();
     } catch (e) {
         console.error('unlockAchievement failed', e);
@@ -3876,10 +3884,35 @@ function renderAchievementsWindow() {
         return '[' + '#'.repeat(filled) + '-'.repeat(BAR_W - filled) + ']';
     }
 
+    // Relative time formatter for toast history
+    function fmtRelative(ts) {
+        const diff = Math.floor((Date.now() - ts) / 1000);
+        if (diff < 60)  return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
+        return Math.floor(diff / 3600) + ' hr ago';
+    }
+
+    // Toast history section (shown only when there are entries this session)
+    let historyHtml = '';
+    if (achievementToastHistory.length > 0) {
+        const rows = achievementToastHistory.map(h =>
+            `<div class="achievement-toast-history-row">` +
+            `<span class="achievement-toast-history-icon">${safeText(h.icon)}</span>` +
+            `<span class="achievement-toast-history-title">${safeText(h.title)}</span>` +
+            `<span class="achievement-toast-history-time">${fmtRelative(h.ts)}</span>` +
+            `</div>`
+        ).join('');
+        historyHtml =
+            `<div class="achievement-toast-history">` +
+            `<div class="achievement-toast-history-header">Notifications this session</div>` +
+            rows +
+            `</div>`;
+    }
+
     const unlocked = ACHIEVEMENTS.filter(a => unlockedAchievements.has(a.id));
     const locked   = ACHIEVEMENTS.filter(a => !unlockedAchievements.has(a.id));
 
-    body.innerHTML = [...unlocked, ...locked].map(a => {
+    body.innerHTML = historyHtml + [...unlocked, ...locked].map(a => {
         const isUnlocked = unlockedAchievements.has(a.id);
         const ts         = unlockedAchievements.get(a.id);
 
