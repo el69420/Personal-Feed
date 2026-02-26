@@ -317,7 +317,7 @@ body.dark-mode .note-text   { color: #FFFFFF; }
     box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
 }
 .btn-primary:active, .btn-secondary:active,
-.reply-send-btn:active, .mark-all-btn:active, #aboutBtn:active {
+.reply-send-btn:active, .mark-all-btn:active {
     border-color: #808080 #FFFFFF #FFFFFF #808080;
     box-shadow: inset 1px 1px 0 #404040;
     padding: 1px 0 0 1px; /* nudge content on press */
@@ -970,8 +970,10 @@ body.dark-mode .about-close-btn { background: #808080; color: #FFFFFF; border-co
     border-color: #FFFFFF #808080 #808080 #FFFFFF;
     box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
     font-weight: 700;
+    box-sizing: border-box;
 }
 #aboutBtn:hover { background: #D0D0D0; transform: none; box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040; }
+#aboutBtn:active { border-color: #808080 #FFFFFF #FFFFFF #808080; box-shadow: inset 1px 1px 0 #404040; }
 body.dark-mode #aboutBtn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
 
 /* ============================================================

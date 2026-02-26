@@ -3063,6 +3063,9 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     if (postId) startCommentTyping(postId);
 });
 
+// ===== Win95 window z-index management (bring-to-front) =====
+let w95TopZ = 2000;
+
 // ===== Win95 Our Garden Window + Shared Firebase Garden =====
 (() => {
   const btn    = document.getElementById('w95-btn-garden');
@@ -3858,6 +3861,7 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     const r = win.getBoundingClientRect();
     winStartX = r.left;
     winStartY = r.top;
+    win.style.zIndex = ++w95TopZ;
     e.preventDefault();
   });
 
@@ -3999,6 +4003,7 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
       const r = winEl.getBoundingClientRect();
       winStartX = r.left;
       winStartY = r.top;
+      winEl.style.zIndex = ++w95TopZ;
       e.preventDefault();
     });
     window.addEventListener('mousemove', (e) => {
@@ -4498,6 +4503,7 @@ function renderAchievementsWindow() {
         startX = e.clientX; startY = e.clientY;
         const r = win.getBoundingClientRect();
         winStartX = r.left; winStartY = r.top;
+        win.style.zIndex = ++w95TopZ;
         e.preventDefault();
     });
     window.addEventListener('mousemove', (e) => {
