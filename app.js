@@ -90,6 +90,7 @@ let editState = null;
 
 let isDarkMode = false;
 let isInitialLoad = true;
+let currentWateringStreak = 0;
 let focusedPostId = null;
 let prevDataSig = null;
 let prevVisualSig = null;
@@ -3275,6 +3276,7 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
       const tile0     = tiles['0'];
       const tile0Stage = tile0 ? calculateStage(tile0) : 'seed';
       const displayStreak = tile0Stage === 'wilted' ? 0 : (state.wateringStreak || 0);
+      currentWateringStreak = displayStreak;
       const nextUnlock = UNLOCK_THRESHOLDS.find(u => !unlockedPlants.includes(u.id));
       const nextText   = nextUnlock
         ? ` (next: ${PLANT_LABELS[nextUnlock.id]} at ${nextUnlock.streak})` : '';
@@ -3610,13 +3612,47 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
 // ===== ACHIEVEMENTS =====
 
+// Achievement definitions.
+// Fields:
+//   id          – unique string key (matches Firebase key)
+//   title       – display name
+//   desc        – description
+//   icon        – Win95-style text icon shown when locked
+//   hidden      – (optional) if true and locked: show "???" / "Keep going…"
+//   target      – (optional) numeric goal; enables progress bar
+//   getProgress – (optional) function() => current count (live, not stored)
+//
+// To add a new count-based achievement:
+//   { id: 'my_ach', title: 'My Achievement', desc: 'Do X things', icon: '[X]',
+//     target: 5, getProgress: () => /* live counter expression */ }
 const ACHIEVEMENTS = [
-    { id: 'first_post',   title: 'First Post!',   desc: 'Create your first post',              icon: '[*]' },
-    { id: 'ten_posts',    title: 'Ten Posts',      desc: 'Create 10 posts',                     icon: '[10]' },
-    { id: 'water_3_days', title: 'Green Thumb',    desc: 'Water your garden 3 days in a row',   icon: ':)' },
+    {
+        id: 'first_post',
+        title: 'First Post!',
+        desc:  'Create your first post',
+        icon:  '[*]',
+    },
+    {
+        id:          'ten_posts',
+        title:       'Ten Posts',
+        desc:        'Create 10 posts',
+        icon:        '[10]',
+        target:      10,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+    },
+    {
+        id:          'water_3_days',
+        title:       'Green Thumb',
+        desc:        'Water your garden 3 days in a row',
+        icon:        ':)',
+        target:      3,
+        getProgress: () => currentWateringStreak,
+    },
 ];
 
-let unlockedAchievements = new Set();
+// Map of id -> unixTimestamp (ms) for every unlocked achievement.
+// Using a Map lets us store the unlock date without a separate data structure.
+let unlockedAchievements = new Map();
 let achievementsBackfilled = false;
 
 async function initAchievements() {
@@ -3627,7 +3663,7 @@ async function initAchievements() {
     }
     try {
         const snap = await get(ref(database, 'achievements/' + currentUser));
-        unlockedAchievements = new Set(snap.exists() ? Object.keys(snap.val()) : []);
+        unlockedAchievements = new Map(snap.exists() ? Object.entries(snap.val()) : []);
         renderAchievementsWindow();
         await backfillAchievements();
     } catch (e) {
@@ -3639,8 +3675,9 @@ async function unlockAchievement(id) {
     if (!ACHIEVEMENTS.find(a => a.id === id)) return;
     if (unlockedAchievements.has(id) || !currentUser) return;
     try {
-        await set(ref(database, 'achievements/' + currentUser + '/' + id), Date.now());
-        unlockedAchievements.add(id);
+        const ts = Date.now();
+        await set(ref(database, 'achievements/' + currentUser + '/' + id), ts);
+        unlockedAchievements.set(id, ts);
         const achievement = ACHIEVEMENTS.find(a => a.id === id);
         if (achievement) showToast(`Achievement unlocked: ${achievement.title}`);
         renderAchievementsWindow();
@@ -3671,8 +3708,11 @@ async function backfillAchievements() {
     try {
         const gardenSnap = await get(ref(database, 'garden'));
         const gardenState = gardenSnap.val();
-        if (gardenState && gardenState.wateringStreak >= 3) {
-            await unlockAchievement('water_3_days');
+        if (gardenState) {
+            // Keep global streak in sync so progress bars render correctly
+            // before the garden window has been opened this session.
+            currentWateringStreak = gardenState.wateringStreak || 0;
+            if (currentWateringStreak >= 3) await unlockAchievement('water_3_days');
         }
     } catch (e) {
         console.error('backfillAchievements garden check failed', e);
@@ -3684,15 +3724,64 @@ async function backfillAchievements() {
 function renderAchievementsWindow() {
     const body = document.getElementById('w95-achievements-body');
     if (!body) return;
+
+    // Format a Unix-ms timestamp as YYYY-MM-DD
+    function fmtDate(ts) {
+        return new Date(ts).toISOString().slice(0, 10);
+    }
+
+    // Text progress bar, e.g. [#####-----] for 5/10
+    function progressBar(current, target) {
+        const BAR_W  = 10;
+        const capped = Math.min(current, target);
+        const filled = Math.round(capped / target * BAR_W);
+        return '[' + '#'.repeat(filled) + '-'.repeat(BAR_W - filled) + ']';
+    }
+
     const unlocked = ACHIEVEMENTS.filter(a => unlockedAchievements.has(a.id));
     const locked   = ACHIEVEMENTS.filter(a => !unlockedAchievements.has(a.id));
+
     body.innerHTML = [...unlocked, ...locked].map(a => {
         const isUnlocked = unlockedAchievements.has(a.id);
-        return `<div class="achievement-item${isUnlocked ? '' : ' locked'}">` +
-            `<span class="achievement-icon">${safeText(a.icon)}</span>` +
-            `<div><div class="achievement-title">${safeText(a.title)}</div>` +
-            `<div class="achievement-desc">${safeText(a.desc)}</div></div>` +
-            `</div>`;
+        const ts         = unlockedAchievements.get(a.id);
+
+        // Hidden locked achievements show mystery placeholder
+        const title = (!isUnlocked && a.hidden) ? '???' : safeText(a.title);
+        const desc  = (!isUnlocked && a.hidden) ? 'Keep going\u2026' : safeText(a.desc);
+
+        // ✔ checkmark replaces bracket icon when unlocked
+        const icon  = isUnlocked ? '&#10004;' : safeText(a.icon);
+
+        // Progress row for count-based achievements
+        let progressHtml = '';
+        if (a.target) {
+            const current = isUnlocked
+                ? a.target
+                : (a.getProgress ? a.getProgress() : 0);
+            progressHtml =
+                `<div class="achievement-progress">` +
+                `<span class="achievement-progress-count">${current}&nbsp;/&nbsp;${a.target}</span>` +
+                `<span class="achievement-progress-bar">${progressBar(current, a.target)}</span>` +
+                `</div>`;
+        }
+
+        // Unlock date line (only shown when unlocked; takes up same space when locked
+        // via min-height so the card height doesn't jump on unlock)
+        const dateHtml = isUnlocked
+            ? `<div class="achievement-unlocked-date">Unlocked: ${fmtDate(ts)}</div>`
+            : `<div class="achievement-unlocked-date achievement-unlocked-date--placeholder"></div>`;
+
+        return (
+            `<div class="achievement-item${isUnlocked ? ' unlocked' : ' locked'}">` +
+            `<span class="achievement-icon${isUnlocked ? ' unlocked' : ''}">${icon}</span>` +
+            `<div class="achievement-body">` +
+            `<div class="achievement-title">${title}</div>` +
+            `<div class="achievement-desc">${desc}</div>` +
+            progressHtml +
+            dateHtml +
+            `</div>` +
+            `</div>`
+        );
     }).join('');
 }
 
