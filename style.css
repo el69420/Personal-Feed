@@ -329,7 +329,7 @@ body.dark-mode::before {
 
 #scrollTopBtn {
     position: fixed;
-    bottom: 22px;
+    bottom: calc(var(--taskbar-h, 40px) + 12px);
     left: 22px;
     z-index: 998;
     width: 44px;

@@ -2999,11 +2999,10 @@ document.getElementById('activityFab')?.addEventListener('click',       () => to
 document.getElementById('activityPanelClose')?.addEventListener('click', () => closeActivityPanel());
 
 // Chat
-document.getElementById('chatFab')?.addEventListener('click',       () => toggleChat());
-document.getElementById('chatPanelClose')?.addEventListener('click', () => closeChat(true));
+document.getElementById('chatFab')?.addEventListener('click', () => toggleChat());
 
 // About modal
-document.getElementById('aboutBtn')?.addEventListener('click',   () => openAbout());
+document.getElementById('aboutBtn')?.addEventListener('click', e => { e.stopPropagation(); openAbout(); });
 document.getElementById('aboutClose')?.addEventListener('click', () => closeAbout());
 document.getElementById('aboutModal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('aboutModal')) closeAbout();
@@ -3256,9 +3255,7 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   minChat.onclick = (e) => { e.stopPropagation(); hide(winChat, btnChat, 'w95_chat_open'); };
   minNew.onclick = (e) => { e.stopPropagation(); hide(winNew, btnNew, 'w95_new_open'); };
 
-  const chatClose = document.getElementById('chatPanelClose');
   const newClose = document.getElementById('activityPanelClose');
-  if (chatClose) chatClose.onclick = (e) => { e.preventDefault(); hide(winChat, btnChat, 'w95_chat_open'); };
   if (newClose) newClose.onclick = (e) => { e.preventDefault(); hide(winNew, btnNew, 'w95_new_open'); };
 
   // Restore open state — default closed if no preference stored
