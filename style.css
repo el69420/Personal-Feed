@@ -3249,6 +3249,26 @@ body.dark-mode .achievement-item.is-unlocked .achievement-icon{color:#7acc7a;}
 body.dark-mode .achievement-item.is-unlocked::after{color:#7acc7a;opacity:0.12;}
 body.dark-mode .achievement-unlocked-date{color:#7acc7a;}
 body.dark-mode .achievement-item.is-unlocked .achievement-progress{color:#a0c8a0;}
+
+/* Achievement tier headers (MS-DOS style) */
+.achievement-tier-header{font-family:monospace;font-size:11px;color:#444;padding:4px 4px 2px;letter-spacing:1px;}
+body.dark-mode .achievement-tier-header{color:#909090;}
+
+/* Tier border/background accents (unlocked cards only) */
+.achievement-item.is-unlocked.tier-bronze{border-left-color:#cd7f32;}
+.achievement-item.is-unlocked.tier-silver{border-left-color:#a0a0a0;}
+.achievement-item.is-unlocked.tier-gold  {border-left-color:#c8a000;background:#fffbe8;}
+.achievement-item.is-unlocked.tier-mythic{border-left-color:#9b30ff;background:#f5f0ff;}
+
+/* Locked tier accents (subtle) */
+.achievement-item.is-locked.tier-bronze{border-left-color:#cd7f3255;}
+.achievement-item.is-locked.tier-silver{border-left-color:#a0a0a055;}
+.achievement-item.is-locked.tier-gold  {border-left-color:#c8a00055;}
+
+/* Dark mode overrides for tier accents */
+body.dark-mode .achievement-item.is-unlocked.tier-gold  {background:#2a2600;}
+body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
+
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ===== Our Garden ===== */

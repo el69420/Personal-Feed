@@ -4104,11 +4104,12 @@ const ACHIEVEMENTS = [
     // ---- Posting ----
     // To adjust XP values: change the `xp` field below. Level formula is flat 100 XP/level.
     {
-        id:  'first_post',
+        id:   'first_post',
         title: 'First Post!',
         desc:  'Create your first post',
         icon:  '[*]',
         xp:    10,
+        tier:  'bronze',
     },
     {
         id:          'five_posts',
@@ -4116,6 +4117,7 @@ const ACHIEVEMENTS = [
         desc:        'Create 5 posts',
         icon:        '[5]',
         xp:          10,
+        tier:        'bronze',
         target:      5,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
     },
@@ -4125,6 +4127,7 @@ const ACHIEVEMENTS = [
         desc:        'Create 10 posts',
         icon:        '[10]',
         xp:          25,
+        tier:        'silver',
         target:      10,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
     },
@@ -4134,6 +4137,7 @@ const ACHIEVEMENTS = [
         desc:        'Create 20 posts',
         icon:        '[20]',
         xp:          25,
+        tier:        'gold',
         target:      20,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
     },
@@ -4145,6 +4149,7 @@ const ACHIEVEMENTS = [
         desc:  'Water the garden for the first time',
         icon:  '[~]',
         xp:    10,
+        tier:  'bronze',
     },
     {
         id:          'watering_can',
@@ -4152,6 +4157,7 @@ const ACHIEVEMENTS = [
         desc:        'Water the garden 5 times',
         icon:        '[W]',
         xp:          25,
+        tier:        'silver',
         target:      5,
         getProgress: () => totalWaterings,
     },
@@ -4161,6 +4167,7 @@ const ACHIEVEMENTS = [
         desc:        'Water your garden 3 days in a row',
         icon:        ':)',
         xp:          25,
+        tier:        'silver',
         target:      3,
         getProgress: () => currentWateringStreak,
     },
@@ -4172,6 +4179,7 @@ const ACHIEVEMENTS = [
         desc:        'Open the garden on 7 different days',
         icon:        '[7]',
         xp:          25,
+        tier:        'silver',
         target:      7,
         getProgress: () => Object.keys(gardenVisitDays).length,
     },
@@ -4181,17 +4189,19 @@ const ACHIEVEMENTS = [
         desc:        'Visit 7 days in a row',
         icon:        '[>]',
         xp:          50,
+        tier:        'gold',
         target:      7,
         getProgress: () => gardenVisitStreak.current,
     },
 
-    // ---- Hidden ----
+    // ---- Hidden / Mythic ----
     {
         id:     'night_owl',
         title:  'Night Owl',
         desc:   'Do something between midnight and 4:59 AM',
         icon:   '[O]',
         hidden: true,
+        tier:   'mythic',
         xp:     30,
     },
     {
@@ -4200,6 +4210,7 @@ const ACHIEVEMENTS = [
         desc:   'Do something between 5:00 and 7:59 AM',
         icon:   '[E]',
         hidden: true,
+        tier:   'mythic',
         xp:     30,
     },
 ];
@@ -4414,10 +4425,8 @@ function renderAchievementsWindow() {
             `</div>`;
     }
 
-    const unlocked = ACHIEVEMENTS.filter(a => unlockedAchievements.has(a.id));
-    const locked   = ACHIEVEMENTS.filter(a => !unlockedAchievements.has(a.id));
-
-    body.innerHTML = levelHtml + historyHtml + [...unlocked, ...locked].map(a => {
+    // Build HTML for a single achievement card
+    function renderCard(a) {
         const isUnlocked = unlockedAchievements.has(a.id);
         const ts         = unlockedAchievements.get(a.id);
 
@@ -4431,9 +4440,10 @@ function renderAchievementsWindow() {
 
         // Build stable CSS class list for external styling hooks
         let itemClass = 'achievement-item achievement-card';
-        if (isUnlocked)       itemClass += ' is-unlocked';
+        if (isUnlocked)          itemClass += ' is-unlocked';
         else if (isHiddenLocked) itemClass += ' is-locked is-hidden-locked';
-        else                  itemClass += ' is-locked';
+        else                     itemClass += ' is-locked';
+        itemClass += ` tier-${a.tier}`;
 
         // Progress row for count-based achievements
         let progressHtml = '';
@@ -4465,7 +4475,31 @@ function renderAchievementsWindow() {
             `</div>` +
             `</div>`
         );
-    }).join('');
+    }
+
+    // Group and render achievements by tier: bronze -> silver -> gold -> mythic
+    const TIER_ORDER = ['bronze', 'silver', 'gold', 'mythic'];
+    let tiersHtml = '';
+    for (const tier of TIER_ORDER) {
+        const tierAchs = ACHIEVEMENTS.filter(a => a.tier === tier);
+        if (tier === 'mythic') {
+            // Mythics are completely hidden until unlocked — no ??? placeholder
+            const unlockedMythics = tierAchs.filter(a => unlockedAchievements.has(a.id));
+            if (unlockedMythics.length === 0) continue;
+            tiersHtml += `<div class="achievement-tier-header">=== MYTHIC ===</div>`;
+            tiersHtml += unlockedMythics.map(renderCard).join('');
+        } else {
+            if (tierAchs.length === 0) continue;
+            const label = tier.toUpperCase();
+            tiersHtml += `<div class="achievement-tier-header">=== ${label} ===</div>`;
+            // Unlocked first, then locked
+            const unlockedInTier = tierAchs.filter(a =>  unlockedAchievements.has(a.id));
+            const lockedInTier   = tierAchs.filter(a => !unlockedAchievements.has(a.id));
+            tiersHtml += [...unlockedInTier, ...lockedInTier].map(renderCard).join('');
+        }
+    }
+
+    body.innerHTML = levelHtml + historyHtml + tiersHtml;
 }
 
 // Achievements window IIFE
