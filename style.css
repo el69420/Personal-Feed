@@ -3198,11 +3198,25 @@ body{padding-bottom:50px}
 
 /* ---- Multi-tile row ---- */
 .garden-tiles-row{
-  display:flex;gap:4px;margin-bottom:6px;
+  display:grid;
+  grid-template-columns:repeat(3,80px);
+  gap:12px;
+  align-items:start;
+  margin-bottom:6px;
 }
 .garden-tile-col{
-  display:flex;flex-direction:column;align-items:center;gap:2px;
+  /* Grid with explicit rows keeps all three soil tiles on the same baseline.
+     Row 1 (plant selector) is 40px even when empty (locked tile) so row 2
+     always starts at the same offset. */
+  display:grid;
+  grid-template-rows:40px 80px auto auto;
+  row-gap:2px;
   width:80px;
+  justify-items:center;
+}
+/* Pin the soil square to row 2 — the key alignment rule */
+.garden-tile-col .garden-soil-tile{
+  grid-row:2;
 }
 .garden-tile-col--locked .garden-soil-tile{
   background:#5a3a1a;
@@ -3216,10 +3230,11 @@ body{padding-bottom:50px}
   font:10px Tahoma,Verdana,Arial,sans-serif;
   color:#555;text-align:center;white-space:nowrap;
 }
-/* Per-tile plant row stacks vertically to fit 80px width */
+/* Per-tile plant row: fixed height matches row-1 track so label/select
+   never pushes the soil tile out of alignment */
 .garden-tile-col .garden-plant-row{
-  flex-direction:column;align-items:flex-start;gap:2px;
-  width:80px;margin-bottom:0;
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  width:80px;height:40px;margin-bottom:0;overflow:hidden;
 }
 .garden-tile-col .w95-select{
   width:78px;font-size:10px;
