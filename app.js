@@ -95,6 +95,7 @@ let currentWateringStreak = 0;
 let totalWaterings    = 0;                                 // total water presses this user
 let gardenVisitDays   = {};                                // { "YYYY-MM-DD": true }
 let gardenVisitStreak = { current: 0, lastDate: null };    // consecutive-day visit streak
+let xpTotal = 0;   // total XP earned; persisted at /userStats/{user}/xpTotal in Firebase
 let focusedPostId = null;
 let prevDataSig = null;
 let prevVisualSig = null;
@@ -3656,17 +3657,20 @@ function checkTimeBasedAchievements() {
 //     target: 5, getProgress: () => /* live counter expression */ }
 const ACHIEVEMENTS = [
     // ---- Posting ----
+    // To adjust XP values: change the `xp` field below. Level formula is flat 100 XP/level.
     {
-        id: 'first_post',
+        id:  'first_post',
         title: 'First Post!',
         desc:  'Create your first post',
         icon:  '[*]',
+        xp:    10,
     },
     {
         id:          'five_posts',
         title:       'Five Posts',
         desc:        'Create 5 posts',
         icon:        '[5]',
+        xp:          10,
         target:      5,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
     },
@@ -3675,6 +3679,7 @@ const ACHIEVEMENTS = [
         title:       'Ten Posts',
         desc:        'Create 10 posts',
         icon:        '[10]',
+        xp:          25,
         target:      10,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
     },
@@ -3683,6 +3688,7 @@ const ACHIEVEMENTS = [
         title:       'Twenty Posts',
         desc:        'Create 20 posts',
         icon:        '[20]',
+        xp:          25,
         target:      20,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
     },
@@ -3693,12 +3699,14 @@ const ACHIEVEMENTS = [
         title: 'First Sprout',
         desc:  'Water the garden for the first time',
         icon:  '[~]',
+        xp:    10,
     },
     {
         id:          'watering_can',
         title:       'Watering Can',
         desc:        'Water the garden 5 times',
         icon:        '[W]',
+        xp:          25,
         target:      5,
         getProgress: () => totalWaterings,
     },
@@ -3707,6 +3715,7 @@ const ACHIEVEMENTS = [
         title:       'Green Thumb',
         desc:        'Water your garden 3 days in a row',
         icon:        ':)',
+        xp:          25,
         target:      3,
         getProgress: () => currentWateringStreak,
     },
@@ -3717,6 +3726,7 @@ const ACHIEVEMENTS = [
         title:       'Checked In',
         desc:        'Open the garden on 7 different days',
         icon:        '[7]',
+        xp:          25,
         target:      7,
         getProgress: () => Object.keys(gardenVisitDays).length,
     },
@@ -3725,6 +3735,7 @@ const ACHIEVEMENTS = [
         title:       'Week Streak',
         desc:        'Visit 7 days in a row',
         icon:        '[>]',
+        xp:          50,
         target:      7,
         getProgress: () => gardenVisitStreak.current,
     },
@@ -3736,6 +3747,7 @@ const ACHIEVEMENTS = [
         desc:   'Do something between midnight and 4:59 AM',
         icon:   '[O]',
         hidden: true,
+        xp:     30,
     },
     {
         id:     'early_bird',
@@ -3743,8 +3755,16 @@ const ACHIEVEMENTS = [
         desc:   'Do something between 5:00 and 7:59 AM',
         icon:   '[E]',
         hidden: true,
+        xp:     30,
     },
 ];
+
+// ---- XP / Level helpers ----
+// Flat 100 XP per level: Level 1 = 0–99 XP, Level 2 = 100–199 XP, etc.
+// To adjust: change XP_PER_LEVEL. The ACHIEVEMENTS[].xp values are independent.
+const XP_PER_LEVEL = 100;
+function xpToLevel(xp)   { return Math.floor(xp / XP_PER_LEVEL) + 1; }
+function xpForLevel(lvl) { return (lvl - 1) * XP_PER_LEVEL; }  // XP at start of lvl
 
 // Map of id -> unixTimestamp (ms) for every unlocked achievement.
 // Using a Map lets us store the unlock date without a separate data structure.
@@ -3762,8 +3782,26 @@ async function initAchievements() {
         return;
     }
     try {
-        const snap = await get(ref(database, 'achievements/' + currentUser));
-        unlockedAchievements = new Map(snap.exists() ? Object.entries(snap.val()) : []);
+        const [achSnap, xpSnap] = await Promise.all([
+            get(ref(database, 'achievements/' + currentUser)),
+            get(ref(database, 'userStats/' + currentUser + '/xpTotal')),
+        ]);
+        unlockedAchievements = new Map(achSnap.exists() ? Object.entries(achSnap.val()) : []);
+
+        if (xpSnap.exists()) {
+            // Normal path: xpTotal was already stored.
+            xpTotal = xpSnap.val() || 0;
+        } else {
+            // First load after XP feature ships: bootstrap from already-unlocked achievements
+            // so existing users don't start at 0. Runs exactly once, then xpTotal is set.
+            xpTotal = 0;
+            for (const [id] of unlockedAchievements) {
+                const ach = ACHIEVEMENTS.find(a => a.id === id);
+                if (ach && ach.xp) xpTotal += ach.xp;
+            }
+            await set(ref(database, 'userStats/' + currentUser + '/xpTotal'), xpTotal);
+        }
+
         renderAchievementsWindow();
         await backfillAchievements();
     } catch (e) {
@@ -3775,15 +3813,30 @@ async function unlockAchievement(id) {
     if (!ACHIEVEMENTS.find(a => a.id === id)) return;
     if (unlockedAchievements.has(id) || !currentUser) return;
     try {
-        const ts = Date.now();
+        const ts          = Date.now();
+        const achievement = ACHIEVEMENTS.find(a => a.id === id);
+        const xpGain      = achievement?.xp || 0;
+        const levelBefore = xpToLevel(xpTotal);
+
         await set(ref(database, 'achievements/' + currentUser + '/' + id), ts);
         unlockedAchievements.set(id, ts);
-        const achievement = ACHIEVEMENTS.find(a => a.id === id);
+
+        if (xpGain > 0) {
+            xpTotal += xpGain;
+            await set(ref(database, 'userStats/' + currentUser + '/xpTotal'), xpTotal);
+        }
+
         if (achievement) {
-            showToast(`Achievement unlocked: ${achievement.title}`);
+            showToast(`Achievement unlocked: ${achievement.title}${xpGain ? ` (+${xpGain} XP)` : ''}`);
             achievementToastHistory.unshift({ title: achievement.title, icon: achievement.icon, ts: Date.now() });
             if (achievementToastHistory.length > 20) achievementToastHistory.pop();
         }
+
+        const levelAfter = xpToLevel(xpTotal);
+        if (levelAfter > levelBefore) {
+            showToast(`\u2728 Level up! Garden Level ${levelAfter}`);
+        }
+
         renderAchievementsWindow();
     } catch (e) {
         console.error('unlockAchievement failed', e);
@@ -3892,6 +3945,22 @@ function renderAchievementsWindow() {
         return Math.floor(diff / 3600) + ' hr ago';
     }
 
+    // Garden Level / XP header
+    const lvl       = xpToLevel(xpTotal);
+    const nextFloor = xpForLevel(lvl + 1);            // XP needed to reach next level
+    const xpInLevel = xpTotal - xpForLevel(lvl);      // progress within current level
+    const BAR_W     = 20;
+    const filled    = Math.min(BAR_W, Math.round(xpInLevel / XP_PER_LEVEL * BAR_W));
+    const levelBar  = '[' + '#'.repeat(filled) + '-'.repeat(BAR_W - filled) + ']';
+    const levelHtml =
+        `<div class="achievement-level-header">` +
+        `<div class="achievement-level-row">` +
+        `<span class="achievement-level-title">Garden Level: ${lvl}</span>` +
+        `<span class="achievement-level-xp">XP: ${xpTotal}&nbsp;/&nbsp;${nextFloor}</span>` +
+        `</div>` +
+        `<div class="achievement-level-bar">${levelBar}</div>` +
+        `</div>`;
+
     // Toast history section (shown only when there are entries this session)
     let historyHtml = '';
     if (achievementToastHistory.length > 0) {
@@ -3912,7 +3981,7 @@ function renderAchievementsWindow() {
     const unlocked = ACHIEVEMENTS.filter(a => unlockedAchievements.has(a.id));
     const locked   = ACHIEVEMENTS.filter(a => !unlockedAchievements.has(a.id));
 
-    body.innerHTML = historyHtml + [...unlocked, ...locked].map(a => {
+    body.innerHTML = levelHtml + historyHtml + [...unlocked, ...locked].map(a => {
         const isUnlocked = unlockedAchievements.has(a.id);
         const ts         = unlockedAchievements.get(a.id);
 
