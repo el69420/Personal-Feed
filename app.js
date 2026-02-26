@@ -971,6 +971,7 @@ onAuthStateChanged(auth, (firebaseUser) => {
     if (!firebaseUser) {
         // Signed out — reset and show login
         currentUser = null;
+        achievementsBackfilled = false;
         localStorage.removeItem('currentUser');
         document.getElementById('loginOverlay').style.display = 'flex';
         document.getElementById('accessDeniedOverlay').style.display = 'none';
@@ -3616,6 +3617,7 @@ const ACHIEVEMENTS = [
 ];
 
 let unlockedAchievements = new Set();
+let achievementsBackfilled = false;
 
 async function initAchievements() {
     const body = document.getElementById('w95-achievements-body');
@@ -3627,6 +3629,7 @@ async function initAchievements() {
         const snap = await get(ref(database, 'achievements/' + currentUser));
         unlockedAchievements = new Set(snap.exists() ? Object.keys(snap.val()) : []);
         renderAchievementsWindow();
+        await backfillAchievements();
     } catch (e) {
         console.error('initAchievements failed', e);
     }
@@ -3652,6 +3655,30 @@ function afterPostCreated() {
     // so add 1 to the current count to include it.
     const myCount = Object.values(allPosts).filter(p => p.author === currentUser).length + 1;
     if (myCount >= 10) unlockAchievement('ten_posts');
+}
+
+async function backfillAchievements() {
+    if (achievementsBackfilled) return;
+    achievementsBackfilled = true;
+    if (!currentUser) return;
+
+    // Count existing posts by the current user from the already-loaded allPosts.
+    const myCount = Object.values(allPosts).filter(p => p.author === currentUser).length;
+    if (myCount >= 1) await unlockAchievement('first_post');
+    if (myCount >= 10) await unlockAchievement('ten_posts');
+
+    // Check garden watering streak directly from Firebase.
+    try {
+        const gardenSnap = await get(ref(database, 'garden'));
+        const gardenState = gardenSnap.val();
+        if (gardenState && gardenState.wateringStreak >= 3) {
+            await unlockAchievement('water_3_days');
+        }
+    } catch (e) {
+        console.error('backfillAchievements garden check failed', e);
+    }
+
+    renderAchievementsWindow();
 }
 
 function renderAchievementsWindow() {
