@@ -96,6 +96,8 @@ let totalWaterings    = 0;                                 // total water presse
 let gardenVisitDays   = {};                                // { "YYYY-MM-DD": true }
 let gardenVisitStreak = { current: 0, lastDate: null };    // consecutive-day visit streak
 let xpTotal = 0;   // total XP earned; persisted at /userStats/{user}/xpTotal in Firebase
+// Sound toggle — default ON; set localStorage soundEnabled='false' to mute.
+let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
 let focusedPostId = null;
 let prevDataSig = null;
 let prevVisualSig = null;
@@ -206,7 +208,7 @@ function safeText(s) {
         .replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+        .replaceAll("'", '&#39;');
 }
 
 function timeAgo(ts) {
@@ -298,6 +300,7 @@ function ensureAudio() {
 
 function sparkSound(type) {
     try {
+        if (!soundEnabled) return;
         ensureAudio();
         const ctx = _audioCtx;
         const t0 = ctx.currentTime;
@@ -308,6 +311,7 @@ function sparkSound(type) {
         // react → "Asterisk"     (single high ding)
         // chat  → "Notify"       (ascending two-tone)
         // ping  → "Default Beep" (classic square blip at 750 Hz)
+        // ach   → achievement unlock 3-note fanfare
         const patterns = {
             post: [
                 { f: 523.25, t: 0.00, dur: 0.12 },   // C5
@@ -328,6 +332,11 @@ function sparkSound(type) {
             ],
             ping: [
                 { f: 750.00, t: 0.00, dur: 0.25 }    // Default Beep
+            ],
+            ach: [
+                { f: 659.25, t: 0.00, dur: 0.10 },   // E5
+                { f: 783.99, t: 0.10, dur: 0.10 },   // G5
+                { f: 1046.5, t: 0.20, dur: 0.28 }    // C6 (held)
             ]
         };
 
@@ -3432,11 +3441,15 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     await waterTile(Number(btn.dataset.tile));
   });
 
-  // ---- Show / hide ---- (unchanged)
+  // ---- Show / hide ----
   function show() {
     win.classList.remove('is-hidden');
     btn.classList.add('is-pressed');
     localStorage.setItem('w95_garden_open', '1');
+    // Record today's garden visit (streak / day-map) and check achievements.
+    // This is the correct place — not during achievement init — so that
+    // simply loading the app does not count as a garden visit.
+    recordGardenVisit();
   }
 
   function hide() {
@@ -3642,6 +3655,34 @@ function checkTimeBasedAchievements() {
     else if (hr >= 5 && hr < 8) unlockAchievement('early_bird');
 }
 
+// Record that the current user opened the garden today, updating the visit
+// day-map and consecutive-day streak. Called when the garden window is shown,
+// NOT during achievement initialisation (which would count every login).
+async function recordGardenVisit() {
+    if (!currentUser) return;
+    try {
+        const today     = localDateStr();
+        const yesterday = localDateStr(-1);
+        if (!gardenVisitDays[today]) {
+            const newCurrent = gardenVisitStreak.lastDate === yesterday
+                ? gardenVisitStreak.current + 1
+                : 1;
+            gardenVisitDays[today] = true;
+            gardenVisitStreak = { current: newCurrent, lastDate: today };
+            await update(ref(database, 'userStats/' + currentUser), {
+                [`gardenVisitDays/${today}`]: true,
+                gardenVisitStreak: { current: newCurrent, lastDate: today },
+            });
+        }
+        const visitCount = Object.keys(gardenVisitDays).length;
+        if (visitCount >= 7)                await unlockAchievement('checked_in');
+        if (gardenVisitStreak.current >= 7) await unlockAchievement('week_streak');
+        renderAchievementsWindow();
+    } catch (e) {
+        console.error('recordGardenVisit failed', e);
+    }
+}
+
 // Achievement definitions.
 // Fields:
 //   id          – unique string key (matches Firebase key)
@@ -3830,6 +3871,7 @@ async function unlockAchievement(id) {
             showToast(`Achievement unlocked: ${achievement.title}${xpGain ? ` (+${xpGain} XP)` : ''}`);
             achievementToastHistory.unshift({ title: achievement.title, icon: achievement.icon, ts: Date.now() });
             if (achievementToastHistory.length > 20) achievementToastHistory.pop();
+            sparkSound('ach');
         }
 
         const levelAfter = xpToLevel(xpTotal);
@@ -3890,28 +3932,18 @@ async function backfillAchievements() {
         if (totalWaterings >= 1) await unlockAchievement('first_sprout');
         if (totalWaterings >= 5) await unlockAchievement('watering_can');
 
-        // ---- Garden visit tracking ----
+        // ---- Garden visit tracking (load only; write-back happens in recordGardenVisit) ----
+        // We hydrate the globals so progress bars render correctly before the
+        // garden window has been opened this session. The actual "count today
+        // as a visit" write happens in recordGardenVisit(), called from the
+        // garden window show() handler, so that merely loading the app does not
+        // register a garden visit.
         gardenVisitDays   = stats.gardenVisitDays   || {};
         gardenVisitStreak = stats.gardenVisitStreak || { current: 0, lastDate: null };
 
-        const today     = localDateStr();
-        const yesterday = localDateStr(-1);
-
-        if (!gardenVisitDays[today]) {
-            // Compute new streak: extend if visited yesterday, otherwise reset to 1.
-            const newCurrent = gardenVisitStreak.lastDate === yesterday
-                ? gardenVisitStreak.current + 1
-                : 1;
-            gardenVisitDays[today] = true;
-            gardenVisitStreak = { current: newCurrent, lastDate: today };
-            await update(ref(database, 'userStats/' + currentUser), {
-                [`gardenVisitDays/${today}`]: true,
-                gardenVisitStreak: { current: newCurrent, lastDate: today },
-            });
-        }
-
+        // Unlock based on already-recorded historical visits (no write here).
         const visitCount = Object.keys(gardenVisitDays).length;
-        if (visitCount >= 7)             await unlockAchievement('checked_in');
+        if (visitCount >= 7)                await unlockAchievement('checked_in');
         if (gardenVisitStreak.current >= 7) await unlockAchievement('week_streak');
     } catch (e) {
         console.error('backfillAchievements userStats check failed', e);
@@ -3986,11 +4018,18 @@ function renderAchievementsWindow() {
         const ts         = unlockedAchievements.get(a.id);
 
         // Hidden locked achievements show mystery placeholder
-        const title = (!isUnlocked && a.hidden) ? '???' : safeText(a.title);
-        const desc  = (!isUnlocked && a.hidden) ? 'Keep going\u2026' : safeText(a.desc);
+        const isHiddenLocked = !isUnlocked && a.hidden;
+        const title = isHiddenLocked ? '???' : safeText(a.title);
+        const desc  = isHiddenLocked ? 'Keep going\u2026' : safeText(a.desc);
 
-        // ✔ checkmark replaces bracket icon when unlocked
-        const icon  = isUnlocked ? '&#10004;' : safeText(a.icon);
+        // Always show the bracket icon — unlocked state is conveyed via CSS class, not icon swap
+        const icon = safeText(a.icon);
+
+        // Build stable CSS class list for external styling hooks
+        let itemClass = 'achievement-item achievement-card';
+        if (isUnlocked)       itemClass += ' is-unlocked';
+        else if (isHiddenLocked) itemClass += ' is-locked is-hidden-locked';
+        else                  itemClass += ' is-locked';
 
         // Progress row for count-based achievements
         let progressHtml = '';
@@ -4012,8 +4051,8 @@ function renderAchievementsWindow() {
             : `<div class="achievement-unlocked-date achievement-unlocked-date--placeholder"></div>`;
 
         return (
-            `<div class="achievement-item${isUnlocked ? ' unlocked' : ' locked'}">` +
-            `<span class="achievement-icon${isUnlocked ? ' unlocked' : ''}">${icon}</span>` +
+            `<div class="${itemClass}">` +
+            `<span class="achievement-icon">${icon}</span>` +
             `<div class="achievement-body">` +
             `<div class="achievement-title">${title}</div>` +
             `<div class="achievement-desc">${desc}</div>` +
