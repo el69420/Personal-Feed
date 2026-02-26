@@ -3045,12 +3045,28 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
   if (!btn || !win || !min || !handle) return;
 
-  const plantEl = document.getElementById('garden-plant');
-  const statusEl = document.getElementById('garden-status');
-  const waterBtn = document.getElementById('garden-water');
+  const plantEl    = document.getElementById('garden-plant');
+  const statusEl   = document.getElementById('garden-status');
+  const streakEl   = document.getElementById('garden-streak');
+  const waterBtn   = document.getElementById('garden-water');
+  const plantSel   = document.getElementById('garden-plant-select');
 
-  const gardenRef = ref(database, 'garden');
-  const MS_HOUR = 3600000;
+  const gardenRef  = ref(database, 'garden');
+  const MS_HOUR    = 3600000;
+
+  const PLANT_LABELS = {
+    sunflower: 'Sunflower',
+    daisy:     'Daisy',
+    tulip:     'Tulip',
+    rose:      'Rose',
+    orchid:    'Orchid',
+  };
+  const UNLOCK_THRESHOLDS = [
+    { streak: 3,  id: 'daisy' },
+    { streak: 7,  id: 'tulip' },
+    { streak: 14, id: 'rose' },
+    { streak: 30, id: 'orchid' },
+  ];
 
   function calculateStage(state) {
     const now = Date.now();
@@ -3074,9 +3090,27 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   function renderGarden(state) {
     if (!state) return;
     const stage = calculateStage(state);
+    const plantType   = state.selectedPlant || 'sunflower';
+    const unlockedPlants = Array.isArray(state.unlockedPlants) ? state.unlockedPlants : [];
 
-    // Update plant visual
-    plantEl.className = 'garden-plant garden-plant--' + stage;
+    // Update plant visual — stage class + plant-type class
+    plantEl.className = `garden-plant garden-plant--${stage} garden-plant--type-${plantType}`;
+
+    // Update dropdown options to reflect unlocked plants
+    if (plantSel) {
+      const currentVal = plantSel.value;
+      plantSel.innerHTML = `<option value="sunflower">${PLANT_LABELS.sunflower}</option>`;
+      for (const id of unlockedPlants) {
+        if (PLANT_LABELS[id]) {
+          const opt = document.createElement('option');
+          opt.value = id;
+          opt.textContent = PLANT_LABELS[id];
+          plantSel.appendChild(opt);
+        }
+      }
+      // Restore selection to match Firebase state (or keep if already matching)
+      plantSel.value = plantType;
+    }
 
     // Update status text
     const wateredAgo = state.lastWatered
@@ -3090,12 +3124,30 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
     const stageLabels = { seed: 'Seed', sprout: 'Sprout', bloom: 'Bloom', wilted: 'Wilted' };
     statusEl.textContent = `Stage: ${stageLabels[stage] ?? stage} · ${wateredText}`;
+
+    // Streak display — show 0 while wilted
+    if (streakEl) {
+      const displayStreak = stage === 'wilted' ? 0 : (state.wateringStreak || 0);
+      const nextUnlock = UNLOCK_THRESHOLDS.find(u => !unlockedPlants.includes(u.id) && u.id !== 'sunflower');
+      const nextText = nextUnlock
+        ? ` (next: ${PLANT_LABELS[nextUnlock.id]} at ${nextUnlock.streak})`
+        : '';
+      streakEl.textContent = `Streak: ${displayStreak} day${displayStreak !== 1 ? 's' : ''}${nextText}`;
+    }
   }
 
   // Initialise garden once if missing
   onValue(gardenRef, (snap) => {
     if (!snap.exists()) {
-      set(gardenRef, { plantedAt: Date.now(), lastWatered: null, currentStage: 'seed' });
+      set(gardenRef, {
+        plantedAt:      Date.now(),
+        lastWatered:    null,
+        currentStage:   'seed',
+        wateringStreak: 0,
+        lastStreakDay:  null,
+        unlockedPlants: [],
+        selectedPlant:  'sunflower',
+      });
     }
   }, { onlyOnce: true });
 
@@ -3104,15 +3156,64 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     renderGarden(snap.val());
   });
 
-  // Water button
+  // Water button — calls server endpoint so server date is authoritative
   if (waterBtn) {
     waterBtn.onclick = async () => {
       const snap = await get(gardenRef);
       const state = snap.val();
       if (!state) return;
-      const now = Date.now();
-      const newStage = calculateStage({ ...state, lastWatered: now });
-      await update(gardenRef, { lastWatered: now, currentStage: newStage });
+
+      waterBtn.disabled = true;
+      try {
+        const resp = await fetch('/api/garden/water', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lastStreakDay:  state.lastStreakDay  ?? null,
+            wateringStreak: state.wateringStreak ?? 0,
+            lastWatered:    state.lastWatered    ?? null,
+            plantedAt:      state.plantedAt      ?? null,
+            unlockedPlants: state.unlockedPlants ?? [],
+          }),
+        });
+        if (!resp.ok) throw new Error('server error');
+
+        const result = await resp.json();
+        const now = Date.now();
+        const newStage = calculateStage({ ...state, lastWatered: now });
+
+        await update(gardenRef, {
+          lastWatered:    now,
+          currentStage:   newStage,
+          wateringStreak: result.wateringStreak,
+          lastStreakDay:  result.lastStreakDay,
+          unlockedPlants: result.unlockedPlants,
+        });
+      } finally {
+        waterBtn.disabled = false;
+      }
+    };
+  }
+
+  // Plant selector — calls server to validate, then writes to Firebase
+  if (plantSel) {
+    plantSel.onchange = async () => {
+      const plantType = plantSel.value;
+      const snap = await get(gardenRef);
+      const state = snap.val();
+      if (!state) return;
+
+      const resp = await fetch('/api/garden/select-plant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plantType,
+          unlockedPlants: state.unlockedPlants ?? [],
+        }),
+      });
+      if (resp.ok) {
+        await update(gardenRef, { selectedPlant: plantType });
+      }
     };
   }
 

@@ -3189,5 +3189,85 @@ body{padding-bottom:50px}
   text-align:center;
 }
 
+.garden-streak{
+  margin-top:4px;
+  font:11px Tahoma,Verdana,Arial,sans-serif;
+  color:#444;
+  text-align:center;
+}
+
+/* Plant selector row */
+.garden-plant-row{
+  display:flex;align-items:center;gap:4px;
+  margin-bottom:6px;
+}
+.garden-label{
+  font:11px Tahoma,Verdana,Arial,sans-serif;
+  color:#222;
+  white-space:nowrap;
+}
+
+/* Win95-style select */
+.w95-select{
+  font:11px Tahoma,Verdana,Arial,sans-serif;
+  background:#fff;
+  border-top:2px solid #404040;
+  border-left:2px solid #404040;
+  border-right:2px solid #fff;
+  border-bottom:2px solid #fff;
+  padding:1px 2px;
+  cursor:pointer;
+}
+
+/* ---- Plant type bloom overrides ---- */
+/* Daisy: white petals, yellow center */
+.garden-plant--bloom.garden-plant--type-daisy::before{
+  background:#f0f0f0;
+  border:1px solid #bbb;
+}
+.garden-plant--bloom.garden-plant--type-daisy::after{
+  background:#ffee00;
+}
+
+/* Tulip: red cup, taller narrower head */
+.garden-plant--bloom.garden-plant--type-tulip::before{
+  background:#dd2244;
+  width:16px;height:26px;
+  border-radius:50% 50% 0 0;
+  top:-24px;left:-6px;
+}
+.garden-plant--bloom.garden-plant--type-tulip::after{
+  background:#ff6688;
+  width:8px;height:14px;
+  border-radius:50% 50% 0 0;
+  top:-24px;left:-2px;
+}
+
+/* Rose: dark red layered circle */
+.garden-plant--bloom.garden-plant--type-rose::before{
+  background:#cc0022;
+  width:20px;height:20px;
+  top:-18px;left:-8px;
+}
+.garden-plant--bloom.garden-plant--type-rose::after{
+  background:#ff2244;
+  width:12px;height:12px;
+  top:-14px;left:-4px;
+}
+
+/* Orchid: purple exotic petals */
+.garden-plant--bloom.garden-plant--type-orchid::before{
+  background:#8822cc;
+  width:24px;height:20px;
+  border-radius:50% 50% 30% 30%;
+  top:-18px;left:-10px;
+}
+.garden-plant--bloom.garden-plant--type-orchid::after{
+  background:#cc66ff;
+  width:10px;height:8px;
+  border-radius:50%;
+  top:-14px;left:-3px;
+}
+
 
 
