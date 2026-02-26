@@ -4141,6 +4141,100 @@ const ACHIEVEMENTS = [
         target:      20,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
     },
+    {
+        id:          'thirty_posts',
+        title:       'Thirty Posts',
+        desc:        'Create 30 posts',
+        icon:        '[30]',
+        xp:          30,
+        tier:        'bronze',
+        target:      30,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+    },
+    {
+        id:          'fifty_posts',
+        title:       'Fifty Posts',
+        desc:        'Create 50 posts',
+        icon:        '[50]',
+        xp:          50,
+        tier:        'silver',
+        target:      50,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+    },
+    {
+        id:          'hundred_posts',
+        title:       'Century',
+        desc:        'Create 100 posts',
+        icon:        '[C]',
+        xp:          100,
+        tier:        'gold',
+        target:      100,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+    },
+
+    // ---- Post length ----
+    {
+        id:          'longform_1',
+        title:       'Long Read',
+        desc:        'Write a post with 500 or more characters',
+        icon:        '[L]',
+        xp:          15,
+        tier:        'bronze',
+        target:      1,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && p.body && p.body.length >= 500).length,
+    },
+    {
+        id:          'longform_5',
+        title:       'Essayist',
+        desc:        'Write 5 posts with 500 or more characters each',
+        icon:        '[LL]',
+        xp:          35,
+        tier:        'silver',
+        target:      5,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && p.body && p.body.length >= 500).length,
+    },
+    {
+        id:          'minimalist_5',
+        title:       'Minimalist',
+        desc:        'Write 5 posts under 30 characters each',
+        icon:        '[.]',
+        xp:          15,
+        tier:        'bronze',
+        target:      5,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && p.body && p.body.length > 0 && p.body.length < 30).length,
+    },
+    {
+        id:          'minimalist_20',
+        title:       'Zen Master',
+        desc:        'Write 20 posts under 30 characters each',
+        icon:        '[..]',
+        xp:          60,
+        tier:        'gold',
+        target:      20,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && p.body && p.body.length > 0 && p.body.length < 30).length,
+    },
+
+    // ---- XP / Meta ----
+    {
+        id:          'level_5',
+        title:       'Level 5',
+        desc:        'Reach Garden Level 5',
+        icon:        '[5]',
+        xp:          50,
+        tier:        'silver',
+        target:      5,
+        getProgress: () => xpToLevel(xpTotal),
+    },
+    {
+        id:          'unlock_25',
+        title:       'Collector',
+        desc:        'Unlock 25 achievements',
+        icon:        '[*]',
+        xp:          75,
+        tier:        'gold',
+        target:      25,
+        getProgress: () => unlockedAchievements.size,
+    },
 
     // ---- Garden actions ----
     {
@@ -4162,6 +4256,46 @@ const ACHIEVEMENTS = [
         getProgress: () => totalWaterings,
     },
     {
+        id:          'watering_10',
+        title:       'Dedicated Gardener',
+        desc:        'Water the garden 10 times',
+        icon:        '[W]',
+        xp:          15,
+        tier:        'bronze',
+        target:      10,
+        getProgress: () => totalWaterings,
+    },
+    {
+        id:          'watering_25',
+        title:       'Hydration Station',
+        desc:        'Water the garden 25 times',
+        icon:        '[W]',
+        xp:          20,
+        tier:        'bronze',
+        target:      25,
+        getProgress: () => totalWaterings,
+    },
+    {
+        id:          'watering_50',
+        title:       'Rainmaker',
+        desc:        'Water the garden 50 times',
+        icon:        '[W]',
+        xp:          35,
+        tier:        'silver',
+        target:      50,
+        getProgress: () => totalWaterings,
+    },
+    {
+        id:          'watering_100',
+        title:       'Garden Guardian',
+        desc:        'Water the garden 100 times',
+        icon:        '[W]',
+        xp:          75,
+        tier:        'gold',
+        target:      100,
+        getProgress: () => totalWaterings,
+    },
+    {
         id:          'water_3_days',
         title:       'Green Thumb',
         desc:        'Water your garden 3 days in a row',
@@ -4169,6 +4303,26 @@ const ACHIEVEMENTS = [
         xp:          25,
         tier:        'silver',
         target:      3,
+        getProgress: () => currentWateringStreak,
+    },
+    {
+        id:          'water_7_days',
+        title:       'Weekly Waterer',
+        desc:        'Water your garden 7 days in a row',
+        icon:        ':D',
+        xp:          40,
+        tier:        'silver',
+        target:      7,
+        getProgress: () => currentWateringStreak,
+    },
+    {
+        id:          'water_14_days',
+        title:       'Fortnight Flow',
+        desc:        'Water your garden 14 days in a row',
+        icon:        '[:',
+        xp:          75,
+        tier:        'gold',
+        target:      14,
         getProgress: () => currentWateringStreak,
     },
 
@@ -4184,6 +4338,36 @@ const ACHIEVEMENTS = [
         getProgress: () => Object.keys(gardenVisitDays).length,
     },
     {
+        id:          'visit_14_total',
+        title:       'Regular Visitor',
+        desc:        'Open the garden on 14 different days',
+        icon:        '[V]',
+        xp:          20,
+        tier:        'bronze',
+        target:      14,
+        getProgress: () => Object.keys(gardenVisitDays).length,
+    },
+    {
+        id:          'visit_30_total',
+        title:       'Monthly Regular',
+        desc:        'Open the garden on 30 different days',
+        icon:        '[V]',
+        xp:          40,
+        tier:        'silver',
+        target:      30,
+        getProgress: () => Object.keys(gardenVisitDays).length,
+    },
+    {
+        id:          'visit_60_total',
+        title:       'Seasoned Visitor',
+        desc:        'Open the garden on 60 different days',
+        icon:        '[V]',
+        xp:          75,
+        tier:        'gold',
+        target:      60,
+        getProgress: () => Object.keys(gardenVisitDays).length,
+    },
+    {
         id:          'week_streak',
         title:       'Week Streak',
         desc:        'Visit 7 days in a row',
@@ -4191,6 +4375,26 @@ const ACHIEVEMENTS = [
         xp:          50,
         tier:        'gold',
         target:      7,
+        getProgress: () => gardenVisitStreak.current,
+    },
+    {
+        id:          'visit_streak_14',
+        title:       'Two-Week Streak',
+        desc:        'Visit 14 days in a row',
+        icon:        '[>>]',
+        xp:          75,
+        tier:        'gold',
+        target:      14,
+        getProgress: () => gardenVisitStreak.current,
+    },
+    {
+        id:          'visit_streak_30',
+        title:       'Monthly Streak',
+        desc:        'Visit 30 days in a row',
+        icon:        '[>>>]',
+        xp:          100,
+        tier:        'gold',
+        target:      30,
         getProgress: () => gardenVisitStreak.current,
     },
 
@@ -4304,10 +4508,31 @@ function afterPostCreated() {
     unlockAchievement('first_post');
     // allPosts hasn't yet received the Firebase onValue update for the just-pushed post,
     // so add 1 to the current count to include it.
-    const myCount = Object.values(allPosts).filter(p => p.author === currentUser).length + 1;
-    if (myCount >= 5)  unlockAchievement('five_posts');
-    if (myCount >= 10) unlockAchievement('ten_posts');
-    if (myCount >= 20) unlockAchievement('twenty_posts');
+    const myPosts = Object.values(allPosts).filter(p => p.author === currentUser);
+    const myCount = myPosts.length + 1;
+    if (myCount >= 5)   unlockAchievement('five_posts');
+    if (myCount >= 10)  unlockAchievement('ten_posts');
+    if (myCount >= 20)  unlockAchievement('twenty_posts');
+    if (myCount >= 30)  unlockAchievement('thirty_posts');
+    if (myCount >= 50)  unlockAchievement('fifty_posts');
+    if (myCount >= 100) unlockAchievement('hundred_posts');
+
+    // Post-length achievements — read body from form (not yet reset at this point).
+    const bodyEl = document.getElementById('postBody');
+    const newBodyLen = bodyEl ? bodyEl.value.trim().length : 0;
+    if (newBodyLen > 0) {
+        const longform    = myPosts.filter(p => p.body && p.body.length >= 500).length + (newBodyLen >= 500 ? 1 : 0);
+        const minimalist  = myPosts.filter(p => p.body && p.body.length > 0 && p.body.length < 30).length + (newBodyLen < 30 ? 1 : 0);
+        if (longform >= 1)   unlockAchievement('longform_1');
+        if (longform >= 5)   unlockAchievement('longform_5');
+        if (minimalist >= 5)  unlockAchievement('minimalist_5');
+        if (minimalist >= 20) unlockAchievement('minimalist_20');
+    }
+
+    // XP / meta — check after all other unlocks above have fired.
+    if (xpToLevel(xpTotal) >= 5)        unlockAchievement('level_5');
+    if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+
     checkTimeBasedAchievements();
 }
 
@@ -4317,11 +4542,23 @@ async function backfillAchievements() {
     if (!currentUser) return;
 
     // Count existing posts by the current user from the already-loaded allPosts.
-    const myCount = Object.values(allPosts).filter(p => p.author === currentUser).length;
-    if (myCount >= 1)  await unlockAchievement('first_post');
-    if (myCount >= 5)  await unlockAchievement('five_posts');
-    if (myCount >= 10) await unlockAchievement('ten_posts');
-    if (myCount >= 20) await unlockAchievement('twenty_posts');
+    const myPosts = Object.values(allPosts).filter(p => p.author === currentUser);
+    const myCount = myPosts.length;
+    if (myCount >= 1)   await unlockAchievement('first_post');
+    if (myCount >= 5)   await unlockAchievement('five_posts');
+    if (myCount >= 10)  await unlockAchievement('ten_posts');
+    if (myCount >= 20)  await unlockAchievement('twenty_posts');
+    if (myCount >= 30)  await unlockAchievement('thirty_posts');
+    if (myCount >= 50)  await unlockAchievement('fifty_posts');
+    if (myCount >= 100) await unlockAchievement('hundred_posts');
+
+    // Post-length achievements.
+    const longformCount   = myPosts.filter(p => p.body && p.body.length >= 500).length;
+    const minimalistCount = myPosts.filter(p => p.body && p.body.length > 0 && p.body.length < 30).length;
+    if (longformCount >= 1)   await unlockAchievement('longform_1');
+    if (longformCount >= 5)   await unlockAchievement('longform_5');
+    if (minimalistCount >= 5)  await unlockAchievement('minimalist_5');
+    if (minimalistCount >= 20) await unlockAchievement('minimalist_20');
 
     // Check garden watering streak directly from Firebase.
     try {
@@ -4344,8 +4581,12 @@ async function backfillAchievements() {
 
         // ---- Watering count ----
         totalWaterings = stats.totalWaterings || 0;
-        if (totalWaterings >= 1) await unlockAchievement('first_sprout');
-        if (totalWaterings >= 5) await unlockAchievement('watering_can');
+        if (totalWaterings >= 1)   await unlockAchievement('first_sprout');
+        if (totalWaterings >= 5)   await unlockAchievement('watering_can');
+        if (totalWaterings >= 10)  await unlockAchievement('watering_10');
+        if (totalWaterings >= 25)  await unlockAchievement('watering_25');
+        if (totalWaterings >= 50)  await unlockAchievement('watering_50');
+        if (totalWaterings >= 100) await unlockAchievement('watering_100');
 
         // ---- Garden visit tracking (load only; write-back happens in recordGardenVisit) ----
         // We hydrate the globals so progress bars render correctly before the
@@ -4358,11 +4599,24 @@ async function backfillAchievements() {
 
         // Unlock based on already-recorded historical visits (no write here).
         const visitCount = Object.keys(gardenVisitDays).length;
-        if (visitCount >= 7)                await unlockAchievement('checked_in');
-        if (gardenVisitStreak.current >= 7) await unlockAchievement('week_streak');
+        if (visitCount >= 7)  await unlockAchievement('checked_in');
+        if (visitCount >= 14) await unlockAchievement('visit_14_total');
+        if (visitCount >= 30) await unlockAchievement('visit_30_total');
+        if (visitCount >= 60) await unlockAchievement('visit_60_total');
+        if (gardenVisitStreak.current >= 7)  await unlockAchievement('week_streak');
+        if (gardenVisitStreak.current >= 14) await unlockAchievement('visit_streak_14');
+        if (gardenVisitStreak.current >= 30) await unlockAchievement('visit_streak_30');
     } catch (e) {
         console.error('backfillAchievements userStats check failed', e);
     }
+
+    // Also sync watering streak (loaded from garden node earlier in this function).
+    if (currentWateringStreak >= 7)  await unlockAchievement('water_7_days');
+    if (currentWateringStreak >= 14) await unlockAchievement('water_14_days');
+
+    // XP / meta — checked last so all prior unlocks are counted.
+    if (xpToLevel(xpTotal) >= 5)        await unlockAchievement('level_5');
+    if (unlockedAchievements.size >= 25) await unlockAchievement('unlock_25');
 
     renderAchievementsWindow();
 }
