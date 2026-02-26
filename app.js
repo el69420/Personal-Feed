@@ -3180,7 +3180,7 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
         if (!plantRowEl.querySelector('.garden-label')) {
           plantRowEl.innerHTML =
             `<span class="garden-label">Plant: ${PLANT_LABELS[plantType] || PLANT_LABELS.sunflower}</span>` +
-            `<span class="garden-plant-hint">Water daily to unlock more</span>`;
+            `<div class="garden-help">Water daily to unlock more</div>`;
         }
       } else {
         let sel = plantRowEl.querySelector('select');

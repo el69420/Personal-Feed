@@ -3209,7 +3209,7 @@ body{padding-bottom:50px}
      Row 1 (plant selector) is 40px even when empty (locked tile) so row 2
      always starts at the same offset. */
   display:grid;
-  grid-template-rows:40px 80px auto auto;
+  grid-template-rows:auto 80px auto auto;
   row-gap:2px;
   width:80px;
   justify-items:center;
@@ -3234,7 +3234,7 @@ body{padding-bottom:50px}
    never pushes the soil tile out of alignment */
 .garden-tile-col .garden-plant-row{
   display:flex;flex-direction:column;align-items:flex-start;gap:2px;
-  width:80px;height:40px;margin-bottom:0;overflow:hidden;
+  width:80px;min-height:40px;margin-bottom:0;overflow:visible;
 }
 .garden-tile-col .w95-select{
   width:78px;font-size:10px;
@@ -3294,6 +3294,13 @@ body{padding-bottom:50px}
   font:10px Tahoma,Verdana,Arial,sans-serif;
   color:#888;
   white-space:nowrap;
+}
+.garden-help{
+  display:block;
+  margin-top:2px;
+  font:10px Tahoma,Verdana,Arial,sans-serif;
+  color:#888;
+  white-space:normal;
 }
 
 /* Win95-style select */
