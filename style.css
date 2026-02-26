@@ -3109,6 +3109,11 @@ body{padding-bottom:50px}
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ===== Our Garden ===== */
+#w95-win-garden{width:420px;}
+.garden-top{display:flex;align-items:flex-start;gap:12px;}
+.garden-info{width:120px;}
+.garden-info .garden-plant-row{flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:4px;}
+.garden-info .garden-streak{text-align:left;}
 .garden-soil-tile{
   width:80px;height:80px;
   background:#7a4f2d;
@@ -3297,10 +3302,12 @@ body{padding-bottom:50px}
 }
 .garden-help{
   display:block;
-  margin-top:2px;
-  font:10px Tahoma,Verdana,Arial,sans-serif;
-  color:#888;
   white-space:normal;
+  font-size:11px;
+  line-height:1.2;
+  margin-top:2px;
+  font-family:Tahoma,Verdana,Arial,sans-serif;
+  color:#888;
 }
 
 /* Win95-style select */

@@ -3154,7 +3154,6 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     if (!col.querySelector('.garden-plant-el')) {
       col.className = 'garden-tile-col';
       col.innerHTML =
-        `<div id="gpr-${n}" class="garden-plant-row"></div>` +
         `<div class="garden-soil-tile">` +
           `<div class="garden-plant-el"></div>` +
           `<div class="garden-tile-events"></div>` +
@@ -3173,7 +3172,11 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     }
 
     // Plant selector (create once, update options only when count changes)
-    const plantRowEl       = col.querySelector(`#gpr-${n}`);
+    // Tile 0's plant-row lives in #garden-info (not inside the tile column)
+    // so that its height doesn't disturb the soil-tile grid alignment.
+    const plantRowEl = n === 0
+      ? document.getElementById('gpr-0')
+      : col.querySelector(`#gpr-${n}`);
     const effectiveUnlocks = unlockedPlants.filter(id => id !== 'sunflower');
     if (plantRowEl) {
       if (effectiveUnlocks.length === 0) {
