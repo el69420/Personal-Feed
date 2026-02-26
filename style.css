@@ -3274,5 +3274,36 @@ body{padding-bottom:50px}
   top:-14px;left:-3px;
 }
 
+/* Lavender: tall purple-blue spike (coop unlock) */
+.garden-plant--bloom.garden-plant--type-lavender{
+  background:#5a3a8c;
+}
+.garden-plant--bloom.garden-plant--type-lavender::before{
+  background:#aa77dd;
+  width:10px;height:28px;
+  border-radius:50% 50% 0 0;
+  top:-26px;left:-3px;
+}
+.garden-plant--bloom.garden-plant--type-lavender::after{
+  background:#ddbfff;
+  width:6px;height:16px;
+  border-radius:50% 50% 0 0;
+  top:-26px;left:-1px;
+}
+
+/* Two-colour Bloom: split left/right petals (coop unlock) */
+.garden-plant--bloom.garden-plant--type-twocolourbloom::before{
+  background:#ee2266;
+  width:12px;height:22px;
+  border-radius:50% 0 0 50%;
+  top:-20px;left:-12px;
+}
+.garden-plant--bloom.garden-plant--type-twocolourbloom::after{
+  background:#ffcc00;
+  width:12px;height:22px;
+  border-radius:0 50% 50% 0;
+  top:-20px;left:2px;
+}
+
 
 

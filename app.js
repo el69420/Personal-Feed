@@ -3045,21 +3045,24 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
   if (!btn || !win || !min || !handle) return;
 
-  const plantEl    = document.getElementById('garden-plant');
-  const statusEl   = document.getElementById('garden-status');
-  const streakEl   = document.getElementById('garden-streak');
-  const waterBtn   = document.getElementById('garden-water');
-  const plantRow   = document.getElementById('garden-plant-row');
+  const plantEl        = document.getElementById('garden-plant');
+  const statusEl       = document.getElementById('garden-status');
+  const streakEl       = document.getElementById('garden-streak');
+  const sharedStreakEl = document.getElementById('garden-shared-streak');
+  const waterBtn       = document.getElementById('garden-water');
+  const plantRow       = document.getElementById('garden-plant-row');
 
   const gardenRef  = ref(database, 'garden');
   const MS_HOUR    = 3600000;
 
   const PLANT_LABELS = {
-    sunflower: 'Sunflower',
-    daisy:     'Daisy',
-    tulip:     'Tulip',
-    rose:      'Rose',
-    orchid:    'Orchid',
+    sunflower:      'Sunflower',
+    daisy:          'Daisy',
+    tulip:          'Tulip',
+    rose:           'Rose',
+    orchid:         'Orchid',
+    lavender:       'Lavender',
+    twocolourbloom: 'Two-colour Bloom',
   };
   const UNLOCK_THRESHOLDS = [
     { streak: 3,  id: 'daisy' },
@@ -3067,6 +3070,13 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     { streak: 14, id: 'rose' },
     { streak: 30, id: 'orchid' },
   ];
+  const COOP_UNLOCK_THRESHOLDS = [
+    { streak: 3,  id: 'sunflower' },
+    { streak: 7,  id: 'lavender' },
+    { streak: 14, id: 'twocolourbloom' },
+  ];
+  // Server-side user keys matching LASTFM_USERS / GARDEN_COOP_USERS
+  const GARDEN_USER_KEY = { El: 'el', Tero: 'tero' };
 
   function calculateStage(state) {
     const now = Date.now();
@@ -3125,8 +3135,10 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
           };
         }
         // Rebuild options to match current unlocked list
+        // 'sunflower' is always the hardcoded first option — skip it in the loop
         sel.innerHTML = `<option value="sunflower">${PLANT_LABELS.sunflower}</option>`;
         for (const id of unlockedPlants) {
+          if (id === 'sunflower') continue;
           if (PLANT_LABELS[id]) {
             const opt = document.createElement('option');
             opt.value = id;
@@ -3154,11 +3166,39 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     // Streak display — show 0 while wilted
     if (streakEl) {
       const displayStreak = stage === 'wilted' ? 0 : (state.wateringStreak || 0);
-      const nextUnlock = UNLOCK_THRESHOLDS.find(u => !unlockedPlants.includes(u.id) && u.id !== 'sunflower');
+      const nextUnlock = UNLOCK_THRESHOLDS.find(u => !unlockedPlants.includes(u.id));
       const nextText = nextUnlock
         ? ` (next: ${PLANT_LABELS[nextUnlock.id]} at ${nextUnlock.streak})`
         : '';
       streakEl.textContent = `Streak: ${displayStreak} day${displayStreak !== 1 ? 's' : ''}${nextText}`;
+    }
+
+    // Shared streak display
+    if (sharedStreakEl) {
+      const clientToday     = new Date().toISOString().slice(0, 10);
+      const clientYesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const lsd = state.lastSharedDay;
+      // Show 0 if a day has passed without both watering
+      const displayShared = (!lsd || lsd < clientYesterday) ? 0 : (state.sharedStreak || 0);
+
+      const todayRecord  = (state.wateredByDay || {})[clientToday] || {};
+      const elWatered    = !!todayRecord.el;
+      const teroWatered  = !!todayRecord.tero;
+      let coopStatus = '';
+      if (elWatered && teroWatered)       coopStatus = ' · both watered today';
+      else if (elWatered)                 coopStatus = ' · El watered, waiting for Tero';
+      else if (teroWatered)               coopStatus = ' · Tero watered, waiting for El';
+
+      // Next coop unlock — skip 'sunflower' as it is always available anyway
+      const nextCoop = COOP_UNLOCK_THRESHOLDS.find(u =>
+        u.id !== 'sunflower' && !unlockedPlants.includes(u.id)
+      );
+      const nextCoopText = nextCoop
+        ? ` (next: ${PLANT_LABELS[nextCoop.id]} at ${nextCoop.streak})`
+        : '';
+
+      sharedStreakEl.textContent =
+        `Shared streak: ${displayShared} day${displayShared !== 1 ? 's' : ''}${nextCoopText}${coopStatus}`;
     }
   }
 
@@ -3173,6 +3213,9 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
         lastStreakDay:  null,
         unlockedPlants: [],
         selectedPlant:  'sunflower',
+        sharedStreak:   0,
+        lastSharedDay:  null,
+        wateredByDay:   {},
       });
     }
   }, { onlyOnce: true });
@@ -3200,6 +3243,10 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
             lastWatered:    state.lastWatered    ?? null,
             plantedAt:      state.plantedAt      ?? null,
             unlockedPlants: state.unlockedPlants ?? [],
+            whoIsWatering:  GARDEN_USER_KEY[currentUser] ?? null,
+            wateredByDay:   state.wateredByDay   ?? {},
+            sharedStreak:   state.sharedStreak   ?? 0,
+            lastSharedDay:  state.lastSharedDay  ?? null,
           }),
         });
         if (!resp.ok) throw new Error('server error');
@@ -3214,6 +3261,9 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
           wateringStreak: result.wateringStreak,
           lastStreakDay:  result.lastStreakDay,
           unlockedPlants: result.unlockedPlants,
+          sharedStreak:   result.sharedStreak,
+          lastSharedDay:  result.lastSharedDay,
+          wateredByDay:   result.wateredByDay,
         });
       } finally {
         waterBtn.disabled = false;

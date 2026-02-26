@@ -63,7 +63,13 @@ const GARDEN_PLANT_UNLOCKS = [
     { streak: 14, id: 'rose' },
     { streak: 30, id: 'orchid' },
 ];
-const GARDEN_VALID_PLANTS = ['sunflower', 'daisy', 'tulip', 'rose', 'orchid'];
+const GARDEN_COOP_UNLOCKS = [
+    { streak: 3,  id: 'sunflower' },
+    { streak: 7,  id: 'lavender' },
+    { streak: 14, id: 'twocolourbloom' },
+];
+const GARDEN_COOP_USERS   = ['el', 'tero'];
+const GARDEN_VALID_PLANTS = ['sunflower', 'daisy', 'tulip', 'rose', 'orchid', 'lavender', 'twocolourbloom'];
 
 // POST /api/garden/water
 // Body: { lastStreakDay, wateringStreak, lastWatered, plantedAt, unlockedPlants }
@@ -75,6 +81,10 @@ app.post('/api/garden/water', (req, res) => {
         lastWatered    = null,
         plantedAt      = null,
         unlockedPlants = [],
+        whoIsWatering  = null,
+        wateredByDay   = {},
+        sharedStreak   = 0,
+        lastSharedDay  = null,
     } = req.body || {};
 
     const now = Date.now();
@@ -84,23 +94,22 @@ app.post('/api/garden/water', (req, res) => {
     const today     = new Date(now).toISOString().slice(0, 10);
     const yesterday = new Date(now - 86400000).toISOString().slice(0, 10);
 
-    // Determine if plant is currently wilted
-    const ageHrs       = plantedAt ? (now - plantedAt) / MS_HOUR : 0;
+    // ---- Individual streak ----
+    const ageHrs        = plantedAt ? (now - plantedAt) / MS_HOUR : 0;
     const wateredHrsAgo = lastWatered ? (now - lastWatered) / MS_HOUR : Infinity;
-    const isWilted     = ageHrs >= 24 && wateredHrsAgo >= 48;
+    const isWilted      = ageHrs >= 24 && wateredHrsAgo >= 48;
 
     let newStreak;
     if (isWilted || lastStreakDay === null) {
         newStreak = 1;
     } else if (lastStreakDay === today) {
-        newStreak = wateringStreak; // already watered today, keep streak
+        newStreak = wateringStreak;
     } else if (lastStreakDay === yesterday) {
         newStreak = wateringStreak + 1;
     } else {
-        newStreak = 1; // gap in watering — reset
+        newStreak = 1;
     }
 
-    // Append newly unlocked plant types
     const newUnlocked = Array.isArray(unlockedPlants) ? [...unlockedPlants] : [];
     for (const u of GARDEN_PLANT_UNLOCKS) {
         if (newStreak >= u.streak && !newUnlocked.includes(u.id)) {
@@ -108,12 +117,46 @@ app.post('/api/garden/water', (req, res) => {
         }
     }
 
+    // ---- Shared streak ----
+    let newSharedStreak  = sharedStreak;
+    let newLastSharedDay = lastSharedDay;
+    const newWateredByDay = (typeof wateredByDay === 'object' && wateredByDay !== null)
+        ? { ...wateredByDay }
+        : {};
+
+    if (whoIsWatering && GARDEN_COOP_USERS.includes(whoIsWatering)) {
+        if (!newWateredByDay[today]) newWateredByDay[today] = {};
+        newWateredByDay[today][whoIsWatering] = true;
+
+        // Prune entries older than yesterday
+        for (const day of Object.keys(newWateredByDay)) {
+            if (day !== today && day !== yesterday) delete newWateredByDay[day];
+        }
+
+        const todayRecord     = newWateredByDay[today] || {};
+        const bothWateredToday = GARDEN_COOP_USERS.every(u => todayRecord[u]);
+
+        if (bothWateredToday && lastSharedDay !== today) {
+            newSharedStreak  = lastSharedDay === yesterday ? sharedStreak + 1 : 1;
+            newLastSharedDay = today;
+        }
+    }
+
+    for (const u of GARDEN_COOP_UNLOCKS) {
+        if (newSharedStreak >= u.streak && !newUnlocked.includes(u.id)) {
+            newUnlocked.push(u.id);
+        }
+    }
+
     res.json({
         today,
-        wateringStreak:    newStreak,
-        lastStreakDay:      today,
-        unlockedPlants:    newUnlocked,
+        wateringStreak:      newStreak,
+        lastStreakDay:        today,
+        unlockedPlants:      newUnlocked,
         alreadyWateredToday: lastStreakDay === today,
+        sharedStreak:        newSharedStreak,
+        lastSharedDay:       newLastSharedDay,
+        wateredByDay:        newWateredByDay,
     });
 });
 
