@@ -3506,10 +3506,32 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     panel.style.top = '';
   }
 
+  function snap(win, corner) {
+    const margin = 16;
+    const taskbar = document.getElementById('w95-taskbar') || document.querySelector('.taskbar');
+    const taskbarH = taskbar ? taskbar.getBoundingClientRect().height : 0;
+
+    const r = win.getBoundingClientRect();
+    const w = r.width, h = r.height;
+
+    const top = window.innerHeight - taskbarH - h - margin;
+    const left = corner === 'br'
+      ? window.innerWidth - w - margin
+      : margin;
+
+    win.style.left = Math.max(margin, left) + 'px';
+    win.style.top  = Math.max(margin, top) + 'px';
+  }
+
   function show(win, btn, key) {
+    const wasHidden = win.classList.contains('is-hidden');
     win.classList.remove('is-hidden');
     btn.classList.add('is-pressed');
     localStorage.setItem(key, '1');
+    if (wasHidden) {
+      if (win === winChat) snap(winChat, 'br');
+      if (win === winNew)  snap(winNew, 'bl');
+    }
     if (win === winChat) {
       chatOpen = true;
       lastChatSeenTs = Date.now();
