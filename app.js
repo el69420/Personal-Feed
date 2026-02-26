@@ -481,6 +481,7 @@ function login(displayName, email) {
     setupTypingCleanup();
     startNowListening();
     showSection('feed');
+    initAchievements();
 }
 
 window.logout = function() {
@@ -1622,6 +1623,7 @@ window.addPost = async function() {
                 if (heading) postData.heading = heading;
                 if (unlockAt) postData.unlockAt = unlockAt;
                 await push(postsRef, postData);
+                afterPostCreated();
                 showToast('Post added');
                 sparkSound('post');
             }
@@ -1648,6 +1650,7 @@ window.addPost = async function() {
             };
             if (unlockAt) postData.unlockAt = unlockAt;
             await push(postsRef, postData);
+            afterPostCreated();
             resetAddPostModal();
             closeAddPostModal();
             showToast('Post added');
@@ -1676,6 +1679,7 @@ window.addPoll = async function() {
             timestamp: Date.now(), readBy: { [currentUser]: true },
             reactionsBy: {}, replies: []
         });
+        afterPostCreated();
         ['pollQuestion','pollOpt0','pollOpt1','pollOpt2','pollOpt3'].forEach(id => {
             const el = document.getElementById(id); if (el) el.value = '';
         });
@@ -1735,7 +1739,7 @@ window.addImagePost = async function() {
             timestamp: Date.now(), readBy: { [currentUser]: true },
             reactionsBy: {}, replies: []
         });
-
+        afterPostCreated();
         document.getElementById('imageCaption').value = '';
         closeImageModal();
         showToast('Photo shared!');
@@ -1800,6 +1804,7 @@ window.addMovieRec = async function() {
             timestamp: Date.now(), readBy: { [currentUser]: true },
             reactionsBy: {}, replies: []
         });
+        afterPostCreated();
         ['recTitle','recService','recNote','recLetterboxd'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         document.getElementById('recRating').value = '0';
         document.querySelectorAll('#starPicker button').forEach(b => b.classList.remove('active'));
@@ -3397,6 +3402,7 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
         [`tiles/${n}/lastWatered`]: now,
         [`tiles/${n}/events`]:      result.events,
       });
+      if (result.wateringStreak >= 3) unlockAchievement('water_3_days');
     } finally {
       if (waterBtn) waterBtn.disabled = false;
     }
@@ -3599,4 +3605,116 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
   makeDraggable(winChat, document.getElementById('w95-chat-handle'));
   makeDraggable(winNew, document.getElementById('w95-new-handle'));
+})();
+
+// ===== ACHIEVEMENTS =====
+
+const ACHIEVEMENTS = [
+    { id: 'first_post',   title: 'First Post!',   desc: 'Create your first post',              icon: '[*]' },
+    { id: 'ten_posts',    title: 'Ten Posts',      desc: 'Create 10 posts',                     icon: '[10]' },
+    { id: 'water_3_days', title: 'Green Thumb',    desc: 'Water your garden 3 days in a row',   icon: ':)' },
+];
+
+let unlockedAchievements = new Set();
+
+async function initAchievements() {
+    if (!currentUser) return;
+    try {
+        const resp = await fetch(`/api/achievements?user=${encodeURIComponent(currentUser)}`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        unlockedAchievements = new Set(data.unlocked || []);
+        renderAchievementsWindow();
+    } catch (e) {
+        console.error('initAchievements failed', e);
+    }
+}
+
+async function unlockAchievement(id) {
+    if (unlockedAchievements.has(id) || !currentUser) return;
+    try {
+        const resp = await fetch('/api/achievements/unlock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user: currentUser, id }),
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data.unlocked) {
+            unlockedAchievements.add(id);
+            const achievement = ACHIEVEMENTS.find(a => a.id === id);
+            if (achievement) showToast(`Achievement unlocked: ${achievement.title}`);
+            renderAchievementsWindow();
+        }
+    } catch (e) {
+        console.error('unlockAchievement failed', e);
+    }
+}
+
+function afterPostCreated() {
+    unlockAchievement('first_post');
+    // allPosts hasn't yet received the Firebase onValue update for the just-pushed post,
+    // so add 1 to the current count to include it.
+    const myCount = Object.values(allPosts).filter(p => p.author === currentUser).length + 1;
+    if (myCount >= 10) unlockAchievement('ten_posts');
+}
+
+function renderAchievementsWindow() {
+    const body = document.getElementById('w95-achievements-body');
+    if (!body) return;
+    const unlocked = ACHIEVEMENTS.filter(a => unlockedAchievements.has(a.id));
+    const locked   = ACHIEVEMENTS.filter(a => !unlockedAchievements.has(a.id));
+    body.innerHTML = [...unlocked, ...locked].map(a => {
+        const isUnlocked = unlockedAchievements.has(a.id);
+        return `<div class="achievement-item${isUnlocked ? '' : ' locked'}">` +
+            `<span class="achievement-icon">${safeText(a.icon)}</span>` +
+            `<div><div class="achievement-title">${safeText(a.title)}</div>` +
+            `<div class="achievement-desc">${safeText(a.desc)}</div></div>` +
+            `</div>`;
+    }).join('');
+}
+
+// Achievements window IIFE
+(() => {
+    const win    = document.getElementById('w95-win-achievements');
+    const btn    = document.getElementById('w95-btn-achievements');
+    const min    = document.getElementById('w95-achievements-min');
+    const handle = document.getElementById('w95-achievements-handle');
+    if (!win || !btn || !min || !handle) return;
+
+    function show() {
+        win.classList.remove('is-hidden');
+        btn.classList.add('is-pressed');
+        localStorage.setItem('w95_achievements_open', '1');
+    }
+    function hide() {
+        win.classList.add('is-hidden');
+        btn.classList.remove('is-pressed');
+        localStorage.setItem('w95_achievements_open', '0');
+    }
+
+    btn.onclick = () => {
+        if (win.classList.contains('is-hidden')) show(); else hide();
+    };
+    min.onclick = (e) => { e.stopPropagation(); hide(); };
+
+    if (localStorage.getItem('w95_achievements_open') === '1') show();
+    else hide();
+
+    // Drag support
+    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+    handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button')) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const r = win.getBoundingClientRect();
+        winStartX = r.left; winStartY = r.top;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        win.style.left = Math.max(0, winStartX + (e.clientX - startX)) + 'px';
+        win.style.top  = Math.max(0, winStartY + (e.clientY - startY)) + 'px';
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
 })();

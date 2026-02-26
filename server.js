@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(express.json());
@@ -209,6 +210,57 @@ app.post('/api/garden/select-plant', (req, res) => {
         return res.status(403).json({ error: 'plant not unlocked' });
     }
     res.json({ ok: true, selectedPlant: plantType });
+});
+
+// ===== Achievements API =====
+
+const ACHIEVEMENTS_FILE = path.join(__dirname, 'achievements.json');
+const VALID_ACHIEVEMENT_IDS = new Set(['first_post', 'ten_posts', 'water_3_days']);
+
+function loadAchievementsStore() {
+    try {
+        if (fs.existsSync(ACHIEVEMENTS_FILE)) {
+            return JSON.parse(fs.readFileSync(ACHIEVEMENTS_FILE, 'utf8'));
+        }
+    } catch (e) { console.error('Failed to read achievements store:', e.message); }
+    return {};
+}
+
+function saveAchievementsStore(store) {
+    try {
+        fs.writeFileSync(ACHIEVEMENTS_FILE, JSON.stringify(store, null, 2));
+    } catch (e) { console.error('Failed to save achievements store:', e.message); }
+}
+
+// { [displayName]: { [achievementId]: unlockedAt (ms) } }
+let achievementsStore = loadAchievementsStore();
+
+// GET /api/achievements?user=El
+app.get('/api/achievements', (req, res) => {
+    const user = req.query.user;
+    if (!user || typeof user !== 'string' || user.length > 64) {
+        return res.status(400).json({ error: 'invalid user' });
+    }
+    const unlocked = Object.keys(achievementsStore[user] || {});
+    res.json({ unlocked });
+});
+
+// POST /api/achievements/unlock  body: { user, id }
+app.post('/api/achievements/unlock', (req, res) => {
+    const { user, id } = req.body || {};
+    if (!user || typeof user !== 'string' || user.length > 64) {
+        return res.status(400).json({ error: 'invalid user' });
+    }
+    if (!id || typeof id !== 'string' || !VALID_ACHIEVEMENT_IDS.has(id)) {
+        return res.status(400).json({ error: 'invalid id' });
+    }
+    if (!achievementsStore[user]) achievementsStore[user] = {};
+    const alreadyUnlocked = id in achievementsStore[user];
+    if (!alreadyUnlocked) {
+        achievementsStore[user][id] = Date.now();
+        saveAchievementsStore(achievementsStore);
+    }
+    res.json({ unlocked: !alreadyUnlocked, id });
 });
 
 const PORT = process.env.PORT || 3000;

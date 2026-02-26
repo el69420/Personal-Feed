@@ -3106,6 +3106,16 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 .is-hidden{display:none !important}
 body{padding-bottom:50px}
 #w95-win-chat,#w95-win-new{display:flex;flex-direction:column;}
+
+/* ===== Achievements window ===== */
+#w95-achievements-body{max-height:320px;overflow-y:auto;}
+.achievement-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #808080;font:12px Tahoma,Verdana,Arial,sans-serif;}
+.achievement-item:last-child{border-bottom:none;}
+.achievement-item.locked{opacity:0.38;}
+.achievement-icon{min-width:22px;text-align:center;font-size:13px;line-height:1.4;}
+.achievement-title{font-weight:bold;font-size:12px;}
+.achievement-desc{font-size:11px;color:#444;margin-top:1px;}
+.achievement-placeholder{font:12px Tahoma,Verdana,Arial,sans-serif;color:#808080;}
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ===== Our Garden ===== */
