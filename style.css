@@ -3252,18 +3252,15 @@ body.dark-mode .achievement-item.is-unlocked .achievement-progress{color:#a0c8a0
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ===== Our Garden ===== */
-#w95-win-garden{width:420px;}
+#w95-win-garden{width:560px;}
 .garden-top{display:flex;align-items:flex-start;gap:12px;}
-.garden-info{width:120px;}
+.garden-info{width:120px;flex-shrink:0;}
 .garden-info .garden-plant-row{flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:4px;}
 .garden-info .garden-streak{text-align:left;}
+/* soil-tile is now a transparent flex area within the shared bed; the bed itself carries the soil visuals */
 .garden-soil-tile{
-  width:80px;height:80px;
-  background:#7a4f2d;
-  border-top:2px solid #404040;border-left:2px solid #404040;
-  border-right:2px solid #fff;border-bottom:2px solid #fff;
+  width:100%;flex:1;min-height:80px;
   display:flex;align-items:flex-end;justify-content:center;
-  margin:0 auto;
   position:relative;
 }
 .garden-plant{
@@ -3344,39 +3341,63 @@ body.dark-mode .achievement-item.is-unlocked .achievement-progress{color:#a0c8a0
   text-align:center;
 }
 
-/* ---- Multi-tile row ---- */
+/* ---- Unified landscape garden bed ---- */
 .garden-tiles-row{
-  display:grid;
-  grid-template-columns:repeat(3,80px);
-  gap:12px;
-  align-items:start;
+  flex:1;
+  display:flex;
+  flex-direction:row;
+  align-items:stretch;
+  position:relative;
   margin-bottom:6px;
+  /* Soil bed visuals */
+  background:#7a4f2d;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,transparent 29px,
+      rgba(0,0,0,0.08) 29px,rgba(0,0,0,0.08) 30px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,transparent 19px,
+      rgba(0,0,0,0.05) 19px,rgba(0,0,0,0.05) 20px
+    );
+  /* Win95 inset border (same as old individual tiles) */
+  border-top:2px solid #404040;
+  border-left:2px solid #404040;
+  border-right:2px solid #fff;
+  border-bottom:2px solid #fff;
+  padding:4px;
+  min-height:150px;
 }
 .garden-tile-col{
-  /* Grid with explicit rows keeps all three soil tiles on the same baseline.
-     Row 1 (plant selector) is 40px even when empty (locked tile) so row 2
-     always starts at the same offset. */
-  display:grid;
-  grid-template-rows:auto 80px auto auto;
-  row-gap:2px;
-  width:80px;
-  justify-items:center;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  padding:4px 6px 4px;
+  /* Subtle slot divider — thin dark line between plants */
+  border-right:1px solid rgba(0,0,0,0.18);
 }
-/* Pin the soil square to row 2 — the key alignment rule */
-.garden-tile-col .garden-soil-tile{
-  grid-row:2;
-}
-.garden-tile-col--locked .garden-soil-tile{
-  background:#5a3a1a;
+.garden-tile-col:last-child{border-right:none;}
+.garden-tile-col--locked{
+  opacity:0.45;
   cursor:default;
 }
+.garden-tile-col--locked .garden-soil-tile{
+  background:transparent;
+  align-items:center; /* vertically center the ? */
+}
 .garden-lock-hint{
-  font:bold 20px Tahoma,sans-serif;color:#999;
-  user-select:none;line-height:80px;
+  font:bold 28px Tahoma,sans-serif;
+  color:rgba(220,180,140,0.7);
+  user-select:none;
+  display:flex;align-items:center;justify-content:center;width:100%;height:100%;
 }
 .garden-tile-status-el{
   font:10px Tahoma,Verdana,Arial,sans-serif;
-  color:#555;text-align:center;white-space:nowrap;
+  color:#ddd;text-align:center;white-space:nowrap;margin-top:4px;
 }
 @keyframes garden-water-shake{
   0%,100%{transform:translateX(0);}
@@ -3387,14 +3408,14 @@ body.dark-mode .achievement-item.is-unlocked .achievement-progress{color:#a0c8a0
 }
 .garden-water-btn--shake{animation:garden-water-shake .35s ease;}
 .garden-water-btn--done{color:#006600;}
-/* Per-tile plant row: fixed height matches row-1 track so label/select
-   never pushes the soil tile out of alignment */
+/* On the dark soil bed the "done" text stays readable via the Win95 button bg */
+/* Per-tile plant row: tiles 1+ don't have a plant-row; kept for forward-compat */
 .garden-tile-col .garden-plant-row{
   display:flex;flex-direction:column;align-items:flex-start;gap:2px;
-  width:80px;min-height:40px;margin-bottom:0;overflow:visible;
+  width:100%;margin-bottom:0;overflow:visible;
 }
 .garden-tile-col .w95-select{
-  width:78px;font-size:10px;
+  width:100%;font-size:10px;
 }
 /* Event overlays inside .garden-soil-tile */
 .garden-tile-events{
@@ -3601,7 +3622,7 @@ body.dark-mode .achievement-item.is-unlocked .achievement-progress{color:#a0c8a0
 /* ===== Garden Vibe & Feedback additions ===== */
 
 /* 1) Talk to Plant — action button row */
-.garden-tile-actions{display:flex;gap:3px;}
+.garden-tile-actions{display:flex;gap:3px;margin-top:3px;width:100%;}
 .garden-tile-actions .w95-btn{flex:1;font-size:10px;padding:3px 2px;min-width:0;}
 
 /* 2) Daily Weather — text label */

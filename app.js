@@ -3633,9 +3633,9 @@ let w95TopZ = 2000;
     el.className     = 'garden-critter';
     el.textContent   = critter.emoji;
     el.dataset.label = critter.label;
-    // Position randomly within the tiles area
-    el.style.left   = (4 + Math.random() * 210) + 'px';
-    el.style.top    = (6 + Math.random() * 55) + 'px';
+    // Position randomly within the bed (percentage-based so it works at any bed width)
+    el.style.left   = (4 + Math.random() * 82) + '%';
+    el.style.top    = (5 + Math.random() * 30) + '%';
     el.addEventListener('click', () => {
       const label = el.dataset.label;
       const msgs  = CRITTER_MESSAGES[label] || ['A critter!'];
@@ -3729,8 +3729,8 @@ let w95TopZ = 2000;
     el.className     = 'garden-critter garden-critter--mythical';
     el.textContent   = mythical.emoji;
     el.dataset.label = mythical.label;
-    el.style.left    = (4 + Math.random() * 210) + 'px';
-    el.style.top     = (6 + Math.random() * 55)  + 'px';
+    el.style.left    = (4 + Math.random() * 82) + '%';
+    el.style.top     = (5 + Math.random() * 30) + '%';
     el.addEventListener('click', () => {
       const msg = mythical.msgs[Math.floor(Math.random() * mythical.msgs.length)];
       showToast(msg);
