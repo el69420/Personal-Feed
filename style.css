@@ -3196,6 +3196,75 @@ body{padding-bottom:50px}
   text-align:center;
 }
 
+/* ---- Multi-tile row ---- */
+.garden-tiles-row{
+  display:flex;gap:4px;margin-bottom:6px;
+}
+.garden-tile-col{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  width:80px;
+}
+.garden-tile-col--locked .garden-soil-tile{
+  background:#5a3a1a;
+  cursor:default;
+}
+.garden-lock-hint{
+  font:bold 20px Tahoma,sans-serif;color:#999;
+  user-select:none;line-height:80px;
+}
+.garden-tile-status-el{
+  font:10px Tahoma,Verdana,Arial,sans-serif;
+  color:#555;text-align:center;white-space:nowrap;
+}
+/* Per-tile plant row stacks vertically to fit 80px width */
+.garden-tile-col .garden-plant-row{
+  flex-direction:column;align-items:flex-start;gap:2px;
+  width:80px;margin-bottom:0;
+}
+.garden-tile-col .w95-select{
+  width:78px;font-size:10px;
+}
+/* Event overlays inside .garden-soil-tile */
+.garden-tile-events{
+  position:absolute;top:4px;right:4px;
+  display:flex;flex-direction:column;gap:2px;
+  pointer-events:none;
+}
+.garden-event{display:block;width:10px;height:10px;position:relative;}
+/* shootingStar: yellow X */
+.garden-event--shootingStar::before{
+  content:'';position:absolute;
+  width:10px;height:2px;background:#ffcc00;
+  top:4px;left:0;transform:rotate(45deg);
+}
+.garden-event--shootingStar::after{
+  content:'';position:absolute;
+  width:10px;height:2px;background:#ffcc00;
+  top:4px;left:0;transform:rotate(-45deg);
+}
+/* mushroom: brown cap + tan stem */
+.garden-event--mushroom::before{
+  content:'';position:absolute;
+  width:10px;height:6px;background:#884400;
+  border-radius:50% 50% 0 0;top:0;left:0;
+}
+.garden-event--mushroom::after{
+  content:'';position:absolute;
+  width:4px;height:5px;background:#ddaa66;
+  top:5px;left:3px;
+}
+/* moonflowerVariant: white circle with soil-coloured cutout (crescent) */
+.garden-event--moonflowerVariant::before{
+  content:'';position:absolute;
+  width:8px;height:8px;background:#eeeeff;
+  border-radius:50%;top:1px;left:1px;
+}
+.garden-event--moonflowerVariant::after{
+  content:'';position:absolute;
+  width:6px;height:6px;background:#7a4f2d;
+  border-radius:50%;top:1px;left:3px;
+}
+
 /* Plant selector row */
 .garden-plant-row{
   display:flex;align-items:center;gap:4px;
@@ -3303,6 +3372,49 @@ body{padding-bottom:50px}
   width:12px;height:22px;
   border-radius:0 50% 50% 0;
   top:-20px;left:2px;
+}
+
+/* Mint: light teal-green rounded cluster (exploration unlock) */
+.garden-plant--bloom.garden-plant--type-mint{background:#44aa77;}
+.garden-plant--bloom.garden-plant--type-mint::before{
+  background:#66ddaa;
+  width:18px;height:16px;
+  border-radius:40%;
+  top:-14px;left:-7px;
+}
+.garden-plant--bloom.garden-plant--type-mint::after{
+  background:#aaffdd;
+  width:10px;height:8px;
+  border-radius:40%;
+  top:-14px;left:-3px;
+}
+
+/* Fern: dark green asymmetric fronds (exploration unlock) */
+.garden-plant--bloom.garden-plant--type-fern::before{
+  background:#226622;
+  width:20px;height:28px;
+  border-radius:0 80% 0 80%;
+  top:-26px;left:-8px;
+}
+.garden-plant--bloom.garden-plant--type-fern::after{
+  background:#338833;
+  width:14px;height:18px;
+  border-radius:80% 0 80% 0;
+  top:-26px;left:-2px;
+}
+
+/* Wildflower: pink petals, purple centre (exploration unlock) */
+.garden-plant--bloom.garden-plant--type-wildflower::before{
+  background:#ff88cc;
+  width:22px;height:18px;
+  border-radius:50%;
+  top:-16px;left:-9px;
+}
+.garden-plant--bloom.garden-plant--type-wildflower::after{
+  background:#aa44cc;
+  width:10px;height:10px;
+  border-radius:50%;
+  top:-12px;left:-3px;
 }
 
 

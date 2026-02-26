@@ -3038,22 +3038,19 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
 // ===== Win95 Our Garden Window + Shared Firebase Garden =====
 (() => {
-  const btn = document.getElementById('w95-btn-garden');
-  const win = document.getElementById('w95-win-garden');
-  const min = document.getElementById('w95-garden-min');
+  const btn    = document.getElementById('w95-btn-garden');
+  const win    = document.getElementById('w95-win-garden');
+  const min    = document.getElementById('w95-garden-min');
   const handle = document.getElementById('w95-garden-handle');
 
   if (!btn || !win || !min || !handle) return;
 
-  const plantEl        = document.getElementById('garden-plant');
-  const statusEl       = document.getElementById('garden-status');
+  const tilesRowEl     = document.getElementById('garden-tiles-row');
   const streakEl       = document.getElementById('garden-streak');
   const sharedStreakEl = document.getElementById('garden-shared-streak');
-  const waterBtn       = document.getElementById('garden-water');
-  const plantRow       = document.getElementById('garden-plant-row');
 
-  const gardenRef  = ref(database, 'garden');
-  const MS_HOUR    = 3600000;
+  const gardenRef = ref(database, 'garden');
+  const MS_HOUR   = 3600000;
 
   const PLANT_LABELS = {
     sunflower:      'Sunflower',
@@ -3063,6 +3060,9 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     orchid:         'Orchid',
     lavender:       'Lavender',
     twocolourbloom: 'Two-colour Bloom',
+    mint:           'Mint',
+    fern:           'Fern',
+    wildflower:     'Wildflower',
   };
   const UNLOCK_THRESHOLDS = [
     { streak: 3,  id: 'daisy' },
@@ -3075,9 +3075,15 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     { streak: 7,  id: 'lavender' },
     { streak: 14, id: 'twocolourbloom' },
   ];
-  // Server-side user keys matching LASTFM_USERS / GARDEN_COOP_USERS
+  const EXPLORE_UNLOCKS = [
+    { id: 'mint',      threshold: 5,  field: 'postsCount' },
+    { id: 'fern',      threshold: 10, field: 'messagesCount' },
+    { id: 'wildflower', threshold: 5, field: 'taggedPostsCount' },
+  ];
   const GARDEN_USER_KEY = { El: 'el', Tero: 'tero' };
+  const STAGE_LABELS    = { seed: 'Seed', sprout: 'Sprout', bloom: 'Bloom', wilted: 'Wilted' };
 
+  // ---- calculateStage: unchanged ----
   function calculateStage(state) {
     const now = Date.now();
     const { plantedAt, lastWatered } = state;
@@ -3097,182 +3103,310 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     return lastWatered ? 'sprout' : 'seed';
   }
 
-  function renderGarden(state) {
-    if (!state) return;
-    const stage = calculateStage(state);
-    const plantType   = state.selectedPlant || 'sunflower';
-    const unlockedPlants = Array.isArray(state.unlockedPlants) ? state.unlockedPlants : [];
+  // ---- Exploration unlock counts (reads Firebase once per water press) ----
+  async function computeExploreUnlocks(currentUnlocked) {
+    try {
+      const [postsSnap, chatSnap] = await Promise.all([get(postsRef), get(chatRef)]);
+      const postsObj   = postsSnap.val() || {};
+      const postsArr   = Object.values(postsObj);
+      const counts = {
+        postsCount:      postsArr.length,
+        messagesCount:   chatSnap.exists() ? Object.keys(chatSnap.val() || {}).length : 0,
+        taggedPostsCount: postsArr.filter(p => Array.isArray(p.collections) && p.collections.length > 0).length,
+      };
+      const newUnlocked = [...currentUnlocked];
+      for (const u of EXPLORE_UNLOCKS) {
+        if (counts[u.field] >= u.threshold && !newUnlocked.includes(u.id)) {
+          newUnlocked.push(u.id);
+        }
+      }
+      return newUnlocked;
+    } catch { return currentUnlocked; }
+  }
 
-    // Update plant visual — stage class + plant-type class
-    plantEl.className = `garden-plant garden-plant--${stage} garden-plant--type-${plantType}`;
+  // ---- Per-tile rendering ----
+  // Ensures tile column DOM nodes exist in the row (called once at startup)
+  function ensureTileColumns() {
+    for (let n = 0; n < 3; n++) {
+      if (!tilesRowEl.querySelector(`[data-tile="${n}"]`)) {
+        const col = document.createElement('div');
+        col.dataset.tile = String(n);
+        tilesRowEl.appendChild(col);
+      }
+    }
+  }
 
-    // Plant selector row: dropdown when 2+ options, static text when only default
-    if (plantRow) {
-      if (unlockedPlants.length === 0) {
-        // Nothing unlocked yet — show plain text + hint, no select
-        plantRow.innerHTML =
-          `<span class="garden-label">Plant: ${PLANT_LABELS[plantType] || PLANT_LABELS.sunflower}</span>` +
-          `<span class="garden-plant-hint">Water daily to unlock more</span>`;
+  function renderTile(n, tileData, unlockedPlants, isUnlocked) {
+    const col = tilesRowEl.querySelector(`[data-tile="${n}"]`);
+    if (!col) return;
+
+    // ---- Locked state ----
+    if (!isUnlocked) {
+      if (!col.classList.contains('garden-tile-col--locked')) {
+        col.className = 'garden-tile-col garden-tile-col--locked';
+        col.innerHTML =
+          `<div class="garden-soil-tile"><span class="garden-lock-hint">?</span></div>`;
+      }
+      return;
+    }
+
+    // ---- Unlocked: build structure once, then update fields ----
+    if (!col.querySelector('.garden-plant-el')) {
+      col.className = 'garden-tile-col';
+      col.innerHTML =
+        `<div id="gpr-${n}" class="garden-plant-row"></div>` +
+        `<div class="garden-soil-tile">` +
+          `<div class="garden-plant-el"></div>` +
+          `<div class="garden-tile-events"></div>` +
+        `</div>` +
+        `<div class="garden-tile-status-el"></div>` +
+        `<button class="w95-btn garden-water-btn" data-tile="${n}">Water</button>`;
+    }
+
+    const stage     = tileData ? calculateStage(tileData) : 'seed';
+    const plantType = tileData?.selectedPlant || 'sunflower';
+
+    // Plant visual
+    const plantDiv = col.querySelector('.garden-plant-el');
+    if (plantDiv) {
+      plantDiv.className = `garden-plant garden-plant--${stage} garden-plant--type-${plantType}`;
+    }
+
+    // Plant selector (create once, update options only when count changes)
+    const plantRowEl       = col.querySelector(`#gpr-${n}`);
+    const effectiveUnlocks = unlockedPlants.filter(id => id !== 'sunflower');
+    if (plantRowEl) {
+      if (effectiveUnlocks.length === 0) {
+        if (!plantRowEl.querySelector('.garden-label')) {
+          plantRowEl.innerHTML =
+            `<span class="garden-label">Plant: ${PLANT_LABELS[plantType] || PLANT_LABELS.sunflower}</span>` +
+            `<span class="garden-plant-hint">Water daily to unlock more</span>`;
+        }
       } else {
-        // At least one unlock — render/reuse the select
-        let sel = plantRow.querySelector('select');
+        let sel = plantRowEl.querySelector('select');
         if (!sel) {
-          plantRow.innerHTML =
-            `<label for="garden-plant-select" class="garden-label">Plant:</label>` +
-            `<select id="garden-plant-select" class="w95-select"></select>`;
-          sel = plantRow.querySelector('select');
+          plantRowEl.innerHTML =
+            `<label for="gps-${n}" class="garden-label">Plant:</label>` +
+            `<select id="gps-${n}" class="w95-select"></select>`;
+          sel = plantRowEl.querySelector('select');
           sel.onchange = async () => {
             const chosen = sel.value;
             const snap = await get(gardenRef);
-            const st = snap.val();
+            const st   = snap.val();
             if (!st) return;
             const resp = await fetch('/api/garden/select-plant', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ plantType: chosen, unlockedPlants: st.unlockedPlants ?? [] }),
             });
-            if (resp.ok) await update(gardenRef, { selectedPlant: chosen });
+            if (resp.ok) await update(gardenRef, { [`tiles/${n}/selectedPlant`]: chosen });
           };
         }
-        // Rebuild options to match current unlocked list
-        // 'sunflower' is always the hardcoded first option — skip it in the loop
-        sel.innerHTML = `<option value="sunflower">${PLANT_LABELS.sunflower}</option>`;
-        for (const id of unlockedPlants) {
-          if (id === 'sunflower') continue;
-          if (PLANT_LABELS[id]) {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.textContent = PLANT_LABELS[id];
-            sel.appendChild(opt);
+        // Rebuild options only when the list has changed (avoids dismissing open dropdown)
+        const expectedCount = 1 + effectiveUnlocks.length;
+        if (sel.options.length !== expectedCount) {
+          sel.innerHTML = `<option value="sunflower">${PLANT_LABELS.sunflower}</option>`;
+          for (const id of unlockedPlants) {
+            if (id === 'sunflower') continue;
+            if (PLANT_LABELS[id]) {
+              const opt = document.createElement('option');
+              opt.value = id;
+              opt.textContent = PLANT_LABELS[id];
+              sel.appendChild(opt);
+            }
           }
         }
         sel.value = plantType;
       }
     }
 
-    // Update status text
-    const wateredAgo = state.lastWatered
-      ? Math.round((Date.now() - state.lastWatered) / MS_HOUR)
-      : null;
-    const wateredText = wateredAgo === null
-      ? 'never watered'
-      : wateredAgo === 0
-        ? 'watered just now'
-        : `watered ${wateredAgo}h ago`;
-
-    const stageLabels = { seed: 'Seed', sprout: 'Sprout', bloom: 'Bloom', wilted: 'Wilted' };
-    statusEl.textContent = `Stage: ${stageLabels[stage] ?? stage} · ${wateredText}`;
-
-    // Streak display — show 0 while wilted
-    if (streakEl) {
-      const displayStreak = stage === 'wilted' ? 0 : (state.wateringStreak || 0);
-      const nextUnlock = UNLOCK_THRESHOLDS.find(u => !unlockedPlants.includes(u.id));
-      const nextText = nextUnlock
-        ? ` (next: ${PLANT_LABELS[nextUnlock.id]} at ${nextUnlock.streak})`
-        : '';
-      streakEl.textContent = `Streak: ${displayStreak} day${displayStreak !== 1 ? 's' : ''}${nextText}`;
+    // Tile status (stage + watered time)
+    const statusDiv = col.querySelector('.garden-tile-status-el');
+    if (statusDiv && tileData) {
+      const wateredAgo = tileData.lastWatered
+        ? Math.round((Date.now() - tileData.lastWatered) / MS_HOUR) : null;
+      const wateredText = wateredAgo === null ? 'never'
+        : wateredAgo === 0 ? 'just now' : `${wateredAgo}h ago`;
+      statusDiv.textContent = `${STAGE_LABELS[stage] || stage} · ${wateredText}`;
     }
 
-    // Shared streak display
+    // Event overlays — stored events from Firebase plus client-computed mushroom
+    const eventsDiv = col.querySelector('.garden-tile-events');
+    if (eventsDiv && tileData) {
+      const stored    = Array.isArray(tileData.events) ? tileData.events : [];
+      const allEvents = [...stored];
+      // Mushroom: computed client-side — visible while wilted 7+ days, no extra storage needed
+      if (stage === 'wilted' && !allEvents.includes('mushroom')) {
+        const wiltedSince = tileData.lastWatered
+          ? tileData.lastWatered + 48 * MS_HOUR
+          : (tileData.plantedAt ? tileData.plantedAt + 24 * MS_HOUR : null);
+        if (wiltedSince && (Date.now() - wiltedSince) >= 7 * 86400000) {
+          allEvents.push('mushroom');
+        }
+      }
+      eventsDiv.innerHTML = allEvents
+        .map(ev => `<span class="garden-event garden-event--${ev}"></span>`)
+        .join('');
+    }
+  }
+
+  // ---- renderGarden: drives the 3 tiles + streak rows ----
+  function renderGarden(state) {
+    if (!state) return;
+    const tiles         = state.tiles || {};
+    const unlockedPlants = Array.isArray(state.unlockedPlants) ? state.unlockedPlants : [];
+    const unlockedTiles = state.unlockedTiles || 1;
+
+    for (let n = 0; n < 3; n++) {
+      renderTile(n, tiles[String(n)] || null, unlockedPlants, n < unlockedTiles);
+    }
+
+    // Individual streak (based on tile 0's wilt state for the 0-display rule)
+    if (streakEl) {
+      const tile0     = tiles['0'];
+      const tile0Stage = tile0 ? calculateStage(tile0) : 'seed';
+      const displayStreak = tile0Stage === 'wilted' ? 0 : (state.wateringStreak || 0);
+      const nextUnlock = UNLOCK_THRESHOLDS.find(u => !unlockedPlants.includes(u.id));
+      const nextText   = nextUnlock
+        ? ` (next: ${PLANT_LABELS[nextUnlock.id]} at ${nextUnlock.streak})` : '';
+      streakEl.textContent =
+        `Streak: ${displayStreak} day${displayStreak !== 1 ? 's' : ''}${nextText}`;
+    }
+
+    // Shared streak — unchanged logic
     if (sharedStreakEl) {
       const clientToday     = new Date().toISOString().slice(0, 10);
       const clientYesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
       const lsd = state.lastSharedDay;
-      // Show 0 if a day has passed without both watering
       const displayShared = (!lsd || lsd < clientYesterday) ? 0 : (state.sharedStreak || 0);
 
-      const todayRecord  = (state.wateredByDay || {})[clientToday] || {};
-      const elWatered    = !!todayRecord.el;
-      const teroWatered  = !!todayRecord.tero;
+      const todayRecord = (state.wateredByDay || {})[clientToday] || {};
       let coopStatus = '';
-      if (elWatered && teroWatered)       coopStatus = ' · both watered today';
-      else if (elWatered)                 coopStatus = ' · El watered, waiting for Tero';
-      else if (teroWatered)               coopStatus = ' · Tero watered, waiting for El';
+      if (todayRecord.el && todayRecord.tero)  coopStatus = ' · both watered today';
+      else if (todayRecord.el)                 coopStatus = ' · El watered, waiting for Tero';
+      else if (todayRecord.tero)               coopStatus = ' · Tero watered, waiting for El';
 
-      // Next coop unlock — skip 'sunflower' as it is always available anyway
       const nextCoop = COOP_UNLOCK_THRESHOLDS.find(u =>
         u.id !== 'sunflower' && !unlockedPlants.includes(u.id)
       );
       const nextCoopText = nextCoop
-        ? ` (next: ${PLANT_LABELS[nextCoop.id]} at ${nextCoop.streak})`
-        : '';
+        ? ` (next: ${PLANT_LABELS[nextCoop.id]} at ${nextCoop.streak})` : '';
 
       sharedStreakEl.textContent =
         `Shared streak: ${displayShared} day${displayShared !== 1 ? 's' : ''}${nextCoopText}${coopStatus}`;
     }
   }
 
-  // Initialise garden once if missing
+  // ---- Initialise / migrate ----
   onValue(gardenRef, (snap) => {
     if (!snap.exists()) {
       set(gardenRef, {
-        plantedAt:      Date.now(),
-        lastWatered:    null,
-        currentStage:   'seed',
-        wateringStreak: 0,
-        lastStreakDay:  null,
+        wateringStreak: 0, lastStreakDay:  null,
         unlockedPlants: [],
-        selectedPlant:  'sunflower',
-        sharedStreak:   0,
-        lastSharedDay:  null,
-        wateredByDay:   {},
+        sharedStreak:   0, lastSharedDay:  null, wateredByDay: {},
+        totalBlooms: 0, unlockedTiles: 1,
+        lastWateredByUser: {},
+        tiles: { '0': { plantedAt: Date.now(), lastWatered: null, selectedPlant: 'sunflower', events: [] } },
       });
+    } else {
+      const st = snap.val();
+      // Migrate: existing flat state (no tiles sub-object) → tiles structure
+      if (!st.tiles) {
+        update(gardenRef, {
+          totalBlooms:       0,
+          unlockedTiles:     1,
+          lastWateredByUser: {},
+          'tiles/0': {
+            plantedAt:     st.plantedAt     || Date.now(),
+            lastWatered:   st.lastWatered   || null,
+            selectedPlant: st.selectedPlant || 'sunflower',
+            events:        [],
+          },
+        });
+      }
     }
   }, { onlyOnce: true });
 
+  ensureTileColumns();
+
   // Live render
-  onValue(gardenRef, (snap) => {
-    renderGarden(snap.val());
-  });
+  onValue(gardenRef, (snap) => { renderGarden(snap.val()); });
 
-  // Water button — calls server endpoint so server date is authoritative
-  if (waterBtn) {
-    waterBtn.onclick = async () => {
-      const snap = await get(gardenRef);
-      const state = snap.val();
-      if (!state) return;
+  // ---- Water a specific tile ----
+  async function waterTile(n) {
+    const snap  = await get(gardenRef);
+    const state = snap.val();
+    if (!state) return;
 
-      waterBtn.disabled = true;
-      try {
-        const resp = await fetch('/api/garden/water', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            lastStreakDay:  state.lastStreakDay  ?? null,
-            wateringStreak: state.wateringStreak ?? 0,
-            lastWatered:    state.lastWatered    ?? null,
-            plantedAt:      state.plantedAt      ?? null,
-            unlockedPlants: state.unlockedPlants ?? [],
-            whoIsWatering:  GARDEN_USER_KEY[currentUser] ?? null,
-            wateredByDay:   state.wateredByDay   ?? {},
-            sharedStreak:   state.sharedStreak   ?? 0,
-            lastSharedDay:  state.lastSharedDay  ?? null,
-          }),
-        });
-        if (!resp.ok) throw new Error('server error');
+    const tiles    = state.tiles || {};
+    const tileData = tiles[String(n)] || { plantedAt: Date.now(), lastWatered: null, selectedPlant: 'sunflower', events: [] };
 
-        const result = await resp.json();
-        const now = Date.now();
-        const newStage = calculateStage({ ...state, lastWatered: now });
+    const waterBtn = tilesRowEl.querySelector(`.garden-water-btn[data-tile="${n}"]`);
+    if (waterBtn) waterBtn.disabled = true;
 
-        await update(gardenRef, {
-          lastWatered:    now,
-          currentStage:   newStage,
-          wateringStreak: result.wateringStreak,
-          lastStreakDay:  result.lastStreakDay,
-          unlockedPlants: result.unlockedPlants,
-          sharedStreak:   result.sharedStreak,
-          lastSharedDay:  result.lastSharedDay,
-          wateredByDay:   result.wateredByDay,
-        });
-      } finally {
-        waterBtn.disabled = false;
+    try {
+      // Exploration unlocks checked once per water press
+      const withExplore = await computeExploreUnlocks(state.unlockedPlants ?? []);
+
+      const resp = await fetch('/api/garden/water', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lastStreakDay:     state.lastStreakDay      ?? null,
+          wateringStreak:   state.wateringStreak     ?? 0,
+          lastWatered:      tileData.lastWatered     ?? null,
+          plantedAt:        tileData.plantedAt       ?? null,
+          unlockedPlants:   withExplore,
+          whoIsWatering:    GARDEN_USER_KEY[currentUser] ?? null,
+          wateredByDay:     state.wateredByDay        ?? {},
+          sharedStreak:     state.sharedStreak        ?? 0,
+          lastSharedDay:    state.lastSharedDay       ?? null,
+          lastWateredByUser: state.lastWateredByUser  ?? {},
+        }),
+      });
+      if (!resp.ok) throw new Error('server error');
+
+      const result = await resp.json();
+      const now    = Date.now();
+
+      // Merge exploration unlocks into server-returned list
+      for (const id of withExplore) {
+        if (!result.unlockedPlants.includes(id)) result.unlockedPlants.push(id);
       }
-    };
+
+      // Bloom counting → tile unlock
+      const oldStage     = calculateStage(tileData);
+      const newStage     = calculateStage({ ...tileData, lastWatered: now });
+      const isNewBloom   = oldStage !== 'bloom' && newStage === 'bloom';
+      const newTotalBlooms  = (state.totalBlooms || 0) + (isNewBloom ? 1 : 0);
+      const newUnlockedTiles = newTotalBlooms >= 5 ? 3 : newTotalBlooms >= 1 ? 2 : 1;
+
+      await update(gardenRef, {
+        wateringStreak:    result.wateringStreak,
+        lastStreakDay:     result.lastStreakDay,
+        unlockedPlants:    result.unlockedPlants,
+        sharedStreak:      result.sharedStreak,
+        lastSharedDay:     result.lastSharedDay,
+        wateredByDay:      result.wateredByDay,
+        lastWateredByUser: result.lastWateredByUser,
+        totalBlooms:       newTotalBlooms,
+        unlockedTiles:     newUnlockedTiles,
+        [`tiles/${n}/lastWatered`]: now,
+        [`tiles/${n}/events`]:      result.events,
+      });
+    } finally {
+      if (waterBtn) waterBtn.disabled = false;
+    }
   }
 
+  // Event delegation — one listener on the tiles row handles all water buttons
+  tilesRowEl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.garden-water-btn');
+    if (!btn || btn.disabled) return;
+    await waterTile(Number(btn.dataset.tile));
+  });
 
-  // Show / hide
+  // ---- Show / hide ---- (unchanged)
   function show() {
     win.classList.remove('is-hidden');
     btn.classList.add('is-pressed');
@@ -3299,7 +3433,7 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   if (localStorage.getItem('w95_garden_open') === '0') hide();
   else show();
 
-  // Drag
+  // ---- Drag ---- (unchanged)
   let dragging = false, startX = 0, startY = 0, winStartX = 20, winStartY = 20;
 
   handle.addEventListener('mousedown', (e) => {

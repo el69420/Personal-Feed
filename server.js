@@ -69,7 +69,7 @@ const GARDEN_COOP_UNLOCKS = [
     { streak: 14, id: 'twocolourbloom' },
 ];
 const GARDEN_COOP_USERS   = ['el', 'tero'];
-const GARDEN_VALID_PLANTS = ['sunflower', 'daisy', 'tulip', 'rose', 'orchid', 'lavender', 'twocolourbloom'];
+const GARDEN_VALID_PLANTS = ['sunflower', 'daisy', 'tulip', 'rose', 'orchid', 'lavender', 'twocolourbloom', 'mint', 'fern', 'wildflower'];
 
 // POST /api/garden/water
 // Body: { lastStreakDay, wateringStreak, lastWatered, plantedAt, unlockedPlants }
@@ -81,10 +81,11 @@ app.post('/api/garden/water', (req, res) => {
         lastWatered    = null,
         plantedAt      = null,
         unlockedPlants = [],
-        whoIsWatering  = null,
-        wateredByDay   = {},
-        sharedStreak   = 0,
-        lastSharedDay  = null,
+        whoIsWatering     = null,
+        wateredByDay      = {},
+        sharedStreak      = 0,
+        lastSharedDay     = null,
+        lastWateredByUser = {},
     } = req.body || {};
 
     const now = Date.now();
@@ -148,6 +149,40 @@ app.post('/api/garden/water', (req, res) => {
         }
     }
 
+    // ---- Rare tile events ----
+    const events = [];
+
+    // Mushroom: plant wilted for 7+ days (wilt onset computable from existing data)
+    if (isWilted) {
+        const wiltedSince = lastWatered
+            ? lastWatered + 48 * MS_HOUR
+            : (plantedAt ? plantedAt + 24 * MS_HOUR : null);
+        if (wiltedSince && (now - wiltedSince) >= 7 * 86400000) {
+            events.push('mushroom');
+        }
+    }
+
+    // moonflowerVariant: watered between 00:00 and 01:00 UTC, ~30% chance
+    if (new Date(now).getUTCHours() === 0 && Math.random() < 0.3) {
+        events.push('moonflowerVariant');
+    }
+
+    // shootingStar: other user also watered within the same clock-hour, 10% chance
+    if (whoIsWatering && GARDEN_COOP_USERS.includes(whoIsWatering)) {
+        const otherUser = GARDEN_COOP_USERS.find(u => u !== whoIsWatering);
+        const otherTs   = (lastWateredByUser || {})[otherUser];
+        if (otherTs && Math.floor(otherTs / 3600000) === Math.floor(now / 3600000)
+                && Math.random() < 0.10) {
+            events.push('shootingStar');
+        }
+    }
+
+    // Update lastWateredByUser for the calling user
+    const newLastWateredByUser = { ...(lastWateredByUser || {}) };
+    if (whoIsWatering && GARDEN_COOP_USERS.includes(whoIsWatering)) {
+        newLastWateredByUser[whoIsWatering] = now;
+    }
+
     res.json({
         today,
         wateringStreak:      newStreak,
@@ -157,6 +192,8 @@ app.post('/api/garden/water', (req, res) => {
         sharedStreak:        newSharedStreak,
         lastSharedDay:       newLastSharedDay,
         wateredByDay:        newWateredByDay,
+        events,
+        lastWateredByUser:   newLastWateredByUser,
     });
 });
 
