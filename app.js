@@ -3069,6 +3069,8 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   const tilesRowEl     = document.getElementById('garden-tiles-row');
   const streakEl       = document.getElementById('garden-streak');
   const sharedStreakEl = document.getElementById('garden-shared-streak');
+  const gardenBodyEl   = win.querySelector('.w95-body');
+  const weatherDisplayEl = document.getElementById('garden-weather');
 
   const gardenRef = ref(database, 'garden');
   const MS_HOUR   = 3600000;
@@ -3188,7 +3190,10 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
           `<div class="garden-tile-events"></div>` +
         `</div>` +
         `<div class="garden-tile-status-el"></div>` +
-        `<button class="w95-btn garden-water-btn" data-tile="${n}">Water</button>`;
+        `<div class="garden-tile-actions">` +
+          `<button class="w95-btn garden-water-btn" data-tile="${n}">Water</button>` +
+          `<button class="w95-btn garden-talk-btn" data-tile="${n}">Talk</button>` +
+        `</div>`;
     }
 
     const stage     = tileData ? calculateStage(tileData) : 'seed';
@@ -3478,6 +3483,153 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     await waterTile(Number(btn.dataset.tile));
   });
 
+  // Talk button delegation
+  tilesRowEl.addEventListener('click', (e) => {
+    const talkBtn = e.target.closest('.garden-talk-btn');
+    if (!talkBtn) return;
+    doTalkToPlant(Number(talkBtn.dataset.tile));
+  });
+
+  // ================================================================
+  // VIBE + FEEDBACK FEATURES
+  // ================================================================
+
+  // ---- 1) Talk to Plant ----
+  const TALK_MESSAGES = [
+    "Your leaves are looking so lovely today!",
+    "I've been thinking about you all day.",
+    "You're doing such a great job growing!",
+    "Did you know you make this whole space brighter?",
+    "I love how you reach toward the light.",
+    "You're my favourite plant — don't tell the others.",
+    "Growing takes courage. You've got plenty of it.",
+    "Every new leaf is a tiny miracle.",
+    "I see you stretching a little taller today!",
+    "Thank you for existing.",
+    "The soil feels happy today — can you tell?",
+    "Your roots are strong, even if I can't see them.",
+    "I'm so proud of how far you've come.",
+    "You handle the weather better than I do.",
+    "Sometimes I wonder what you dream about.",
+    "You're honestly the best listener.",
+    "Keep blooming — you were made for it.",
+    "A little water, a little love — that's all we need.",
+    "I named a star after you. In my heart.",
+    "Talking to plants is scientifically proven to help. (Probably.)",
+  ];
+
+  function doTalkToPlant() {
+    const msg = TALK_MESSAGES[Math.floor(Math.random() * TALK_MESSAGES.length)];
+    showToast(msg);
+    sparkSound('chat');
+    const count = Number(localStorage.getItem('garden_talkCount') || '0') + 1;
+    localStorage.setItem('garden_talkCount', String(count));
+  }
+
+  // ---- 2) Daily Weather ----
+  const WEATHER_TYPES  = ['sunny', 'cloudy', 'rainy', 'foggy', 'windy', 'stormy'];
+  const WEATHER_LABELS = {
+    sunny:  '☀️ Sunny',
+    cloudy: '☁️ Cloudy',
+    rainy:  '🌧️ Rainy',
+    foggy:  '🌫️ Foggy',
+    windy:  '💨 Windy',
+    stormy: '⛈️ Stormy',
+  };
+
+  let _currentWeather = null;
+
+  function getTodayWeather() {
+    const today = localDateStr();
+    const key   = 'garden_weather_' + today;
+    let w = localStorage.getItem(key);
+    if (!w || !WEATHER_TYPES.includes(w)) {
+      w = WEATHER_TYPES[Math.floor(Math.random() * WEATHER_TYPES.length)];
+      localStorage.setItem(key, w);
+    }
+    return w;
+  }
+
+  function applyWeather() {
+    const w = getTodayWeather();
+    if (w === _currentWeather) return;
+    _currentWeather = w;
+    if (weatherDisplayEl) weatherDisplayEl.textContent = 'Weather: ' + WEATHER_LABELS[w];
+    WEATHER_TYPES.forEach(t => gardenBodyEl?.classList.remove('garden-weather--' + t));
+    if (gardenBodyEl) gardenBodyEl.classList.add('garden-weather--' + w);
+  }
+
+  // ---- 3) Critters ----
+  const CRITTER_POOL = [
+    { emoji: '🐌', label: 'snail' },
+    { emoji: '🐝', label: 'bee' },
+    { emoji: '🦋', label: 'butterfly' },
+    { emoji: '🐌', label: 'snail' },
+    { emoji: '🐝', label: 'bee' },
+    { emoji: '🦋', label: 'butterfly' },
+    { emoji: '✨🧚✨', label: 'fairy' },  // rare (~1-in-7)
+  ];
+  const CRITTER_MESSAGES = {
+    snail:     ['A little snail says hi! 🐌', 'Slow and steady! 🐌', 'Look, a snail!'],
+    bee:       ['A bee visits your flowers! 🐝', 'Bzzzz! 🐝', 'The bees love your garden!'],
+    butterfly: ['A butterfly dances past! 🦋', 'How beautiful! 🦋', 'Flutter flutter! 🦋'],
+    fairy:     ['A garden fairy appeared! ✨', '✨ So rare! A wild fairy! ✨', 'The garden magic is strong today! ✨'],
+  };
+
+  let _critterEl       = null;
+  let _critterDespawn  = null;
+  let _critterSchedule = null;
+
+  function spawnCritter() {
+    if (_critterEl) return;   // at most 1 critter at a time
+    const critter = CRITTER_POOL[Math.floor(Math.random() * CRITTER_POOL.length)];
+    const el = document.createElement('div');
+    el.className     = 'garden-critter';
+    el.textContent   = critter.emoji;
+    el.dataset.label = critter.label;
+    // Position randomly within the tiles area
+    el.style.left   = (4 + Math.random() * 210) + 'px';
+    el.style.top    = (6 + Math.random() * 55) + 'px';
+    el.addEventListener('click', () => {
+      const label = el.dataset.label;
+      const msgs  = CRITTER_MESSAGES[label] || ['A critter!'];
+      showToast(msgs[Math.floor(Math.random() * msgs.length)]);
+      sparkSound('react');
+      const stored = JSON.parse(localStorage.getItem('garden_critterCounts') || '{}');
+      stored[label] = (stored[label] || 0) + 1;
+      localStorage.setItem('garden_critterCounts', JSON.stringify(stored));
+      despawnCritter();
+    });
+    tilesRowEl.appendChild(el);
+    _critterEl = el;
+    // Auto-despawn after 12s
+    _critterDespawn = setTimeout(despawnCritter, 12000);
+    // Schedule the next spawn attempt
+    scheduleNextCritter();
+  }
+
+  function despawnCritter() {
+    if (_critterDespawn) { clearTimeout(_critterDespawn); _critterDespawn = null; }
+    if (_critterEl) { _critterEl.remove(); _critterEl = null; }
+  }
+
+  function scheduleNextCritter() {
+    if (_critterSchedule) { clearTimeout(_critterSchedule); _critterSchedule = null; }
+    const delay = 60000 + Math.random() * 60000;  // 60–120 s
+    _critterSchedule = setTimeout(spawnCritter, delay);
+  }
+
+  function startCritters() {
+    stopCritters();
+    // Initial spawn attempt: 2–5 s after opening
+    _critterSchedule = setTimeout(spawnCritter, 2000 + Math.random() * 3000);
+  }
+
+  function stopCritters() {
+    if (_critterSchedule) { clearTimeout(_critterSchedule); _critterSchedule = null; }
+    despawnCritter();
+  }
+
   // ---- Show / hide ----
   function show() {
     win.classList.remove('is-hidden');
@@ -3487,12 +3639,15 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     // This is the correct place — not during achievement init — so that
     // simply loading the app does not count as a garden visit.
     recordGardenVisit();
+    applyWeather();
+    startCritters();
   }
 
   function hide() {
     win.classList.add('is-hidden');
     btn.classList.remove('is-pressed');
     localStorage.setItem('w95_garden_open', '0');
+    stopCritters();
   }
 
   btn.onclick = () => {

@@ -3598,5 +3598,45 @@ body.dark-mode .achievement-item.is-unlocked .achievement-progress{color:#a0c8a0
   top:-12px;left:-3px;
 }
 
+/* ===== Garden Vibe & Feedback additions ===== */
+
+/* 1) Talk to Plant — action button row */
+.garden-tile-actions{display:flex;gap:3px;}
+.garden-tile-actions .w95-btn{flex:1;font-size:10px;padding:3px 2px;min-width:0;}
+
+/* 2) Daily Weather — text label */
+.garden-weather-display{font-size:10px;color:#444;margin-top:4px;min-height:14px;}
+
+/* Weather overlay: subtle tint via ::before on the garden body */
+#w95-win-garden .w95-body{position:relative;}
+#w95-win-garden .w95-body::before{
+  content:'';position:absolute;inset:0;
+  pointer-events:none;z-index:0;
+  background:transparent;
+  transition:background 0.6s ease;
+}
+#w95-win-garden .w95-body.garden-weather--rainy::before  {background:rgba(80,120,200,0.10);}
+#w95-win-garden .w95-body.garden-weather--cloudy::before {background:rgba(150,150,160,0.12);}
+#w95-win-garden .w95-body.garden-weather--foggy::before  {background:rgba(210,215,225,0.20);}
+#w95-win-garden .w95-body.garden-weather--windy::before  {background:rgba(120,180,120,0.08);}
+#w95-win-garden .w95-body.garden-weather--stormy::before {background:rgba(40,50,80,0.18);}
+/* sunny: no overlay — garden looks its natural best */
+
+/* 3) Critters */
+.garden-tiles-row{position:relative;}
+.garden-critter{
+  position:absolute;
+  font-size:18px;
+  cursor:pointer;
+  z-index:10;
+  user-select:none;
+  line-height:1;
+  animation:garden-critter-appear 0.35s ease;
+}
+@keyframes garden-critter-appear{
+  from{opacity:0;transform:scale(0.3);}
+  to  {opacity:1;transform:scale(1);}
+}
+
 
 
