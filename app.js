@@ -2995,8 +2995,7 @@ document.getElementById('scrollTopBtn')?.addEventListener('click', () =>
 );
 
 // Activity panel
-document.getElementById('activityFab')?.addEventListener('click',       () => toggleActivityPanel());
-document.getElementById('activityPanelClose')?.addEventListener('click', () => closeActivityPanel());
+document.getElementById('activityFab')?.addEventListener('click', () => toggleActivityPanel());
 
 // Chat
 document.getElementById('chatFab')?.addEventListener('click', () => toggleChat());
@@ -3254,9 +3253,6 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
   minChat.onclick = (e) => { e.stopPropagation(); hide(winChat, btnChat, 'w95_chat_open'); };
   minNew.onclick = (e) => { e.stopPropagation(); hide(winNew, btnNew, 'w95_new_open'); };
-
-  const newClose = document.getElementById('activityPanelClose');
-  if (newClose) newClose.onclick = (e) => { e.preventDefault(); hide(winNew, btnNew, 'w95_new_open'); };
 
   // Restore open state — default closed if no preference stored
   if (localStorage.getItem('w95_chat_open') === '1') show(winChat, btnChat, 'w95_chat_open');
