@@ -497,6 +497,12 @@ function login(displayName, email) {
     startNowListening();
     showSection('feed');
     initAchievements();
+    // If the garden window was already open when auth resolved (page-restore path),
+    // run the visit-spark check now that currentUser is set.
+    const gardenWin = document.getElementById('w95-win-garden');
+    if (gardenWin && !gardenWin.classList.contains('is-hidden')) {
+        checkVisitSpark();
+    }
 }
 
 window.logout = function() {
@@ -3072,8 +3078,9 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   const gardenBodyEl   = win.querySelector('.w95-body');
   const weatherDisplayEl = document.getElementById('garden-weather');
 
-  const gardenRef = ref(database, 'garden');
-  const MS_HOUR   = 3600000;
+  const gardenRef  = ref(database, 'garden');
+  const ritualEl   = document.getElementById('garden-ritual');
+  const MS_HOUR    = 3600000;
 
   // Returns "YYYY-MM-DD" in local time for a given ms timestamp.
   function tsToLocalDate(ts) {
@@ -3343,6 +3350,14 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
       sharedStreakEl.textContent =
         `Shared streak: ${displayShared} day${displayShared !== 1 ? 's' : ''}${nextCoopText}${coopStatus}`;
     }
+
+    // Same-day Water Ritual indicator — stays visible all day once both have watered
+    if (ritualEl) {
+      const todayRec = (state.wateredByDay || {})[localDateStr()] || {};
+      const ritualOn = !!(todayRec.el && todayRec.tero);
+      ritualEl.textContent  = ritualOn ? 'Ritual active: ✔' : '';
+      ritualEl.style.display = ritualOn ? '' : 'none';
+    }
   }
 
   // ---- Initialise / migrate ----
@@ -3460,6 +3475,17 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
       // Success feedback
       showToast('Watered!');
       sparkSound('post');
+
+      // Same-day Water Ritual: toast the moment the second user completes the pair
+      const ritualDay      = localDateStr();
+      const todayAfterWater = (result.wateredByDay || {})[ritualDay] || {};
+      if (todayAfterWater.el && todayAfterWater.tero) {
+        const ritualFlagKey = 'garden_ritual_toast_' + ritualDay;
+        if (!localStorage.getItem(ritualFlagKey)) {
+          localStorage.setItem(ritualFlagKey, '1');
+          showToast('Shared ritual 🌸 You both watered today');
+        }
+      }
 
       if (result.wateringStreak >= 3) unlockAchievement('water_3_days');
 
@@ -3639,6 +3665,8 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     // This is the correct place — not during achievement init — so that
     // simply loading the app does not count as a garden visit.
     recordGardenVisit();
+    // Same-hour Visit Spark: write our open timestamp + toast if other user is also here.
+    checkVisitSpark();
     applyWeather();
     startCritters();
   }
@@ -3872,6 +3900,29 @@ async function recordGardenVisit() {
         renderAchievementsWindow();
     } catch (e) {
         console.error('recordGardenVisit failed', e);
+    }
+}
+
+// Same-hour Visit Spark: show a toast when both users have the garden open within 60 min.
+// Writes lastGardenOpen for the current user, reads it for the other user.
+// Called from show() (inside the garden IIFE) on every garden-open event.
+async function checkVisitSpark() {
+    if (!currentUser) return;
+    try {
+        const otherUser = currentUser === 'El' ? 'Tero' : 'El';
+        const now       = Date.now();
+        // Read the other user's timestamp BEFORE writing our own to avoid a self-match
+        // on the first open (both would be 0 / null otherwise).
+        const otherSnap = await get(ref(database, 'userStats/' + otherUser + '/lastGardenOpen'));
+        const otherTs   = otherSnap.val();
+        // Record our own open time so the other user can see it on their next open.
+        await update(ref(database, 'userStats/' + currentUser), { lastGardenOpen: now });
+        // Toast if the other user opened the garden within the last 60 minutes.
+        if (typeof otherTs === 'number' && (now - otherTs) < 60 * 60 * 1000) {
+            showToast("You're both here 💚");
+        }
+    } catch (e) {
+        console.error('checkVisitSpark failed', e);
     }
 }
 
