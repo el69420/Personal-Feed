@@ -3073,6 +3073,14 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
   const gardenRef = ref(database, 'garden');
   const MS_HOUR   = 3600000;
 
+  // Returns "YYYY-MM-DD" in local time for a given ms timestamp.
+  function tsToLocalDate(ts) {
+    const d = new Date(ts);
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
   const PLANT_LABELS = {
     sunflower:      'Sunflower',
     daisy:          'Daisy',
@@ -3254,6 +3262,16 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
       statusDiv.textContent = `${STAGE_LABELS[stage] || stage} · ${wateredText}`;
     }
 
+    // Water button: reflect watered-today state
+    const waterBtnEl = col.querySelector('.garden-water-btn');
+    if (waterBtnEl && tileData) {
+      const doneToday = tileData.lastWatered
+        ? tsToLocalDate(tileData.lastWatered) === localDateStr()
+        : false;
+      waterBtnEl.textContent = doneToday ? 'Watered today \u2714' : 'Water';
+      waterBtnEl.classList.toggle('garden-water-btn--done', doneToday);
+    }
+
     // Event overlays — stored events from Firebase plus client-computed mushroom
     const eventsDiv = col.querySelector('.garden-tile-events');
     if (eventsDiv && tileData) {
@@ -3366,6 +3384,20 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     const tiles    = state.tiles || {};
     const tileData = tiles[String(n)] || { plantedAt: Date.now(), lastWatered: null, selectedPlant: 'sunflower', events: [] };
 
+    // ---- Already watered today? (local date) ----
+    if (tileData.lastWatered && tsToLocalDate(tileData.lastWatered) === localDateStr()) {
+      showToast('Already watered today');
+      const wb = tilesRowEl.querySelector(`.garden-water-btn[data-tile="${n}"]`);
+      if (wb) {
+        wb.classList.remove('garden-water-btn--shake');
+        void wb.offsetWidth; // force reflow to restart animation
+        wb.classList.add('garden-water-btn--shake');
+        wb.addEventListener('animationend', () =>
+          wb.classList.remove('garden-water-btn--shake'), { once: true });
+      }
+      return;
+    }
+
     const waterBtn = tilesRowEl.querySelector(`.garden-water-btn[data-tile="${n}"]`);
     if (waterBtn) waterBtn.disabled = true;
 
@@ -3419,6 +3451,11 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
         [`tiles/${n}/lastWatered`]: now,
         [`tiles/${n}/events`]:      result.events,
       });
+
+      // Success feedback
+      showToast('Watered!');
+      sparkSound('post');
+
       if (result.wateringStreak >= 3) unlockAchievement('water_3_days');
 
       // Per-user watering count → first_sprout + watering_can

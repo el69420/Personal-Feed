@@ -3378,6 +3378,15 @@ body.dark-mode .achievement-item.is-unlocked .achievement-progress{color:#a0c8a0
   font:10px Tahoma,Verdana,Arial,sans-serif;
   color:#555;text-align:center;white-space:nowrap;
 }
+@keyframes garden-water-shake{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-4px);}
+  40%{transform:translateX(4px);}
+  60%{transform:translateX(-3px);}
+  80%{transform:translateX(3px);}
+}
+.garden-water-btn--shake{animation:garden-water-shake .35s ease;}
+.garden-water-btn--done{color:#006600;}
 /* Per-tile plant row: fixed height matches row-1 track so label/select
    never pushes the soil tile out of alignment */
 .garden-tile-col .garden-plant-row{
