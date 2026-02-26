@@ -3618,12 +3618,14 @@ const ACHIEVEMENTS = [
 let unlockedAchievements = new Set();
 
 async function initAchievements() {
-    if (!currentUser) return;
+    const body = document.getElementById('w95-achievements-body');
+    if (!currentUser) {
+        if (body) body.innerHTML = '<div class="achievement-placeholder">Sign in to view achievements</div>';
+        return;
+    }
     try {
-        const resp = await fetch(`/api/achievements?user=${encodeURIComponent(currentUser)}`);
-        if (!resp.ok) return;
-        const data = await resp.json();
-        unlockedAchievements = new Set(data.unlocked || []);
+        const snap = await get(ref(database, 'achievements/' + currentUser));
+        unlockedAchievements = new Set(snap.exists() ? Object.keys(snap.val()) : []);
         renderAchievementsWindow();
     } catch (e) {
         console.error('initAchievements failed', e);
@@ -3631,21 +3633,14 @@ async function initAchievements() {
 }
 
 async function unlockAchievement(id) {
+    if (!ACHIEVEMENTS.find(a => a.id === id)) return;
     if (unlockedAchievements.has(id) || !currentUser) return;
     try {
-        const resp = await fetch('/api/achievements/unlock', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user: currentUser, id }),
-        });
-        if (!resp.ok) return;
-        const data = await resp.json();
-        if (data.unlocked) {
-            unlockedAchievements.add(id);
-            const achievement = ACHIEVEMENTS.find(a => a.id === id);
-            if (achievement) showToast(`Achievement unlocked: ${achievement.title}`);
-            renderAchievementsWindow();
-        }
+        await set(ref(database, 'achievements/' + currentUser + '/' + id), Date.now());
+        unlockedAchievements.add(id);
+        const achievement = ACHIEVEMENTS.find(a => a.id === id);
+        if (achievement) showToast(`Achievement unlocked: ${achievement.title}`);
+        renderAchievementsWindow();
     } catch (e) {
         console.error('unlockAchievement failed', e);
     }
