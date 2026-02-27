@@ -209,37 +209,8 @@
     </div>
 
         </div><!-- /.w95-feed-body -->
-    </div><!-- /#w95-win-feed -->
 
-    <!-- Keyboard Shortcuts Modal -->
-    <div id="shortcutsModal" class="modal">
-        <div class="modal-content modal-sm">
-            <button class="modal-x" id="shortcutsModalClose" title="Close">✕</button>
-            <h2 class="text-xl font-bold mb-1 modal-heading">[kbd] Keyboard Shortcuts</h2>
-            <p class="text-sm mb-5 modal-subtext">Press <kbd>?</kbd> anytime to see this</p>
-
-            <div class="shortcuts-section">
-                <div class="shortcuts-section-title">Navigate</div>
-                <div class="shortcut-row"><kbd>J</kbd> <span>Next post</span></div>
-                <div class="shortcut-row"><kbd>K</kbd> <span>Previous post</span></div>
-            </div>
-
-            <div class="shortcuts-section">
-                <div class="shortcuts-section-title">Focused post</div>
-                <div class="shortcut-row"><kbd>L</kbd> <span>React with &lt;3</span></div>
-                <div class="shortcut-row"><kbd>F</kbd> <span>Save / unsave</span></div>
-            </div>
-
-            <div class="shortcuts-section">
-                <div class="shortcuts-section-title">App</div>
-                <div class="shortcut-row"><kbd>N</kbd> <span>New post</span></div>
-                <div class="shortcut-row"><kbd>M</kbd> <span>Open chat</span></div>
-                <div class="shortcut-row"><kbd>/</kbd> <span>Search</span></div>
-                <div class="shortcut-row"><kbd>?</kbd> <span>This help screen</span></div>
-                <div class="shortcut-row"><kbd>Esc</kbd> <span>Close / dismiss</span></div>
-            </div>
-        </div>
-    </div>
+    <!-- Post-creation modals — rendered inside Feed window so they appear within its stacking context -->
 
     <!-- Type Picker Modal -->
     <div id="typePickerModal" class="modal">
@@ -421,6 +392,38 @@
                 <div class="post-tip" id="linkTip">
                     Tip: Instagram links will show an embed (image, and caption when Instagram allows it).
                 </div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /#w95-win-feed -->
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcutsModal" class="modal">
+        <div class="modal-content modal-sm">
+            <button class="modal-x" id="shortcutsModalClose" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-1 modal-heading">[kbd] Keyboard Shortcuts</h2>
+            <p class="text-sm mb-5 modal-subtext">Press <kbd>?</kbd> anytime to see this</p>
+
+            <div class="shortcuts-section">
+                <div class="shortcuts-section-title">Navigate</div>
+                <div class="shortcut-row"><kbd>J</kbd> <span>Next post</span></div>
+                <div class="shortcut-row"><kbd>K</kbd> <span>Previous post</span></div>
+            </div>
+
+            <div class="shortcuts-section">
+                <div class="shortcuts-section-title">Focused post</div>
+                <div class="shortcut-row"><kbd>L</kbd> <span>React with &lt;3</span></div>
+                <div class="shortcut-row"><kbd>F</kbd> <span>Save / unsave</span></div>
+            </div>
+
+            <div class="shortcuts-section">
+                <div class="shortcuts-section-title">App</div>
+                <div class="shortcut-row"><kbd>N</kbd> <span>New post</span></div>
+                <div class="shortcut-row"><kbd>M</kbd> <span>Open chat</span></div>
+                <div class="shortcut-row"><kbd>/</kbd> <span>Search</span></div>
+                <div class="shortcut-row"><kbd>?</kbd> <span>This help screen</span></div>
+                <div class="shortcut-row"><kbd>Esc</kbd> <span>Close / dismiss</span></div>
             </div>
         </div>
     </div>

@@ -4473,6 +4473,16 @@ body.dark-mode .garden-talk-btn:hover{
   overflow: hidden; /* window itself doesn't scroll; body does */
 }
 
+/* Post-creation modals are children of #w95-win-feed so they render
+   inside the window's stacking context instead of behind it.
+   Override position:fixed → absolute so they cover the window area.
+   overflow-y:auto lets tall forms scroll within the window bounds. */
+#w95-win-feed .modal {
+  position: absolute;
+  z-index: 10;
+  overflow-y: auto;
+}
+
 #w95-win-feed .w95-body {
   flex: 1;
   overflow-y: auto;
