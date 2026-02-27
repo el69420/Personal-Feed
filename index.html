@@ -611,7 +611,12 @@
         <div id="chatBody" class="chat-body"></div>
         <div id="chatTypingIndicator" class="typing-indicator hidden"></div>
         <div class="chat-input-wrap">
-            <textarea id="chatInput" class="chat-input" placeholder="say something... ^_^" rows="1"></textarea>
+            <div class="chat-input-positioner">
+                <textarea id="chatInput" class="chat-input" placeholder="say something... ^_^" rows="1"
+                    role="combobox" aria-autocomplete="list" aria-expanded="false"
+                    aria-controls="chatAutocomplete" aria-haspopup="listbox" autocomplete="off"></textarea>
+                <ul id="chatAutocomplete" class="chat-autocomplete hidden" role="listbox" aria-label="slash commands"></ul>
+            </div>
             <div class="chat-hint">Enter ↵ to send · Shift+Enter for new line</div>
         </div>
     </div>

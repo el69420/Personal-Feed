@@ -640,6 +640,20 @@ body.dark-mode .chat-input-wrap { background: #808080; border-color: #404040 #C0
 body.dark-mode .chat-input { background: #C0C0C0; color: #000000; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
 body.dark-mode .chat-send-btn, body.dark-mode .activity-close-btn, body.dark-mode .chat-close-btn { background: #808080; color: #FFFFFF; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020; }
 
+.chat-autocomplete {
+    background: #C0C0C0;
+    border: 2px solid;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040, 2px 2px 0 #000000;
+    border-radius: 0;
+    animation: none;
+}
+.chat-autocomplete__item { border-radius: 0; font-family: Tahoma, Verdana, Geneva, sans-serif; font-size: 13px; color: #000000; }
+.chat-autocomplete__item:hover, .chat-autocomplete__item--active { background: #000080; color: #FFFFFF; }
+body.dark-mode .chat-autocomplete { background: #808080; border-color: #C0C0C0 #404040 #404040 #C0C0C0; box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020, 2px 2px 0 #000000; }
+body.dark-mode .chat-autocomplete__item { color: #FFFFFF; }
+body.dark-mode .chat-autocomplete__item:hover, body.dark-mode .chat-autocomplete__item--active { background: #000080; color: #FFFFFF; }
+
 /* ============================================================
    20.  CHAT BUBBLES
    ============================================================ */

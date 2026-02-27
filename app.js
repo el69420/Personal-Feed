@@ -2929,9 +2929,36 @@ chatInput.addEventListener('input', () => {
     chatInput.style.height = 'auto';
     chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
     startChatTyping();
+    _acUpdate();
 });
 
 chatInput.addEventListener('keydown', async (e) => {
+    // ---- Autocomplete keyboard navigation ----
+    if (_acEl && !_acEl.classList.contains('hidden')) {
+        const items = _acEl.querySelectorAll('.chat-autocomplete__item');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            _acSetActive(Math.min(_acIndex + 1, items.length - 1));
+            return;
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            _acSetActive(Math.max(_acIndex - 1, 0));
+            return;
+        }
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const target = _acIndex >= 0 ? items[_acIndex] : items[0];
+            if (target) _acFill(target.textContent.slice(1)); // strip leading /
+            return;
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            _acClose();
+            return;
+        }
+    }
+    // ---- End autocomplete ----
     if (e.key !== 'Enter') return;
     if (e.shiftKey) return;
     e.preventDefault();
@@ -2986,6 +3013,88 @@ chatInput.addEventListener('keydown', async (e) => {
     }
 });
 }
+
+// ---- SLASH COMMAND AUTOCOMPLETE ----
+const _acEl    = document.getElementById('chatAutocomplete');
+let   _acIndex = -1;
+
+function _acGetMatches(val) {
+    if (!val.startsWith('/')) return [];
+    const typed = val.slice(1).toLowerCase();
+    const cmds  = Object.keys(SLASH_COMMANDS);
+    return typed ? cmds.filter(c => c.startsWith(typed)) : cmds;
+}
+
+function _acSetActive(idx) {
+    if (!_acEl) return;
+    const items = _acEl.querySelectorAll('.chat-autocomplete__item');
+    items.forEach((el, i) => {
+        const active = i === idx;
+        el.classList.toggle('chat-autocomplete__item--active', active);
+        el.setAttribute('aria-selected', String(active));
+        if (active) el.id = 'chat-ac-active'; else el.removeAttribute('id');
+    });
+    _acIndex = idx;
+    if (chatInput) {
+        if (idx >= 0) chatInput.setAttribute('aria-activedescendant', 'chat-ac-active');
+        else chatInput.removeAttribute('aria-activedescendant');
+    }
+}
+
+function _acFill(cmd) {
+    if (!chatInput) return;
+    chatInput.value = '/' + cmd;
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
+    _acClose();
+    chatInput.focus();
+}
+
+function _acClose() {
+    if (!_acEl) return;
+    _acEl.classList.add('hidden');
+    _acEl.innerHTML = '';
+    _acIndex = -1;
+    if (chatInput) {
+        chatInput.setAttribute('aria-expanded', 'false');
+        chatInput.removeAttribute('aria-activedescendant');
+    }
+}
+
+function _acOpen(matches) {
+    if (!_acEl) return;
+    _acIndex = -1;
+    _acEl.innerHTML = '';
+    matches.forEach(cmd => {
+        const li = document.createElement('li');
+        li.className = 'chat-autocomplete__item';
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', 'false');
+        li.textContent = '/' + cmd;
+        li.addEventListener('mousedown', e => {
+            e.preventDefault(); // prevent blur before fill
+            _acFill(cmd);
+        });
+        _acEl.appendChild(li);
+    });
+    _acEl.classList.remove('hidden');
+    if (chatInput) chatInput.setAttribute('aria-expanded', 'true');
+}
+
+function _acUpdate() {
+    if (!chatInput || !_acEl) return;
+    const matches = _acGetMatches(chatInput.value);
+    if (matches.length) _acOpen(matches);
+    else _acClose();
+}
+
+// Close dropdown when clicking outside the input area
+document.addEventListener('click', e => {
+    if (_acEl && !_acEl.classList.contains('hidden')) {
+        const positioner = document.querySelector('.chat-input-positioner');
+        if (positioner && !positioner.contains(e.target)) _acClose();
+    }
+});
 
 
 

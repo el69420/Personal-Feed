@@ -1479,6 +1479,60 @@ body.dark-mode .chat-group--other .chat-bubble {
     font-weight: 800;
 }
 
+/* ---- SLASH COMMAND AUTOCOMPLETE DROPDOWN ---- */
+.chat-input-positioner {
+    position: relative;
+}
+
+.chat-autocomplete {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 10px;
+    padding: 4px;
+    margin: 0;
+    list-style: none;
+    z-index: 200;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+    animation: acDrop 0.12s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.chat-autocomplete.hidden { display: none; }
+
+@keyframes acDrop {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0);   }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-autocomplete { animation: none; }
+}
+
+.chat-autocomplete__item {
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-radius: 7px;
+    cursor: pointer;
+    user-select: none;
+}
+.chat-autocomplete__item:hover,
+.chat-autocomplete__item--active {
+    background: rgba(0, 128, 128, 0.12);
+    color: teal;
+}
+body.dark-mode .chat-autocomplete {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+body.dark-mode .chat-autocomplete__item:hover,
+body.dark-mode .chat-autocomplete__item--active {
+    background: rgba(0, 180, 180, 0.2);
+    color: #4dd;
+}
+
 /* ---- SLASH COMMAND SYSTEM MESSAGES ---- */
 .chat-system-msg {
     align-self: center;
