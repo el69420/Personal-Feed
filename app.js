@@ -141,6 +141,12 @@ const _commentOnDisconnectSet = new Set(); // postIds where onDisconnect is regi
 let _cachedChatTyping    = {};           // snapshot of /typing/chat
 let _cachedCommentTyping = {};           // snapshot of /typing/comments
 
+// ---- PRESENCE STATE ----
+let _presRef         = null;   // Firebase ref for current user's presence node
+let _presState       = 'offline';  // 'online' | 'idle' | 'typing' | 'offline'
+let _presIdleTimer   = null;
+let _presHbInterval  = null;  // heartbeat interval handle
+
 
 // Edit/Delete modal state
 let editTarget = null;   // { type:'post'|'reply', postId, replyId }
@@ -513,6 +519,7 @@ function login(displayName, email) {
     updateNewCount();
     loadPosts();
     setupTypingCleanup();
+    setupPresence();
     startNowListening();
     showSection('feed');
     initAchievements();
@@ -2652,6 +2659,7 @@ function startChatTyping() {
         _chatIsTyping = true;
         set(_chatTypingRef(), { typing: true });
     }
+    _setPresState('typing');
     // Reset the inactivity timer
     clearTimeout(_chatTypingTimer);
     _chatTypingTimer = setTimeout(stopChatTyping, 1200);
@@ -2663,6 +2671,8 @@ function stopChatTyping() {
     if (!currentUser || !_chatIsTyping) return;
     _chatIsTyping = false;
     set(_chatTypingRef(), { typing: false });
+    _setPresState('online');
+    _resetPresIdle(); // restart the idle countdown
 }
 
 function setupTypingCleanup() {
@@ -2726,6 +2736,57 @@ function updateCommentTypingUI() {
 }
 
 // (typing onValue listeners are in setupDBListeners())
+
+// ---- PRESENCE (Phase 1: Shared Presence Pulse) ----
+
+function _setPresState(state) {
+    if (!_presRef || _presState === state) return;
+    _presState = state;
+    update(_presRef, { state, ts: Date.now() });
+}
+
+function _resetPresIdle() {
+    clearTimeout(_presIdleTimer);
+    // Don't interrupt an active typing state — let stopChatTyping restore it.
+    if (_presState !== 'typing') _setPresState('online');
+    _presIdleTimer = setTimeout(() => _setPresState('idle'), 60_000);
+}
+
+function updatePresenceDots(data) {
+    ['El', 'Tero'].forEach(user => {
+        const state = data[user]?.state || 'offline';
+        document.querySelectorAll(`.presence-dot[data-user="${user}"]`).forEach(dot => {
+            dot.className = `presence-dot ${state}`;
+        });
+    });
+}
+
+function setupPresence() {
+    if (!currentUser) return;
+    _presRef = ref(database, `presence/${currentUser}`);
+    _presState = 'online';
+
+    // Announce online; clean up on disconnect
+    set(_presRef, { state: 'online', ts: Date.now() });
+    onDisconnect(_presRef).set({ state: 'offline', ts: Date.now() });
+
+    // Heartbeat every 30 s (keeps ts fresh so the other client knows we're still alive)
+    clearInterval(_presHbInterval);
+    _presHbInterval = setInterval(() => {
+        if (_presRef) update(_presRef, { ts: Date.now() });
+    }, 30_000);
+
+    // Idle detection: go idle after 60 s of no mouse/key activity
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(ev =>
+        window.addEventListener(ev, _resetPresIdle, { passive: true })
+    );
+    _resetPresIdle();
+
+    // Listen to all presence nodes and refresh the dots
+    onValue(ref(database, 'presence'), snap => {
+        updatePresenceDots(snap.val() || {});
+    });
+}
 
 // ---- SLASH COMMANDS ----
 // Command handler map — returns { command, text } to be stored in Firebase.

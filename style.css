@@ -2805,6 +2805,60 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 }
 
 /* ============================================================
+   PRESENCE DOTS  (Phase 1 — Shared Presence Pulse)
+   ============================================================ */
+.presence-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #606060;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+    margin: 0 3px;
+    flex-shrink: 0;
+}
+
+/* Online — soft slow glow */
+.presence-dot.online {
+    background: #00c800;
+    animation: presGlow 2.4s ease-in-out infinite;
+}
+
+/* Idle — dimmer amber glow */
+.presence-dot.idle {
+    background: #c09000;
+    opacity: 0.6;
+    animation: presGlow 3.5s ease-in-out infinite;
+}
+
+/* Typing — cyan, brisk pulse */
+.presence-dot.typing {
+    background: #00c0c0;
+    animation: presPulse 0.55s ease-in-out infinite;
+}
+
+/* Offline — plain grey, no animation */
+.presence-dot.offline {
+    background: #606060;
+}
+
+@keyframes presGlow {
+    0%, 100% { opacity: 0.45; box-shadow: 0 0 2px currentColor; }
+    50%       { opacity: 1;    box-shadow: 0 0 6px currentColor; }
+}
+
+@keyframes presPulse {
+    0%, 100% { transform: scale(1);    opacity: 0.7; }
+    50%      { transform: scale(1.35); opacity: 1;   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .presence-dot { animation: none !important; }
+}
+
+/* ============================================================
    PREFERS-REDUCED-MOTION
    Disable / significantly reduce non-essential animations.
    ============================================================ */
