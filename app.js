@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect, runTransaction } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { firebaseConfig } from './firebase-config.js';
 
@@ -3147,6 +3147,18 @@ let w95TopZ = 2000;
     { id: 'wildflower', threshold: 5, field: 'taggedPostsCount' },
   ];
   const GARDEN_USER_KEY = { El: 'el', Tero: 'tero' };
+  const GARDEN_COOP_USERS    = ['el', 'tero'];
+  const GARDEN_PLANT_UNLOCKS = [
+    { streak: 3,  id: 'daisy' },
+    { streak: 7,  id: 'tulip' },
+    { streak: 14, id: 'rose' },
+    { streak: 30, id: 'orchid' },
+  ];
+  const GARDEN_COOP_UNLOCKS = [
+    { streak: 3,  id: 'sunflower' },
+    { streak: 7,  id: 'lavender' },
+    { streak: 14, id: 'twocolourbloom' },
+  ];
   const STAGE_LABELS    = { seed: 'Seed', sprout: 'Sprout', bloom: 'Bloom', wilted: 'Wilted' };
 
   // ---- calculateStage: unchanged ----
@@ -3458,60 +3470,142 @@ let w95TopZ = 2000;
       // Exploration unlocks checked once per water press
       const withExplore = await computeExploreUnlocks(state.unlockedPlants ?? []);
 
-      const resp = await fetch(API_BASE + '/api/garden/water', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lastStreakDay:     state.lastStreakDay      ?? null,
-          wateringStreak:   state.wateringStreak     ?? 0,
-          lastWatered:      tileData.lastWatered     ?? null,
-          plantedAt:        tileData.plantedAt       ?? null,
-          unlockedPlants:   withExplore,
-          whoIsWatering:    GARDEN_USER_KEY[currentUser] ?? null,
-          wateredByDay:     state.wateredByDay        ?? {},
-          sharedStreak:     state.sharedStreak        ?? 0,
-          lastSharedDay:    state.lastSharedDay       ?? null,
-          lastWateredByUser: state.lastWateredByUser  ?? {},
-        }),
+      const txResult = await runTransaction(gardenRef, (currentState) => {
+        if (!currentState) return currentState;
+
+        const now       = Date.now();
+        const today     = new Date(now).toISOString().slice(0, 10);
+        const yesterday = new Date(now - 86400000).toISOString().slice(0, 10);
+
+        const txTiles = currentState.tiles || {};
+        const tileStr = String(n);
+        const txTile  = txTiles[tileStr] || { plantedAt: now, lastWatered: null, selectedPlant: 'sunflower', events: [] };
+
+        // ---- Individual streak ----
+        const lastStreakDay  = currentState.lastStreakDay  ?? null;
+        const wateringStreak = currentState.wateringStreak ?? 0;
+        const plantedAt      = txTile.plantedAt            ?? null;
+        const lastWatered    = txTile.lastWatered          ?? null;
+
+        const ageHrs        = plantedAt ? (now - plantedAt) / MS_HOUR : 0;
+        const wateredHrsAgo = lastWatered ? (now - lastWatered) / MS_HOUR : Infinity;
+        const isWilted      = ageHrs >= 24 && wateredHrsAgo >= 48;
+
+        let newStreak;
+        if (isWilted || lastStreakDay === null) {
+          newStreak = 1;
+        } else if (lastStreakDay === today) {
+          newStreak = wateringStreak;
+        } else if (lastStreakDay === yesterday) {
+          newStreak = wateringStreak + 1;
+        } else {
+          newStreak = 1;
+        }
+
+        // ---- Plant unlocks (merge explore + streak-based) ----
+        const newUnlocked = Array.isArray(currentState.unlockedPlants) ? [...currentState.unlockedPlants] : [];
+        for (const id of withExplore) {
+          if (!newUnlocked.includes(id)) newUnlocked.push(id);
+        }
+        for (const u of GARDEN_PLANT_UNLOCKS) {
+          if (newStreak >= u.streak && !newUnlocked.includes(u.id)) newUnlocked.push(u.id);
+        }
+
+        // ---- Shared streak ----
+        const whoIsWatering     = GARDEN_USER_KEY[currentUser] ?? null;
+        const sharedStreak      = currentState.sharedStreak      ?? 0;
+        const lastSharedDay     = currentState.lastSharedDay      ?? null;
+        const lastWateredByUser = currentState.lastWateredByUser  ?? {};
+        const newWateredByDay   = (typeof currentState.wateredByDay === 'object' && currentState.wateredByDay !== null)
+          ? { ...currentState.wateredByDay }
+          : {};
+
+        let newSharedStreak  = sharedStreak;
+        let newLastSharedDay = lastSharedDay;
+
+        if (whoIsWatering && GARDEN_COOP_USERS.includes(whoIsWatering)) {
+          if (!newWateredByDay[today]) newWateredByDay[today] = {};
+          newWateredByDay[today][whoIsWatering] = true;
+
+          // Prune entries older than yesterday
+          for (const day of Object.keys(newWateredByDay)) {
+            if (day !== today && day !== yesterday) delete newWateredByDay[day];
+          }
+
+          const todayRecord      = newWateredByDay[today] || {};
+          const bothWateredToday = GARDEN_COOP_USERS.every(u => todayRecord[u]);
+
+          if (bothWateredToday && lastSharedDay !== today) {
+            newSharedStreak  = lastSharedDay === yesterday ? sharedStreak + 1 : 1;
+            newLastSharedDay = today;
+          }
+        }
+
+        for (const u of GARDEN_COOP_UNLOCKS) {
+          if (newSharedStreak >= u.streak && !newUnlocked.includes(u.id)) newUnlocked.push(u.id);
+        }
+
+        // ---- Rare tile events ----
+        const events = [];
+        if (isWilted) {
+          const wiltedSince = lastWatered
+            ? lastWatered + 48 * MS_HOUR
+            : (plantedAt ? plantedAt + 24 * MS_HOUR : null);
+          if (wiltedSince && (now - wiltedSince) >= 7 * 86400000) events.push('mushroom');
+        }
+        if (new Date(now).getUTCHours() === 0 && Math.random() < 0.3) events.push('moonflowerVariant');
+        if (whoIsWatering && GARDEN_COOP_USERS.includes(whoIsWatering)) {
+          const otherUser = GARDEN_COOP_USERS.find(u => u !== whoIsWatering);
+          const otherTs   = (lastWateredByUser || {})[otherUser];
+          if (otherTs && Math.floor(otherTs / MS_HOUR) === Math.floor(now / MS_HOUR) && Math.random() < 0.10) {
+            events.push('shootingStar');
+          }
+        }
+
+        // ---- Update lastWateredByUser ----
+        const newLastWateredByUser = { ...lastWateredByUser };
+        if (whoIsWatering && GARDEN_COOP_USERS.includes(whoIsWatering)) {
+          newLastWateredByUser[whoIsWatering] = now;
+        }
+
+        // ---- Bloom counting → tile unlock ----
+        const oldStage       = calculateStage(txTile);
+        const newStage       = calculateStage({ ...txTile, lastWatered: now });
+        const isNewBloom     = oldStage !== 'bloom' && newStage === 'bloom';
+        const newTotalBlooms = (currentState.totalBlooms || 0) + (isNewBloom ? 1 : 0);
+        const newUnlockedTiles = newTotalBlooms >= 5 ? 3 : newTotalBlooms >= 1 ? 2 : 1;
+
+        return {
+          ...currentState,
+          wateringStreak:    newStreak,
+          lastStreakDay:     today,
+          unlockedPlants:    newUnlocked,
+          sharedStreak:      newSharedStreak,
+          lastSharedDay:     newLastSharedDay,
+          wateredByDay:      newWateredByDay,
+          lastWateredByUser: newLastWateredByUser,
+          totalBlooms:       newTotalBlooms,
+          unlockedTiles:     newUnlockedTiles,
+          tiles: {
+            ...txTiles,
+            [tileStr]: {
+              ...txTile,
+              lastWatered: now,
+              events,
+            },
+          },
+        };
       });
-      if (!resp.ok) throw new Error('server error');
 
-      const result = await resp.json();
-      const now    = Date.now();
-
-      // Merge exploration unlocks into server-returned list
-      for (const id of withExplore) {
-        if (!result.unlockedPlants.includes(id)) result.unlockedPlants.push(id);
-      }
-
-      // Bloom counting → tile unlock
-      const oldStage     = calculateStage(tileData);
-      const newStage     = calculateStage({ ...tileData, lastWatered: now });
-      const isNewBloom   = oldStage !== 'bloom' && newStage === 'bloom';
-      const newTotalBlooms  = (state.totalBlooms || 0) + (isNewBloom ? 1 : 0);
-      const newUnlockedTiles = newTotalBlooms >= 5 ? 3 : newTotalBlooms >= 1 ? 2 : 1;
-
-      await update(gardenRef, {
-        wateringStreak:    result.wateringStreak,
-        lastStreakDay:     result.lastStreakDay,
-        unlockedPlants:    result.unlockedPlants,
-        sharedStreak:      result.sharedStreak,
-        lastSharedDay:     result.lastSharedDay,
-        wateredByDay:      result.wateredByDay,
-        lastWateredByUser: result.lastWateredByUser,
-        totalBlooms:       newTotalBlooms,
-        unlockedTiles:     newUnlockedTiles,
-        [`tiles/${n}/lastWatered`]: now,
-        [`tiles/${n}/events`]:      result.events,
-      });
+      const finalState      = txResult.snapshot.val();
+      const ritualDay       = localDateStr();
+      const todayAfterWater = (finalState?.wateredByDay || {})[ritualDay] || {};
 
       // Success feedback
       showToast('Watered!');
       sparkSound('post');
 
       // Same-day Water Ritual: toast the moment the second user completes the pair
-      const ritualDay      = localDateStr();
-      const todayAfterWater = (result.wateredByDay || {})[ritualDay] || {};
       if (todayAfterWater.el && todayAfterWater.tero) {
         const ritualFlagKey = 'garden_ritual_toast_' + ritualDay;
         if (!localStorage.getItem(ritualFlagKey)) {
@@ -3520,7 +3614,7 @@ let w95TopZ = 2000;
         }
       }
 
-      if (result.wateringStreak >= 3) unlockAchievement('water_3_days');
+      if ((finalState?.wateringStreak || 0) >= 3) unlockAchievement('water_3_days');
 
       // Per-user watering count → first_sprout + watering_can
       totalWaterings++;
@@ -3533,15 +3627,15 @@ let w95TopZ = 2000;
       dailyActions[_wToday] = dailyActions[_wToday] || {};
       dailyActions[_wToday].didWater = true;
       update(ref(database, 'userStats/' + currentUser), {
-          [`dailyActions/${_wToday}/didWater`]: true,
+        [`dailyActions/${_wToday}/didWater`]: true,
       }).catch(() => {});
 
       // Time-of-day hidden achievements
       checkTimeBasedAchievements();
       checkMythics();
     } catch (e) {
-      console.error('waterTile failed:', e);
-      showToast('Could not water — check your connection and try again');
+      console.error(e);
+      showToast('Could not water. Please try again.');
     } finally {
       if (waterBtn) waterBtn.disabled = false;
     }
