@@ -117,6 +117,7 @@ let allLetters = {};            // letterId → letter object
 let mailboxTab = 'inbox';
 let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
 let lastChatMessages = [];
+let _chatEphemeral = [];   // ephemeral system messages (slash commands), not stored in Firebase
 let activitySeenTs = 0;
 
 // ---- MYTHIC ACHIEVEMENT STATE ----
@@ -999,6 +1000,7 @@ function setupDBListeners() {
         updateChatUnread(messages);
         if (chatOpen || !document.getElementById('w95-win-chat')?.classList.contains('is-hidden')) {
             renderChat(messages);
+            _injectEphemeral();
         }
     });
 }
@@ -2708,6 +2710,108 @@ function updateCommentTypingUI() {
 
 // (typing onValue listeners are in setupDBListeners())
 
+// ---- SLASH COMMANDS ----
+// Command handler map — add new commands here.
+const SLASH_COMMANDS = {
+    hug: (args) => {
+        const target = args.length ? args.join(' ') : (_otherUser());
+        addEphemeralMessage(`${safeText(currentUser || '?')} hugs ${safeText(target)} 🤍`);
+    },
+    kiss: (args) => {
+        const target = args.length ? args.join(' ') : (_otherUser());
+        addEphemeralMessage(`${safeText(currentUser || '?')} kisses ${safeText(target)} 💋`);
+    },
+    flurry: () => { triggerFlurry(); },
+    dance:  () => { triggerDance();  },
+};
+
+function _otherUser() {
+    if (currentUser === 'El') return 'Tero';
+    if (currentUser === 'Tero') return 'El';
+    return 'you';
+}
+
+// Returns true if the text was a recognised slash command (caller should NOT push to Firebase).
+function handleSlashCommand(text) {
+    if (!text.startsWith('/')) return false;
+    const parts = text.slice(1).trim().split(/\s+/);
+    const cmd   = (parts[0] || '').toLowerCase();
+    const args  = parts.slice(1);
+    const handler = SLASH_COMMANDS[cmd];
+    if (!handler) return false;
+    handler(args);
+    return true;
+}
+
+// Appends an ephemeral (local-only) system message and re-injects into the chat DOM.
+function addEphemeralMessage(html) {
+    _chatEphemeral.push({ id: Math.random().toString(36).slice(2), html, ts: Date.now() });
+    _injectEphemeral();
+}
+
+// Re-renders all ephemeral messages into chatBody without touching the real messages.
+function _injectEphemeral() {
+    const body = document.getElementById('chatBody');
+    if (!body) return;
+    body.querySelectorAll('.chat-system-msg').forEach(el => el.remove());
+    _chatEphemeral.forEach(e => {
+        const div = document.createElement('div');
+        div.className = 'chat-system-msg';
+        div.setAttribute('aria-live', 'polite');
+        div.innerHTML = e.html;
+        body.appendChild(div);
+    });
+    body.scrollTop = body.scrollHeight;
+}
+
+// /flurry — shower the chat panel with flower petals.
+function triggerFlurry() {
+    const panel = document.getElementById('chatPanel') ||
+                  document.getElementById('w95-win-chat');
+    if (!panel) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        addEphemeralMessage('✿ petals drift softly through the air ✿');
+        return;
+    }
+
+    const EMOJIS = ['🌸', '🌺', '🌷', '✿', '❀', '🌼'];
+    const container = document.createElement('div');
+    container.className = 'chat-flurry-container';
+    panel.appendChild(container);
+
+    for (let i = 0; i < 14; i++) {
+        const petal = document.createElement('span');
+        petal.className = 'chat-flurry-petal';
+        petal.textContent = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+        petal.style.left              = Math.random() * 100 + '%';
+        petal.style.animationDelay    = (Math.random() * 1.6) + 's';
+        petal.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+        petal.style.fontSize          = (11 + Math.random() * 10) + 'px';
+        container.appendChild(petal);
+    }
+
+    setTimeout(() => container.remove(), 4500);
+    addEphemeralMessage('✿ a flurry of petals ✿');
+}
+
+// /dance — playful wiggle animation + ASCII celebration line.
+function triggerDance() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        addEphemeralMessage('(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ dance break! ✧ﾟ･: *ヽ(◕ヮ◕ヽ)');
+        return;
+    }
+    const body = document.getElementById('chatBody');
+    if (body) {
+        body.classList.remove('chat-dance'); // reset in case it's still running
+        // Force reflow so removing then adding triggers the animation fresh
+        void body.offsetWidth;
+        body.classList.add('chat-dance');
+        setTimeout(() => body.classList.remove('chat-dance'), 700);
+    }
+    addEphemeralMessage('(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ dance break! ✧ﾟ･: *ヽ(◕ヮ◕ヽ)');
+}
+
 // ---- CHAT ----
 function formatChatTime(ts) {
     if (!ts) return '';
@@ -2797,6 +2901,7 @@ window.toggleChat = function() {
         document.getElementById('chatUnread')?.classList.add('hidden');
 
         renderChat(lastChatMessages);
+        _injectEphemeral();
 
         // One-time hint so the double-click affordance is discoverable
         if (!localStorage.getItem('chatHeartHintSeen')) {
@@ -2837,14 +2942,33 @@ chatInput.addEventListener('keydown', async (e) => {
     if (!text) return;
     if (!throttle('chat-send', 800)) return;
 
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+
+    // Handle slash commands — do NOT push to Firebase, but DO count as didChat.
+    if (handleSlashCommand(text)) {
+        sparkSound('chat');
+        if (currentUser) {
+            const _cToday  = localDateStr();
+            const _chatTs  = Date.now();
+            dailyActions[_cToday] = dailyActions[_cToday] || {};
+            dailyActions[_cToday].didChat    = true;
+            dailyActions[_cToday].lastChatTs = _chatTs;
+            update(ref(database, 'userStats/' + currentUser), {
+                [`dailyActions/${_cToday}/didChat`]:    true,
+                [`dailyActions/${_cToday}/lastChatTs`]: _chatTs,
+            }).catch(() => {});
+            checkMythics();
+        }
+        return;
+    }
+
     await push(chatRef, {
         author: currentUser,
         text,
         timestamp: Date.now()
     });
 
-    chatInput.value = '';
-    chatInput.style.height = 'auto';
     sparkSound('chat');
 
     // Mythic: track daily chat action
@@ -4160,6 +4284,7 @@ let w95TopZ = 2000;
       localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
       document.getElementById('chatUnread')?.classList.add('hidden');
       renderChat(lastChatMessages);
+      _injectEphemeral();
       setTimeout(() => document.getElementById('chatInput')?.focus(), 80);
     }
     if (win === winNew) {
