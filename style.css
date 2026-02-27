@@ -3427,8 +3427,8 @@ body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
   80%{transform:translateX(3px);}
 }
 .garden-water-btn--shake{animation:garden-water-shake .35s ease;}
-.garden-water-btn--done{color:#006600;}
-/* On the dark soil bed the "done" text stays readable via the Win95 button bg */
+.garden-water-btn--done,.garden-water-btn--done:disabled{color:#006600;}
+/* --done applied at 3/3 (fully watered); :disabled selector keeps colour despite browser greying */
 /* Per-tile plant row: tiles 1+ don't have a plant-row; kept for forward-compat */
 .garden-tile-col .garden-plant-row{
   display:flex;flex-direction:column;align-items:flex-start;gap:2px;

@@ -3322,14 +3322,22 @@ let w95TopZ = 2000;
       statusDiv.textContent = `${STAGE_LABELS[stage] || stage} · ${wateredText}`;
     }
 
-    // Water button: reflect watered-today state
+    // Water button: reflect daily water count (per-user limit: 3/day)
     const waterBtnEl = col.querySelector('.garden-water-btn');
     if (waterBtnEl && tileData) {
-      const doneToday = tileData.lastWatered
-        ? tsToLocalDate(tileData.lastWatered) === localDateStr()
-        : false;
-      waterBtnEl.textContent = doneToday ? 'Watered today \u2714' : 'Water';
-      waterBtnEl.classList.toggle('garden-water-btn--done', doneToday);
+      const todayCount   = dailyWaterCounts[localDateStr()] || 0;
+      const limitReached = todayCount >= 3;
+      if (limitReached) {
+        waterBtnEl.textContent = 'Fully watered for today \uD83C\uDF31';
+        waterBtnEl.disabled    = true;
+      } else if (todayCount > 0) {
+        waterBtnEl.textContent = `Watered ${todayCount}/3 today`;
+        waterBtnEl.disabled    = false;
+      } else {
+        waterBtnEl.textContent = 'Water';
+        waterBtnEl.disabled    = false;
+      }
+      waterBtnEl.classList.toggle('garden-water-btn--done', limitReached);
     }
 
     // Event overlays — stored events from Firebase plus client-computed mushroom
@@ -3445,8 +3453,20 @@ let w95TopZ = 2000;
 
   ensureTileColumns();
 
-  // Live render
-  onValue(gardenRef, (snap) => { renderGarden(snap.val()); });
+  // Live render — also ensures today's daily water count is loaded from Firebase
+  // before the first paint so the button shows the correct X/3 state.
+  onValue(gardenRef, async (snap) => {
+    if (currentUser && !(localDateStr() in dailyWaterCounts)) {
+      try {
+        const todayKey  = localDateStr();
+        const countSnap = await get(ref(database, `userStats/${currentUser}/dailyWaterCounts/${todayKey}`));
+        dailyWaterCounts[todayKey] = countSnap.val() || 0;
+      } catch (e) {
+        dailyWaterCounts[localDateStr()] = 0; // prevent repeated fetches on error
+      }
+    }
+    renderGarden(snap.val());
+  });
 
   // ---- Water a specific tile ----
   async function waterTile(n) {
@@ -3675,7 +3695,10 @@ let w95TopZ = 2000;
       console.error(e);
       showToast('Could not water. Please try again.');
     } finally {
-      if (waterBtn) waterBtn.disabled = false;
+      // Only re-enable the button if the user still has waters remaining today.
+      if (waterBtn && (dailyWaterCounts[localDateStr()] || 0) < 3) {
+        waterBtn.disabled = false;
+      }
     }
   }
 
