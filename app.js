@@ -218,7 +218,7 @@ const AUTHOR_BADGE = { 'El': 'badge-el', 'Tero': 'badge-tero', 'Guest': 'badge-g
 // Maps stored emoji → retro text emoticon for display only (Firebase keeps the emoji)
 const EMOTICON_MAP = {
     '❤️': '<3', '😂': 'xD', '😮': 'O_O', '😍': '*_*',
-    '🔥': '!!', '👍': '(y)', '😭': 'T_T', '🥹': ';_;',
+    '🔥': '!!', '👍': '(y)', '😭': 'T_T', '🥹': ';_;', '😢': ':(',
 };
 
 function safeText(s) {
@@ -3029,9 +3029,10 @@ function renderChat(messages) {
         const bubbles = g.msgs.map(m => {
             const reactionEntries = Object.entries(m.reactions || {});
             const reactionsHtml = reactionEntries.length > 0
-                ? `<div class="chat-reactions">${reactionEntries.map(([user, emoji]) =>
-                    `<span class="chat-reaction${user === currentUser ? ' mine' : ''}">${emoji}</span>`
-                  ).join('')}</div>`
+                ? `<div class="chat-reactions">${reactionEntries.map(([user, rxVal]) => {
+                    const display = EMOTICON_MAP[rxVal] || rxVal;
+                    return `<span class="chat-reaction${user === currentUser ? ' mine' : ''}">${safeText(display)}</span>`;
+                  }).join('')}</div>`
                 : '';
             return `<div class="chat-bubble" ondblclick="openReactionPicker('${m.id}', this)">${safeText(m.text)}${reactionsHtml}</div>`;
         }).join('');
@@ -3098,16 +3099,24 @@ window.openReactionPicker = function(msgId, bubbleEl) {
     window.getSelection()?.removeAllRanges(); // clear text selection from dblclick
     _closeReactionPicker();
 
-    const EMOJIS = ['❤️', '😂', '😢'];
+    const EMOTICONS = ['<3', 'xD', ':('];
     const msg = lastChatMessages.find(m => m.id === msgId);
-    const myReaction = msg?.reactions?.[currentUser] || null;
+    const stored = msg?.reactions?.[currentUser] || null;
+    // Normalize any legacy emoji stored in Firebase so the selected state shows correctly
+    const myReaction = stored ? (EMOTICON_MAP[stored] || stored) : null;
 
     const picker = document.createElement('div');
     picker.className = 'chat-reaction-picker';
     picker.setAttribute('role', 'dialog');
-    picker.innerHTML = EMOJIS.map(e =>
-        `<button class="reaction-pick-btn${e === myReaction ? ' selected' : ''}" onclick="sendChatReaction('${msgId}', '${e}')">${e}</button>`
-    ).join('');
+
+    // Build buttons via DOM so <3 is never mis-parsed as an HTML tag
+    for (const e of EMOTICONS) {
+        const btn = document.createElement('button');
+        btn.className = 'reaction-pick-btn' + (e === myReaction ? ' selected' : '');
+        btn.textContent = e;
+        btn.addEventListener('click', () => { window.sendChatReaction(msgId, e); });
+        picker.appendChild(btn);
+    }
 
     picker.style.visibility = 'hidden';
     document.body.appendChild(picker);
@@ -3124,15 +3133,18 @@ window.openReactionPicker = function(msgId, bubbleEl) {
     setTimeout(() => document.addEventListener('click', _closeReactionPicker, { once: true }), 0);
 };
 
-window.sendChatReaction = async function(msgId, emoji) {
+window.sendChatReaction = async function(msgId, emoticon) {
     _closeReactionPicker();
     const msg = lastChatMessages.find(m => m.id === msgId);
     if (!msg) return;
     const reactions = { ...(msg.reactions || {}) };
-    if (reactions[currentUser] === emoji) {
-        delete reactions[currentUser]; // same emoji → remove
+    // Normalize any legacy emoji before comparing so toggling works even on old data
+    const stored = reactions[currentUser];
+    const storedNormalized = stored ? (EMOTICON_MAP[stored] || stored) : null;
+    if (storedNormalized === emoticon) {
+        delete reactions[currentUser]; // same emoticon → remove
     } else {
-        reactions[currentUser] = emoji; // new or different emoji → set
+        reactions[currentUser] = emoticon; // new or different emoticon → set
     }
     await update(ref(database, `chat/${msgId}`), { reactions });
 };
