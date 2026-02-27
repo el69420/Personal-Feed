@@ -3499,7 +3499,13 @@ let w95TopZ = 2000;
     // Plant visual
     const plantDiv = col.querySelector('.garden-plant-el');
     if (plantDiv) {
+      const prevStage = plantDiv.dataset.prevStage;
       plantDiv.className = `garden-plant garden-plant--${stage} garden-plant--type-${plantType}`;
+      if (prevStage && prevStage !== stage) {
+        plantDiv.classList.add('garden-plant--stage-change');
+        setTimeout(() => plantDiv.classList.remove('garden-plant--stage-change'), 800);
+      }
+      plantDiv.dataset.prevStage = stage;
     }
 
     // Plant selector (create once, update options only when count changes)
@@ -3588,6 +3594,7 @@ let w95TopZ = 2000;
         waterBtnEl.disabled    = false;
       }
       waterBtnEl.classList.toggle('garden-water-btn--done', limitReached);
+      waterBtnEl.classList.toggle('garden-water-btn--partial', !limitReached && todayCount > 0);
     }
 
     // Event overlays — stored events from Firebase plus client-computed mushroom

@@ -3895,5 +3895,160 @@ body.dark-mode .garden-journal-row{border-color:#333;}
 body.dark-mode .garden-journal-date{color:#888;}
 body.dark-mode .garden-journal-msg{color:#d0d0d0;}
 
+/* ===== Garden Polish UI Pass ===== */
 
+/* --- Info panel: Win95 sunken inset --- */
+.garden-info{
+  background:#d8d4cc;
+  border-top:2px solid #808080;
+  border-left:2px solid #808080;
+  border-right:2px solid #fff;
+  border-bottom:2px solid #fff;
+  padding:5px 7px 6px;
+  box-sizing:border-box;
+}
+
+/* Streak labels: left-accent bar for visual hierarchy */
+.garden-info .garden-streak{
+  font-size:10px;
+  font-weight:bold;
+  color:#000080;
+  border-left:3px solid #000080;
+  padding-left:4px;
+  margin-left:-1px;
+  line-height:1.4;
+  text-align:left;
+}
+
+/* Ritual active badge */
+.garden-ritual{
+  font:bold 10px Tahoma,Verdana,Arial,sans-serif;
+  color:#004400;
+  background:#c8e8c0;
+  border:1px solid #3a7a3a;
+  text-align:center;
+  padding:1px 4px;
+  margin-top:3px;
+}
+
+/* Weather: thin separator line above label */
+.garden-weather-display{
+  border-top:1px solid rgba(0,0,0,0.18);
+  padding-top:4px;
+  margin-top:5px;
+}
+
+/* --- Soil bed: enriched dithered texture --- */
+.garden-tiles-row{
+  background:#7a4f2d;
+  background-image:
+    repeating-linear-gradient(135deg,transparent 0,transparent 4px,rgba(0,0,0,0.05) 4px,rgba(0,0,0,0.05) 5px),
+    repeating-linear-gradient(45deg,transparent 0,transparent 6px,rgba(255,255,255,0.04) 6px,rgba(255,255,255,0.04) 7px),
+    repeating-linear-gradient(90deg,transparent 0,transparent 29px,rgba(0,0,0,0.07) 29px,rgba(0,0,0,0.07) 30px),
+    repeating-linear-gradient(0deg,transparent 0,transparent 19px,rgba(0,0,0,0.04) 19px,rgba(0,0,0,0.04) 20px);
+}
+
+/* --- Plant stage: scale progression + drop-shadow silhouette --- */
+.garden-plant--seed{
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,0.40));
+}
+.garden-plant--sprout{
+  transform:translateX(-50%) scale(1.06);
+  transform-origin:50% 100%;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,0.35));
+}
+.garden-plant--bloom{
+  transform:translateX(-50%) scale(1.14);
+  transform-origin:50% 100%;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,0.40));
+}
+.garden-plant--wilted{
+  transform:translateX(-50%) scale(0.88);
+  transform-origin:50% 100%;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,0.25)) grayscale(25%);
+}
+
+/* Growth sparkle on stage transition — skipped when reduced-motion is preferred */
+@keyframes garden-stage-sparkle{
+  0%  {filter:drop-shadow(0 0 10px #fff) brightness(1.7);}
+  45% {filter:drop-shadow(0 0 6px #ffe066) brightness(1.35);}
+  100%{filter:drop-shadow(0 0 2px rgba(255,200,0,0.3));}
+}
+@media(prefers-reduced-motion:no-preference){
+  .garden-plant.garden-plant--stage-change{
+    animation:garden-stage-sparkle 0.75s ease-out;
+  }
+}
+
+/* --- Critter: base shadow + hover glow + CSS tooltip from data-label --- */
+.garden-critter{
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,0.28));
+  transition:filter 0.18s ease,transform 0.18s ease;
+}
+.garden-critter:hover{
+  filter:drop-shadow(0 0 7px rgba(255,210,60,0.9)) drop-shadow(0 2px 3px rgba(0,0,0,0.35));
+  transform:scale(1.2);
+}
+/* Mythical critters: use their own glowing hover so it doesn't clash with the pulse */
+.garden-critter--mythical:hover{
+  filter:drop-shadow(0 0 10px rgba(240,180,255,0.9)) drop-shadow(0 0 5px rgba(255,200,60,0.7));
+}
+/* CSS-only tooltip */
+.garden-critter::after{
+  content:attr(data-label);
+  position:absolute;
+  bottom:calc(100% + 3px);
+  left:50%;
+  transform:translateX(-50%);
+  background:#000080;
+  color:#fff;
+  font:10px/1.4 Tahoma,Verdana,Arial,sans-serif;
+  text-transform:capitalize;
+  white-space:nowrap;
+  padding:2px 6px;
+  border-top:1px solid #5a5acc;
+  border-left:1px solid #5a5acc;
+  border-right:1px solid #000030;
+  border-bottom:1px solid #000030;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 0.12s ease;
+  z-index:20;
+}
+.garden-critter:hover::after{opacity:1;}
+
+/* --- Water button: partial tint for 1/3 and 2/3 watered --- */
+.garden-water-btn--partial{
+  background:#cce8cc;
+  color:#003300;
+  border-top-color:#88bb88;
+  border-left-color:#88bb88;
+}
+
+/* --- Dark mode overrides for new polish elements --- */
+body.dark-mode .garden-info{
+  background:#1e1e2e;
+  border-top-color:#444;
+  border-left-color:#444;
+  border-right-color:#666;
+  border-bottom-color:#666;
+}
+body.dark-mode .garden-info .garden-streak{
+  color:#9090ff;
+  border-left-color:#6060cc;
+}
+body.dark-mode .garden-ritual{
+  background:#1a2e1a;
+  border-color:#4a8a4a;
+  color:#88cc88;
+}
+body.dark-mode .garden-weather-display{
+  border-top-color:rgba(255,255,255,0.10);
+}
+body.dark-mode .garden-water-btn--partial{
+  background:#1a3a1a;
+  color:#88cc88;
+  border-top-color:#2a5a2a;
+  border-left-color:#2a5a2a;
+}
 
