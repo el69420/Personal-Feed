@@ -125,6 +125,12 @@ let dailyActions = {};
 let comebackArmed = false;          // true when streak broke from >=3; cleared on comeback
 let _otherUserGardenVisitDaysCache = null;  // one-read cache for we_were_here
 
+// ---- PER-USER DAILY WATER LIMITS ----
+// Tracks how many times the current user has watered per calendar day (local time).
+let dailyWaterCounts = {};                               // { "YYYY-MM-DD": number }
+let water3Streak     = { current: 0, lastDate: null };   // consecutive days where user hit 3 waters
+let _otherUserWater3Cache = null;  // { date, todayCount, streak } — one-read cache for both_water3_* checks
+
 // ---- TYPING INDICATOR STATE ----
 let _chatTypingTimer    = null;
 let _chatIsTyping       = false;
@@ -3444,31 +3450,57 @@ let w95TopZ = 2000;
 
   // ---- Water a specific tile ----
   async function waterTile(n) {
-    const snap  = await get(gardenRef);
-    const state = snap.val();
-    if (!state) return;
+    // Step 1 — Reserve a water credit for the current user (per-user daily limit: 3)
+    const todayKey      = localDateStr();
+    const dailyCountRef = ref(database, `userStats/${currentUser}/dailyWaterCounts/${todayKey}`);
 
-    const tiles    = state.tiles || {};
-    const tileData = tiles[String(n)] || { plantedAt: Date.now(), lastWatered: null, selectedPlant: 'sunflower', events: [] };
-
-    // ---- Already watered today? (local date) ----
-    if (tileData.lastWatered && tsToLocalDate(tileData.lastWatered) === localDateStr()) {
-      showToast('Already watered today');
-      const wb = tilesRowEl.querySelector(`.garden-water-btn[data-tile="${n}"]`);
-      if (wb) {
-        wb.classList.remove('garden-water-btn--shake');
-        void wb.offsetWidth; // force reflow to restart animation
-        wb.classList.add('garden-water-btn--shake');
-        wb.addEventListener('animationend', () =>
-          wb.classList.remove('garden-water-btn--shake'), { once: true });
+    let newDailyCount;
+    try {
+      const creditTx = await runTransaction(dailyCountRef, (current) => {
+        const count = current || 0;
+        if (count >= 3) return undefined; // abort — limit reached
+        return count + 1;
+      });
+      if (!creditTx.committed) {
+        showToast("You've used all 3 waters today");
+        return;
       }
+      newDailyCount = creditTx.snapshot.val();
+    } catch (e) {
+      console.error(e);
+      showToast('Could not water. Please try again.');
       return;
+    }
+
+    // Update local daily-count cache
+    dailyWaterCounts[todayKey] = newDailyCount;
+
+    // When the 3rd water of the day is reached, update the consecutive 3-water-day streak
+    if (newDailyCount === 3) {
+      try {
+        const yesterday  = localDateStr(-1);
+        const streakSnap = await get(ref(database, `userStats/${currentUser}/water3Streak`));
+        const prev       = streakSnap.val() || { current: 0, lastDate: null };
+        const newStreakVal = {
+          current:  prev.lastDate === yesterday ? prev.current + 1 : 1,
+          lastDate: todayKey,
+        };
+        water3Streak = newStreakVal;
+        set(ref(database, `userStats/${currentUser}/water3Streak`), newStreakVal).catch(() => {});
+      } catch (e) {
+        console.error('water3Streak update failed', e);
+      }
     }
 
     const waterBtn = tilesRowEl.querySelector(`.garden-water-btn[data-tile="${n}"]`);
     if (waterBtn) waterBtn.disabled = true;
 
     try {
+      // Step 2 — Run the existing garden watering transaction
+      const snap  = await get(gardenRef);
+      const state = snap.val();
+      if (!state) return;
+
       // Exploration unlocks checked once per water press
       const withExplore = await computeExploreUnlocks(state.unlockedPlants ?? []);
 
@@ -3631,6 +3663,10 @@ let w95TopZ = 2000;
       update(ref(database, 'userStats/' + currentUser), {
         [`dailyActions/${_wToday}/didWater`]: true,
       }).catch(() => {});
+
+      // Per-user 3-waters-a-day achievements
+      if (newDailyCount >= 3) unlockAchievement('water3_day');
+      if (water3Streak.current >= 7) unlockAchievement('water3_week');
 
       // Time-of-day hidden achievements
       checkTimeBasedAchievements();
@@ -4251,6 +4287,37 @@ async function checkMythics(newPostBody = null) {
             console.error('checkMythics we_were_here failed', e);
         }
     }
+
+    // 8. both_water3_day — both users watered 3 times on the same calendar day
+    // 9. both_water3_week — both users have water3Streak.current >= 7
+    //    At most ONE combined read of the other user's dailyWaterCounts + water3Streak (cached, invalidated by date).
+    if (!unlockedAchievements.has('both_water3_day') || !unlockedAchievements.has('both_water3_week')) {
+        try {
+            const otherUser = currentUser === 'El' ? 'Tero' : 'El';
+            if (!_otherUserWater3Cache || _otherUserWater3Cache.date !== today) {
+                const [countSnap, streakSnap] = await Promise.all([
+                    get(ref(database, `userStats/${otherUser}/dailyWaterCounts/${today}`)),
+                    get(ref(database, `userStats/${otherUser}/water3Streak`)),
+                ]);
+                _otherUserWater3Cache = {
+                    date:       today,
+                    todayCount: countSnap.val() || 0,
+                    streak:     streakSnap.val() || { current: 0, lastDate: null },
+                };
+            }
+            const myCount = dailyWaterCounts[today] || 0;
+            if (!unlockedAchievements.has('both_water3_day') &&
+                    myCount >= 3 && _otherUserWater3Cache.todayCount >= 3) {
+                await unlockAchievement('both_water3_day');
+            }
+            if (!unlockedAchievements.has('both_water3_week') &&
+                    water3Streak.current >= 7 && _otherUserWater3Cache.streak.current >= 7) {
+                await unlockAchievement('both_water3_week');
+            }
+        } catch (e) {
+            console.error('checkMythics both_water3 failed', e);
+        }
+    }
 }
 
 // Record that the current user opened the garden today, updating the visit
@@ -4698,6 +4765,48 @@ const ACHIEVEMENTS = [
         tier:   'mythic',
         xp:     300,
     },
+
+    // ---- Per-user 3-waters-a-day ----
+    {
+        id:          'water3_day',
+        title:       'Triple Waters',
+        desc:        'Water the garden 3 times in one day',
+        icon:        '[3~]',
+        xp:          30,
+        tier:        'silver',
+        target:      3,
+        getProgress: () => dailyWaterCounts[localDateStr()] || 0,
+    },
+    {
+        id:          'water3_week',
+        title:       'Week of Triples',
+        desc:        'Water 3 times a day for 7 days in a row',
+        icon:        '[7~]',
+        xp:          75,
+        tier:        'gold',
+        target:      7,
+        getProgress: () => water3Streak.current,
+    },
+
+    // ---- Shared 3-waters-a-day (mythic) ----
+    {
+        id:     'both_water3_day',
+        title:  'Double Dedication',
+        desc:   'Both water the garden 3 times on the same day',
+        icon:   '[33]',
+        hidden: true,
+        tier:   'mythic',
+        xp:     100,
+    },
+    {
+        id:     'both_water3_week',
+        title:  'Garden Devotion',
+        desc:   'Both water 3 times a day for 7 days in a row',
+        icon:   '[77]',
+        hidden: true,
+        tier:   'mythic',
+        xp:     200,
+    },
 ];
 
 // ---- XP / Level helpers ----
@@ -4906,6 +5015,13 @@ async function backfillAchievements() {
         // ---- Mythic state hydration ----
         dailyActions  = stats.dailyActions  || {};
         comebackArmed = stats.comebackArmed || false;
+
+        // ---- Per-user 3-waters-a-day hydration ----
+        dailyWaterCounts = stats.dailyWaterCounts || {};
+        water3Streak     = stats.water3Streak     || { current: 0, lastDate: null };
+        const _w3Today = localDateStr();
+        if ((dailyWaterCounts[_w3Today] || 0) >= 3) await unlockAchievement('water3_day');
+        if (water3Streak.current >= 7)              await unlockAchievement('water3_week');
     } catch (e) {
         console.error('backfillAchievements userStats check failed', e);
     }
