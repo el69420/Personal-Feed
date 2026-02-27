@@ -3278,12 +3278,14 @@ let w95TopZ = 2000;
             const snap = await get(gardenRef);
             const st   = snap.val();
             if (!st) return;
-            const resp = await fetch('/api/garden/select-plant', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ plantType: chosen, unlockedPlants: st.unlockedPlants ?? [] }),
-            });
-            if (resp.ok) await update(gardenRef, { [`tiles/${n}/selectedPlant`]: chosen });
+            const stUnlocked = st.unlockedPlants ?? [];
+            const allowedPlants = ['sunflower', ...stUnlocked.filter(id => id !== 'sunflower')];
+            if (!allowedPlants.includes(chosen)) {
+              showToast("That plant isn't unlocked yet");
+              sel.value = st.tiles?.[n]?.selectedPlant ?? sel.options[0]?.value ?? 'sunflower';
+              return;
+            }
+            await update(gardenRef, { [`tiles/${n}/selectedPlant`]: chosen });
           };
         }
         // Rebuild options only when the list has changed (avoids dismissing open dropdown)

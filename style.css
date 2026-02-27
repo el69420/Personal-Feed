@@ -3514,6 +3514,11 @@ body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
   padding:1px 2px;
   cursor:pointer;
 }
+/* Garden panel only: ensure dropdown text is readable regardless of theme */
+.garden-plant-row .w95-select,
+.garden-plant-row .w95-select option{
+  color:#000;background:#fff;
+}
 
 /* ---- Plant type bloom overrides ---- */
 /* Daisy: white petals, yellow center */
