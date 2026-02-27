@@ -15,6 +15,9 @@ const boardDeleteRequestsRef = ref(database, 'board_delete_requests');
 const lettersRef    = ref(database, 'letters');
 const linkMetaRef   = ref(database, 'linkMeta');
 
+const ANNIVERSARY_MM_DD = '01-06';
+const INSIDE_JOKE = 'you are gay';
+
 // ---- LINK PREVIEW CACHE ----
 // Converts a URL to a safe Firebase key (no . # $ [ ] /)
 function urlToKey(url) {
@@ -113,6 +116,12 @@ let mailboxTab = 'inbox';
 let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
 let lastChatMessages = [];
 let activitySeenTs = 0;
+
+// ---- MYTHIC ACHIEVEMENT STATE ----
+// { [YYYY-MM-DD]: { didPost?:true, didWater?:true, didChat?:true, lastPostTs?:number, lastChatTs?:number } }
+let dailyActions = {};
+let comebackArmed = false;          // true when streak broke from >=3; cleared on comeback
+let _otherUserGardenVisitDaysCache = null;  // one-read cache for we_were_here
 
 // ---- TYPING INDICATOR STATE ----
 let _chatTypingTimer    = null;
@@ -2829,6 +2838,20 @@ chatInput.addEventListener('keydown', async (e) => {
     chatInput.value = '';
     chatInput.style.height = 'auto';
     sparkSound('chat');
+
+    // Mythic: track daily chat action
+    if (currentUser) {
+        const _cToday  = localDateStr();
+        const _chatTs  = Date.now();
+        dailyActions[_cToday] = dailyActions[_cToday] || {};
+        dailyActions[_cToday].didChat    = true;
+        dailyActions[_cToday].lastChatTs = _chatTs;
+        update(ref(database, 'userStats/' + currentUser), {
+            [`dailyActions/${_cToday}/didChat`]:    true,
+            [`dailyActions/${_cToday}/lastChatTs`]: _chatTs,
+        }).catch(() => {});
+        checkMythics();
+    }
 });
 }
 
@@ -3323,6 +3346,11 @@ let w95TopZ = 2000;
       const tile0     = tiles['0'];
       const tile0Stage = tile0 ? calculateStage(tile0) : 'seed';
       const displayStreak = tile0Stage === 'wilted' ? 0 : (state.wateringStreak || 0);
+      // comeback_kid: arm flag when streak drops from >=3 to 0
+      if (currentWateringStreak >= 3 && displayStreak === 0 && !comebackArmed && currentUser) {
+          comebackArmed = true;
+          update(ref(database, 'userStats/' + currentUser), { comebackArmed: true }).catch(() => {});
+      }
       currentWateringStreak = displayStreak;
       const nextUnlock = UNLOCK_THRESHOLDS.find(u => !unlockedPlants.includes(u.id));
       const nextText   = nextUnlock
@@ -3498,8 +3526,17 @@ let w95TopZ = 2000;
       unlockAchievement('first_sprout');
       if (totalWaterings >= 5) unlockAchievement('watering_can');
 
+      // Mythic: track daily watering action
+      const _wToday = localDateStr();
+      dailyActions[_wToday] = dailyActions[_wToday] || {};
+      dailyActions[_wToday].didWater = true;
+      update(ref(database, 'userStats/' + currentUser), {
+          [`dailyActions/${_wToday}/didWater`]: true,
+      }).catch(() => {});
+
       // Time-of-day hidden achievements
       checkTimeBasedAchievements();
+      checkMythics();
     } finally {
       if (waterBtn) waterBtn.disabled = false;
     }
@@ -4036,6 +4073,85 @@ function checkTimeBasedAchievements() {
     else if (hr >= 5 && hr < 8) unlockAchievement('early_bird');
 }
 
+// Check all mythic achievements. Call after any significant action.
+// newPostBody: body text of a just-created post (may not be in allPosts yet).
+async function checkMythics(newPostBody = null) {
+    if (!currentUser) return;
+    const today = localDateStr();
+
+    // 1. anniversary_mode — special calendar date
+    if (today.slice(5) === ANNIVERSARY_MM_DD) {
+        await unlockAchievement('anniversary_mode');
+    }
+
+    // 2. inside_joke — any post body contains the magic phrase
+    if (!unlockedAchievements.has('inside_joke')) {
+        const jokeLower     = INSIDE_JOKE.toLowerCase();
+        const foundInNew    = !!(newPostBody && newPostBody.toLowerCase().includes(jokeLower));
+        const foundInExisting = !foundInNew && Object.values(allPosts)
+            .some(p => p.author === currentUser && p.body && p.body.toLowerCase().includes(jokeLower));
+        if (foundInNew || foundInExisting) await unlockAchievement('inside_joke');
+    }
+
+    // 3. all_three_today — posted + watered + chatted on the same day
+    const todayActs = dailyActions[today] || {};
+    if (todayActs.didPost && todayActs.didWater && todayActs.didChat) {
+        await unlockAchievement('all_three_today');
+    }
+
+    // 4. comeback_kid — streak rebuilt to >=3 after having broken from >=3
+    if (comebackArmed && currentWateringStreak >= 3) {
+        comebackArmed = false;
+        update(ref(database, 'userStats/' + currentUser), { comebackArmed: false }).catch(() => {});
+        await unlockAchievement('comeback_kid');
+    }
+
+    // 5. same_braincell — both users post within 10 minutes of each other
+    if (!unlockedAchievements.has('same_braincell')) {
+        const otherUser  = currentUser === 'El' ? 'Tero' : 'El';
+        const myPosts    = Object.values(allPosts).filter(p => p.author === currentUser);
+        const otherPosts = Object.values(allPosts).filter(p => p.author === otherUser);
+        const TEN_MIN    = 10 * 60 * 1000;
+        const matched    = myPosts.some(mp =>
+            otherPosts.some(op => Math.abs((op.timestamp || 0) - (mp.timestamp || 0)) < TEN_MIN)
+        );
+        if (matched) await unlockAchievement('same_braincell');
+    }
+
+    // 6. long_distance_high_five — one user posts, the other chats within 1 hour
+    if (!unlockedAchievements.has('long_distance_high_five')) {
+        const otherUser  = currentUser === 'El' ? 'Tero' : 'El';
+        const myPosts    = Object.values(allPosts).filter(p => p.author === currentUser);
+        const otherPosts = Object.values(allPosts).filter(p => p.author === otherUser);
+        const ONE_HOUR   = 60 * 60 * 1000;
+        const highFive   =
+            myPosts.some(mp => lastChatMessages.some(
+                c => c.author === otherUser && Math.abs((c.timestamp || 0) - (mp.timestamp || 0)) < ONE_HOUR
+            )) ||
+            otherPosts.some(op => lastChatMessages.some(
+                c => c.author === currentUser && Math.abs((c.timestamp || 0) - (op.timestamp || 0)) < ONE_HOUR
+            ));
+        if (highFive) await unlockAchievement('long_distance_high_five');
+    }
+
+    // 7. we_were_here — both visited garden on the same day 20+ times total
+    //    At most ONE read of the other user's gardenVisitDays (cached in memory).
+    if (!unlockedAchievements.has('we_were_here')) {
+        try {
+            const otherUser = currentUser === 'El' ? 'Tero' : 'El';
+            if (_otherUserGardenVisitDaysCache === null) {
+                const snap = await get(ref(database, 'userStats/' + otherUser + '/gardenVisitDays'));
+                _otherUserGardenVisitDaysCache = snap.val() || {};
+            }
+            const sharedCount = Object.keys(gardenVisitDays)
+                .filter(d => _otherUserGardenVisitDaysCache[d]).length;
+            if (sharedCount >= 20) await unlockAchievement('we_were_here');
+        } catch (e) {
+            console.error('checkMythics we_were_here failed', e);
+        }
+    }
+}
+
 // Record that the current user opened the garden today, updating the visit
 // day-map and consecutive-day streak. Called when the garden window is shown,
 // NOT during achievement initialisation (which would count every login).
@@ -4058,6 +4174,7 @@ async function recordGardenVisit() {
         const visitCount = Object.keys(gardenVisitDays).length;
         if (visitCount >= 7)                await unlockAchievement('checked_in');
         if (gardenVisitStreak.current >= 7) await unlockAchievement('week_streak');
+        await checkMythics();
         renderAchievementsWindow();
     } catch (e) {
         console.error('recordGardenVisit failed', e);
@@ -4417,6 +4534,69 @@ const ACHIEVEMENTS = [
         tier:   'mythic',
         xp:     30,
     },
+    {
+        id:     'anniversary_mode',
+        title:  'Anniversary Mode',
+        desc:   'Visit on a very special day',
+        icon:   '[<3]',
+        hidden: true,
+        tier:   'mythic',
+        xp:     100,
+    },
+    {
+        id:     'inside_joke',
+        title:  'Inside Joke',
+        desc:   'Post the magic words',
+        icon:   '[?]',
+        hidden: true,
+        tier:   'mythic',
+        xp:     100,
+    },
+    {
+        id:     'all_three_today',
+        title:  'Full House',
+        desc:   'Post, water, and chat all in one day',
+        icon:   '[3]',
+        hidden: true,
+        tier:   'mythic',
+        xp:     150,
+    },
+    {
+        id:     'comeback_kid',
+        title:  'Comeback Kid',
+        desc:   'Rebuild a watering streak after it broke',
+        icon:   '[>>]',
+        hidden: true,
+        tier:   'mythic',
+        xp:     150,
+    },
+    {
+        id:     'same_braincell',
+        title:  'Same Braincell',
+        desc:   'Post within 10 minutes of each other',
+        icon:   '[~~]',
+        hidden: true,
+        tier:   'mythic',
+        xp:     200,
+    },
+    {
+        id:     'long_distance_high_five',
+        title:  'Long Distance High Five',
+        desc:   'One posts, the other chats within an hour',
+        icon:   '^5',
+        hidden: true,
+        tier:   'mythic',
+        xp:     200,
+    },
+    {
+        id:     'we_were_here',
+        title:  'We Were Here',
+        desc:   'Visit the garden on the same day 20 times',
+        icon:   '[H]',
+        hidden: true,
+        tier:   'mythic',
+        xp:     300,
+    },
 ];
 
 // ---- XP / Level helpers ----
@@ -4533,6 +4713,21 @@ function afterPostCreated() {
     if (xpToLevel(xpTotal) >= 5)        unlockAchievement('level_5');
     if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
 
+    // Mythic: track daily post action
+    if (currentUser) {
+        const _today  = localDateStr();
+        const _postTs = Date.now();
+        dailyActions[_today] = dailyActions[_today] || {};
+        dailyActions[_today].didPost    = true;
+        dailyActions[_today].lastPostTs = _postTs;
+        update(ref(database, 'userStats/' + currentUser), {
+            [`dailyActions/${_today}/didPost`]:    true,
+            [`dailyActions/${_today}/lastPostTs`]: _postTs,
+        }).catch(() => {});
+    }
+    // Pass body text so inside_joke can fire before allPosts is updated
+    const _newPostBody = bodyEl ? bodyEl.value.trim() : '';
+    checkMythics(_newPostBody);
     checkTimeBasedAchievements();
 }
 
@@ -4606,6 +4801,10 @@ async function backfillAchievements() {
         if (gardenVisitStreak.current >= 7)  await unlockAchievement('week_streak');
         if (gardenVisitStreak.current >= 14) await unlockAchievement('visit_streak_14');
         if (gardenVisitStreak.current >= 30) await unlockAchievement('visit_streak_30');
+
+        // ---- Mythic state hydration ----
+        dailyActions  = stats.dailyActions  || {};
+        comebackArmed = stats.comebackArmed || false;
     } catch (e) {
         console.error('backfillAchievements userStats check failed', e);
     }
@@ -4618,6 +4817,7 @@ async function backfillAchievements() {
     if (xpToLevel(xpTotal) >= 5)        await unlockAchievement('level_5');
     if (unlockedAchievements.size >= 25) await unlockAchievement('unlock_25');
 
+    await checkMythics();
     renderAchievementsWindow();
 }
 
