@@ -2978,6 +2978,7 @@ chatInput.addEventListener('keydown', async (e) => {
 
     chatInput.value = '';
     chatInput.style.height = 'auto';
+    _acClose();
 
     // Handle slash commands — pushed to Firebase as system entries, but DO count as didChat.
     if (await handleSlashCommand(text)) {
@@ -3029,7 +3030,10 @@ function _acGetMatches(val) {
     if (!val.startsWith('/')) return [];
     const typed = val.slice(1).toLowerCase();
     const cmds  = Object.keys(SLASH_COMMANDS);
-    return typed ? cmds.filter(c => c.startsWith(typed)) : cmds;
+    if (!typed) return cmds;
+    // Hide dropdown when the input is an exact command match (already fully typed)
+    if (cmds.includes(typed)) return [];
+    return cmds.filter(c => c.startsWith(typed));
 }
 
 function _acSetActive(idx) {
