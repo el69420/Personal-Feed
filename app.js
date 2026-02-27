@@ -3327,11 +3327,17 @@ let w95TopZ = 2000;
     if (waterBtnEl && tileData) {
       const todayCount   = dailyWaterCounts[localDateStr()] || 0;
       const limitReached = todayCount >= 3;
+      const WATER_FLAVOUR = [
+        '',
+        'Watered 1/3 today \u2013 A little sip \uD83D\uDCA7',
+        'Watered 2/3 today \u2013 Growing nicely \uD83C\uDF3F',
+        'Watered 3/3 today \u2013 Thriving today \uD83C\uDF38',
+      ];
       if (limitReached) {
-        waterBtnEl.textContent = 'Fully watered for today \uD83C\uDF31';
+        waterBtnEl.textContent = WATER_FLAVOUR[3];
         waterBtnEl.disabled    = true;
       } else if (todayCount > 0) {
-        waterBtnEl.textContent = `Watered ${todayCount}/3 today`;
+        waterBtnEl.textContent = WATER_FLAVOUR[todayCount] || `Watered ${todayCount}/3 today`;
         waterBtnEl.disabled    = false;
       } else {
         waterBtnEl.textContent = 'Water';
