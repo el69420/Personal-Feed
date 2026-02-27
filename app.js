@@ -3710,6 +3710,23 @@ let w95TopZ = 2000;
 
   ensureTileColumns();
 
+  // ---- Time-of-day theming (visual only) ----
+  const TIME_THEMES = ['garden--dawn','garden--day','garden--dusk','garden--night'];
+  function getGardenTimeTheme() {
+    const h = new Date().getHours();
+    if (h >= 5  && h < 8)  return 'garden--dawn';
+    if (h >= 8  && h < 17) return 'garden--day';
+    if (h >= 17 && h < 20) return 'garden--dusk';
+    return 'garden--night'; // 20:00–04:59
+  }
+  function applyGardenTheme() {
+    if (!gardenBodyEl) return;
+    TIME_THEMES.forEach(t => gardenBodyEl.classList.remove(t));
+    gardenBodyEl.classList.add(getGardenTimeTheme());
+  }
+  applyGardenTheme();
+  setInterval(applyGardenTheme, 60000);
+
   // Live render — also ensures today's daily water count is loaded from Firebase
   // before the first paint so the button shows the correct X/3 state.
   onValue(gardenRef, async (snap) => {
