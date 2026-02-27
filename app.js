@@ -118,6 +118,7 @@ let mailboxTab = 'inbox';
 let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
 let lastChatMessages = [];
 let _lastAnimationTs = Date.now(); // track which command animations have already been triggered
+const _goldenSyncShown = new Set(); // track golden kiss sync pairs already animated (key: "ts1_ts2")
 let activitySeenTs = 0;
 
 // ---- MYTHIC ACHIEVEMENT STATE ----
@@ -1009,9 +1010,10 @@ function setupDBListeners() {
             const latest = newAnimCmds[newAnimCmds.length - 1];
             if (latest.command === 'flurry') triggerFlurry();
             if (latest.command === 'dance')  triggerDance();
-            if (latest.command === 'hug')    triggerHugSparkle();
-            if (latest.command === 'kiss')   triggerKissSparkle();
+            if (latest.command === 'hug')    triggerHugSparkle(latest.variant);
+            if (latest.command === 'kiss')   triggerKissSparkle(latest.variant);
         }
+        checkGoldenKissSync(messages);
 
         updateChatUnread(messages);
         if (chatOpen || !document.getElementById('w95-win-chat')?.classList.contains('is-hidden')) {
@@ -2756,14 +2758,19 @@ async function handleSlashCommand(text) {
     const handler = SLASH_COMMANDS[cmd];
     if (!handler) return false;
     const result = handler(args);
-    await push(chatRef, {
+    const entry = {
         author:     currentUser,
         timestamp:  Date.now(),
         kind:       'system',
         systemType: 'command',
         command:    result.command,
         text:       result.text,
-    });
+    };
+    // 5% chance of a subtly upgraded sparkle effect for hug and kiss
+    if ((cmd === 'hug' || cmd === 'kiss') && Math.random() < 0.05) {
+        entry.variant = 'sparkle';
+    }
+    await push(chatRef, entry);
     return true;
 }
 
@@ -2806,7 +2813,8 @@ function triggerDance() {
 }
 
 // /hug — soft white/pastel sparkle burst with gentle upward float (respects reduced-motion).
-function triggerHugSparkle() {
+// variant='sparkle': rare upgrade — more particles, subtle golden tones, longer fade.
+function triggerHugSparkle(variant) {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const panel = document.getElementById('chatPanel') ||
                   document.getElementById('w95-win-chat');
@@ -2816,37 +2824,46 @@ function triggerHugSparkle() {
     container.className = 'chat-hug-container';
     panel.appendChild(container);
 
-    const COLORS = ['#ffffff', '#e8d5ff', '#d4f0ff', '#fffde7', '#f3e5f5', '#fce4ec'];
+    const isSparkle = variant === 'sparkle';
+    const COLORS = isSparkle
+        ? ['#ffffff', '#e8d5ff', '#d4f0ff', '#fffde7', '#f3e5f5', '#fce4ec', '#ffd700', '#fff0a0', '#ffe8a0']
+        : ['#ffffff', '#e8d5ff', '#d4f0ff', '#fffde7', '#f3e5f5', '#fce4ec'];
+    const count   = isSparkle ? 24 : 16;
+    const baseDur = isSparkle ? 0.9  : 0.7;
+    const durVar  = isSparkle ? 0.5  : 0.35;
+    const timeout = isSparkle ? 2000 : 1400;
+
     const W  = panel.offsetWidth  || 300;
     const H  = panel.offsetHeight || 400;
     const cx = W * 0.5;
     const cy = H * 0.62;
 
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < count; i++) {
         const p  = document.createElement('span');
         p.className = 'chat-hug-particle';
         const ox = (Math.random() - 0.5) * 44;
         const oy = (Math.random() - 0.5) * 30;
-        const tx = (Math.random() - 0.5) * 74;
-        const ty = -(44 + Math.random() * 76);
+        const tx = (Math.random() - 0.5) * (isSparkle ? 90 : 74);
+        const ty = -(44 + Math.random() * (isSparkle ? 96 : 76));
         const sz = 3 + Math.random() * 5;
         p.style.left             = (cx + ox - sz / 2) + 'px';
         p.style.top              = (cy + oy - sz / 2) + 'px';
         p.style.width            = sz + 'px';
         p.style.height           = sz + 'px';
         p.style.background       = COLORS[Math.floor(Math.random() * COLORS.length)];
-        p.style.animationDuration = (0.7 + Math.random() * 0.35) + 's';
+        p.style.animationDuration = (baseDur + Math.random() * durVar) + 's';
         p.style.animationDelay    = (Math.random() * 0.22) + 's';
         p.style.setProperty('--tx', tx + 'px');
         p.style.setProperty('--ty', ty + 'px');
         container.appendChild(p);
     }
 
-    setTimeout(() => container.remove(), 1400);
+    setTimeout(() => container.remove(), timeout);
 }
 
 // /kiss — soft pink radial sparkle burst (respects reduced-motion).
-function triggerKissSparkle() {
+// variant='sparkle': rare upgrade — more particles, subtle golden tones, longer fade.
+function triggerKissSparkle(variant) {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const panel = document.getElementById('chatPanel') ||
                   document.getElementById('w95-win-chat');
@@ -2856,18 +2873,25 @@ function triggerKissSparkle() {
     container.className = 'chat-kiss-container';
     panel.appendChild(container);
 
-    const COLORS = ['#ffb3c6', '#ff69b4', '#ffc0cb', '#ff8fab', '#ffccd5', '#ff4d6d'];
-    const W     = panel.offsetWidth  || 300;
-    const H     = panel.offsetHeight || 400;
-    const cx    = W * 0.5;
-    const cy    = H * 0.58;
-    const COUNT = 16;
+    const isSparkle = variant === 'sparkle';
+    const COLORS = isSparkle
+        ? ['#ffb3c6', '#ff69b4', '#ffc0cb', '#ff8fab', '#ffccd5', '#ff4d6d', '#ffd700', '#ffe08a', '#fff0a0']
+        : ['#ffb3c6', '#ff69b4', '#ffc0cb', '#ff8fab', '#ffccd5', '#ff4d6d'];
+    const COUNT   = isSparkle ? 24 : 16;
+    const baseDur = isSparkle ? 0.85 : 0.65;
+    const durVar  = isSparkle ? 0.5  : 0.35;
+    const timeout = isSparkle ? 1900 : 1300;
+
+    const W  = panel.offsetWidth  || 300;
+    const H  = panel.offsetHeight || 400;
+    const cx = W * 0.5;
+    const cy = H * 0.58;
 
     for (let i = 0; i < COUNT; i++) {
         const p     = document.createElement('span');
         p.className = 'chat-kiss-particle';
         const angle = (i / COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
-        const dist  = 46 + Math.random() * 58;
+        const dist  = isSparkle ? 56 + Math.random() * 72 : 46 + Math.random() * 58;
         const tx    = Math.cos(angle) * dist;
         const ty    = Math.sin(angle) * dist;
         const sz    = 3 + Math.random() * 5;
@@ -2878,14 +2902,108 @@ function triggerKissSparkle() {
         p.style.width            = sz + 'px';
         p.style.height           = sz + 'px';
         p.style.background       = COLORS[Math.floor(Math.random() * COLORS.length)];
-        p.style.animationDuration = (0.65 + Math.random() * 0.35) + 's';
+        p.style.animationDuration = (baseDur + Math.random() * durVar) + 's';
         p.style.animationDelay    = (Math.random() * 0.18) + 's';
         p.style.setProperty('--tx', tx + 'px');
         p.style.setProperty('--ty', ty + 'px');
         container.appendChild(p);
     }
 
-    setTimeout(() => container.remove(), 1300);
+    setTimeout(() => container.remove(), timeout);
+}
+
+// ---- GOLDEN KISS SYNC ----
+// Detects when both users sent /kiss within 2 minutes of each other.
+// Triggers once per sync pair (tracked by timestamp key), client-side for both users.
+function checkGoldenKissSync(messages) {
+    const now = Date.now();
+    const SYNC_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
+    const MAX_AGE_MS     = 5 * 60 * 1000; // ignore kiss commands older than 5 minutes
+
+    const kissCmds = messages.filter(m =>
+        m.kind === 'system' &&
+        m.systemType === 'command' &&
+        m.command === 'kiss' &&
+        (now - (m.timestamp || 0)) < MAX_AGE_MS
+    );
+
+    // Check all pairs from different authors within the sync window
+    for (let i = 0; i < kissCmds.length; i++) {
+        for (let j = i + 1; j < kissCmds.length; j++) {
+            const a = kissCmds[i];
+            const b = kissCmds[j];
+            if (a.author === b.author) continue;
+            if (Math.abs((a.timestamp || 0) - (b.timestamp || 0)) > SYNC_WINDOW_MS) continue;
+
+            // Stable key: lower timestamp first
+            const ts1 = Math.min(a.timestamp || 0, b.timestamp || 0);
+            const ts2 = Math.max(a.timestamp || 0, b.timestamp || 0);
+            const key = `${ts1}_${ts2}`;
+            if (_goldenSyncShown.has(key)) continue;
+
+            _goldenSyncShown.add(key);
+            triggerGoldenSync();
+            return; // one sync event per listener call
+        }
+    }
+}
+
+// Golden radial sparkle burst — used for the Golden Echo sync event.
+function triggerGoldenKissSparkle() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const panel = document.getElementById('chatPanel') ||
+                  document.getElementById('w95-win-chat');
+    if (!panel) return;
+
+    const container = document.createElement('div');
+    container.className = 'chat-kiss-container';
+    panel.appendChild(container);
+
+    const COLORS = ['#ffd700', '#ffec5c', '#fff0a0', '#ffe08a', '#ffc107', '#fff9c4', '#fffde7', '#ffe566'];
+    const W     = panel.offsetWidth  || 300;
+    const H     = panel.offsetHeight || 400;
+    const cx    = W * 0.5;
+    const cy    = H * 0.5;
+    const COUNT = 28;
+
+    for (let i = 0; i < COUNT; i++) {
+        const p     = document.createElement('span');
+        p.className = 'chat-kiss-particle';
+        const angle = (i / COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+        const dist  = 60 + Math.random() * 80;
+        const tx    = Math.cos(angle) * dist;
+        const ty    = Math.sin(angle) * dist;
+        const sz    = 3 + Math.random() * 6;
+        const ox    = (Math.random() - 0.5) * 20;
+        const oy    = (Math.random() - 0.5) * 20;
+        p.style.left             = (cx + ox - sz / 2) + 'px';
+        p.style.top              = (cy + oy - sz / 2) + 'px';
+        p.style.width            = sz + 'px';
+        p.style.height           = sz + 'px';
+        p.style.background       = COLORS[Math.floor(Math.random() * COLORS.length)];
+        p.style.animationDuration = (1.0 + Math.random() * 0.6) + 's';
+        p.style.animationDelay    = (Math.random() * 0.25) + 's';
+        p.style.setProperty('--tx', tx + 'px');
+        p.style.setProperty('--ty', ty + 'px');
+        container.appendChild(p);
+    }
+
+    setTimeout(() => container.remove(), 2600);
+}
+
+// Shows the golden sparkle burst and the "Golden Echo" system message overlay.
+function triggerGoldenSync() {
+    triggerGoldenKissSparkle();
+
+    const panel = document.getElementById('chatPanel') ||
+                  document.getElementById('w95-win-chat');
+    if (!panel) return;
+
+    const msg = document.createElement('div');
+    msg.className = 'chat-golden-sync-msg';
+    msg.textContent = 'Golden Echo \u2728 \u2014 In sync.';
+    panel.appendChild(msg);
+    setTimeout(() => msg.remove(), 4500);
 }
 
 // ---- CHAT ----

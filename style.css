@@ -1648,6 +1648,33 @@ body.dark-mode .chat-system-msg {
     .chat-kiss-particle { animation: none; display: none; }
 }
 
+/* Golden Kiss Sync — "Golden Echo" system message overlay */
+.chat-golden-sync-msg {
+    position: absolute;
+    left: 50%;
+    bottom: 28%;
+    transform: translateX(-50%);
+    background: rgba(18, 12, 4, 0.78);
+    color: #ffd700;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    padding: 5px 16px;
+    border-radius: 20px;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 20;
+    animation: goldenSyncFade 4.5s ease forwards;
+}
+@keyframes goldenSyncFade {
+    0%   { opacity: 0;   transform: translateX(-50%) translateY(10px); }
+    12%  { opacity: 1;   transform: translateX(-50%) translateY(0);    }
+    72%  { opacity: 1;   transform: translateX(-50%) translateY(0);    }
+    100% { opacity: 0;   transform: translateX(-50%) translateY(-8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-golden-sync-msg { animation: none; }
+}
+
 /* ---- TYPE PICKER ---- */
 .type-picker-grid {
     display: grid;
