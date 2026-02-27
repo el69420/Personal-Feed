@@ -1002,13 +1002,15 @@ function setupDBListeners() {
             m.kind === 'system' &&
             m.systemType === 'command' &&
             m.timestamp > _lastAnimationTs &&
-            (m.command === 'flurry' || m.command === 'dance')
+            (m.command === 'flurry' || m.command === 'dance' || m.command === 'hug' || m.command === 'kiss')
         );
         if (newAnimCmds.length > 0) {
             _lastAnimationTs = Math.max(...newAnimCmds.map(c => c.timestamp));
             const latest = newAnimCmds[newAnimCmds.length - 1];
             if (latest.command === 'flurry') triggerFlurry();
             if (latest.command === 'dance')  triggerDance();
+            if (latest.command === 'hug')    triggerHugSparkle();
+            if (latest.command === 'kiss')   triggerKissSparkle();
         }
 
         updateChatUnread(messages);
@@ -2801,6 +2803,89 @@ function triggerDance() {
     void body.offsetWidth;
     body.classList.add('chat-dance');
     setTimeout(() => body.classList.remove('chat-dance'), 700);
+}
+
+// /hug — soft white/pastel sparkle burst with gentle upward float (respects reduced-motion).
+function triggerHugSparkle() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const panel = document.getElementById('chatPanel') ||
+                  document.getElementById('w95-win-chat');
+    if (!panel) return;
+
+    const container = document.createElement('div');
+    container.className = 'chat-hug-container';
+    panel.appendChild(container);
+
+    const COLORS = ['#ffffff', '#e8d5ff', '#d4f0ff', '#fffde7', '#f3e5f5', '#fce4ec'];
+    const W  = panel.offsetWidth  || 300;
+    const H  = panel.offsetHeight || 400;
+    const cx = W * 0.5;
+    const cy = H * 0.62;
+
+    for (let i = 0; i < 16; i++) {
+        const p  = document.createElement('span');
+        p.className = 'chat-hug-particle';
+        const ox = (Math.random() - 0.5) * 44;
+        const oy = (Math.random() - 0.5) * 30;
+        const tx = (Math.random() - 0.5) * 74;
+        const ty = -(44 + Math.random() * 76);
+        const sz = 3 + Math.random() * 5;
+        p.style.left             = (cx + ox - sz / 2) + 'px';
+        p.style.top              = (cy + oy - sz / 2) + 'px';
+        p.style.width            = sz + 'px';
+        p.style.height           = sz + 'px';
+        p.style.background       = COLORS[Math.floor(Math.random() * COLORS.length)];
+        p.style.animationDuration = (0.7 + Math.random() * 0.35) + 's';
+        p.style.animationDelay    = (Math.random() * 0.22) + 's';
+        p.style.setProperty('--tx', tx + 'px');
+        p.style.setProperty('--ty', ty + 'px');
+        container.appendChild(p);
+    }
+
+    setTimeout(() => container.remove(), 1400);
+}
+
+// /kiss — soft pink radial sparkle burst (respects reduced-motion).
+function triggerKissSparkle() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const panel = document.getElementById('chatPanel') ||
+                  document.getElementById('w95-win-chat');
+    if (!panel) return;
+
+    const container = document.createElement('div');
+    container.className = 'chat-kiss-container';
+    panel.appendChild(container);
+
+    const COLORS = ['#ffb3c6', '#ff69b4', '#ffc0cb', '#ff8fab', '#ffccd5', '#ff4d6d'];
+    const W     = panel.offsetWidth  || 300;
+    const H     = panel.offsetHeight || 400;
+    const cx    = W * 0.5;
+    const cy    = H * 0.58;
+    const COUNT = 16;
+
+    for (let i = 0; i < COUNT; i++) {
+        const p     = document.createElement('span');
+        p.className = 'chat-kiss-particle';
+        const angle = (i / COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
+        const dist  = 46 + Math.random() * 58;
+        const tx    = Math.cos(angle) * dist;
+        const ty    = Math.sin(angle) * dist;
+        const sz    = 3 + Math.random() * 5;
+        const ox    = (Math.random() - 0.5) * 20;
+        const oy    = (Math.random() - 0.5) * 20;
+        p.style.left             = (cx + ox - sz / 2) + 'px';
+        p.style.top              = (cy + oy - sz / 2) + 'px';
+        p.style.width            = sz + 'px';
+        p.style.height           = sz + 'px';
+        p.style.background       = COLORS[Math.floor(Math.random() * COLORS.length)];
+        p.style.animationDuration = (0.65 + Math.random() * 0.35) + 's';
+        p.style.animationDelay    = (Math.random() * 0.18) + 's';
+        p.style.setProperty('--tx', tx + 'px');
+        p.style.setProperty('--ty', ty + 'px');
+        container.appendChild(p);
+    }
+
+    setTimeout(() => container.remove(), 1300);
 }
 
 // ---- CHAT ----

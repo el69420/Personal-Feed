@@ -1600,6 +1600,54 @@ body.dark-mode .chat-system-msg {
     .chat-body.chat-dance { animation: none; }
 }
 
+/* /hug soft sparkle burst — white/pastel particles, gentle upward float */
+.chat-hug-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+}
+.chat-hug-particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    will-change: transform, opacity;
+    animation: hugFloat 1s ease-out both;
+}
+@keyframes hugFloat {
+    0%   { opacity: 0;    transform: translate(0, 0) scale(0.5); }
+    18%  { opacity: 0.88; }
+    100% { opacity: 0;    transform: translate(var(--tx, 0px), var(--ty, -60px)) scale(0.3); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-hug-particle { animation: none; display: none; }
+}
+
+/* /kiss romantic sparkle burst — soft pink tones, radial spread */
+.chat-kiss-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+}
+.chat-kiss-particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    will-change: transform, opacity;
+    animation: kissRadial 1s ease-out both;
+}
+@keyframes kissRadial {
+    0%   { opacity: 0;    transform: translate(0, 0) scale(0.4); }
+    18%  { opacity: 0.95; transform: translate(calc(var(--tx, 20px) * 0.2), calc(var(--ty, 0px) * 0.2)) scale(1.1); }
+    100% { opacity: 0;    transform: translate(var(--tx, 20px), var(--ty, 0px)) scale(0.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-kiss-particle { animation: none; display: none; }
+}
+
 /* ---- TYPE PICKER ---- */
 .type-picker-grid {
     display: grid;
