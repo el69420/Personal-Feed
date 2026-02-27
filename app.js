@@ -118,6 +118,7 @@ let mailboxTab = 'inbox';
 let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
 let lastChatMessages = [];
 let _lastAnimationTs = Date.now(); // track which command animations have already been triggered
+let _chatLastRenderedId = null;   // last message ID seen by renderChat; null = initial render
 const _goldenSyncShown = new Set(); // track golden kiss sync pairs already animated (key: "ts1_ts2")
 let activitySeenTs = 0;
 
@@ -1024,7 +1025,11 @@ function setupDBListeners() {
 
         updateChatUnread(messages);
         if (chatOpen || !document.getElementById('w95-win-chat')?.classList.contains('is-hidden')) {
-            renderChat(messages);
+            const currentLastId = messages[messages.length - 1]?.id || null;
+            const isInitialRender = _chatLastRenderedId === null;
+            const isNewMessage = !isInitialRender && currentLastId !== _chatLastRenderedId;
+            _chatLastRenderedId = currentLastId;
+            renderChat(messages, isInitialRender ? 'initial' : (isNewMessage ? 'new' : 'update'));
         }
     });
 }
@@ -3073,9 +3078,13 @@ function formatChatTime(ts) {
     return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
-function renderChat(messages) {
+function renderChat(messages, updateKind = 'update') {
     const body = document.getElementById('chatBody');
     if (!body) return;
+
+    // Capture scroll state before touching the DOM
+    const prevScrollTop = body.scrollTop;
+    const nearBottom = body.scrollHeight - body.scrollTop - body.clientHeight <= 80;
 
     const htmlParts = [];
     let currentGroup = null;
@@ -3130,7 +3139,27 @@ function renderChat(messages) {
     flushGroup();
 
     body.innerHTML = htmlParts.join('');
-    body.scrollTop = body.scrollHeight;
+
+    if (updateKind === 'initial' || (updateKind === 'new' && nearBottom)) {
+        // Initial load or new message when already at bottom: scroll to bottom
+        body.scrollTop = body.scrollHeight;
+        _hideChatNewMsgBtn();
+    } else if (updateKind === 'new' && !nearBottom) {
+        // New message but user is scrolled up: preserve position, show indicator
+        body.scrollTop = prevScrollTop;
+        _showChatNewMsgBtn();
+    } else {
+        // Reaction/edit update: preserve scroll position exactly
+        body.scrollTop = prevScrollTop;
+    }
+}
+
+function _showChatNewMsgBtn() {
+    document.getElementById('chatNewMsgBtn')?.classList.remove('hidden');
+}
+
+function _hideChatNewMsgBtn() {
+    document.getElementById('chatNewMsgBtn')?.classList.add('hidden');
 }
 
 function updateChatUnread(messages) {
@@ -3222,7 +3251,8 @@ window.toggleChat = function() {
         localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
         document.getElementById('chatUnread')?.classList.add('hidden');
 
-        renderChat(lastChatMessages);
+        renderChat(lastChatMessages, 'initial');
+        _hideChatNewMsgBtn();
 
         // One-time hint so the double-click affordance is discoverable
         if (!localStorage.getItem('chatReactionHintSeen')) {
@@ -3240,6 +3270,22 @@ function closeChat(silent) {
     document.getElementById('chatPanel')?.classList.remove('show');
     if (!silent) document.getElementById('chatUnread')?.classList.add('hidden');
 }
+
+// Clear the "New messages" indicator when the user scrolls to the bottom
+document.getElementById('chatBody')?.addEventListener('scroll', () => {
+    const body = document.getElementById('chatBody');
+    if (!body) return;
+    if (body.scrollHeight - body.scrollTop - body.clientHeight <= 80) {
+        _hideChatNewMsgBtn();
+    }
+});
+
+// Clicking "New messages" scrolls to the bottom and clears the indicator
+document.getElementById('chatNewMsgBtn')?.addEventListener('click', () => {
+    const body = document.getElementById('chatBody');
+    if (body) body.scrollTop = body.scrollHeight;
+    _hideChatNewMsgBtn();
+});
 
 const chatInput = document.getElementById('chatInput');
 
@@ -4741,7 +4787,8 @@ let w95TopZ = 2000;
       lastChatSeenTs = Date.now();
       localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
       document.getElementById('chatUnread')?.classList.add('hidden');
-      renderChat(lastChatMessages);
+      renderChat(lastChatMessages, 'initial');
+      _hideChatNewMsgBtn();
       setTimeout(() => document.getElementById('chatInput')?.focus(), 80);
     }
     if (win === winNew) {

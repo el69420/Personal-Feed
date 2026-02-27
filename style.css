@@ -1389,6 +1389,31 @@ body.dark-mode .activity-fab {
     box-shadow: inset 1px 1px 0 #404040;
 }
 
+/* "New messages" indicator shown when new msg arrives while scrolled up */
+.chat-new-msg-btn {
+    display: block;
+    margin: 0 auto;
+    padding: 4px 14px;
+    font-size: 11px;
+    font-weight: 800;
+    font-family: 'Nunito', sans-serif;
+    background: var(--accent, rgba(0,160,160,0.9));
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    transition: opacity 0.2s, transform 0.2s;
+    flex-shrink: 0;
+    align-self: center;
+}
+.chat-new-msg-btn:hover {
+    filter: brightness(1.12);
+}
+.chat-new-msg-btn.hidden {
+    display: none;
+}
+
 /* Reactions row shown inside chat bubbles */
 .chat-reactions {
     display: flex;
