@@ -4698,8 +4698,11 @@ let w95TopZ = 2000;
 
   window.addEventListener('mousemove', (e) => {
     if (!dragging) return;
-    win.style.left = Math.max(0, winStartX + (e.clientX - startX)) + 'px';
-    win.style.top = Math.max(0, winStartY + (e.clientY - startY)) + 'px';
+    const taskbarH = 40;
+    const maxX = document.documentElement.clientWidth - win.offsetWidth;
+    const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
+    win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+    win.style.top = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
   });
 
   window.addEventListener('mouseup', () => { dragging = false; });
@@ -4840,8 +4843,11 @@ let w95TopZ = 2000;
     });
     window.addEventListener('mousemove', (e) => {
       if (!dragging) return;
-      winEl.style.left = Math.max(0, winStartX + (e.clientX - startX)) + 'px';
-      winEl.style.top = Math.max(0, winStartY + (e.clientY - startY)) + 'px';
+      const taskbarH = 40;
+      const maxX = document.documentElement.clientWidth - winEl.offsetWidth;
+      const maxY = document.documentElement.clientHeight - winEl.offsetHeight - taskbarH;
+      winEl.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+      winEl.style.top = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
     });
     window.addEventListener('mouseup', () => { dragging = false; });
   }
@@ -5871,8 +5877,11 @@ function renderAchievementsWindow() {
     });
     window.addEventListener('mousemove', (e) => {
         if (!dragging) return;
-        win.style.left = Math.max(0, winStartX + (e.clientX - startX)) + 'px';
-        win.style.top  = Math.max(0, winStartY + (e.clientY - startY)) + 'px';
+        const taskbarH = 40;
+        const maxX = document.documentElement.clientWidth - win.offsetWidth;
+        const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
+        win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+        win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
     });
     window.addEventListener('mouseup', () => { dragging = false; });
 })();

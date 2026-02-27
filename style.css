@@ -3556,7 +3556,7 @@ body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ===== Our Garden ===== */
-#w95-win-garden{width:560px;}
+#w95-win-garden{width:560px;display:flex;flex-direction:column;}
 .garden-top{display:flex;align-items:flex-start;gap:12px;}
 .garden-info{width:120px;flex-shrink:0;}
 .garden-info .garden-plant-row{flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:4px;}
@@ -3954,7 +3954,19 @@ body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
 .garden-weather-display{font-size:10px;color:#444;margin-top:4px;min-height:14px;}
 
 /* Weather overlay: subtle tint via ::before on the garden body */
-#w95-win-garden .w95-body{position:relative;}
+#w95-win-garden .w95-body{
+  position:relative;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:auto;
+  background:#7a4f2d;
+  background-image:
+    repeating-linear-gradient(135deg,transparent 0,transparent 4px,rgba(0,0,0,0.05) 4px,rgba(0,0,0,0.05) 5px),
+    repeating-linear-gradient(45deg,transparent 0,transparent 6px,rgba(255,255,255,0.04) 6px,rgba(255,255,255,0.04) 7px),
+    repeating-linear-gradient(90deg,transparent 0,transparent 29px,rgba(0,0,0,0.07) 29px,rgba(0,0,0,0.07) 30px),
+    repeating-linear-gradient(0deg,transparent 0,transparent 19px,rgba(0,0,0,0.04) 19px,rgba(0,0,0,0.04) 20px);
+}
 #w95-win-garden .w95-body::before{
   content:'';position:absolute;inset:0;
   pointer-events:none;z-index:0;
