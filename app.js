@@ -1064,10 +1064,20 @@ onAuthStateChanged(auth, (firebaseUser) => {
     login(displayName, email);
 });
 
-// Scroll to top button
-window.addEventListener('scroll', () => {
-    document.getElementById('scrollTopBtn').classList.toggle('visible', window.scrollY > 300);
-});
+// Scroll to top button — listens on the feed window body (feed is inside a W95 window)
+function getFeedScrollEl() { return document.getElementById('w95-feed-body'); }
+(function initFeedScrollListener() {
+    const feedBody = getFeedScrollEl();
+    if (feedBody) {
+        feedBody.addEventListener('scroll', () => {
+            document.getElementById('scrollTopBtn').classList.toggle('visible', feedBody.scrollTop > 300);
+        });
+    } else {
+        window.addEventListener('scroll', () => {
+            document.getElementById('scrollTopBtn').classList.toggle('visible', window.scrollY > 300);
+        });
+    }
+})();
 
 // ---- KEYBOARD NAVIGATION ----
 
@@ -2543,10 +2553,12 @@ function loadPosts() {
     }
 
     emptyState.classList.add('hidden');
-    const savedScroll = window.scrollY;
+    const _feedBodyEl = getFeedScrollEl();
+    const savedScroll = _feedBodyEl ? _feedBodyEl.scrollTop : window.scrollY;
     container.innerHTML = posts.map(createPostCard).join('');
     hydrateLinkPreviews(container);
-    window.scrollTo({ top: savedScroll, behavior: 'instant' });
+    if (_feedBodyEl) _feedBodyEl.scrollTo({ top: savedScroll, behavior: 'instant' });
+    else window.scrollTo({ top: savedScroll, behavior: 'instant' });
     // Re-apply keyboard-navigation focus after re-render
     if (focusedPostId) {
         document.querySelector(`[data-post-id="${focusedPostId}"]`)?.classList.add('post-focused');
@@ -3657,9 +3669,11 @@ document.getElementById('notifAllowBtn')?.addEventListener('click', () => doRequ
 document.getElementById('notifDenyBtn')?.addEventListener('click',  () => closeNotifPermModal());
 
 // Scroll to top
-document.getElementById('scrollTopBtn')?.addEventListener('click', () =>
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-);
+document.getElementById('scrollTopBtn')?.addEventListener('click', () => {
+    const feedBody = getFeedScrollEl();
+    if (feedBody) feedBody.scrollTo({ top: 0, behavior: 'smooth' });
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 
 // Activity panel
 document.getElementById('activityFab')?.addEventListener('click', () => toggleActivityPanel());
@@ -5891,3 +5905,147 @@ function renderAchievementsWindow() {
     });
     window.addEventListener('mouseup', () => { dragging = false; });
 })();
+
+// ===== Win95 Feed Window + Desktop Icon Management =====
+(() => {
+    const win    = document.getElementById('w95-win-feed');
+    const btn    = document.getElementById('w95-btn-feed');
+    const minBtn = document.getElementById('w95-feed-min');
+    const closeBtn = document.getElementById('w95-feed-close');
+    const handle = document.getElementById('w95-feed-handle');
+    if (!win || !btn || !minBtn || !closeBtn || !handle) return;
+
+    function showFeed() {
+        win.classList.remove('is-hidden');
+        btn.classList.add('is-pressed');
+        win.style.zIndex = ++w95TopZ;
+        localStorage.setItem('w95_feed_open', '1');
+    }
+
+    function hideFeed() {
+        win.classList.add('is-hidden');
+        btn.classList.remove('is-pressed');
+        localStorage.setItem('w95_feed_open', '0');
+    }
+
+    function bringFeedToFront() {
+        win.style.zIndex = ++w95TopZ;
+    }
+
+    // Taskbar button: toggle open/close
+    btn.addEventListener('click', () => {
+        if (win.classList.contains('is-hidden')) showFeed();
+        else hideFeed();
+    });
+
+    // Minimize button: hide window
+    minBtn.addEventListener('click', (e) => { e.stopPropagation(); hideFeed(); });
+
+    // Close button: hide window
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); hideFeed(); });
+
+    // Bring to front on any mousedown on the window
+    win.addEventListener('mousedown', () => bringFeedToFront(), true);
+
+    // Drag support
+    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+    handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button')) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const r = win.getBoundingClientRect();
+        winStartX = r.left; winStartY = r.top;
+        win.style.zIndex = ++w95TopZ;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const taskbarH = 40;
+        const maxX = document.documentElement.clientWidth - win.offsetWidth;
+        const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
+        win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+        win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+
+    // Restore open state — default closed (desktop is shown first)
+    if (localStorage.getItem('w95_feed_open') === '1') showFeed();
+    else hideFeed();
+
+    // ---- Desktop icon double-click logic ----
+    // Map: data-app -> { winId, btnId, showFn? }
+    const APP_MAP = {
+        feed:         { winId: 'w95-win-feed',         btnId: 'w95-btn-feed' },
+        chat:         { winId: 'w95-win-chat',         btnId: 'w95-btn-chat' },
+        garden:       { winId: 'w95-win-garden',       btnId: 'w95-btn-garden' },
+        achievements: { winId: 'w95-win-achievements', btnId: 'w95-btn-achievements' },
+    };
+
+    function openApp(appKey) {
+        if (appKey === 'feed') {
+            // Feed window: open or bring to front
+            if (win.classList.contains('is-hidden')) {
+                showFeed();
+            } else {
+                bringFeedToFront();
+            }
+            return;
+        }
+        const map = APP_MAP[appKey];
+        if (!map) return;
+        const appWin = document.getElementById(map.winId);
+        const appBtn = document.getElementById(map.btnId);
+        if (!appWin) return;
+
+        if (appWin.classList.contains('is-hidden')) {
+            // Simulate clicking the taskbar button to open the window
+            appBtn?.click();
+        } else {
+            // Already open — bring to front
+            appWin.style.zIndex = ++w95TopZ;
+        }
+    }
+
+    // Track click timing for double-click detection (dblclick doesn't fire reliably on some devices)
+    const clickTimes = {};
+    document.querySelectorAll('.w95-desktop-icon').forEach(icon => {
+        const appKey = icon.dataset.app;
+
+        // Selection on single click
+        icon.addEventListener('click', () => {
+            document.querySelectorAll('.w95-desktop-icon').forEach(i => i.classList.remove('selected'));
+            icon.classList.add('selected');
+
+            const now = Date.now();
+            if (clickTimes[appKey] && now - clickTimes[appKey] < 500) {
+                // Double-click detected
+                openApp(appKey);
+                clickTimes[appKey] = 0;
+            } else {
+                clickTimes[appKey] = now;
+            }
+        });
+
+        // Also handle native dblclick for accessibility
+        icon.addEventListener('dblclick', () => { openApp(appKey); });
+
+        // Keyboard: Enter to open
+        icon.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openApp(appKey); }
+        });
+    });
+
+    // Deselect icons when clicking on bare desktop
+    document.getElementById('w95-desktop')?.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('w95-desktop')) {
+            document.querySelectorAll('.w95-desktop-icon').forEach(i => i.classList.remove('selected'));
+        }
+    });
+})();
+
+// Bring any W95 window to front on mousedown (generic handler for all existing windows)
+document.querySelectorAll('.w95-window').forEach(win => {
+    win.addEventListener('mousedown', () => {
+        win.style.zIndex = ++w95TopZ;
+    }, true);
+});

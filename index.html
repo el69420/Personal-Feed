@@ -14,9 +14,29 @@
 </head>
 
 
-<body class="p-4 md:p-8">
+<body>
     <div class="custom-cursor" id="cursor">✦</div>
     <div class="sync-indicator" id="syncStatus">Connecting...</div>
+
+    <!-- Win95 Desktop -->
+    <div id="w95-desktop">
+        <div class="w95-desktop-icon" data-app="feed" tabindex="0">
+            <div class="desktop-icon-img">&#128240;</div>
+            <div class="desktop-icon-label">Feed.exe</div>
+        </div>
+        <div class="w95-desktop-icon" data-app="chat" tabindex="0">
+            <div class="desktop-icon-img">&#128172;</div>
+            <div class="desktop-icon-label">Chat.exe</div>
+        </div>
+        <div class="w95-desktop-icon" data-app="garden" tabindex="0">
+            <div class="desktop-icon-img">&#127807;</div>
+            <div class="desktop-icon-label">Garden.exe</div>
+        </div>
+        <div class="w95-desktop-icon" data-app="achievements" tabindex="0">
+            <div class="desktop-icon-img">&#127942;</div>
+            <div class="desktop-icon-label">Achievements.exe</div>
+        </div>
+    </div>
 
     <!-- Login Overlay -->
     <div id="loginOverlay">
@@ -45,6 +65,15 @@
             <button id="signOutDeniedBtn" class="google-signin-btn">Sign out and try another account</button>
         </div>
     </div>
+
+    <!-- Feed Window -->
+    <div id="w95-win-feed" class="w95-window is-hidden" style="left:30px;top:20px;width:calc(100vw - 60px);height:calc(100vh - 60px);">
+        <div class="w95-titlebar" id="w95-feed-handle">
+            <div class="w95-title">Feed.exe</div>
+            <button class="w95-control" id="w95-feed-min" type="button" aria-label="Minimise">_</button>
+            <button class="w95-control w95-control-close" id="w95-feed-close" type="button" aria-label="Close">X</button>
+        </div>
+        <div class="w95-body w95-feed-body" id="w95-feed-body">
 
     <div class="max-w-2xl mx-auto feed-container">
 
@@ -193,6 +222,9 @@
             </div>
         </div>
     </div>
+
+        </div><!-- /.w95-feed-body -->
+    </div><!-- /#w95-win-feed -->
 
     <!-- Keyboard Shortcuts Modal -->
     <div id="shortcutsModal" class="modal">
@@ -712,6 +744,7 @@
     <script src="cursor-trail.js"></script>
 
     <div id="w95-taskbar" class="w95-taskbar">
+  <button class="w95-btn" id="w95-btn-feed" type="button">FEED</button>
   <button class="w95-btn" id="w95-btn-garden" type="button">GARDEN</button>
   <button class="w95-btn" id="w95-btn-chat" type="button">CHAT</button>
   <button class="w95-btn" id="w95-btn-new" type="button">NEW</button>

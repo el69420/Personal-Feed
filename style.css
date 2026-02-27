@@ -331,7 +331,7 @@ body.dark-mode::before {
     position: fixed;
     bottom: calc(var(--taskbar-h, 40px) + 12px);
     left: 22px;
-    z-index: 998;
+    z-index: 9900;
     width: 44px;
     height: 44px;
     border-radius: 999px;
@@ -4384,4 +4384,107 @@ body.dark-mode .garden-talk-btn:hover{
     transition: none;
   }
 }
+
+/* ============================================================
+   Win95 Desktop
+   ============================================================ */
+#w95-desktop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 40px; /* leave room for taskbar */
+  z-index: 100;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  pointer-events: none; /* desktop itself is click-through */
+}
+
+.w95-desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 72px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: auto;
+  outline: none;
+}
+
+.desktop-icon-img {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: #C0C0C0;
+  border: 2px solid;
+  border-color: #FFFFFF #808080 #808080 #FFFFFF;
+  box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040;
+}
+
+.desktop-icon-label {
+  font-family: Tahoma, Verdana, Geneva, sans-serif;
+  font-size: 11px;
+  color: #FFFFFF;
+  text-shadow: 1px 1px 1px #000000, -1px 0 1px #000000, 0 -1px 1px #000000;
+  text-align: center;
+  max-width: 72px;
+  word-break: break-word;
+  line-height: 1.3;
+  padding: 1px 2px;
+}
+
+.w95-desktop-icon.selected .desktop-icon-img {
+  background: #000080;
+  filter: invert(0.3) sepia(1) saturate(3) hue-rotate(200deg);
+}
+
+.w95-desktop-icon.selected .desktop-icon-label {
+  background: #000080;
+  color: #FFFFFF;
+  outline: 1px dotted #FFFFFF;
+}
+
+.w95-desktop-icon:focus-visible .desktop-icon-label {
+  outline: 1px dotted #FFFFFF;
+}
+
+/* ============================================================
+   Feed Window — large / near-maximised
+   ============================================================ */
+#w95-win-feed {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* window itself doesn't scroll; body does */
+}
+
+#w95-win-feed .w95-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding: 16px 12px;
+}
+
+#w95-win-feed .feed-container {
+  padding-bottom: 24px;
+}
+
+/* Tighter close button to match Win95 look */
+.w95-control-close {
+  margin-left: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Body no longer needs top padding since feed is inside a window */
+body { padding: 0 !important; }
 
