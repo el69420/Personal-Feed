@@ -3720,14 +3720,65 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 // ===== Win95 window z-index management (bring-to-front) =====
 let w95TopZ = 2000;
 
+// ===== Win95 shared window manager =====
+const w95Mgr = (() => {
+  const _maxState = {}; // winId -> { isMax, prevRect }
+
+  function addTaskbarBtn(winId, label, onToggle) {
+    const taskbar = document.getElementById('w95-taskbar');
+    if (!taskbar) return null;
+    const btn = document.createElement('button');
+    btn.className = 'w95-btn';
+    btn.type = 'button';
+    btn.textContent = label;
+    btn.addEventListener('click', onToggle);
+    taskbar.appendChild(btn);
+    return btn;
+  }
+
+  function setPressed(btn, pressed) {
+    if (btn) btn.classList.toggle('is-pressed', pressed);
+  }
+
+  function toggleMaximise(win, winId) {
+    if (!_maxState[winId]) _maxState[winId] = { isMax: false, prevRect: null };
+    const st = _maxState[winId];
+    if (st.isMax) {
+      win.classList.remove('is-maximised');
+      if (st.prevRect) {
+        const r = st.prevRect;
+        win.style.left   = r.left + 'px';
+        win.style.top    = r.top  + 'px';
+        win.style.width  = r.w    + 'px';
+        win.style.height = r.h    + 'px';
+      }
+      st.isMax = false;
+    } else {
+      const r = win.getBoundingClientRect();
+      st.prevRect = { left: r.left, top: r.top, w: r.width, h: r.height };
+      win.classList.add('is-maximised');
+      st.isMax = true;
+    }
+  }
+
+  function isMaximised(winId) { return !!_maxState[winId]?.isMax; }
+
+  return { addTaskbarBtn, setPressed, toggleMaximise, isMaximised };
+})();
+
+// Registry so desktop icons can open windows via a shared open() callback
+const w95Apps = {};
+
 // ===== Win95 Our Garden Window + Shared Firebase Garden =====
 (() => {
-  const btn    = document.getElementById('w95-btn-garden');
+  let btn = null;
   const win    = document.getElementById('w95-win-garden');
   const min    = document.getElementById('w95-garden-min');
+  const max    = document.getElementById('w95-garden-max');
+  const closeBtn = document.getElementById('w95-garden-close');
   const handle = document.getElementById('w95-garden-handle');
 
-  if (!btn || !win || !min || !handle) return;
+  if (!win || !min || !handle) return;
 
   const tilesRowEl     = document.getElementById('garden-tiles-row');
   const streakEl       = document.getElementById('garden-streak');
@@ -4662,8 +4713,12 @@ let w95TopZ = 2000;
 
   // ---- Show / hide ----
   function show() {
+    if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-garden', 'GARDEN', () => {
+      if (win.classList.contains('is-hidden')) show(); else hide();
+    });
     win.classList.remove('is-hidden');
-    btn.classList.add('is-pressed');
+    win.style.zIndex = ++w95TopZ;
+    w95Mgr.setPressed(btn, true);
     localStorage.setItem('w95_garden_open', '1');
     // Record today's garden visit (streak / day-map) and check achievements.
     // This is the correct place — not during achievement init — so that
@@ -4683,29 +4738,34 @@ let w95TopZ = 2000;
 
   function hide() {
     win.classList.add('is-hidden');
-    btn.classList.remove('is-pressed');
+    w95Mgr.setPressed(btn, false);
     localStorage.setItem('w95_garden_open', '0');
     stopCritters();
   }
 
-  btn.onclick = () => {
-    if (win.classList.contains('is-hidden')) show();
-    else hide();
-  };
-
-  min.onclick = (e) => {
-    e.stopPropagation();
+  function closeWin() {
+    if (w95Mgr.isMaximised('w95-win-garden')) w95Mgr.toggleMaximise(win, 'w95-win-garden');
     hide();
-  };
+    if (btn) { btn.remove(); btn = null; }
+  }
+
+  min.onclick = (e) => { e.stopPropagation(); hide(); };
+  if (max) max.onclick = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-garden'); };
+  if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
+
+  w95Apps['garden'] = { open: () => {
+    if (win.classList.contains('is-hidden')) show(); else win.style.zIndex = ++w95TopZ;
+  }};
 
   // Restore open state
-  if (localStorage.getItem('w95_garden_open') === '0') hide();
-  else show();
+  if (localStorage.getItem('w95_garden_open') !== '0') show();
 
-  // ---- Drag ---- (unchanged)
+  // ---- Drag ----
   let dragging = false, startX = 0, startY = 0, winStartX = 20, winStartY = 20;
 
   handle.addEventListener('mousedown', (e) => {
+    if (e.target.closest('button')) return;
+    if (w95Mgr.isMaximised('w95-win-garden')) return;
     dragging = true;
     startX = e.clientX;
     startY = e.clientY;
@@ -4738,13 +4798,16 @@ let w95TopZ = 2000;
   const winChat = document.getElementById('w95-win-chat');
   const winNew = document.getElementById('w95-win-new');
 
-  const btnChat = document.getElementById('w95-btn-chat');
-  const btnNew = document.getElementById('w95-btn-new');
+  let btnChat = null, btnNew = null;
 
   const minChat = document.getElementById('w95-chat-min');
-  const minNew = document.getElementById('w95-new-min');
+  const minNew  = document.getElementById('w95-new-min');
+  const maxChat = document.getElementById('w95-chat-max');
+  const maxNew  = document.getElementById('w95-new-max');
+  const closeBtnChat = document.getElementById('w95-chat-close');
+  const closeBtnNew  = document.getElementById('w95-new-close');
 
-  if (!chatPanel || !activityPanel || !chatBodyW || !newBodyW || !winChat || !winNew || !btnChat || !btnNew || !minChat || !minNew) return;
+  if (!chatPanel || !activityPanel || !chatBodyW || !newBodyW || !winChat || !winNew || !minChat || !minNew) return;
 
   // Hide the old floating FABs — taskbar buttons replace them
   const fabChat = document.getElementById('chatFab');
@@ -4796,62 +4859,88 @@ let w95TopZ = 2000;
     win.style.top  = Math.max(margin, top) + 'px';
   }
 
-  function show(win, btn, key) {
-    const wasHidden = win.classList.contains('is-hidden');
-    win.classList.remove('is-hidden');
-    btn.classList.add('is-pressed');
-    localStorage.setItem(key, '1');
-    if (wasHidden) {
-      if (win === winChat) snap(winChat, 'br');
-      if (win === winNew)  snap(winNew, 'bl');
-    }
-    if (win === winChat) {
-      chatOpen = true;
-      lastChatSeenTs = Date.now();
-      localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
-      document.getElementById('chatUnread')?.classList.add('hidden');
-      renderChat(lastChatMessages, 'initial');
-      _hideChatNewMsgBtn();
-      setTimeout(() => document.getElementById('chatInput')?.focus(), 80);
-    }
-    if (win === winNew) {
-      renderActivityPanel();
-    }
+  function showChat() {
+    const wasHidden = winChat.classList.contains('is-hidden');
+    if (!btnChat) btnChat = w95Mgr.addTaskbarBtn('w95-win-chat', 'CHAT', () => {
+      if (winChat.classList.contains('is-hidden')) showChat(); else hideChat();
+    });
+    winChat.classList.remove('is-hidden');
+    winChat.style.zIndex = ++w95TopZ;
+    w95Mgr.setPressed(btnChat, true);
+    localStorage.setItem('w95_chat_open', '1');
+    if (wasHidden) snap(winChat, 'br');
+    chatOpen = true;
+    lastChatSeenTs = Date.now();
+    localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
+    document.getElementById('chatUnread')?.classList.add('hidden');
+    renderChat(lastChatMessages, 'initial');
+    _hideChatNewMsgBtn();
+    setTimeout(() => document.getElementById('chatInput')?.focus(), 80);
   }
 
-  function hide(win, btn, key) {
-    win.classList.add('is-hidden');
-    btn.classList.remove('is-pressed');
-    localStorage.setItem(key, '0');
-    if (win === winChat) {
-      chatOpen = false;
-      stopChatTyping();
-    }
+  function hideChat() {
+    winChat.classList.add('is-hidden');
+    w95Mgr.setPressed(btnChat, false);
+    localStorage.setItem('w95_chat_open', '0');
+    chatOpen = false;
+    stopChatTyping();
   }
 
-  function toggle(win, btn, key) {
-    if (win.classList.contains('is-hidden')) show(win, btn, key);
-    else hide(win, btn, key);
+  function closeChatWin() {
+    if (w95Mgr.isMaximised('w95-win-chat')) w95Mgr.toggleMaximise(winChat, 'w95-win-chat');
+    winChat.classList.add('is-hidden');
+    chatOpen = false;
+    stopChatTyping();
+    localStorage.setItem('w95_chat_open', '0');
+    if (btnChat) { btnChat.remove(); btnChat = null; }
   }
 
-  btnChat.onclick = () => toggle(winChat, btnChat, 'w95_chat_open');
-  btnNew.onclick = () => toggle(winNew, btnNew, 'w95_new_open');
+  function showNew() {
+    const wasHidden = winNew.classList.contains('is-hidden');
+    if (!btnNew) btnNew = w95Mgr.addTaskbarBtn('w95-win-new', 'NEW', () => {
+      if (winNew.classList.contains('is-hidden')) showNew(); else hideNew();
+    });
+    winNew.classList.remove('is-hidden');
+    winNew.style.zIndex = ++w95TopZ;
+    w95Mgr.setPressed(btnNew, true);
+    localStorage.setItem('w95_new_open', '1');
+    if (wasHidden) snap(winNew, 'bl');
+    renderActivityPanel();
+  }
 
-  minChat.onclick = (e) => { e.stopPropagation(); hide(winChat, btnChat, 'w95_chat_open'); };
-  minNew.onclick = (e) => { e.stopPropagation(); hide(winNew, btnNew, 'w95_new_open'); };
+  function hideNew() {
+    winNew.classList.add('is-hidden');
+    w95Mgr.setPressed(btnNew, false);
+    localStorage.setItem('w95_new_open', '0');
+  }
+
+  function closeNewWin() {
+    if (w95Mgr.isMaximised('w95-win-new')) w95Mgr.toggleMaximise(winNew, 'w95-win-new');
+    winNew.classList.add('is-hidden');
+    localStorage.setItem('w95_new_open', '0');
+    if (btnNew) { btnNew.remove(); btnNew = null; }
+  }
+
+  minChat.onclick = (e) => { e.stopPropagation(); hideChat(); };
+  minNew.onclick  = (e) => { e.stopPropagation(); hideNew(); };
+  if (maxChat) maxChat.onclick = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(winChat, 'w95-win-chat'); };
+  if (maxNew)  maxNew.onclick  = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(winNew,  'w95-win-new'); };
+  if (closeBtnChat) closeBtnChat.onclick = (e) => { e.stopPropagation(); closeChatWin(); };
+  if (closeBtnNew)  closeBtnNew.onclick  = (e) => { e.stopPropagation(); closeNewWin(); };
+
+  w95Apps['chat'] = { open: () => { if (winChat.classList.contains('is-hidden')) showChat(); else winChat.style.zIndex = ++w95TopZ; } };
+  w95Apps['new']  = { open: () => { if (winNew.classList.contains('is-hidden'))  showNew();  else winNew.style.zIndex  = ++w95TopZ; } };
 
   // Restore open state — default closed if no preference stored
-  if (localStorage.getItem('w95_chat_open') === '1') show(winChat, btnChat, 'w95_chat_open');
-  else hide(winChat, btnChat, 'w95_chat_open');
-
-  if (localStorage.getItem('w95_new_open') === '1') show(winNew, btnNew, 'w95_new_open');
-  else hide(winNew, btnNew, 'w95_new_open');
+  if (localStorage.getItem('w95_chat_open') === '1') showChat();
+  if (localStorage.getItem('w95_new_open')  === '1') showNew();
 
   // Drag support for both windows
-  function makeDraggable(winEl, handleEl) {
+  function makeDraggable(winEl, handleEl, winId) {
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
     handleEl.addEventListener('mousedown', (e) => {
-      if (e.target.closest('button')) return; // let button clicks through
+      if (e.target.closest('button')) return;
+      if (w95Mgr.isMaximised(winId)) return;
       dragging = true;
       startX = e.clientX;
       startY = e.clientY;
@@ -4872,8 +4961,8 @@ let w95TopZ = 2000;
     window.addEventListener('mouseup', () => { dragging = false; });
   }
 
-  makeDraggable(winChat, document.getElementById('w95-chat-handle'));
-  makeDraggable(winNew, document.getElementById('w95-new-handle'));
+  makeDraggable(winChat, document.getElementById('w95-chat-handle'), 'w95-win-chat');
+  makeDraggable(winNew,  document.getElementById('w95-new-handle'),  'w95-win-new');
 })();
 
 // ===== ACHIEVEMENTS =====
@@ -5859,35 +5948,50 @@ function renderAchievementsWindow() {
 
 // Achievements window IIFE
 (() => {
-    const win    = document.getElementById('w95-win-achievements');
-    const btn    = document.getElementById('w95-btn-achievements');
-    const min    = document.getElementById('w95-achievements-min');
-    const handle = document.getElementById('w95-achievements-handle');
-    if (!win || !btn || !min || !handle) return;
+    const win      = document.getElementById('w95-win-achievements');
+    const min      = document.getElementById('w95-achievements-min');
+    const max      = document.getElementById('w95-achievements-max');
+    const closeBtn = document.getElementById('w95-achievements-close');
+    const handle   = document.getElementById('w95-achievements-handle');
+    if (!win || !min || !handle) return;
+
+    let btn = null;
 
     function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-achievements', 'ACHIEVEMENTS', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
         win.classList.remove('is-hidden');
-        btn.classList.add('is-pressed');
+        win.style.zIndex = ++w95TopZ;
+        w95Mgr.setPressed(btn, true);
         localStorage.setItem('w95_achievements_open', '1');
     }
     function hide() {
         win.classList.add('is-hidden');
-        btn.classList.remove('is-pressed');
+        w95Mgr.setPressed(btn, false);
         localStorage.setItem('w95_achievements_open', '0');
     }
+    function closeWin() {
+        if (w95Mgr.isMaximised('w95-win-achievements')) w95Mgr.toggleMaximise(win, 'w95-win-achievements');
+        hide();
+        if (btn) { btn.remove(); btn = null; }
+    }
 
-    btn.onclick = () => {
-        if (win.classList.contains('is-hidden')) show(); else hide();
-    };
     min.onclick = (e) => { e.stopPropagation(); hide(); };
+    if (max) max.onclick = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-achievements'); };
+    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
+
+    w95Apps['achievements'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else win.style.zIndex = ++w95TopZ;
+    }};
 
     if (localStorage.getItem('w95_achievements_open') === '1') show();
-    else hide();
 
     // Drag support
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
     handle.addEventListener('mousedown', (e) => {
         if (e.target.closest('button')) return;
+        if (w95Mgr.isMaximised('w95-win-achievements')) return;
         dragging = true;
         startX = e.clientX; startY = e.clientY;
         const r = win.getBoundingClientRect();
@@ -5908,41 +6012,50 @@ function renderAchievementsWindow() {
 
 // ===== Win95 Feed Window + Desktop Icon Management =====
 (() => {
-    const win    = document.getElementById('w95-win-feed');
-    const btn    = document.getElementById('w95-btn-feed');
-    const minBtn = document.getElementById('w95-feed-min');
+    const win      = document.getElementById('w95-win-feed');
+    const minBtn   = document.getElementById('w95-feed-min');
+    const maxBtn   = document.getElementById('w95-feed-max');
     const closeBtn = document.getElementById('w95-feed-close');
-    const handle = document.getElementById('w95-feed-handle');
-    if (!win || !btn || !minBtn || !closeBtn || !handle) return;
+    const handle   = document.getElementById('w95-feed-handle');
+    if (!win || !minBtn || !closeBtn || !handle) return;
+
+    let btn = null;
 
     function showFeed() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-feed', 'FEED', () => {
+            if (win.classList.contains('is-hidden')) showFeed(); else hideFeed();
+        });
         win.classList.remove('is-hidden');
-        btn.classList.add('is-pressed');
         win.style.zIndex = ++w95TopZ;
+        w95Mgr.setPressed(btn, true);
         localStorage.setItem('w95_feed_open', '1');
     }
 
     function hideFeed() {
         win.classList.add('is-hidden');
-        btn.classList.remove('is-pressed');
+        w95Mgr.setPressed(btn, false);
         localStorage.setItem('w95_feed_open', '0');
+    }
+
+    function closeFeed() {
+        if (w95Mgr.isMaximised('w95-win-feed')) w95Mgr.toggleMaximise(win, 'w95-win-feed');
+        win.classList.add('is-hidden');
+        localStorage.setItem('w95_feed_open', '0');
+        if (btn) { btn.remove(); btn = null; }
     }
 
     function bringFeedToFront() {
         win.style.zIndex = ++w95TopZ;
     }
 
-    // Taskbar button: toggle open/close
-    btn.addEventListener('click', () => {
-        if (win.classList.contains('is-hidden')) showFeed();
-        else hideFeed();
-    });
-
-    // Minimize button: hide window
+    // Minimize button
     minBtn.addEventListener('click', (e) => { e.stopPropagation(); hideFeed(); });
 
-    // Close button: hide window
-    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); hideFeed(); });
+    // Maximise button
+    if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-feed'); });
+
+    // Close button: fully closes the window and removes taskbar button
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeFeed(); });
 
     // Bring to front on any mousedown on the window
     win.addEventListener('mousedown', () => bringFeedToFront(), true);
@@ -5951,6 +6064,7 @@ function renderAchievementsWindow() {
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
     handle.addEventListener('mousedown', (e) => {
         if (e.target.closest('button')) return;
+        if (w95Mgr.isMaximised('w95-win-feed')) return;
         dragging = true;
         startX = e.clientX; startY = e.clientY;
         const r = win.getBoundingClientRect();
@@ -5970,40 +6084,15 @@ function renderAchievementsWindow() {
 
     // Restore open state — default closed (desktop is shown first)
     if (localStorage.getItem('w95_feed_open') === '1') showFeed();
-    else hideFeed();
+
+    w95Apps['feed'] = { open: () => {
+        if (win.classList.contains('is-hidden')) showFeed(); else bringFeedToFront();
+    }};
 
     // ---- Desktop icon double-click logic ----
-    // Map: data-app -> { winId, btnId, showFn? }
-    const APP_MAP = {
-        feed:         { winId: 'w95-win-feed',         btnId: 'w95-btn-feed' },
-        chat:         { winId: 'w95-win-chat',         btnId: 'w95-btn-chat' },
-        garden:       { winId: 'w95-win-garden',       btnId: 'w95-btn-garden' },
-        achievements: { winId: 'w95-win-achievements', btnId: 'w95-btn-achievements' },
-    };
-
     function openApp(appKey) {
-        if (appKey === 'feed') {
-            // Feed window: open or bring to front
-            if (win.classList.contains('is-hidden')) {
-                showFeed();
-            } else {
-                bringFeedToFront();
-            }
-            return;
-        }
-        const map = APP_MAP[appKey];
-        if (!map) return;
-        const appWin = document.getElementById(map.winId);
-        const appBtn = document.getElementById(map.btnId);
-        if (!appWin) return;
-
-        if (appWin.classList.contains('is-hidden')) {
-            // Simulate clicking the taskbar button to open the window
-            appBtn?.click();
-        } else {
-            // Already open — bring to front
-            appWin.style.zIndex = ++w95TopZ;
-        }
+        const app = w95Apps[appKey];
+        if (app) app.open();
     }
 
     // Track click timing for double-click detection (dblclick doesn't fire reliably on some devices)

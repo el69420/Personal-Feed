@@ -71,6 +71,7 @@
         <div class="w95-titlebar" id="w95-feed-handle">
             <div class="w95-title">Feed.exe</div>
             <button class="w95-control" id="w95-feed-min" type="button" aria-label="Minimise">_</button>
+            <button class="w95-control" id="w95-feed-max" type="button" aria-label="Maximise">&#9633;</button>
             <button class="w95-control w95-control-close" id="w95-feed-close" type="button" aria-label="Close">X</button>
         </div>
         <div class="w95-body w95-feed-body" id="w95-feed-body">
@@ -743,18 +744,14 @@
     <script type="module" src="app.js"></script>
     <script src="cursor-trail.js"></script>
 
-    <div id="w95-taskbar" class="w95-taskbar">
-  <button class="w95-btn" id="w95-btn-feed" type="button">FEED</button>
-  <button class="w95-btn" id="w95-btn-garden" type="button">GARDEN</button>
-  <button class="w95-btn" id="w95-btn-chat" type="button">CHAT</button>
-  <button class="w95-btn" id="w95-btn-new" type="button">NEW</button>
-  <button class="w95-btn" id="w95-btn-achievements" type="button">ACHIEVEMENTS</button>
-</div>
+    <div id="w95-taskbar" class="w95-taskbar"></div>
 
-<div id="w95-win-garden" class="w95-window">
+<div id="w95-win-garden" class="w95-window is-hidden">
   <div class="w95-titlebar" id="w95-garden-handle">
     <div class="w95-title">Our Garden</div>
     <button class="w95-control" id="w95-garden-min" type="button" aria-label="Minimise">_</button>
+    <button class="w95-control" id="w95-garden-max" type="button" aria-label="Maximise">&#9633;</button>
+    <button class="w95-control w95-control-close" id="w95-garden-close" type="button" aria-label="Close">X</button>
   </div>
 
   <div class="w95-body">
@@ -782,7 +779,9 @@
 <div id="w95-win-chat" class="w95-window is-hidden" style="left:420px; top:60px; width:360px; height:420px;">
   <div class="w95-titlebar" id="w95-chat-handle">
     <div class="w95-title"><span class="presence-dot offline" data-user="El" title="El"></span> Chat <span class="presence-dot offline" data-user="Tero" title="Tero"></span></div>
-    <button class="w95-control" id="w95-chat-min" type="button">_</button>
+    <button class="w95-control" id="w95-chat-min" type="button" aria-label="Minimise">_</button>
+    <button class="w95-control" id="w95-chat-max" type="button" aria-label="Maximise">&#9633;</button>
+    <button class="w95-control w95-control-close" id="w95-chat-close" type="button" aria-label="Close">X</button>
   </div>
   <div class="w95-body" id="w95-chat-body"></div>
 </div>
@@ -791,7 +790,9 @@
 <div id="w95-win-new" class="w95-window is-hidden" style="left:20px; top:60px; width:360px; height:380px;">
   <div class="w95-titlebar" id="w95-new-handle">
     <div class="w95-title">What’s New</div>
-    <button class="w95-control" id="w95-new-min" type="button">_</button>
+    <button class="w95-control" id="w95-new-min" type="button" aria-label="Minimise">_</button>
+    <button class="w95-control" id="w95-new-max" type="button" aria-label="Maximise">&#9633;</button>
+    <button class="w95-control w95-control-close" id="w95-new-close" type="button" aria-label="Close">X</button>
   </div>
   <div class="w95-body" id="w95-new-body"></div>
 </div>
@@ -801,6 +802,8 @@
   <div class="w95-titlebar" id="w95-achievements-handle">
     <div class="w95-title">Achievements</div>
     <button class="w95-control" id="w95-achievements-min" type="button" aria-label="Minimise">_</button>
+    <button class="w95-control" id="w95-achievements-max" type="button" aria-label="Maximise">&#9633;</button>
+    <button class="w95-control w95-control-close" id="w95-achievements-close" type="button" aria-label="Close">X</button>
   </div>
   <div class="w95-body" id="w95-achievements-body">
     <div class="achievement-placeholder">Sign in to view achievements</div>

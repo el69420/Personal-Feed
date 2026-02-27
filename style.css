@@ -4485,6 +4485,18 @@ body.dark-mode .garden-talk-btn:hover{
   line-height: 1;
 }
 
+/* Maximised window fills desktop area above taskbar */
+.w95-window.is-maximised {
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: calc(100vh - 40px) !important;
+  resize: none;
+}
+.w95-window.is-maximised .w95-titlebar {
+  cursor: default;
+}
+
 /* Body no longer needs top padding since feed is inside a window */
 body { padding: 0 !important; }
 
