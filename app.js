@@ -3493,6 +3493,7 @@ let w95TopZ = 2000;
         `</div>`;
     }
 
+    col.classList.toggle('garden-tile-col--empty', !tileData);
     const stage     = tileData ? calculateStage(tileData) : 'seed';
     const plantType = tileData?.selectedPlant || 'sunflower';
 
