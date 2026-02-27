@@ -3323,6 +3323,12 @@ chatInput.addEventListener('keydown', async (e) => {
             _acClose();
             return;
         }
+        if (e.key === 'Enter' && !e.shiftKey && _acIndex >= 0 && items[_acIndex]) {
+            e.preventDefault();
+            chatInput.value = items[_acIndex].textContent; // already includes leading /
+            _acClose();
+            // fall through to the normal Enter send handler below
+        }
     }
     // ---- End autocomplete ----
     if (e.key !== 'Enter') return;
