@@ -15,6 +15,8 @@ const boardDeleteRequestsRef = ref(database, 'board_delete_requests');
 const lettersRef    = ref(database, 'letters');
 const linkMetaRef   = ref(database, 'linkMeta');
 
+const API_BASE = ''; // Set to the deployed origin (e.g. 'https://your-api.example.com') for GitHub Pages use
+
 const ANNIVERSARY_MM_DD = '01-06';
 const INSIDE_JOKE = 'you are gay';
 
@@ -3456,7 +3458,7 @@ let w95TopZ = 2000;
       // Exploration unlocks checked once per water press
       const withExplore = await computeExploreUnlocks(state.unlockedPlants ?? []);
 
-      const resp = await fetch('/api/garden/water', {
+      const resp = await fetch(API_BASE + '/api/garden/water', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -3537,6 +3539,9 @@ let w95TopZ = 2000;
       // Time-of-day hidden achievements
       checkTimeBasedAchievements();
       checkMythics();
+    } catch (e) {
+      console.error('waterTile failed:', e);
+      showToast('Could not water — check your connection and try again');
     } finally {
       if (waterBtn) waterBtn.disabled = false;
     }
