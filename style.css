@@ -3394,6 +3394,14 @@ body{padding-bottom:50px}
 /* ===== Achievements window ===== */
 #w95-achievements-body{max-height:340px;overflow-y:auto;padding:2px 0;}
 
+/* ===== Mailbox window ===== */
+#w95-win-mailbox{display:flex;flex-direction:column;overflow:hidden;}
+.w95-mailbox-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-height:0;}
+#w95-win-mailbox .mailbox-body{flex:1;overflow-y:auto;min-height:0;}
+
+/* ===== Jukebox window ===== */
+#w95-win-jukebox .now-listening-bar{margin-bottom:0;border-radius:0;border:none;padding:8px;}
+
 /* Garden Level header – shown at top of the Achievements window body */
 .achievement-level-header{
   padding:5px 6px 7px;

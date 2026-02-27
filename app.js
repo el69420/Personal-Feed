@@ -109,7 +109,7 @@ let prevVisualSig = null;
 
 let _audioCtx = null;
 let chatOpen = false;
-let currentSection = 'feed';   // 'feed' | 'boards' | 'mailbox'
+let currentSection = 'feed';   // 'feed' | 'boards'
 let allBoards = {};             // boardId → board object
 let allBoardDeleteRequests = {}; // boardId → { requestedBy, requestedAt, boardTitle }
 let _boardPickerPostId = null;  // postId being saved to a board
@@ -545,13 +545,9 @@ function showSection(name) {
     document.getElementById('feedSection').classList.toggle('hidden', !isFeed);
     document.getElementById('filterButtons').classList.toggle('hidden', !isFeed);
     document.getElementById('searchWrap').classList.toggle('hidden', !isFeed);
-    document.getElementById('nowListeningBar')?.classList.toggle('hidden', !isFeed);
     document.getElementById('boardsSection').classList.toggle('hidden', name !== 'boards');
-    document.getElementById('mailboxSection').classList.toggle('hidden', name !== 'mailbox');
     document.getElementById('navBoards')?.classList.toggle('active', name === 'boards');
-    document.getElementById('navMailbox')?.classList.toggle('active', name === 'mailbox');
     if (name === 'boards') renderBoardsList();
-    if (name === 'mailbox') renderMailbox();
 }
 
 // ---- BOARDS ----
@@ -744,23 +740,23 @@ function setupLettersListener() {
     onValue(lettersRef, snap => {
         allLetters = snap.val() || {};
         updateMailboxBadge();
-        if (currentSection === 'mailbox') renderMailbox();
+        if (!document.getElementById('w95-win-mailbox')?.classList.contains('is-hidden')) renderMailbox();
     });
 }
 
 function updateMailboxBadge() {
     const unread = Object.values(allLetters)
         .filter(l => l.to === currentUser && !l.readAt).length;
-    const badge = document.getElementById('mailboxBadge');
     const inboxBadge = document.getElementById('inboxUnread');
-    if (badge) {
-        if (unread > 0) { badge.textContent = unread; badge.classList.remove('hidden'); }
-        else { badge.classList.add('hidden'); }
-    }
     if (inboxBadge) {
         if (unread > 0) { inboxBadge.textContent = unread; inboxBadge.classList.remove('hidden'); }
         else { inboxBadge.classList.add('hidden'); }
     }
+    // Update mailbox desktop icon flag
+    const flagUp   = document.querySelector('#mailboxDesktopIcon .mailbox-flag-up');
+    const flagDown = document.querySelector('#mailboxDesktopIcon .mailbox-flag-down');
+    if (flagUp)   flagUp.style.display   = unread > 0 ? '' : 'none';
+    if (flagDown) flagDown.style.display = unread > 0 ? 'none' : '';
 }
 
 function renderMailbox() {
@@ -902,10 +898,6 @@ async function pollNowListening() {
         fetchNowPlaying('el'),
         fetchNowPlaying('tero'),
     ]);
-    const bar = document.getElementById('nowListeningBar');
-    if (!bar) return;
-    // Only un-hide when on the feed; don't fight showSection when on other tabs
-    if (currentSection === 'feed') bar.classList.remove('hidden');
     if (elData   !== null) renderNLCard('El',   elData);
     if (teroData !== null) renderNLCard('Tero', teroData);
 }
@@ -3690,7 +3682,6 @@ document.getElementById('aboutModal')?.addEventListener('click', e => {
 
 // Boards nav + modals
 document.getElementById('navBoards')?.addEventListener('click', () => showSection('boards'));
-document.getElementById('navMailbox')?.addEventListener('click', () => showSection('mailbox'));
 document.getElementById('boardPickerClose')?.addEventListener('click', () => closeModal(document.getElementById('boardPickerModal')));
 document.getElementById('boardPickerModal')?.addEventListener('click', e => { if (e.target.id === 'boardPickerModal') closeModal(e.target); });
 document.getElementById('createBoardClose')?.addEventListener('click', () => closeModal(document.getElementById('createBoardModal')));
@@ -6008,6 +5999,135 @@ function renderAchievementsWindow() {
         win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
     });
     window.addEventListener('mouseup', () => { dragging = false; });
+})();
+
+// ===== Win95 Mailbox Window =====
+(() => {
+    const win      = document.getElementById('w95-win-mailbox');
+    const minBtn   = document.getElementById('w95-mailbox-min');
+    const maxBtn   = document.getElementById('w95-mailbox-max');
+    const closeBtn = document.getElementById('w95-mailbox-close');
+    const handle   = document.getElementById('w95-mailbox-handle');
+    if (!win || !minBtn || !closeBtn || !handle) return;
+
+    let btn = null;
+
+    function showMailbox() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-mailbox', 'MAILBOX', () => {
+            if (win.classList.contains('is-hidden')) showMailbox(); else hideMailbox();
+        });
+        win.classList.remove('is-hidden');
+        win.style.zIndex = ++w95TopZ;
+        w95Mgr.setPressed(btn, true);
+        renderMailbox();
+    }
+
+    function hideMailbox() {
+        win.classList.add('is-hidden');
+        w95Mgr.setPressed(btn, false);
+    }
+
+    function closeMailbox() {
+        if (w95Mgr.isMaximised('w95-win-mailbox')) w95Mgr.toggleMaximise(win, 'w95-win-mailbox');
+        hideMailbox();
+        if (btn) { btn.remove(); btn = null; }
+    }
+
+    minBtn.addEventListener('click', (e) => { e.stopPropagation(); hideMailbox(); });
+    if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-mailbox'); });
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeMailbox(); });
+
+    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; }, true);
+
+    // Drag support
+    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+    handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button')) return;
+        if (w95Mgr.isMaximised('w95-win-mailbox')) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const r = win.getBoundingClientRect();
+        winStartX = r.left; winStartY = r.top;
+        win.style.zIndex = ++w95TopZ;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const taskbarH = 40;
+        const maxX = document.documentElement.clientWidth - win.offsetWidth;
+        const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
+        win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+        win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+
+    w95Apps['mailbox'] = { open: () => {
+        if (win.classList.contains('is-hidden')) showMailbox(); else win.style.zIndex = ++w95TopZ;
+    }};
+})();
+
+// ===== Win95 Jukebox Window =====
+(() => {
+    const win      = document.getElementById('w95-win-jukebox');
+    const minBtn   = document.getElementById('w95-jukebox-min');
+    const maxBtn   = document.getElementById('w95-jukebox-max');
+    const closeBtn = document.getElementById('w95-jukebox-close');
+    const handle   = document.getElementById('w95-jukebox-handle');
+    if (!win || !minBtn || !closeBtn || !handle) return;
+
+    let btn = null;
+
+    function showJukebox() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-jukebox', 'JUKEBOX', () => {
+            if (win.classList.contains('is-hidden')) showJukebox(); else hideJukebox();
+        });
+        win.classList.remove('is-hidden');
+        win.style.zIndex = ++w95TopZ;
+        w95Mgr.setPressed(btn, true);
+    }
+
+    function hideJukebox() {
+        win.classList.add('is-hidden');
+        w95Mgr.setPressed(btn, false);
+    }
+
+    function closeJukebox() {
+        if (w95Mgr.isMaximised('w95-win-jukebox')) w95Mgr.toggleMaximise(win, 'w95-win-jukebox');
+        hideJukebox();
+        if (btn) { btn.remove(); btn = null; }
+    }
+
+    minBtn.addEventListener('click', (e) => { e.stopPropagation(); hideJukebox(); });
+    if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-jukebox'); });
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeJukebox(); });
+
+    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; }, true);
+
+    // Drag support
+    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+    handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button')) return;
+        if (w95Mgr.isMaximised('w95-win-jukebox')) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const r = win.getBoundingClientRect();
+        winStartX = r.left; winStartY = r.top;
+        win.style.zIndex = ++w95TopZ;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const taskbarH = 40;
+        const maxX = document.documentElement.clientWidth - win.offsetWidth;
+        const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
+        win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+        win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+
+    w95Apps['jukebox'] = { open: () => {
+        if (win.classList.contains('is-hidden')) showJukebox(); else win.style.zIndex = ++w95TopZ;
+    }};
 })();
 
 // ===== Win95 Feed Window + Desktop Icon Management =====
