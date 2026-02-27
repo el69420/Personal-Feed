@@ -3377,12 +3377,18 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     font-family: 'Nunito', sans-serif;
 }
 
-.w95-taskbar{position:fixed;left:0;right:0;bottom:0;height:40px;display:flex;align-items:center;gap:6px;padding:6px;box-sizing:border-box;background:#c0c0c0;border-top:2px solid #fff;z-index:500}
+.w95-taskbar{position:fixed;left:0;right:0;bottom:0;height:40px;display:flex;align-items:center;gap:6px;padding:4px 6px;box-sizing:border-box;background:#c0c0c0;border-top:2px solid #fff;z-index:500}
+.w95-start-btn{font-weight:bold;min-width:76px;border-right:2px solid #404040;border-bottom:2px solid #404040;border-top:2px solid #fff;border-left:2px solid #fff;padding:3px 8px}
+.w95-start-btn.is-pressed{border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #fff;border-bottom:2px solid #fff}
+.w95-start-menu{position:fixed;bottom:40px;left:0;min-width:160px;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;z-index:9000;font:12px Tahoma,Verdana,Arial,sans-serif;padding:2px 0}
+.w95-start-item{display:flex;align-items:center;gap:8px;width:100%;padding:5px 12px;background:none;border:none;cursor:pointer;font:12px Tahoma,Verdana,Arial,sans-serif;text-align:left;white-space:nowrap;color:#000}
+.w95-start-item:hover,.w95-start-item:focus{background:#000080;color:#fff;outline:none}
 .w95-btn{font:12px Tahoma,Verdana,Arial,sans-serif;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;padding:4px 10px;cursor:pointer;user-select:none}
 .w95-btn:active,.w95-btn.is-pressed{border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #fff;border-bottom:2px solid #fff;padding:5px 9px 3px 11px}
 .w95-window{position:fixed;left:20px;top:20px;width:280px;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;z-index:2000;resize:both;overflow:auto;min-width:200px;min-height:80px}
 .w95-titlebar{display:flex;align-items:center;justify-content:space-between;padding:4px;background:#000080;color:#fff;font:12px Tahoma,Verdana,Arial,sans-serif;cursor:move;user-select:none}
-.w95-title{font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:8px}
+.w95-title{font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.w95-controls{display:flex;gap:2px;align-items:center;flex-shrink:0;margin-left:4px}
 .w95-control{width:22px;height:18px;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;cursor:pointer}
 .w95-control:active{border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #fff;border-bottom:2px solid #fff}
 .w95-body{padding:10px}

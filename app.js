@@ -6258,3 +6258,45 @@ document.querySelectorAll('.w95-window').forEach(win => {
         win.style.zIndex = ++w95TopZ;
     }, true);
 });
+
+// ===== Win95 Start Menu =====
+(() => {
+    const startBtn  = document.getElementById('w95-start-btn');
+    const startMenu = document.getElementById('w95-start-menu');
+    if (!startBtn || !startMenu) return;
+
+    function openMenu() {
+        startMenu.classList.remove('is-hidden');
+        startBtn.classList.add('is-pressed');
+    }
+
+    function closeMenu() {
+        startMenu.classList.add('is-hidden');
+        startBtn.classList.remove('is-pressed');
+    }
+
+    startBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (startMenu.classList.contains('is-hidden')) openMenu(); else closeMenu();
+    });
+
+    startMenu.addEventListener('click', (e) => {
+        const item = e.target.closest('[data-app]');
+        if (!item) return;
+        const app = w95Apps[item.dataset.app];
+        if (app) app.open();
+        closeMenu();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!startMenu.classList.contains('is-hidden') &&
+            !startMenu.contains(e.target) &&
+            e.target !== startBtn) {
+            closeMenu();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMenu();
+    });
+})();
