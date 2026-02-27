@@ -1414,20 +1414,23 @@ body.dark-mode .activity-fab {
     display: none;
 }
 
-/* Reactions row shown inside chat bubbles */
+/* Reactions row — anchored to bottom-right of each chat bubble */
 .chat-reactions {
     display: flex;
-    gap: 3px;
-    margin-top: 5px;
+    gap: 2px;
+    margin-top: 4px;
     flex-wrap: wrap;
+    justify-content: flex-end;
 }
 .chat-reaction {
-    font-size: 12px;
-    padding: 1px 4px;
+    font-size: 10px;
+    padding: 0px 3px;
     background: var(--card-bg, #fff);
     border: 1px solid var(--card-border, rgba(0,180,180,0.3));
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     line-height: 1.4;
+    font-family: 'Courier New', Courier, monospace;
+    cursor: default;
+    white-space: nowrap;
 }
 .chat-reaction.mine {
     border-color: rgba(0,128,128,0.7);
