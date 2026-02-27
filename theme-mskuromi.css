@@ -677,15 +677,23 @@ body.dark-mode .chat-autocomplete__item:hover, body.dark-mode .chat-autocomplete
     color: #FFFFFF;
     border: none;
 }
-.heart-react {
-    background: #C0C0C0;
-    border: 1px solid #808080;
-    box-shadow: none;
-}
 .activity-item:hover { background: #D0D0D0; }
 
+/* Win95 overrides for reaction picker */
+.chat-reaction-picker {
+    background: #C0C0C0;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF;
+    box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+}
+.reaction-pick-btn { background: #C0C0C0; }
+.reaction-pick-btn:hover { border-color: #FFFFFF #808080 #808080 #FFFFFF; box-shadow: inset 1px 1px 0 #DFDFDF; }
+.reaction-pick-btn.selected { border-color: #808080 #FFFFFF #FFFFFF #808080; box-shadow: inset 1px 1px 0 #404040; }
+.chat-reaction { background: #C0C0C0; border-color: #808080; box-shadow: none; }
+.chat-reaction.mine { background: #A0A0D0; border-color: #000080; }
+
 body.dark-mode .chat-group--other .chat-bubble { background: #A0A0A0; color: #FFFFFF; border-color: #404040 #C0C0C0 #C0C0C0 #404040; box-shadow: inset 1px 1px 0 #202020; }
-body.dark-mode .heart-react { background: #808080; border-color: #404040; }
+body.dark-mode .chat-reaction { background: #808080; border-color: #404040; color: #FFFFFF; }
+body.dark-mode .chat-reaction.mine { background: #000080; border-color: #C0C0C0; color: #FFFFFF; }
 
 /* ============================================================
    21.  SYNC INDICATOR

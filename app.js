@@ -3027,14 +3027,13 @@ function renderChat(messages) {
         const emoji = AUTHOR_EMOJI[g.author] || '[?]';
         const lastTs = g.msgs[g.msgs.length - 1].timestamp;
         const bubbles = g.msgs.map(m => {
-            const canHeart = !me;
-            const hearted  = canHeart && !!(m.hearts?.[currentUser]);
-            const dblclick = canHeart ? `ondblclick="heartChatMessage('${m.id}')"` : '';
-            const heartEl  = canHeart
-                ? `<span class="heart-react ${hearted ? 'hearted' : 'hint'}">${hearted ? '❤️' : '♡'}</span>`
+            const reactionEntries = Object.entries(m.reactions || {});
+            const reactionsHtml = reactionEntries.length > 0
+                ? `<div class="chat-reactions">${reactionEntries.map(([user, emoji]) =>
+                    `<span class="chat-reaction${user === currentUser ? ' mine' : ''}">${emoji}</span>`
+                  ).join('')}</div>`
                 : '';
-            const title = canHeart ? 'title="Double-click to ❤️"' : '';
-            return `<div class="chat-bubble${canHeart ? ' heartable' : ''}" ${dblclick} ${title}>${safeText(m.text)}${heartEl}</div>`;
+            return `<div class="chat-bubble" ondblclick="openReactionPicker('${m.id}', this)">${safeText(m.text)}${reactionsHtml}</div>`;
         }).join('');
         const label = me ? '' : `<div class="chat-group-label">${safeText(g.author)} ${emoji}</div>`;
         htmlParts.push(`
@@ -3086,17 +3085,56 @@ function updateChatUnread(messages) {
 
 // (chat onValue listener is in setupDBListeners())
 
-window.heartChatMessage = async function(msgId) {
-    window.getSelection()?.removeAllRanges(); // clear the text selection dblclick produces
+let _activePicker = null;
+
+function _closeReactionPicker() {
+    if (_activePicker) {
+        _activePicker.remove();
+        _activePicker = null;
+    }
+}
+
+window.openReactionPicker = function(msgId, bubbleEl) {
+    window.getSelection()?.removeAllRanges(); // clear text selection from dblclick
+    _closeReactionPicker();
+
+    const EMOJIS = ['❤️', '😂', '😢'];
+    const msg = lastChatMessages.find(m => m.id === msgId);
+    const myReaction = msg?.reactions?.[currentUser] || null;
+
+    const picker = document.createElement('div');
+    picker.className = 'chat-reaction-picker';
+    picker.setAttribute('role', 'dialog');
+    picker.innerHTML = EMOJIS.map(e =>
+        `<button class="reaction-pick-btn${e === myReaction ? ' selected' : ''}" onclick="sendChatReaction('${msgId}', '${e}')">${e}</button>`
+    ).join('');
+
+    picker.style.visibility = 'hidden';
+    document.body.appendChild(picker);
+
+    const pRect = picker.getBoundingClientRect();
+    const bRect = bubbleEl.getBoundingClientRect();
+    const left  = bRect.left + bRect.width / 2 - pRect.width / 2;
+    const top   = bRect.top - pRect.height - 6;
+    picker.style.left = Math.max(4, Math.min(left, window.innerWidth - pRect.width - 4)) + 'px';
+    picker.style.top  = Math.max(4, top) + 'px';
+    picker.style.visibility = '';
+
+    _activePicker = picker;
+    setTimeout(() => document.addEventListener('click', _closeReactionPicker, { once: true }), 0);
+};
+
+window.sendChatReaction = async function(msgId, emoji) {
+    _closeReactionPicker();
     const msg = lastChatMessages.find(m => m.id === msgId);
     if (!msg) return;
-    const hearts = { ...(msg.hearts || {}) };
-    if (hearts[currentUser]) {
-        delete hearts[currentUser];
+    const reactions = { ...(msg.reactions || {}) };
+    if (reactions[currentUser] === emoji) {
+        delete reactions[currentUser]; // same emoji → remove
     } else {
-        hearts[currentUser] = true;
+        reactions[currentUser] = emoji; // new or different emoji → set
     }
-    await update(ref(database, `chat/${msgId}`), { hearts });
+    await update(ref(database, `chat/${msgId}`), { reactions });
 };
 
 window.toggleChat = function() {
@@ -3114,10 +3152,9 @@ window.toggleChat = function() {
         renderChat(lastChatMessages);
 
         // One-time hint so the double-click affordance is discoverable
-        if (!localStorage.getItem('chatHeartHintSeen')) {
-            localStorage.setItem('chatHeartHintSeen', '1');
-            const hintOther = currentUser === 'El' ? "Tero's" : currentUser === 'Tero' ? "El's" : "others'";
-            setTimeout(() => showToast(`Double-click ${hintOther} messages to ❤️ them`), 900);
+        if (!localStorage.getItem('chatReactionHintSeen')) {
+            localStorage.setItem('chatReactionHintSeen', '1');
+            setTimeout(() => showToast('Double-click any message to react ❤️ 😂 😢'), 900);
         }
 
         setTimeout(() => document.getElementById('chatInput')?.focus(), 80);
