@@ -117,7 +117,7 @@ let allLetters = {};            // letterId → letter object
 let mailboxTab = 'inbox';
 let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
 let lastChatMessages = [];
-let _chatEphemeral = [];   // ephemeral system messages (slash commands), not stored in Firebase
+let _lastAnimationTs = Date.now(); // track which command animations have already been triggered
 let activitySeenTs = 0;
 
 // ---- MYTHIC ACHIEVEMENT STATE ----
@@ -997,10 +997,23 @@ function setupDBListeners() {
             }
         }
 
+        // Trigger animations for newly received command messages (both users see them)
+        const newAnimCmds = messages.filter(m =>
+            m.kind === 'system' &&
+            m.systemType === 'command' &&
+            m.timestamp > _lastAnimationTs &&
+            (m.command === 'flurry' || m.command === 'dance')
+        );
+        if (newAnimCmds.length > 0) {
+            _lastAnimationTs = Math.max(...newAnimCmds.map(c => c.timestamp));
+            const latest = newAnimCmds[newAnimCmds.length - 1];
+            if (latest.command === 'flurry') triggerFlurry();
+            if (latest.command === 'dance')  triggerDance();
+        }
+
         updateChatUnread(messages);
         if (chatOpen || !document.getElementById('w95-win-chat')?.classList.contains('is-hidden')) {
             renderChat(messages);
-            _injectEphemeral();
         }
     });
 }
@@ -2711,18 +2724,18 @@ function updateCommentTypingUI() {
 // (typing onValue listeners are in setupDBListeners())
 
 // ---- SLASH COMMANDS ----
-// Command handler map — add new commands here.
+// Command handler map — returns { command, text } to be stored in Firebase.
 const SLASH_COMMANDS = {
     hug: (args) => {
         const target = args.length ? args.join(' ') : (_otherUser());
-        addEphemeralMessage(`${safeText(currentUser || '?')} hugs ${safeText(target)} 🤍`);
+        return { command: 'hug', text: `${safeText(currentUser || '?')} hugs ${safeText(target)} 🤍` };
     },
     kiss: (args) => {
         const target = args.length ? args.join(' ') : (_otherUser());
-        addEphemeralMessage(`${safeText(currentUser || '?')} kisses ${safeText(target)} 💋`);
+        return { command: 'kiss', text: `${safeText(currentUser || '?')} kisses ${safeText(target)} 💋` };
     },
-    flurry: () => { triggerFlurry(); },
-    dance:  () => { triggerDance();  },
+    flurry: () => ({ command: 'flurry', text: '✿ a flurry of petals ✿' }),
+    dance:  () => ({ command: 'dance',  text: '(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ dance break! ✧ﾟ･: *ヽ(◕ヮ◕ヽ)' }),
 };
 
 function _otherUser() {
@@ -2731,49 +2744,33 @@ function _otherUser() {
     return 'you';
 }
 
+// Pushes a recognised slash command to Firebase as a system entry.
 // Returns true if the text was a recognised slash command (caller should NOT push to Firebase).
-function handleSlashCommand(text) {
+async function handleSlashCommand(text) {
     if (!text.startsWith('/')) return false;
     const parts = text.slice(1).trim().split(/\s+/);
     const cmd   = (parts[0] || '').toLowerCase();
     const args  = parts.slice(1);
     const handler = SLASH_COMMANDS[cmd];
     if (!handler) return false;
-    handler(args);
+    const result = handler(args);
+    await push(chatRef, {
+        author:     currentUser,
+        timestamp:  Date.now(),
+        kind:       'system',
+        systemType: 'command',
+        command:    result.command,
+        text:       result.text,
+    });
     return true;
 }
 
-// Appends an ephemeral (local-only) system message and re-injects into the chat DOM.
-function addEphemeralMessage(html) {
-    _chatEphemeral.push({ id: Math.random().toString(36).slice(2), html, ts: Date.now() });
-    _injectEphemeral();
-}
-
-// Re-renders all ephemeral messages into chatBody without touching the real messages.
-function _injectEphemeral() {
-    const body = document.getElementById('chatBody');
-    if (!body) return;
-    body.querySelectorAll('.chat-system-msg').forEach(el => el.remove());
-    _chatEphemeral.forEach(e => {
-        const div = document.createElement('div');
-        div.className = 'chat-system-msg';
-        div.setAttribute('aria-live', 'polite');
-        div.innerHTML = e.html;
-        body.appendChild(div);
-    });
-    body.scrollTop = body.scrollHeight;
-}
-
-// /flurry — shower the chat panel with flower petals.
+// /flurry — shower the chat panel with flower petals (animation only, respects reduced-motion).
 function triggerFlurry() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const panel = document.getElementById('chatPanel') ||
                   document.getElementById('w95-win-chat');
     if (!panel) return;
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        addEphemeralMessage('✿ petals drift softly through the air ✿');
-        return;
-    }
 
     const EMOJIS = ['🌸', '🌺', '🌷', '✿', '❀', '🌼'];
     const container = document.createElement('div');
@@ -2792,24 +2789,18 @@ function triggerFlurry() {
     }
 
     setTimeout(() => container.remove(), 4500);
-    addEphemeralMessage('✿ a flurry of petals ✿');
 }
 
-// /dance — playful wiggle animation + ASCII celebration line.
+// /dance — playful wiggle animation (animation only, respects reduced-motion).
 function triggerDance() {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        addEphemeralMessage('(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ dance break! ✧ﾟ･: *ヽ(◕ヮ◕ヽ)');
-        return;
-    }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const body = document.getElementById('chatBody');
-    if (body) {
-        body.classList.remove('chat-dance'); // reset in case it's still running
-        // Force reflow so removing then adding triggers the animation fresh
-        void body.offsetWidth;
-        body.classList.add('chat-dance');
-        setTimeout(() => body.classList.remove('chat-dance'), 700);
-    }
-    addEphemeralMessage('(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ dance break! ✧ﾟ･: *ヽ(◕ヮ◕ヽ)');
+    if (!body) return;
+    body.classList.remove('chat-dance'); // reset in case it's still running
+    // Force reflow so removing then adding triggers the animation fresh
+    void body.offsetWidth;
+    body.classList.add('chat-dance');
+    setTimeout(() => body.classList.remove('chat-dance'), 700);
 }
 
 // ---- CHAT ----
@@ -2822,19 +2813,13 @@ function renderChat(messages) {
     const body = document.getElementById('chatBody');
     if (!body) return;
 
-    // Group consecutive messages from the same author within 5 minutes
-    const groups = [];
-    for (const m of messages) {
-        const last = groups[groups.length - 1];
-        const gap = last ? m.timestamp - last.msgs[last.msgs.length - 1].timestamp : Infinity;
-        if (last && last.author === m.author && gap < 300000) {
-            last.msgs.push(m);
-        } else {
-            groups.push({ author: m.author, msgs: [m] });
-        }
-    }
+    const htmlParts = [];
+    let currentGroup = null;
 
-    body.innerHTML = groups.map(g => {
+    function flushGroup() {
+        if (!currentGroup) return;
+        const g = currentGroup;
+        currentGroup = null;
         const me = g.author === currentUser;
         const emoji = AUTHOR_EMOJI[g.author] || '[?]';
         const lastTs = g.msgs[g.msgs.length - 1].timestamp;
@@ -2849,15 +2834,38 @@ function renderChat(messages) {
             return `<div class="chat-bubble${canHeart ? ' heartable' : ''}" ${dblclick} ${title}>${safeText(m.text)}${heartEl}</div>`;
         }).join('');
         const label = me ? '' : `<div class="chat-group-label">${safeText(g.author)} ${emoji}</div>`;
-        return `
+        htmlParts.push(`
             <div class="chat-group chat-group--${me ? 'me' : 'other'}">
                 ${label}
                 ${bubbles}
                 <div class="chat-group-time">${safeText(formatChatTime(lastTs))}</div>
             </div>
-        `;
-    }).join('');
+        `);
+    }
 
+    for (const m of messages) {
+        // System messages (slash commands) render inline without grouping
+        if (m.kind === 'system') {
+            flushGroup();
+            htmlParts.push(`<div class="chat-system-msg" aria-live="polite">${safeText(m.text)}</div>`);
+            continue;
+        }
+        // Group consecutive normal messages from the same author within 5 minutes
+        if (!currentGroup) {
+            currentGroup = { author: m.author, msgs: [m] };
+        } else {
+            const gap = m.timestamp - currentGroup.msgs[currentGroup.msgs.length - 1].timestamp;
+            if (currentGroup.author === m.author && gap < 300000) {
+                currentGroup.msgs.push(m);
+            } else {
+                flushGroup();
+                currentGroup = { author: m.author, msgs: [m] };
+            }
+        }
+    }
+    flushGroup();
+
+    body.innerHTML = htmlParts.join('');
     body.scrollTop = body.scrollHeight;
 }
 
@@ -2901,7 +2909,6 @@ window.toggleChat = function() {
         document.getElementById('chatUnread')?.classList.add('hidden');
 
         renderChat(lastChatMessages);
-        _injectEphemeral();
 
         // One-time hint so the double-click affordance is discoverable
         if (!localStorage.getItem('chatHeartHintSeen')) {
@@ -2972,8 +2979,8 @@ chatInput.addEventListener('keydown', async (e) => {
     chatInput.value = '';
     chatInput.style.height = 'auto';
 
-    // Handle slash commands — do NOT push to Firebase, but DO count as didChat.
-    if (handleSlashCommand(text)) {
+    // Handle slash commands — pushed to Firebase as system entries, but DO count as didChat.
+    if (await handleSlashCommand(text)) {
         sparkSound('chat');
         if (currentUser) {
             const _cToday  = localDateStr();
@@ -4393,7 +4400,6 @@ let w95TopZ = 2000;
       localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
       document.getElementById('chatUnread')?.classList.add('hidden');
       renderChat(lastChatMessages);
-      _injectEphemeral();
       setTimeout(() => document.getElementById('chatInput')?.focus(), 80);
     }
     if (win === winNew) {
