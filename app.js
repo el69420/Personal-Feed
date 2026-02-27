@@ -217,7 +217,7 @@ const AUTHOR_BADGE = { 'El': 'badge-el', 'Tero': 'badge-tero', 'Guest': 'badge-g
 
 // Maps stored emoji → retro text emoticon for display only (Firebase keeps the emoji)
 const EMOTICON_MAP = {
-    '❤️': '<3', '😂': ':D', '😮': 'O_O', '😍': '*_*',
+    '❤️': '<3', '😂': 'xD', '😮': 'O_O', '😍': '*_*',
     '🔥': '!!', '👍': '(y)', '😭': 'T_T', '🥹': ';_;',
 };
 
@@ -1914,7 +1914,7 @@ window.toggleReaction = async function(postId, emoji, btn) {
     // In-place DOM update — avoids a full loadPosts() rebuild and scroll shift.
     const rxEl = document.getElementById(`post-rx-${postId}`);
     if (rxEl) {
-        const reactionEmojis = ['<3', ':D', 'O_O', '*_*', '!!', '(y)', 'T_T', ';_;'];
+        const reactionEmojis = ['<3', 'xD', 'O_O', '*_*', '!!', '(y)', 'T_T', ';_;'];
         rxEl.innerHTML = reactionEmojis.map(e => {
             const users = Object.keys(reactionsBy[e] || {});
             const active = !!(reactionsBy[e]?.[currentUser]);
@@ -1959,7 +1959,7 @@ window.toggleCommentReaction = async function(postId, replyId, emoji, btn) {
     if (newReply) {
         const rxEl = document.getElementById(`comment-rx-${postId}-${replyId}`);
         if (rxEl) {
-            const cmtEmojis = ['<3', ':D', 'O_O', '!!', 'T_T', ';_;'];
+            const cmtEmojis = ['<3', 'xD', 'O_O', '!!', 'T_T', ';_;'];
             rxEl.innerHTML = cmtEmojis.map(e => {
                 const rxBy = newReply.reactionsBy || {};
                 const users = Object.keys(rxBy[e] || {});
@@ -2057,7 +2057,7 @@ function renderReplies(postId, replies) {
         (byParent[r.replyToId] = byParent[r.replyToId] || []).push(r);
     });
 
-    const cmtEmojis = ['<3', ':D', 'O_O', '!!', 'T_T', ';_;'];
+    const cmtEmojis = ['<3', 'xD', 'O_O', '!!', 'T_T', ';_;'];
 
     const renderRxButtons = (rxBy, postId, replyId) => {
         const map = rxBy || {};
@@ -2306,7 +2306,7 @@ function createPostCard(post) {
         .map(c => `<button class="collection-badge" onclick="filterByCollection('${safeText(c)}')" title="Filter by collection">${getCollectionEmoji(c)} ${safeText(COLLECTION_LABELS[c] || c)}</button>`)
         .join('');
 
-    const reactionEmojis = ['<3', ':D', 'O_O', '*_*', '!!', '(y)', 'T_T', ';_;'];
+    const reactionEmojis = ['<3', 'xD', 'O_O', '*_*', '!!', '(y)', 'T_T', ';_;'];
     const rb = post.reactionsBy || {};
     const reactionButtons = reactionEmojis.map(e => {
         const users = Object.keys(rb[e] || {});
@@ -5132,7 +5132,7 @@ const ACHIEVEMENTS = [
         id:          'water_7_days',
         title:       'Weekly Waterer',
         desc:        'Water your garden 7 days in a row',
-        icon:        ':D',
+        icon:        'xD',
         xp:          40,
         tier:        'silver',
         target:      7,
