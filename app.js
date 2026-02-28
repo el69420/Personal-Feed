@@ -3401,6 +3401,7 @@ chatInput.addEventListener('keydown', async (e) => {
     // Handle slash commands — pushed to Firebase as system entries, but DO count as didChat.
     if (await handleSlashCommand(text)) {
         sparkSound('chat');
+        fireCatEvent('sparkle');
         if (currentUser) {
             const _cToday  = localDateStr();
             const _chatTs  = Date.now();
@@ -3422,6 +3423,7 @@ chatInput.addEventListener('keydown', async (e) => {
         timestamp: Date.now()
     });
 
+    fireCatEvent('sparkle');
     sparkSound('chat');
 
     // Mythic: track daily chat action
@@ -4460,6 +4462,7 @@ const w95Apps = {};
       // Time-of-day hidden achievements
       checkTimeBasedAchievements();
       checkMythics();
+      fireCatEvent('cheer');
     } catch (e) {
       console.error(e);
       showToast('Could not water. Please try again.');
@@ -6646,6 +6649,13 @@ async function loadUserWallpaper(user) {
 // ===== PIXEL CAT =====
 // Shared desktop mascot. One client drives cat position via Firebase (~1.4 s writes);
 // all clients render smoothly by extrapolating movement locally between updates.
+
+// ---- Cat emote event helper — call from anywhere to trigger a short visual on the cat ----
+function fireCatEvent(type) {
+    if (!currentUser) return;
+    set(ref(database, 'desktop/catEvent'), { type, ts: Date.now(), by: currentUser }).catch(() => {});
+}
+
 function initPixelCat() {
     if (initPixelCat._done) return;
     initPixelCat._done = true;
@@ -6736,7 +6746,13 @@ function initPixelCat() {
     ctx.imageSmoothingEnabled = false;
 
     // ---- Firebase refs ----
-    const catFbRef = ref(database, 'desktop/cat');
+    const catFbRef    = ref(database, 'desktop/cat');
+    const catEventRef = ref(database, 'desktop/catEvent');
+
+    // ---- Emote overlay (positioned to track the cat canvas) ----
+    const emoteEl = document.createElement('div');
+    emoteEl.id = 'cat-emotes';
+    document.body.appendChild(emoteEl);
 
     // ---- State received from Firebase ----
     let fbX         = 0.5;
@@ -6773,10 +6789,52 @@ function initPixelCat() {
     const SIT_MAX     = 8000;
     const SLEEP_P     = 0.28;     // probability that sit transitions to sleep
 
-    // ---- Presence listener → driver election ----
+    // ---- Presence listener → driver election + both-online heart ----
+    let _presInitDone   = false; // skip very first snapshot (avoid heart on page load)
+    let _bothOnlineFired = false; // debounce: only fire once per "both came online" transition
     onValue(ref(database, 'presence'), snap => {
         onlinePres = snap.val() || {};
+        const onlineCount = Object.values(onlinePres)
+            .filter(v => v && v.state !== 'offline').length;
+        if (_presInitDone) {
+            if (onlineCount >= 2 && !_bothOnlineFired) {
+                _bothOnlineFired = true;
+                fireCatEvent('heart');
+            }
+        }
+        if (onlineCount < 2) _bothOnlineFired = false; // reset so it can fire again next time
+        _presInitDone = true;
         electDriver();
+    });
+
+    // ---- Cat emote rendering ----
+    function triggerEmote(type) {
+        const configs = {
+            sparkle: { syms: ['✦', '✧', '⋆', '✦', '✧'], colors: ['#f9d55a', '#fff8b0', '#f9d55a', '#fffde0', '#fff8b0'] },
+            cheer:   { syms: ['✿', '♪', '✿', '♪', '✿'], colors: ['#ff9eb0', '#a0e8af', '#f9d55a', '#a0e8af', '#ff9eb0'] },
+            heart:   { syms: ['♡', '♡', '♡', '♡', '♡'], colors: ['#ff6b8a', '#ff8fab', '#ff6b8a', '#ffb3c6', '#ff6b8a'] },
+        };
+        const cfg = configs[type] || configs.sparkle;
+        cfg.syms.forEach((sym, i) => {
+            const p = document.createElement('span');
+            p.className = 'cat-ep';
+            p.textContent = sym;
+            p.style.color = cfg.colors[i];
+            p.style.left  = Math.round(Math.random() * 36 + 2) + 'px'; // spread within the 40px cat
+            p.style.animationDelay = (i * 110) + 'ms';
+            emoteEl.appendChild(p);
+            setTimeout(() => p.remove(), 1400 + i * 110);
+        });
+    }
+
+    // Listen for shared cat emote events
+    onValue(catEventRef, snap => {
+        const ev = snap.val();
+        if (!ev || !ev.type || !ev.ts) return;
+        if (Date.now() - ev.ts > 2000) return; // stale — ignore
+        triggerEmote(ev.type);
+        // Clear so the event doesn't replay; occasional double-clear is harmless
+        setTimeout(() => set(catEventRef, null).catch(() => {}), 400);
     });
 
     function electDriver() {
@@ -6965,6 +7023,7 @@ function initPixelCat() {
         // Position the canvas along the bottom of the viewport
         const vw = window.innerWidth;
         canvas.style.left = `${Math.round(localX * (vw - CW * S))}px`;
+        emoteEl.style.left = canvas.style.left; // keep emote overlay aligned with the cat
 
         // Choose sprite frame
         // For wakeup, cycle: sleep (0-1 s) → wakeup half-open (1-2 s) → sit (2-3 s)
