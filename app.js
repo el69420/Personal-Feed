@@ -6711,7 +6711,19 @@ function initPixelCat() {
         [0,1,1,0,0,1,1,0],  // paws
     ];
 
-    const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE };
+    // Wakeup: half-open eyes (horizontal bar thinned to one pixel row), seated posture
+    const WAKEUP = [
+        [0,0,0,0,0,0,0,0],  // row 0 – empty
+        [0,0,1,0,0,1,0,0],  // row 1 – ear spikes
+        [0,1,1,1,1,1,1,0],  // row 2 – head top
+        [1,2,2,2,2,2,2,1],  // row 3 – face
+        [1,2,1,2,2,1,2,1],  // row 4 – half-open eyes (single dark pixel per eye)
+        [1,2,1,3,3,1,2,1],  // row 5 – nose/whiskers
+        [1,2,2,2,2,2,2,1],  // row 6 – body
+        [0,1,2,2,2,2,1,0],  // row 7 – body bottom
+    ];
+
+    const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE, wakeup: WAKEUP };
 
     // ---- Canvas (appended to body so z-index is unambiguous) ----
     const canvas = document.createElement('canvas');
@@ -6736,7 +6748,8 @@ function initPixelCat() {
     let localX      = 0.5;   // smoothly interpolated x (0–1)
     let animIdx     = 0;     // 0 | 1 walk-frame toggle
     let lastFlip    = 0;     // timestamp of last frame toggle
-    let surpriseEnd = 0;     // show surprise face until this time
+    let surpriseEnd     = 0; // show surprise face until this time
+    let wakeupStartedAt = 0; // local ts when wakeup state was first observed
 
     // ---- Driver state (only the elected driver uses these) ----
     let isDriver    = false;
@@ -6747,6 +6760,8 @@ function initPixelCat() {
     let drvNextAct  = 0;     // timestamp of next walk→sit transition
     let lastFbWrite = 0;     // timestamp of last Firebase write
     let onlinePres  = {};    // { userName: { state, ts } } from presence/
+    let drvWasNightSleep = isNightSleepWindow(); // track sleep-window transitions
+    let drvWakeStart     = 0; // ms timestamp when wakeup state began (driver)
 
     // Tuning constants
     const WALK_SPEED  = 0.000085; // normalised x per ms ≈ full-width crossing ~12 s
@@ -6782,44 +6797,110 @@ function initPixelCat() {
         }
     }
 
+    // ---- Helpers: London timezone sleep window ----
+    function getLondonHour() {
+        return parseInt(new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Europe/London', hour: 'numeric', hour12: false,
+        }).format(new Date()), 10);
+    }
+    function isNightSleepWindow() {
+        const h = getLondonHour();
+        return h >= 23 || h < 7;
+    }
+
+    // ---- Helper: derive mood from presence (no Firebase writes) ----
+    function getMood() {
+        const onlineCount = Object.values(onlinePres)
+            .filter(v => v && v.state !== 'offline').length;
+        return onlineCount >= 2 ? 'excited' : 'calm';
+    }
+
     // ---- Firebase → receive shared cat state ----
     onValue(catFbRef, snap => {
         const d = snap.val();
         if (!d) return;
+        const prevState = fbState;
         fbX         = typeof d.x     === 'number' ? d.x     : 0.5;
         fbDir       = d.dir   || 'right';
         fbState     = d.state || 'walk';
         fbUpdatedAt = d.updatedAt || Date.now();
+        // Track when we first see the wakeup state so non-driver can sync the animation
+        if (fbState === 'wakeup' && prevState !== 'wakeup') {
+            wakeupStartedAt = performance.now();
+        }
     });
 
     // ---- Driver behaviour tick (runs every animation frame) ----
     function driverTick(now, dt) {
-        if (drvState === 'walk') {
-            drvX += (drvDir === 'right' ? 1 : -1) * WALK_SPEED * dt;
+        const nightSleep = isNightSleepWindow();
+        const mood = getMood();
+
+        // Mood multipliers derived locally from presence — no extra Firebase writes
+        const speedMult   = mood === 'excited' ? 1.3  : 0.78;
+        const sitMinMult  = mood === 'excited' ? 0.55 : 1.5;
+        const sleepProb   = mood === 'excited' ? 0    : (mood === 'calm' ? 0.38 : SLEEP_P);
+        const sitGapBase  = mood === 'excited' ? 3000 : 7000; // ms gap between sits
+
+        // ---- Night-time forced sleep (23:00–07:00 Europe/London) ----
+        if (nightSleep) {
+            if (drvState !== 'sleep') drvState = 'sleep';
+            drvWasNightSleep = true;
+            // Write at low frequency so all clients see the sleep state
+            if (now - lastFbWrite > FB_INTERVAL) {
+                lastFbWrite = now;
+                set(catFbRef, {
+                    x: drvX, dir: drvDir, state: 'sleep',
+                    updatedAt: now, driverUserId: currentUser,
+                }).catch(() => {});
+            }
+            return; // no movement during night window
+        }
+
+        // ---- Waking up: first tick after night window ends ----
+        if (drvWasNightSleep) {
+            drvWasNightSleep = false;
+            drvState     = 'wakeup';
+            drvWakeStart = now;
+        }
+
+        // ---- State machine (daytime only) ----
+        if (drvState === 'wakeup') {
+            // Hold wakeup pose ~3 s, then stand and walk
+            if (now - drvWakeStart > 3000) {
+                drvState   = 'walk';
+                drvNextAct = now + 4000 + Math.random() * 5000;
+            }
+            // no movement during wakeup
+
+        } else if (drvState === 'walk') {
+            drvX += (drvDir === 'right' ? 1 : -1) * WALK_SPEED * speedMult * dt;
             if (drvX >= 1 - EDGE_PAD) { drvX = 1 - EDGE_PAD; drvDir = 'left'; }
             if (drvX <= EDGE_PAD)     { drvX = EDGE_PAD;     drvDir = 'right'; }
             if (now > drvNextAct) {
                 drvState  = 'sit';
-                drvSitEnd = now + SIT_MIN + Math.random() * (SIT_MAX - SIT_MIN);
-                drvNextAct = drvSitEnd + 6000 + Math.random() * 7000;
+                const sitDur = (SIT_MIN * sitMinMult) + Math.random() * (SIT_MAX - SIT_MIN);
+                drvSitEnd  = now + sitDur;
+                drvNextAct = drvSitEnd + sitGapBase + Math.random() * 5000;
             }
+
         } else if (drvState === 'sit') {
             if (now > drvSitEnd) {
-                if (Math.random() < SLEEP_P) {
+                if (Math.random() < sleepProb) {
                     drvState  = 'sleep';
                     drvSitEnd = now + 5000 + Math.random() * 10000;
                 } else {
                     drvState = 'walk';
                 }
             }
-        } else { // sleep
+
+        } else { // random sleep (only reachable outside night window)
             if (now > drvSitEnd) {
                 drvState  = 'sit';
                 drvSitEnd = now + SIT_MIN + Math.random() * (SIT_MAX - SIT_MIN);
             }
         }
 
-        // Push to Firebase at low frequency
+        // Push to Firebase at low frequency (same rate as before)
         if (now - lastFbWrite > FB_INTERVAL) {
             lastFbWrite = now;
             set(catFbRef, {
@@ -6833,9 +6914,11 @@ function initPixelCat() {
     // Extrapolate from the last known position + direction so the cat
     // keeps moving smoothly between Firebase snapshots.
     function remoteTargetX(now) {
-        if (fbState !== 'walk') return fbX;
+        if (fbState !== 'walk') return fbX; // sleep / sit / wakeup: stay put
         const elapsed = now - fbUpdatedAt;
-        const dx = (fbDir === 'right' ? 1 : -1) * WALK_SPEED * elapsed;
+        // Mirror the driver's mood-adjusted speed so extrapolation stays in sync
+        const rSpeedMult = getMood() === 'excited' ? 1.3 : 0.78;
+        const dx = (fbDir === 'right' ? 1 : -1) * WALK_SPEED * rSpeedMult * elapsed;
         return Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, fbX + dx));
     }
 
@@ -6884,17 +6967,41 @@ function initPixelCat() {
         canvas.style.left = `${Math.round(localX * (vw - CW * S))}px`;
 
         // Choose sprite frame
+        // For wakeup, cycle: sleep (0-1 s) → wakeup half-open (1-2 s) → sit (2-3 s)
+        const wakeElapsed = catState === 'wakeup'
+            ? (isDriver ? now - drvWakeStart : now - wakeupStartedAt)
+            : 0;
         let frame;
-        if (now < surpriseEnd)      frame = 'surprise';
-        else if (catState === 'sit')  frame = 'sit';
-        else if (catState === 'sleep') frame = 'sleep';
-        else                          frame = animIdx === 0 ? 'walkA' : 'walkB';
+        if (now < surpriseEnd)           frame = 'surprise';
+        else if (catState === 'wakeup')  frame = wakeElapsed < 1000 ? 'sleep' : wakeElapsed < 2000 ? 'wakeup' : 'sit';
+        else if (catState === 'sit')     frame = 'sit';
+        else if (catState === 'sleep')   frame = 'sleep';
+        else                             frame = animIdx === 0 ? 'walkA' : 'walkB';
 
         drawSprite(frame, catDir === 'left');
         requestAnimationFrame(loop);
     }
 
     requestAnimationFrame(loop);
+
+    // ---- Mood bounce: excited mode triggers periodic spontaneous bounces ----
+    // Derived locally from onlinePres — no Firebase writes required.
+    (function scheduleMoodBounce() {
+        const mood = getMood();
+        // excited: bounce every 8-14 s while walking; calm/single: no spontaneous bounces
+        if (mood === 'excited') {
+            const catState = isDriver ? drvState : fbState;
+            if (catState === 'walk') {
+                canvas.classList.remove('cat-bounce');
+                void canvas.offsetWidth;
+                canvas.classList.add('cat-bounce');
+            }
+        }
+        const delay = mood === 'excited'
+            ? 8000 + Math.random() * 6000
+            : 20000 + Math.random() * 10000;
+        setTimeout(scheduleMoodBounce, delay);
+    }());
 
     // ---- Click detection (canvas has pointer-events:none, so listen on document) ----
     document.addEventListener('click', e => {
