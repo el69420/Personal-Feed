@@ -6651,65 +6651,64 @@ function initPixelCat() {
     initPixelCat._done = true;
 
     // ---- Sprite data (8 × 8 pixels, each drawn at S px) ----
-    // Palette: 0 = transparent | 1 = dark outline | 2 = fur | 3 = accent (ear/nose)
+    // Palette: 0 = transparent | 1 = dark outline | 2 = fur | 3 = pink (ear-inner / nose)
     const S   = 5;                            // CSS pixels per cat-pixel → 40 × 40 canvas
     const CW  = 8, CH = 8;
-    const CLR = [null, '#2C2C3E', '#B8BAD0', '#E090B0'];
+    const CLR = [null, '#2C2C3E', '#C0C2D8', '#E8829A'];
 
-    // Walk-A: narrow legs (one under each haunch)
-    const WALK_A = [
-        [1,3,0,0,0,0,1,3],
-        [0,1,2,2,2,2,1,0],
-        [1,2,1,2,2,1,2,1],   // eyes at col 2 & 5
-        [1,2,2,2,2,2,2,1],
-        [0,1,2,3,2,2,1,0],   // nose
-        [0,1,2,2,2,2,1,0],
-        [0,0,1,0,0,1,0,0],   // legs close together
-        [0,1,1,0,0,1,1,0],   // paws
+    // Single-pixel ear spikes at cols 2 & 5 (top-centre) → clearly pointy cat ears.
+    // Eyes: dark pixel at cols 2 & 5 in the eye row.
+    // Nose: two centred pink pixels at cols 3 & 4.
+    // Whisker hints: tiny dark marks at cols 1 & 6 in the nose row.
+
+    const HEAD = [          // shared top rows (ears + face)
+        [0,0,1,0,0,1,0,0],  // row 0 – pointy ear spikes
+        [0,1,1,1,1,1,1,0],  // row 1 – head top (flat crown)
+        [1,2,2,2,2,2,2,1],  // row 2 – face
+        [1,2,1,2,2,1,2,1],  // row 3 – eyes (dark at cols 2 & 5)
+        [1,2,2,2,2,2,2,1],  // row 4 – cheeks
+        [1,2,1,3,3,1,2,1],  // row 5 – whisker hints + two-pixel centred nose
     ];
-    // Walk-B: wide legs (stride out)
+
+    // Walk-A: legs together (stride-in)
+    const WALK_A = [
+        ...HEAD,
+        [0,0,1,0,0,1,0,0],  // row 6 – legs narrow
+        [0,1,1,0,0,1,1,0],  // row 7 – paws
+    ];
+    // Walk-B: legs apart (stride-out)
     const WALK_B = [
-        [1,3,0,0,0,0,1,3],
-        [0,1,2,2,2,2,1,0],
-        [1,2,1,2,2,1,2,1],
-        [1,2,2,2,2,2,2,1],
-        [0,1,2,3,2,2,1,0],
-        [0,1,2,2,2,2,1,0],
-        [0,1,0,0,0,0,1,0],   // legs wide
-        [1,1,0,0,0,0,1,1],   // paws wide
+        ...HEAD,
+        [0,1,0,0,0,0,1,0],  // row 6 – legs wide
+        [1,1,0,0,0,0,1,1],  // row 7 – paws wide
     ];
     // Sit: haunches visible, paws tucked
     const SIT = [
-        [1,3,0,0,0,0,1,3],
-        [0,1,2,2,2,2,1,0],
-        [1,2,1,2,2,1,2,1],
-        [1,2,2,2,2,2,2,1],
-        [0,1,2,3,2,2,1,0],
-        [0,1,2,2,2,2,1,0],
-        [1,2,2,2,2,2,2,1],   // sitting body
-        [1,2,2,1,1,2,2,1],   // haunches / tucked paws
+        ...HEAD,
+        [1,2,2,2,2,2,2,1],  // row 6 – sitting body
+        [1,2,2,1,1,2,2,1],  // row 7 – haunches / tucked paws
     ];
-    // Sleep: ears shifted down, eyes closed (horizontal bar), curled body
+    // Sleep: ears lowered by one row, eyes closed (horizontal bar), rounded body
     const SLEEP = [
-        [0,0,0,0,0,0,0,0],
-        [1,3,0,0,0,0,1,3],
-        [0,1,2,2,2,2,1,0],
-        [1,2,2,2,2,2,2,1],
-        [1,2,1,1,1,1,2,1],   // closed eyes (horizontal line)
-        [1,2,2,2,2,2,2,1],
-        [1,2,2,2,2,2,2,1],
-        [0,1,2,2,2,2,1,0],
+        [0,0,0,0,0,0,0,0],  // row 0 – empty (cat is curled lower)
+        [0,0,1,0,0,1,0,0],  // row 1 – ear spikes (shifted down)
+        [0,1,1,1,1,1,1,0],  // row 2 – head top
+        [1,2,2,2,2,2,2,1],  // row 3 – face
+        [1,2,1,1,1,1,2,1],  // row 4 – closed eyes (solid horizontal bar)
+        [1,2,2,2,2,2,2,1],  // row 5 – body
+        [1,2,2,2,2,2,2,1],  // row 6 – body
+        [0,1,2,2,2,2,1,0],  // row 7 – body bottom
     ];
-    // Surprise: wide eyes — shown for ~700 ms after a click
+    // Surprise: big eyes — shown for ~700 ms after a click
     const SURPRISE = [
-        [1,3,0,0,0,0,1,3],
-        [0,1,2,2,2,2,1,0],
-        [1,1,1,2,2,1,1,1],   // enlarged eyes (3-wide each)
-        [1,2,2,2,2,2,2,1],
-        [0,1,1,3,3,1,1,0],   // open mouth / double-nose
-        [0,1,2,2,2,2,1,0],
-        [0,0,1,0,0,1,0,0],
-        [0,1,1,0,0,1,1,0],
+        [0,0,1,0,0,1,0,0],  // ears
+        [0,1,1,1,1,1,1,0],  // head top
+        [1,2,2,2,2,2,2,1],  // face
+        [1,1,1,2,2,1,1,1],  // row 3 – wide eyes (dark fills 3 cols each)
+        [1,2,2,2,2,2,2,1],  // cheeks
+        [1,1,1,3,3,1,1,1],  // row 5 – big surprised nose / tiny open mouth
+        [0,0,1,0,0,1,0,0],  // legs
+        [0,1,1,0,0,1,1,0],  // paws
     ];
 
     const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE };
