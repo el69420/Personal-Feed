@@ -6731,7 +6731,30 @@ function initPixelCat() {
         [0,1,2,2,2,2,1,0],  // row 7 – body bottom
     ];
 
-    const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE, wakeup: WAKEUP };
+    // Idle: cat standing still, glancing sideways (eyes shifted one pixel)
+    const IDLE = [
+        [0,0,1,0,0,1,0,0],  // row 0 – pointy ear spikes
+        [0,1,1,1,1,1,1,0],  // row 1 – head top
+        [1,2,2,2,2,2,2,1],  // row 2 – face
+        [1,2,2,1,2,2,1,1],  // row 3 – eyes shifted (looking sideways)
+        [1,2,2,2,2,2,2,1],  // row 4 – cheeks
+        [1,2,1,3,3,1,2,1],  // row 5 – whiskers + nose
+        [0,0,1,0,0,1,0,0],  // row 6 – legs together (standing still)
+        [0,1,1,0,0,1,1,0],  // row 7 – paws (same as walk-A)
+    ];
+    // Jump: mid-leap pose – front paws reaching out, back paws dangling
+    const JUMP = [
+        [0,0,1,0,0,1,0,0],  // row 0 – ears
+        [0,1,1,1,1,1,1,0],  // row 1 – head top
+        [1,2,2,2,2,2,2,1],  // row 2 – face
+        [1,2,1,2,2,1,2,1],  // row 3 – eyes wide open (alert mid-leap)
+        [1,2,2,2,2,2,2,1],  // row 4 – cheeks
+        [1,2,1,3,3,1,2,1],  // row 5 – nose
+        [1,0,2,2,2,2,0,1],  // row 6 – front paws extended sideways
+        [0,1,0,0,0,0,1,0],  // row 7 – back paws tucked/dangling
+    ];
+
+    const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE, wakeup: WAKEUP, idle: IDLE, jump: JUMP };
 
     // ---- Canvas (appended to body so z-index is unambiguous) ----
     const canvas = document.createElement('canvas');
@@ -6780,6 +6803,12 @@ function initPixelCat() {
     let drvWakeStart     = 0; // ms timestamp when wakeup state began (driver)
     let drvPerchTarget   = null; // { winEl, side } – local-only, never synced to Firebase
     let drvPerchEnd      = 0;   // ms timestamp when perching ends
+    let drvIdleEnd       = 0;   // ms timestamp when idle phase ends (local-only)
+    let drvJumpStartX    = 0;   // jump arc: start position screen-px x
+    let drvJumpStartY    = 0;   // jump arc: start position screen-px y
+    let drvJumpTargetX   = 0;   // jump arc: destination screen-px x
+    let drvJumpTargetY   = 0;   // jump arc: destination screen-px y
+    let drvJumpTime      = 0;   // timestamp when current jump arc began
 
     // ---- Gift drop driver state ----
     const GIFT_MIN_INTERVAL_MS = 90 * 60 * 1000;  // 90 min minimum between gifts
@@ -6799,6 +6828,10 @@ function initPixelCat() {
     const SIT_MIN     = 3500;     // min sit/sleep duration (ms)
     const SIT_MAX     = 8000;
     const SLEEP_P     = 0.28;     // probability that sit transitions to sleep
+    const JUMP_DURATION = 650;    // ms for a jump arc animation (up or down)
+    const JUMP_ARC      = 85;     // extra upward px at the peak of the arc
+    const IDLE_MIN      = 500;    // ms cat pauses in idle before deciding next action
+    const IDLE_MAX      = 1400;
 
     // ---- Presence listener → driver election + both-online heart ----
     let _presInitDone   = false; // skip very first snapshot (avoid heart on page load)
@@ -7069,19 +7102,87 @@ function initPixelCat() {
             if (drvX >= 1 - EDGE_PAD) { drvX = 1 - EDGE_PAD; drvDir = 'left'; }
             if (drvX <= EDGE_PAD)     { drvX = EDGE_PAD;     drvDir = 'right'; }
             if (now > drvNextAct) {
+                // Pause in idle briefly before deciding what to do next
+                drvState   = 'idle';
+                drvIdleEnd = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
+            }
+
+        } else if (drvState === 'idle') {
+            // Cat glances around; once done, decides to perch or sit
+            if (now > drvIdleEnd) {
                 const perchWins = getPerchableWindows();
-                if (perchWins.length > 0 && Math.random() < 0.25) {
-                    // Jump up onto a window title bar (local-only)
+                if (perchWins.length > 0 && Math.random() < 0.30) {
+                    // Choose a window and jump up onto its title bar (local-only)
                     const targetWin = perchWins[Math.floor(Math.random() * perchWins.length)];
-                    drvPerchTarget = { winEl: targetWin, side: Math.random() < 0.5 ? 'left' : 'right' };
-                    drvPerchEnd    = now + 5000 + Math.random() * 7000; // 5–12 s
-                    drvState       = 'perch';
+                    const side      = Math.random() < 0.5 ? 'left' : 'right';
+                    drvPerchTarget  = { winEl: targetWin, side };
+                    const vw        = window.innerWidth;
+                    const groundY   = window.innerHeight - 44 - CH * S;
+                    const startPixX = Math.round(localX * (vw - CW * S));
+                    const { px: tpx, py: tpy } = calcPerchPos(targetWin, side);
+                    drvJumpStartX  = startPixX;
+                    drvJumpStartY  = groundY;
+                    drvJumpTargetX = tpx;
+                    drvJumpTargetY = tpy;
+                    drvJumpTime    = now;
+                    // Face the target window before leaping
+                    drvDir  = tpx > startPixX ? 'right' : 'left';
+                    drvState = 'jumping';
                 } else {
                     drvState  = 'sit';
                     const sitDur = (SIT_MIN * sitMinMult) + Math.random() * (SIT_MAX - SIT_MIN);
                     drvSitEnd  = now + sitDur;
                     drvNextAct = drvSitEnd + sitGapBase + Math.random() * 5000;
                 }
+            }
+
+        } else if (drvState === 'jumping') {
+            // Arc from ground to window title bar; no explicit position update here —
+            // the render loop calculates the arc position directly.
+            const t = Math.min(1, (now - drvJumpTime) / JUMP_DURATION);
+            if (t >= 1) {
+                // Arrived at perch — normalise drvX to the perch pixel x
+                drvX      = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD,
+                                drvJumpTargetX / (window.innerWidth - CW * S)));
+                drvState  = 'perched';
+                drvPerchEnd = now + 4000 + Math.random() * 6000; // sit 4–10 s
+            }
+
+        } else if (drvState === 'perched') {
+            // Cat sits on the window title bar; leave when timer expires or window goes away
+            const gone = !drvPerchTarget ||
+                         drvPerchTarget.winEl.classList.contains('is-hidden') ||
+                         drvPerchTarget.winEl.classList.contains('is-maximised');
+            if (gone || now > drvPerchEnd) {
+                // Compute jump-down arc back to the ground
+                const vw      = window.innerWidth;
+                const groundY = window.innerHeight - 44 - CH * S;
+                const { px: spx, py: spy } = gone
+                    ? { px: Math.round(drvX * (vw - CW * S)), py: 0 }
+                    : calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
+                // Land somewhere near the window, with a little randomness
+                const landX = Math.max(CW * S,
+                                Math.min(vw - CW * S * 2,
+                                    spx + (Math.random() - 0.5) * 160));
+                drvJumpStartX  = spx;
+                drvJumpStartY  = spy;
+                drvJumpTargetX = landX;
+                drvJumpTargetY = groundY;
+                drvJumpTime    = now;
+                drvDir   = landX > spx ? 'right' : 'left';
+                drvState = 'jumpDown';
+                if (gone) drvPerchTarget = null;
+            }
+
+        } else if (drvState === 'jumpDown') {
+            const t = Math.min(1, (now - drvJumpTime) / JUMP_DURATION);
+            if (t >= 1) {
+                // Landed — convert pixel landing x back to normalised drvX
+                drvX           = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD,
+                                    drvJumpTargetX / (window.innerWidth - CW * S)));
+                drvPerchTarget = null;
+                drvState       = 'walk';
+                drvNextAct     = now + 3000 + Math.random() * 4000;
             }
 
         } else if (drvState === 'sit') {
@@ -7092,17 +7193,6 @@ function initPixelCat() {
                 } else {
                     drvState = 'walk';
                 }
-            }
-
-        } else if (drvState === 'perch') {
-            // Local-only: return to walk when done or if the window disappears/maximises
-            const gone = !drvPerchTarget ||
-                         drvPerchTarget.winEl.classList.contains('is-hidden') ||
-                         drvPerchTarget.winEl.classList.contains('is-maximised');
-            if (gone || now > drvPerchEnd) {
-                drvState       = 'walk';
-                drvPerchTarget = null;
-                drvNextAct     = now + 2000 + Math.random() * 3000;
             }
 
         } else { // random sleep (only reachable outside night window)
@@ -7122,12 +7212,16 @@ function initPixelCat() {
             if (Math.random() < GIFT_ROLL_CHANCE) dropGift();
         }
 
-        // Push to Firebase at low frequency (same rate as before).
-        // 'perch' is local-only: remote clients see 'sit' so they don't know an unknown state.
+        // Push to Firebase at low frequency.
+        // Local-only states are hidden from remote clients:
+        //   idle / perched → 'sit'   (cat is stationary)
+        //   jumping / jumpDown → 'walk' (cat is in motion)
+        const LOCAL_ONLY = { idle: 'sit', perched: 'sit', jumping: 'walk', jumpDown: 'walk' };
+        const fbWriteState = LOCAL_ONLY[drvState] || drvState;
         if (now - lastFbWrite > FB_INTERVAL) {
             lastFbWrite = now;
             set(catFbRef, {
-                x: drvX, dir: drvDir, state: drvState === 'perch' ? 'sit' : drvState,
+                x: drvX, dir: drvDir, state: fbWriteState,
                 updatedAt: now, driverUserId: currentUser,
             }).catch(() => {});
         }
@@ -7185,11 +7279,28 @@ function initPixelCat() {
         const targetX = isDriver ? drvX : remoteTargetX(now);
         localX += (targetX - localX) * Math.min(1, LERP_K * dt);
 
-        // Position the canvas — either perching on a window title bar or walking on the ground
+        // Position the canvas: jump arc → perched on title bar → ground
         const vw = window.innerWidth;
-        const isPerching = isDriver && drvState === 'perch' && drvPerchTarget &&
+        const isJumping  = isDriver && (drvState === 'jumping' || drvState === 'jumpDown');
+        const isPerching = isDriver && drvState === 'perched' && drvPerchTarget &&
                            !drvPerchTarget.winEl.classList.contains('is-hidden');
-        if (isPerching) {
+
+        if (isJumping) {
+            // Parabolic arc: ease-in-out horizontal, sine-arch vertical (always curves upward)
+            const t    = Math.min(1, (now - drvJumpTime) / JUMP_DURATION);
+            const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease-in-out quadratic
+            const px   = drvJumpStartX + (drvJumpTargetX - drvJumpStartX) * ease;
+            const py   = drvJumpStartY + (drvJumpTargetY - drvJumpStartY) * ease
+                         - JUMP_ARC * Math.sin(Math.PI * t); // negative = arcs upward
+            canvas.style.left   = Math.round(px) + 'px';
+            canvas.style.top    = Math.round(py) + 'px';
+            canvas.style.bottom = 'auto';
+            canvas.style.zIndex = '155';
+            emoteEl.style.left   = Math.round(px) + 'px';
+            emoteEl.style.top    = Math.round(py + CH * S) + 'px';
+            emoteEl.style.bottom = 'auto';
+            emoteEl.style.zIndex = '156';
+        } else if (isPerching) {
             const { px, py } = calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
             canvas.style.left   = px + 'px';
             canvas.style.top    = py + 'px';
@@ -7198,7 +7309,7 @@ function initPixelCat() {
             const winZ = parseInt(drvPerchTarget.winEl.style.zIndex) || 2000;
             canvas.style.zIndex = (winZ + 1) + '';
             emoteEl.style.left   = px + 'px';
-            emoteEl.style.top    = (py + CH * S) + 'px';  // particles float up from cat's feet
+            emoteEl.style.top    = (py + CH * S) + 'px';
             emoteEl.style.bottom = 'auto';
             emoteEl.style.zIndex = (winZ + 2) + '';
         } else {
@@ -7218,11 +7329,13 @@ function initPixelCat() {
             ? (isDriver ? now - drvWakeStart : now - wakeupStartedAt)
             : 0;
         let frame;
-        if (now < surpriseEnd)                        frame = 'surprise';
-        else if (catState === 'wakeup')               frame = wakeElapsed < 1000 ? 'sleep' : wakeElapsed < 2000 ? 'wakeup' : 'sit';
-        else if (catState === 'sit' || catState === 'perch') frame = 'sit';
-        else if (catState === 'sleep')                frame = 'sleep';
-        else                                          frame = animIdx === 0 ? 'walkA' : 'walkB';
+        if (now < surpriseEnd)                                        frame = 'surprise';
+        else if (catState === 'wakeup')                               frame = wakeElapsed < 1000 ? 'sleep' : wakeElapsed < 2000 ? 'wakeup' : 'sit';
+        else if (catState === 'sit' || catState === 'perched')        frame = 'sit';
+        else if (catState === 'idle')                                 frame = 'idle';
+        else if (catState === 'jumping' || catState === 'jumpDown')   frame = 'jump';
+        else if (catState === 'sleep')                                frame = 'sleep';
+        else                                                          frame = animIdx === 0 ? 'walkA' : 'walkB';
 
         drawSprite(frame, catDir === 'left');
         requestAnimationFrame(loop);
