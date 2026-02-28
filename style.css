@@ -4655,3 +4655,26 @@ body { padding: 0 !important; }
 .recycle-bin-del-btn {
   color: #990000;
 }
+
+/* ============================================================
+   Pixel Cat
+   ============================================================ */
+#pixel-cat-canvas {
+  position: fixed;
+  bottom: 44px;           /* sit just above the 40px taskbar */
+  z-index: 150;           /* above desktop icons (100), below taskbar (500) & windows (2000+) */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events: none;   /* never block clicks on things below */
+}
+
+@keyframes catBounce {
+  0%   { transform: translateY(0)    scaleY(1);    }
+  20%  { transform: translateY(-10px) scaleY(1.1); }
+  50%  { transform: translateY(0)    scaleY(0.92); }
+  70%  { transform: translateY(-5px)  scaleY(1.05); }
+  100% { transform: translateY(0)    scaleY(1);    }
+}
+#pixel-cat-canvas.cat-bounce {
+  animation: catBounce 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}

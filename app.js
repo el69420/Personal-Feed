@@ -559,6 +559,7 @@ function login(displayName, email) {
     startNowListening();
     showSection('feed');
     initAchievements();
+    initPixelCat();
     // If the garden window was already open when auth resolved (page-restore path),
     // run the visit-spark check now that currentUser is set.
     const gardenWin = document.getElementById('w95-win-garden');
@@ -6641,3 +6642,271 @@ async function loadUserWallpaper(user) {
         if (win.classList.contains('is-hidden')) show(); else win.style.zIndex = ++w95TopZ;
     }};
 })();
+
+// ===== PIXEL CAT =====
+// Shared desktop mascot. One client drives cat position via Firebase (~1.4 s writes);
+// all clients render smoothly by extrapolating movement locally between updates.
+function initPixelCat() {
+    if (initPixelCat._done) return;
+    initPixelCat._done = true;
+
+    // ---- Sprite data (8 × 8 pixels, each drawn at S px) ----
+    // Palette: 0 = transparent | 1 = dark outline | 2 = fur | 3 = accent (ear/nose)
+    const S   = 5;                            // CSS pixels per cat-pixel → 40 × 40 canvas
+    const CW  = 8, CH = 8;
+    const CLR = [null, '#2C2C3E', '#B8BAD0', '#E090B0'];
+
+    // Walk-A: narrow legs (one under each haunch)
+    const WALK_A = [
+        [1,3,0,0,0,0,1,3],
+        [0,1,2,2,2,2,1,0],
+        [1,2,1,2,2,1,2,1],   // eyes at col 2 & 5
+        [1,2,2,2,2,2,2,1],
+        [0,1,2,3,2,2,1,0],   // nose
+        [0,1,2,2,2,2,1,0],
+        [0,0,1,0,0,1,0,0],   // legs close together
+        [0,1,1,0,0,1,1,0],   // paws
+    ];
+    // Walk-B: wide legs (stride out)
+    const WALK_B = [
+        [1,3,0,0,0,0,1,3],
+        [0,1,2,2,2,2,1,0],
+        [1,2,1,2,2,1,2,1],
+        [1,2,2,2,2,2,2,1],
+        [0,1,2,3,2,2,1,0],
+        [0,1,2,2,2,2,1,0],
+        [0,1,0,0,0,0,1,0],   // legs wide
+        [1,1,0,0,0,0,1,1],   // paws wide
+    ];
+    // Sit: haunches visible, paws tucked
+    const SIT = [
+        [1,3,0,0,0,0,1,3],
+        [0,1,2,2,2,2,1,0],
+        [1,2,1,2,2,1,2,1],
+        [1,2,2,2,2,2,2,1],
+        [0,1,2,3,2,2,1,0],
+        [0,1,2,2,2,2,1,0],
+        [1,2,2,2,2,2,2,1],   // sitting body
+        [1,2,2,1,1,2,2,1],   // haunches / tucked paws
+    ];
+    // Sleep: ears shifted down, eyes closed (horizontal bar), curled body
+    const SLEEP = [
+        [0,0,0,0,0,0,0,0],
+        [1,3,0,0,0,0,1,3],
+        [0,1,2,2,2,2,1,0],
+        [1,2,2,2,2,2,2,1],
+        [1,2,1,1,1,1,2,1],   // closed eyes (horizontal line)
+        [1,2,2,2,2,2,2,1],
+        [1,2,2,2,2,2,2,1],
+        [0,1,2,2,2,2,1,0],
+    ];
+    // Surprise: wide eyes — shown for ~700 ms after a click
+    const SURPRISE = [
+        [1,3,0,0,0,0,1,3],
+        [0,1,2,2,2,2,1,0],
+        [1,1,1,2,2,1,1,1],   // enlarged eyes (3-wide each)
+        [1,2,2,2,2,2,2,1],
+        [0,1,1,3,3,1,1,0],   // open mouth / double-nose
+        [0,1,2,2,2,2,1,0],
+        [0,0,1,0,0,1,0,0],
+        [0,1,1,0,0,1,1,0],
+    ];
+
+    const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE };
+
+    // ---- Canvas (appended to body so z-index is unambiguous) ----
+    const canvas = document.createElement('canvas');
+    canvas.id     = 'pixel-cat-canvas';
+    canvas.width  = CW * S;
+    canvas.height = CH * S;
+    document.body.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    // ---- Firebase refs ----
+    const catFbRef = ref(database, 'desktop/cat');
+
+    // ---- State received from Firebase ----
+    let fbX         = 0.5;
+    let fbDir       = 'right';
+    let fbState     = 'walk';
+    let fbUpdatedAt = Date.now();
+
+    // ---- Local render state ----
+    let localX      = 0.5;   // smoothly interpolated x (0–1)
+    let animIdx     = 0;     // 0 | 1 walk-frame toggle
+    let lastFlip    = 0;     // timestamp of last frame toggle
+    let surpriseEnd = 0;     // show surprise face until this time
+
+    // ---- Driver state (only the elected driver uses these) ----
+    let isDriver    = false;
+    let drvX        = 0.5;
+    let drvDir      = 'right';
+    let drvState    = 'walk';
+    let drvSitEnd   = 0;     // timestamp when sit/sleep phase ends
+    let drvNextAct  = 0;     // timestamp of next walk→sit transition
+    let lastFbWrite = 0;     // timestamp of last Firebase write
+    let onlinePres  = {};    // { userName: { state, ts } } from presence/
+
+    // Tuning constants
+    const WALK_SPEED  = 0.000085; // normalised x per ms ≈ full-width crossing ~12 s
+    const EDGE_PAD    = 0.04;     // stay within [EDGE_PAD, 1 − EDGE_PAD]
+    const FB_INTERVAL = 1400;     // ms between Firebase writes (driver only)
+    const WALK_FPS    = 220;      // ms per walk animation frame
+    const LERP_K      = 0.006;    // lerp rate for remote clients (per ms)
+    const SIT_MIN     = 3500;     // min sit/sleep duration (ms)
+    const SIT_MAX     = 8000;
+    const SLEEP_P     = 0.28;     // probability that sit transitions to sleep
+
+    // ---- Presence listener → driver election ----
+    onValue(ref(database, 'presence'), snap => {
+        onlinePres = snap.val() || {};
+        electDriver();
+    });
+
+    function electDriver() {
+        // Driver = alphabetically first user whose presence state is not 'offline'
+        const candidates = Object.entries(onlinePres)
+            .filter(([, v]) => v && v.state !== 'offline')
+            .map(([k]) => k)
+            .sort();
+        const elected = candidates[0] || null;
+        const wasDriver = isDriver;
+        isDriver = !!currentUser && currentUser === elected;
+        if (!wasDriver && isDriver) {
+            // Inherit current interpolated position so the cat doesn't jump
+            drvX       = localX;
+            drvDir     = fbDir;
+            drvState   = fbState;
+            drvNextAct = Date.now() + 4000 + Math.random() * 5000;
+        }
+    }
+
+    // ---- Firebase → receive shared cat state ----
+    onValue(catFbRef, snap => {
+        const d = snap.val();
+        if (!d) return;
+        fbX         = typeof d.x     === 'number' ? d.x     : 0.5;
+        fbDir       = d.dir   || 'right';
+        fbState     = d.state || 'walk';
+        fbUpdatedAt = d.updatedAt || Date.now();
+    });
+
+    // ---- Driver behaviour tick (runs every animation frame) ----
+    function driverTick(now, dt) {
+        if (drvState === 'walk') {
+            drvX += (drvDir === 'right' ? 1 : -1) * WALK_SPEED * dt;
+            if (drvX >= 1 - EDGE_PAD) { drvX = 1 - EDGE_PAD; drvDir = 'left'; }
+            if (drvX <= EDGE_PAD)     { drvX = EDGE_PAD;     drvDir = 'right'; }
+            if (now > drvNextAct) {
+                drvState  = 'sit';
+                drvSitEnd = now + SIT_MIN + Math.random() * (SIT_MAX - SIT_MIN);
+                drvNextAct = drvSitEnd + 6000 + Math.random() * 7000;
+            }
+        } else if (drvState === 'sit') {
+            if (now > drvSitEnd) {
+                if (Math.random() < SLEEP_P) {
+                    drvState  = 'sleep';
+                    drvSitEnd = now + 5000 + Math.random() * 10000;
+                } else {
+                    drvState = 'walk';
+                }
+            }
+        } else { // sleep
+            if (now > drvSitEnd) {
+                drvState  = 'sit';
+                drvSitEnd = now + SIT_MIN + Math.random() * (SIT_MAX - SIT_MIN);
+            }
+        }
+
+        // Push to Firebase at low frequency
+        if (now - lastFbWrite > FB_INTERVAL) {
+            lastFbWrite = now;
+            set(catFbRef, {
+                x: drvX, dir: drvDir, state: drvState,
+                updatedAt: now, driverUserId: currentUser,
+            }).catch(() => {});
+        }
+    }
+
+    // ---- Target x for the non-driving client ----
+    // Extrapolate from the last known position + direction so the cat
+    // keeps moving smoothly between Firebase snapshots.
+    function remoteTargetX(now) {
+        if (fbState !== 'walk') return fbX;
+        const elapsed = now - fbUpdatedAt;
+        const dx = (fbDir === 'right' ? 1 : -1) * WALK_SPEED * elapsed;
+        return Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, fbX + dx));
+    }
+
+    // ---- Pixel-art draw ----
+    function drawSprite(name, flip) {
+        const grid = FRAMES[name];
+        if (!grid) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (flip) { ctx.save(); ctx.scale(-1, 1); ctx.translate(-canvas.width, 0); }
+        for (let r = 0; r < grid.length; r++) {
+            for (let c = 0; c < grid[r].length; c++) {
+                const v = grid[r][c];
+                if (!v) continue;
+                ctx.fillStyle = CLR[v];
+                ctx.fillRect(c * S, r * S, S, S);
+            }
+        }
+        if (flip) ctx.restore();
+    }
+
+    // ---- Main animation loop ----
+    let lastTs = performance.now();
+
+    function loop(now) {
+        const dt = Math.min(now - lastTs, 100); // cap delta so a tab-wake doesn't teleport the cat
+        lastTs = now;
+
+        if (isDriver) driverTick(now, dt);
+
+        // Which state & direction to render
+        const catState = isDriver ? drvState : fbState;
+        const catDir   = isDriver ? drvDir   : fbDir;
+
+        // Walk animation frame toggle
+        if (catState === 'walk' && now - lastFlip > WALK_FPS) {
+            animIdx  = 1 - animIdx;
+            lastFlip = now;
+        }
+
+        // Smooth local position
+        const targetX = isDriver ? drvX : remoteTargetX(now);
+        localX += (targetX - localX) * Math.min(1, LERP_K * dt);
+
+        // Position the canvas along the bottom of the viewport
+        const vw = window.innerWidth;
+        canvas.style.left = `${Math.round(localX * (vw - CW * S))}px`;
+
+        // Choose sprite frame
+        let frame;
+        if (now < surpriseEnd)      frame = 'surprise';
+        else if (catState === 'sit')  frame = 'sit';
+        else if (catState === 'sleep') frame = 'sleep';
+        else                          frame = animIdx === 0 ? 'walkA' : 'walkB';
+
+        drawSprite(frame, catDir === 'left');
+        requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+
+    // ---- Click detection (canvas has pointer-events:none, so listen on document) ----
+    document.addEventListener('click', e => {
+        const r = canvas.getBoundingClientRect();
+        if (e.clientX >= r.left && e.clientX <= r.right &&
+            e.clientY >= r.top  && e.clientY <= r.bottom) {
+            surpriseEnd = performance.now() + 700;
+            canvas.classList.remove('cat-bounce');
+            void canvas.offsetWidth;            // force reflow to restart animation
+            canvas.classList.add('cat-bounce');
+        }
+    });
+    canvas.addEventListener('animationend', () => canvas.classList.remove('cat-bounce'));
+}
