@@ -82,6 +82,38 @@ async function hydrateLinkPreviews(container) {
     }
 }
 
+// ===== Wallpaper definitions =====
+const WALLPAPERS = [
+    { id: 'teal',      label: 'Teal Classic',   css: 'linear-gradient(135deg,#006868 0%,#004466 100%)' },
+    { id: 'purple',    label: 'Purple Dream',   css: 'linear-gradient(135deg,#4a0080 0%,#1a0040 100%)' },
+    { id: 'sunset',    label: 'Sunset',         css: 'linear-gradient(to bottom,#ff6b35 0%,#f7931e 45%,#c2185b 100%)' },
+    { id: 'night',     label: 'Starry Night',   css: [
+        'radial-gradient(1px 1px at 15% 25%,rgba(255,255,255,0.9) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 60% 10%,rgba(255,255,255,0.8) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 80% 40%,rgba(255,255,255,0.7) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 35% 70%,rgba(255,255,255,0.85) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 92% 80%,rgba(255,255,255,0.75) 0%,transparent 100%)',
+        'linear-gradient(to bottom,#0a0018 0%,#12003a 100%)',
+    ].join(',') },
+    { id: 'forest',    label: 'Forest',         css: 'linear-gradient(to bottom,#1a4a1a 0%,#0d2b0d 55%,#0a1f0a 100%)' },
+    { id: 'blush',     label: 'Blush',          css: 'linear-gradient(135deg,#f8c8d4 0%,#e8a0b0 50%,#d4789a 100%)' },
+    { id: 'blueprint', label: 'Blueprint',      css: [
+        'repeating-linear-gradient(0deg,transparent,transparent 19px,rgba(255,255,255,0.08) 19px,rgba(255,255,255,0.08) 20px)',
+        'repeating-linear-gradient(90deg,transparent,transparent 19px,rgba(255,255,255,0.08) 19px,rgba(255,255,255,0.08) 20px)',
+        'linear-gradient(135deg,#003366 0%,#00214d 100%)',
+    ].join(',') },
+    { id: 'candy',     label: 'Candy Stripe',   css: 'repeating-linear-gradient(45deg,#ff69b4 0px,#ff69b4 10px,#fff0f5 10px,#fff0f5 20px)' },
+];
+const DEFAULT_WALLPAPER_ID = 'teal';
+let currentWallpaperId = DEFAULT_WALLPAPER_ID;
+
+function applyWallpaper(id) {
+    const wp = WALLPAPERS.find(w => w.id === id) || WALLPAPERS[0];
+    const desktop = document.getElementById('w95-desktop');
+    if (desktop) desktop.style.background = wp.css;
+    currentWallpaperId = wp.id;
+}
+
 let currentFilter = 'all';
 let currentCollection = null;
 let currentSource = null;
@@ -519,6 +551,7 @@ function login(displayName, email) {
     activitySeenTs = Number(localStorage.getItem(`activitySeenTs-${displayName}`) || String(Date.now() - 86400000));
     updateNewCount();
     loadPosts();
+    loadUserWallpaper(displayName);
     setupTypingCleanup();
     setupPresence();
     startNowListening();
@@ -6299,4 +6332,120 @@ document.querySelectorAll('.w95-window').forEach(win => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeMenu();
     });
+})();
+
+// ===== Wallpaper: load from server on login =====
+async function loadUserWallpaper(user) {
+    try {
+        const r = await fetch(`${API_BASE}/api/wallpaper?user=${encodeURIComponent(user)}`);
+        if (!r.ok) throw new Error('fetch failed');
+        const data = await r.json();
+        applyWallpaper(data.wallpaperId || DEFAULT_WALLPAPER_ID);
+    } catch (_) {
+        applyWallpaper(DEFAULT_WALLPAPER_ID);
+    }
+}
+
+// ===== Desktop Properties (Wallpaper) Window =====
+(() => {
+    const win       = document.getElementById('w95-win-wallpaper');
+    const handle    = document.getElementById('w95-wallpaper-handle');
+    const closeBtn  = document.getElementById('w95-wallpaper-close');
+    const okBtn     = document.getElementById('wallpaper-ok');
+    const cancelBtn = document.getElementById('wallpaper-cancel');
+    const grid      = document.getElementById('wallpaper-grid');
+    const preview   = document.getElementById('wallpaper-preview');
+    if (!win) return;
+
+    let savedId   = DEFAULT_WALLPAPER_ID;  // wallpaper before the dialog opened
+    let selectedId = DEFAULT_WALLPAPER_ID; // currently highlighted in dialog
+
+    function renderGrid() {
+        grid.innerHTML = '';
+        WALLPAPERS.forEach(wp => {
+            const sw = document.createElement('button');
+            sw.className = 'wallpaper-swatch' + (wp.id === selectedId ? ' selected' : '');
+            sw.style.background = wp.css;
+            sw.setAttribute('aria-label', wp.label);
+            sw.setAttribute('title', wp.label);
+            sw.type = 'button';
+
+            const lbl = document.createElement('span');
+            lbl.className = 'wallpaper-swatch-label';
+            lbl.textContent = wp.label;
+            sw.appendChild(lbl);
+
+            sw.addEventListener('click', () => {
+                selectedId = wp.id;
+                // Immediate preview
+                applyWallpaper(selectedId);
+                preview.style.background = wp.css;
+                grid.querySelectorAll('.wallpaper-swatch').forEach(s => s.classList.remove('selected'));
+                sw.classList.add('selected');
+            });
+            grid.appendChild(sw);
+        });
+    }
+
+    function show() {
+        savedId    = currentWallpaperId;
+        selectedId = currentWallpaperId;
+        const cur = WALLPAPERS.find(w => w.id === selectedId) || WALLPAPERS[0];
+        if (preview) preview.style.background = cur.css;
+        renderGrid();
+        win.classList.remove('is-hidden');
+        win.style.zIndex = ++w95TopZ;
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+    }
+
+    closeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        applyWallpaper(savedId);
+        hide();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        applyWallpaper(savedId);
+        hide();
+    });
+
+    okBtn.addEventListener('click', async () => {
+        hide();
+        if (!currentUser) return;
+        try {
+            await fetch(`${API_BASE}/api/wallpaper`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user: currentUser, wallpaperId: currentWallpaperId }),
+            });
+        } catch (_) { /* best-effort */ }
+    });
+
+    // Bring to front on click
+    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; });
+
+    // Dragging
+    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+    handle.addEventListener('mousedown', e => {
+        if (e.target.closest('button')) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const r = win.getBoundingClientRect();
+        winStartX = r.left; winStartY = r.top;
+        win.style.zIndex = ++w95TopZ;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        win.style.left = `${winStartX + e.clientX - startX}px`;
+        win.style.top  = `${winStartY + e.clientY - startY}px`;
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+
+    w95Apps['wallpaper'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else win.style.zIndex = ++w95TopZ;
+    }};
 })();

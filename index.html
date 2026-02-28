@@ -746,6 +746,8 @@
         <button class="w95-start-item" data-app="achievements" type="button">&#127942; Achievements</button>
         <button class="w95-start-item" data-app="mailbox" type="button">&#9993; Mailbox</button>
         <button class="w95-start-item" data-app="jukebox" type="button">&#127926; Jukebox</button>
+        <hr class="w95-start-separator">
+        <button class="w95-start-item" data-app="wallpaper" type="button">&#127912; Personalisation &rsaquo; Wallpaper</button>
     </div>
 
 <div id="w95-win-garden" class="w95-window is-hidden">
@@ -878,6 +880,25 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Desktop Properties (Wallpaper) window -->
+<div id="w95-win-wallpaper" class="w95-window is-hidden" style="left:120px;top:90px;width:360px;">
+  <div class="w95-titlebar" id="w95-wallpaper-handle">
+    <div class="w95-title">Desktop Properties</div>
+    <div class="w95-controls">
+      <button class="w95-control w95-control-close" id="w95-wallpaper-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body">
+    <div class="wallpaper-section-label">Wallpaper</div>
+    <div id="wallpaper-preview" class="wallpaper-preview"></div>
+    <div id="wallpaper-grid" class="wallpaper-grid"></div>
+    <div class="w95-row" style="justify-content:flex-end;gap:6px;margin-top:10px;">
+      <button class="w95-btn" id="wallpaper-ok" type="button">OK</button>
+      <button class="w95-btn" id="wallpaper-cancel" type="button">Cancel</button>
     </div>
   </div>
 </div>

@@ -268,5 +268,53 @@ app.post('/api/achievements/unlock', (req, res) => {
     res.json({ unlocked: !alreadyUnlocked, id });
 });
 
+// ===== Wallpaper API =====
+
+const WALLPAPERS_FILE = path.join(__dirname, 'wallpapers.json');
+const VALID_WALLPAPER_IDS = new Set([
+    'teal', 'purple', 'sunset', 'night', 'forest', 'blush', 'blueprint', 'candy',
+]);
+
+function loadWallpapersStore() {
+    try {
+        if (fs.existsSync(WALLPAPERS_FILE)) {
+            return JSON.parse(fs.readFileSync(WALLPAPERS_FILE, 'utf8'));
+        }
+    } catch (e) { console.error('Failed to read wallpapers store:', e.message); }
+    return {};
+}
+
+function saveWallpapersStore(store) {
+    try {
+        fs.writeFileSync(WALLPAPERS_FILE, JSON.stringify(store, null, 2));
+    } catch (e) { console.error('Failed to save wallpapers store:', e.message); }
+}
+
+// { [displayName]: wallpaperId }
+let wallpapersStore = loadWallpapersStore();
+
+// GET /api/wallpaper?user=El
+app.get('/api/wallpaper', (req, res) => {
+    const user = req.query.user;
+    if (!user || typeof user !== 'string' || user.length > 64) {
+        return res.status(400).json({ error: 'invalid user' });
+    }
+    res.json({ wallpaperId: wallpapersStore[user] || null });
+});
+
+// POST /api/wallpaper  body: { user, wallpaperId }
+app.post('/api/wallpaper', (req, res) => {
+    const { user, wallpaperId } = req.body || {};
+    if (!user || typeof user !== 'string' || user.length > 64) {
+        return res.status(400).json({ error: 'invalid user' });
+    }
+    if (!wallpaperId || !VALID_WALLPAPER_IDS.has(wallpaperId)) {
+        return res.status(400).json({ error: 'invalid wallpaperId' });
+    }
+    wallpapersStore[user] = wallpaperId;
+    saveWallpapersStore(wallpapersStore);
+    res.json({ ok: true, wallpaperId });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Personal Feed running on http://localhost:${PORT}`));

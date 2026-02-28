@@ -4527,3 +4527,79 @@ body.dark-mode .garden-talk-btn:hover{
 /* Body no longer needs top padding since feed is inside a window */
 body { padding: 0 !important; }
 
+
+/* ============================================================
+   Wallpaper / Desktop Properties
+   ============================================================ */
+.w95-start-separator {
+  margin: 3px 6px;
+  border: none;
+  border-top: 1px solid #808080;
+  border-bottom: 1px solid #fff;
+}
+
+.wallpaper-section-label {
+  font: bold 11px Tahoma, Verdana, Arial, sans-serif;
+  margin-bottom: 6px;
+}
+
+.wallpaper-preview {
+  width: 100%;
+  height: 80px;
+  border-top: 2px solid #404040;
+  border-left: 2px solid #404040;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.wallpaper-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.wallpaper-swatch {
+  aspect-ratio: 16 / 9;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+
+.wallpaper-swatch:hover {
+  border-top: 2px solid #000080;
+  border-left: 2px solid #000080;
+  border-right: 2px solid #000080;
+  border-bottom: 2px solid #000080;
+}
+
+.wallpaper-swatch.selected {
+  border-top: 2px solid #000080;
+  border-left: 2px solid #000080;
+  border-right: 2px solid #000080;
+  border-bottom: 2px solid #000080;
+  outline: 2px dotted #000080;
+  outline-offset: 1px;
+}
+
+.wallpaper-swatch-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font: 9px Tahoma, Verdana, Arial, sans-serif;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  text-align: center;
+  padding: 1px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
