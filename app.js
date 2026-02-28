@@ -6746,6 +6746,8 @@ function initPixelCat() {
     // ---- Firebase refs ----
     const catFbRef    = ref(database, 'desktop/cat');
     const catEventRef = ref(database, 'desktop/catEvent');
+    const giftsRef    = ref(database, 'desktop/gifts');
+    const giftMetaRef = ref(database, 'desktop/giftMeta');
 
     // ---- Emote overlay (positioned to track the cat canvas) ----
     const emoteEl = document.createElement('div');
@@ -6778,6 +6780,15 @@ function initPixelCat() {
     let drvWakeStart     = 0; // ms timestamp when wakeup state began (driver)
     let drvPerchTarget   = null; // { winEl, side } – local-only, never synced to Firebase
     let drvPerchEnd      = 0;   // ms timestamp when perching ends
+
+    // ---- Gift drop driver state ----
+    const GIFT_MIN_INTERVAL_MS = 90 * 60 * 1000;  // 90 min minimum between gifts
+    const GIFT_CHECK_MS        =  3 * 60 * 1000;  // re-fetch giftMeta every 3 min
+    const GIFT_ROLL_MS         =  5 * 60 * 1000;  // roll dice at most every 5 min
+    const GIFT_ROLL_CHANCE     = 0.40;             // 40 % per roll → ~12 min expected wait
+    let lastGiftCheckAt = 0;
+    let lastGiftRollAt  = 0;
+    let giftDropArmed   = false; // true once interval has elapsed
 
     // Tuning constants
     const WALK_SPEED  = 0.000085; // normalised x per ms ≈ full-width crossing ~12 s
@@ -6854,6 +6865,112 @@ function initPixelCat() {
             drvNextAct = Date.now() + 4000 + Math.random() * 5000;
         }
     }
+
+    // ---- Cat gift system ----
+    const GIFT_TYPES = [
+        { id: 'fish',    icon: '🐟', label: 'a tiny fish',      msg: 'The cat brought you a fish!' },
+        { id: 'yarn',    icon: '🧶', label: 'a ball of yarn',   msg: 'The cat left some yarn to play with!' },
+        { id: 'leaf',    icon: '🍃', label: 'a lucky leaf',     msg: 'The cat found a leaf for you!' },
+        { id: 'feather', icon: '🪶', label: 'a soft feather',   msg: 'The cat dropped a feather!' },
+        { id: 'gem',     icon: '💎', label: 'a shiny gem',      msg: 'The cat left a gem for you!' },
+        { id: 'acorn',   icon: '🌰', label: 'an acorn',         msg: 'The cat brought you an acorn!' },
+        { id: 'pebble',  icon: '🪨', label: 'a smooth pebble',  msg: 'The cat found a pebble for you!' },
+        { id: 'flower',  icon: '🌸', label: 'a little flower',  msg: 'The cat picked a flower for you!' },
+    ];
+
+    // Check Firebase to see if a gift can be dropped yet
+    function checkGiftEligibility() {
+        get(giftMetaRef).then(snap => {
+            const meta = snap.val() || {};
+            giftDropArmed = (Date.now() - (meta.lastGiftAt || 0)) >= GIFT_MIN_INTERVAL_MS;
+        }).catch(() => {});
+    }
+
+    // Driver drops a gift at the cat's current position
+    function dropGift() {
+        if (!isDriver || !currentUser || !giftDropArmed) return;
+        giftDropArmed = false; // prevent double-drop before Firebase confirms
+        const type = GIFT_TYPES[Math.floor(Math.random() * GIFT_TYPES.length)];
+        push(giftsRef, {
+            type:      type.id,
+            x:         drvX,
+            droppedAt: Date.now(),
+            collected: false,
+        }).then(() => {
+            set(giftMetaRef, { lastGiftAt: Date.now() }).catch(() => {});
+            fireCatEvent('sparkle');
+        }).catch(() => { giftDropArmed = true; }); // re-arm on failure
+    }
+
+    // Render / remove gift elements based on Firebase state
+    const renderedGifts = {}; // giftId → DOM element
+    const GIFT_EXPIRY_MS = 24 * 60 * 60 * 1000; // expire uncollected gifts after 24 h
+
+    onValue(giftsRef, snap => {
+        const gifts = snap.val() || {};
+        // Remove elements for gifts that were collected or deleted
+        Object.keys(renderedGifts).forEach(id => {
+            if (!gifts[id] || gifts[id].collected) {
+                renderedGifts[id].remove();
+                delete renderedGifts[id];
+            }
+        });
+        // Render new uncollected gifts; driver silently removes expired ones
+        Object.entries(gifts).forEach(([id, gift]) => {
+            if (gift.collected) return;
+            if (Date.now() - (gift.droppedAt || 0) > GIFT_EXPIRY_MS) {
+                if (isDriver) remove(ref(database, `desktop/gifts/${id}`)).catch(() => {});
+                return;
+            }
+            if (renderedGifts[id]) return; // already rendered
+            const type = GIFT_TYPES.find(t => t.id === gift.type) || GIFT_TYPES[0];
+            const el = document.createElement('div');
+            el.className = 'cat-gift';
+            el.textContent = type.icon;
+            el.title = `Click to collect ${type.label}!`;
+            el.style.left = `${Math.round(gift.x * (window.innerWidth - 40))}px`;
+            el.addEventListener('click', () => openGiftPopup(id, type));
+            document.body.appendChild(el);
+            renderedGifts[id] = el;
+        });
+    });
+
+    // Gift popup elements
+    const giftWin     = document.getElementById('w95-win-gift');
+    const giftIconEl  = document.getElementById('gift-popup-icon');
+    const giftLabelEl = document.getElementById('gift-popup-label');
+    const giftMsgEl   = document.getElementById('gift-popup-msg');
+    let activeGiftId  = null;
+
+    function openGiftPopup(id, type) {
+        activeGiftId = id;
+        giftIconEl.textContent  = type.icon;
+        giftLabelEl.textContent = type.label;
+        giftMsgEl.textContent   = type.msg;
+        giftWin.style.left = `${Math.round((window.innerWidth  - 240) / 2)}px`;
+        giftWin.style.top  = `${Math.round((window.innerHeight - 180) / 2 - 30)}px`;
+        giftWin.style.zIndex = ++w95TopZ;
+        giftWin.classList.remove('is-hidden');
+    }
+
+    document.getElementById('w95-gift-close').addEventListener('click', () => {
+        giftWin.classList.add('is-hidden');
+        activeGiftId = null;
+    });
+
+    document.getElementById('gift-collect-btn').addEventListener('click', () => {
+        if (!activeGiftId || !currentUser) return;
+        const id = activeGiftId;
+        activeGiftId = null;
+        giftWin.classList.add('is-hidden');
+        update(ref(database, `desktop/gifts/${id}`), {
+            collected:   true,
+            collectedAt: Date.now(),
+            collectedBy: currentUser,
+        }).then(() => fireCatEvent('cheer')).catch(() => {});
+    });
+
+    makeDraggable(giftWin, document.getElementById('w95-gift-handle'), 'w95-win-gift');
 
     // ---- Perch helpers (local-only, no Firebase involvement) ----
     function getPerchableWindows() {
@@ -6993,6 +7110,16 @@ function initPixelCat() {
                 drvState  = 'sit';
                 drvSitEnd = now + SIT_MIN + Math.random() * (SIT_MAX - SIT_MIN);
             }
+        }
+
+        // ---- Gift drop (daytime only, driver only) ----
+        if (now - lastGiftCheckAt > GIFT_CHECK_MS) {
+            lastGiftCheckAt = now;
+            checkGiftEligibility();
+        }
+        if (giftDropArmed && drvState === 'walk' && (now - lastGiftRollAt) > GIFT_ROLL_MS) {
+            lastGiftRollAt = now;
+            if (Math.random() < GIFT_ROLL_CHANCE) dropGift();
         }
 
         // Push to Firebase at low frequency (same rate as before).
