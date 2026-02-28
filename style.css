@@ -3573,7 +3573,7 @@ body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ===== Our Garden ===== */
-#w95-win-garden{width:560px;display:flex;flex-direction:column;}
+#w95-win-garden{width:720px;display:flex;flex-direction:column;}
 .garden-top{display:flex;align-items:flex-start;gap:12px;}
 .garden-info{width:120px;flex-shrink:0;}
 .garden-info .garden-plant-row{flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:4px;}
@@ -3699,11 +3699,12 @@ body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
 }
 .garden-tile-col{
   flex:1;
+  min-width:62px;
   display:flex;
   flex-direction:column;
   align-items:center;
   position:relative;
-  padding:4px 6px 4px;
+  padding:4px 4px 4px;
   /* Subtle slot divider — thin dark line between plants */
   border-right:1px solid rgba(0,0,0,0.18);
 }
@@ -3745,14 +3746,16 @@ body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
 .garden-water-btn--shake{animation:garden-water-shake .35s ease;}
 .garden-water-btn--done,.garden-water-btn--done:disabled{color:#006600;opacity:0.6;cursor:default;}
 /* --done applied at 3/3 (fully watered); opacity gives subtle faded look; :disabled selector keeps colour despite browser greying */
-/* Per-tile plant row: tiles 1+ don't have a plant-row; kept for forward-compat */
-.garden-tile-col .garden-plant-row{
-  display:flex;flex-direction:column;align-items:flex-start;gap:2px;
-  width:100%;margin-bottom:0;overflow:visible;
+/* Tile action buttons — stacked vertically to fit narrow slots */
+.garden-tile-actions{
+  display:flex;flex-direction:column;align-items:stretch;gap:2px;
+  width:100%;margin-top:2px;
 }
-.garden-tile-col .w95-select{
-  width:100%;font-size:10px;
+.garden-tile-actions .w95-btn{
+  font-size:10px;padding:1px 3px;width:100%;box-sizing:border-box;
 }
+/* Plant button: empty-slot CTA */
+.garden-plant-btn{font-size:10px;}
 /* Event overlays inside .garden-soil-tile */
 .garden-tile-events{
   position:absolute;top:4px;right:4px;

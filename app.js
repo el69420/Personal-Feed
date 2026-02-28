@@ -3864,6 +3864,12 @@ const w95Apps = {};
     { streak: 14, id: 'twocolourbloom' },
   ];
   const STAGE_LABELS    = { seed: 'Seed', sprout: 'Sprout', bloom: 'Bloom', wilted: 'Wilted' };
+  const TOTAL_SLOTS = 8;
+  // Bloom count thresholds to unlock each slot (index = slot number)
+  const TILE_UNLOCK_THRESHOLDS = [0, 1, 5, 10, 15, 20, 25, 30];
+
+  // Tracks which flower type to plant into an empty slot (set by global dropdown, never touches planted slots)
+  let selectedFlower = 'sunflower';
 
   // ---- calculateStage: unchanged ----
   function calculateStage(state) {
@@ -3909,7 +3915,7 @@ const w95Apps = {};
   // ---- Per-tile rendering ----
   // Ensures tile column DOM nodes exist in the row (called once at startup)
   function ensureTileColumns() {
-    for (let n = 0; n < 3; n++) {
+    for (let n = 0; n < TOTAL_SLOTS; n++) {
       if (!tilesRowEl.querySelector(`[data-tile="${n}"]`)) {
         const col = document.createElement('div');
         col.dataset.tile = String(n);
@@ -3918,7 +3924,7 @@ const w95Apps = {};
     }
   }
 
-  function renderTile(n, tileData, unlockedPlants, isUnlocked) {
+  function renderTile(n, tileData, isUnlocked) {
     const col = tilesRowEl.querySelector(`[data-tile="${n}"]`);
     if (!col) return;
 
@@ -3932,24 +3938,38 @@ const w95Apps = {};
       return;
     }
 
-    // ---- Unlocked: build structure once, then update fields ----
-    if (!col.querySelector('.garden-plant-el')) {
+    // ---- Determine occupied vs empty and rebuild HTML if state changed ----
+    const isOccupied = !!tileData;
+    if (col.dataset.occupied !== String(isOccupied)) {
       col.className = 'garden-tile-col';
-      col.innerHTML =
-        `<div class="garden-soil-tile">` +
-          `<div class="garden-plant-el"></div>` +
-          `<div class="garden-tile-events"></div>` +
-        `</div>` +
-        `<div class="garden-tile-status-el"></div>` +
-        `<div class="garden-tile-actions">` +
-          `<button class="w95-btn garden-water-btn" data-tile="${n}">Water</button>` +
-          `<button class="w95-btn garden-talk-btn" data-tile="${n}">Talk</button>` +
-        `</div>`;
+      col.dataset.occupied = String(isOccupied);
+      if (isOccupied) {
+        col.innerHTML =
+          `<div class="garden-soil-tile">` +
+            `<div class="garden-plant-el"></div>` +
+            `<div class="garden-tile-events"></div>` +
+          `</div>` +
+          `<div class="garden-tile-status-el"></div>` +
+          `<div class="garden-tile-actions">` +
+            `<button class="w95-btn garden-water-btn" data-tile="${n}">Water</button>` +
+            `<button class="w95-btn garden-talk-btn" data-tile="${n}">Talk</button>` +
+          `</div>`;
+      } else {
+        col.innerHTML =
+          `<div class="garden-soil-tile">` +
+            `<div class="garden-plant garden-plant--seed"></div>` +
+          `</div>` +
+          `<div class="garden-tile-actions">` +
+            `<button class="w95-btn garden-plant-btn" data-tile="${n}">Plant</button>` +
+          `</div>`;
+      }
     }
 
-    col.classList.toggle('garden-tile-col--empty', !tileData);
-    const stage     = tileData ? calculateStage(tileData) : 'seed';
-    const plantType = tileData?.selectedPlant || 'sunflower';
+    if (!isOccupied) return; // empty slot rendering complete
+
+    // ---- Occupied slot: update visuals ----
+    const plantType = tileData.flowerType || tileData.selectedPlant || 'sunflower';
+    const stage     = calculateStage(tileData);
 
     // Plant visual
     const plantDiv = col.querySelector('.garden-plant-el');
@@ -3963,73 +3983,20 @@ const w95Apps = {};
       plantDiv.dataset.prevStage = stage;
     }
 
-    // Plant selector (create once, update options only when count changes)
-    // Tile 0's plant-row lives in #garden-info (not inside the tile column)
-    // so that its height doesn't disturb the soil-tile grid alignment.
-    const plantRowEl = n === 0
-      ? document.getElementById('gpr-0')
-      : col.querySelector(`#gpr-${n}`);
-    const effectiveUnlocks = unlockedPlants.filter(id => id !== 'sunflower');
-    if (plantRowEl) {
-      if (effectiveUnlocks.length === 0) {
-        if (!plantRowEl.querySelector('.garden-label')) {
-          plantRowEl.innerHTML =
-            `<span class="garden-label">Plant: ${PLANT_LABELS[plantType] || PLANT_LABELS.sunflower}</span>` +
-            `<div class="garden-help">Water daily to unlock more</div>`;
-        }
-      } else {
-        let sel = plantRowEl.querySelector('select');
-        if (!sel) {
-          plantRowEl.innerHTML =
-            `<label for="gps-${n}" class="garden-label">Plant:</label>` +
-            `<select id="gps-${n}" class="w95-select"></select>`;
-          sel = plantRowEl.querySelector('select');
-          sel.onchange = async () => {
-            const chosen = sel.value;
-            const snap = await get(gardenRef);
-            const st   = snap.val();
-            if (!st) return;
-            const stUnlocked = st.unlockedPlants ?? [];
-            const allowedPlants = ['sunflower', ...stUnlocked.filter(id => id !== 'sunflower')];
-            if (!allowedPlants.includes(chosen)) {
-              showToast("That plant isn't unlocked yet");
-              sel.value = st.tiles?.[n]?.selectedPlant ?? sel.options[0]?.value ?? 'sunflower';
-              return;
-            }
-            await update(gardenRef, { [`tiles/${n}/selectedPlant`]: chosen });
-          };
-        }
-        // Rebuild options only when the list has changed (avoids dismissing open dropdown)
-        const expectedCount = 1 + effectiveUnlocks.length;
-        if (sel.options.length !== expectedCount) {
-          sel.innerHTML = `<option value="sunflower">${PLANT_LABELS.sunflower}</option>`;
-          for (const id of unlockedPlants) {
-            if (id === 'sunflower') continue;
-            if (PLANT_LABELS[id]) {
-              const opt = document.createElement('option');
-              opt.value = id;
-              opt.textContent = PLANT_LABELS[id];
-              sel.appendChild(opt);
-            }
-          }
-        }
-        sel.value = plantType;
-      }
-    }
-
-    // Tile status (stage + watered time)
+    // Tile status: flower name + stage + watered time
     const statusDiv = col.querySelector('.garden-tile-status-el');
-    if (statusDiv && tileData) {
+    if (statusDiv) {
       const wateredAgo = tileData.lastWatered
         ? Math.round((Date.now() - tileData.lastWatered) / MS_HOUR) : null;
       const wateredText = wateredAgo === null ? 'never'
         : wateredAgo === 0 ? 'just now' : `${wateredAgo}h ago`;
-      statusDiv.textContent = `${STAGE_LABELS[stage] || stage} · ${wateredText}`;
+      statusDiv.textContent =
+        `${PLANT_LABELS[plantType] || plantType} · ${STAGE_LABELS[stage] || stage} · ${wateredText}`;
     }
 
     // Water button: reflect daily water count (per-user limit: 3/day)
     const waterBtnEl = col.querySelector('.garden-water-btn');
-    if (waterBtnEl && tileData) {
+    if (waterBtnEl) {
       const todayCount   = dailyWaterCounts[localDateStr()] || 0;
       const limitReached = todayCount >= 3;
       const WATER_FLAVOUR = [
@@ -4054,10 +4021,9 @@ const w95Apps = {};
 
     // Event overlays — stored events from Firebase plus client-computed mushroom
     const eventsDiv = col.querySelector('.garden-tile-events');
-    if (eventsDiv && tileData) {
+    if (eventsDiv) {
       const stored    = Array.isArray(tileData.events) ? tileData.events : [];
       const allEvents = [...stored];
-      // Mushroom: computed client-side — visible while wilted 7+ days, no extra storage needed
       if (stage === 'wilted' && !allEvents.includes('mushroom')) {
         const wiltedSince = tileData.lastWatered
           ? tileData.lastWatered + 48 * MS_HOUR
@@ -4072,15 +4038,60 @@ const w95Apps = {};
     }
   }
 
-  // ---- renderGarden: drives the 3 tiles + streak rows ----
+  // ---- renderPlantSelector: global dropdown in the info panel for choosing which flower to plant ----
+  function renderPlantSelector(unlockedPlants) {
+    const plantRowEl = document.getElementById('gpr-0');
+    if (!plantRowEl) return;
+    const effectiveUnlocks = unlockedPlants.filter(id => id !== 'sunflower');
+    if (effectiveUnlocks.length === 0) {
+      if (!plantRowEl.querySelector('.garden-label')) {
+        plantRowEl.innerHTML =
+          `<span class="garden-label">Plant: ${PLANT_LABELS.sunflower}</span>` +
+          `<div class="garden-help">Water daily to unlock more</div>`;
+      }
+      selectedFlower = 'sunflower';
+    } else {
+      let sel = plantRowEl.querySelector('select');
+      if (!sel) {
+        plantRowEl.innerHTML =
+          `<label for="gps-plant" class="garden-label">Plant:</label>` +
+          `<select id="gps-plant" class="w95-select"></select>`;
+        sel = plantRowEl.querySelector('select');
+        sel.onchange = () => { selectedFlower = sel.value; };
+      }
+      // Rebuild options only when the list changes (avoids dismissing open dropdown)
+      const expectedCount = 1 + effectiveUnlocks.length;
+      if (sel.options.length !== expectedCount) {
+        sel.innerHTML = `<option value="sunflower">${PLANT_LABELS.sunflower}</option>`;
+        for (const id of unlockedPlants) {
+          if (id === 'sunflower') continue;
+          if (PLANT_LABELS[id]) {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = PLANT_LABELS[id];
+            sel.appendChild(opt);
+          }
+        }
+      }
+      // Keep dropdown in sync with selectedFlower (without overriding user's in-progress choice)
+      if (!Array.from(sel.options).some(o => o.value === selectedFlower)) {
+        selectedFlower = 'sunflower';
+      }
+      sel.value = selectedFlower;
+    }
+  }
+
+  // ---- renderGarden: drives the 8 slots + streak rows ----
   function renderGarden(state) {
     if (!state) return;
     const tiles         = state.tiles || {};
     const unlockedPlants = Array.isArray(state.unlockedPlants) ? state.unlockedPlants : [];
     const unlockedTiles = state.unlockedTiles || 1;
 
-    for (let n = 0; n < 3; n++) {
-      renderTile(n, tiles[String(n)] || null, unlockedPlants, n < unlockedTiles);
+    renderPlantSelector(unlockedPlants);
+
+    for (let n = 0; n < TOTAL_SLOTS; n++) {
+      renderTile(n, tiles[String(n)] || null, n < unlockedTiles);
     }
 
     // Individual streak (based on tile 0's wilt state for the 0-display rule)
@@ -4136,30 +4147,40 @@ const w95Apps = {};
   // ---- Initialise / migrate ----
   onValue(gardenRef, (snap) => {
     if (!snap.exists()) {
+      // New garden: all slots start empty; users plant explicitly via the Plant button
       set(gardenRef, {
         wateringStreak: 0, lastStreakDay:  null,
         unlockedPlants: [],
         sharedStreak:   0, lastSharedDay:  null, wateredByDay: {},
         totalBlooms: 0, unlockedTiles: 1,
         lastWateredByUser: {},
-        tiles: { '0': { plantedAt: Date.now(), lastWatered: null, selectedPlant: 'sunflower', events: [] } },
+        tiles: {},
       });
     } else {
       const st = snap.val();
+      const updates = {};
       // Migrate: existing flat state (no tiles sub-object) → tiles structure
       if (!st.tiles) {
-        update(gardenRef, {
-          totalBlooms:       0,
-          unlockedTiles:     1,
-          lastWateredByUser: {},
-          'tiles/0': {
-            plantedAt:     st.plantedAt     || Date.now(),
-            lastWatered:   st.lastWatered   || null,
-            selectedPlant: st.selectedPlant || 'sunflower',
-            events:        [],
-          },
-        });
+        updates['totalBlooms']       = 0;
+        updates['unlockedTiles']     = 1;
+        updates['lastWateredByUser'] = {};
+        updates['tiles/0'] = {
+          slotId:      0,
+          flowerType:  st.selectedPlant || 'sunflower',
+          plantedAt:   st.plantedAt     || Date.now(),
+          lastWatered: st.lastWatered   || null,
+          events:      [],
+        };
+      } else {
+        // Migrate: tiles that have selectedPlant but no flowerType
+        for (const [key, tile] of Object.entries(st.tiles || {})) {
+          if (tile && tile.selectedPlant && !tile.flowerType) {
+            updates[`tiles/${key}/flowerType`] = tile.selectedPlant;
+            updates[`tiles/${key}/slotId`]     = Number(key);
+          }
+        }
       }
+      if (Object.keys(updates).length > 0) update(gardenRef, updates);
     }
   }, { onlyOnce: true });
 
@@ -4262,7 +4283,8 @@ const w95Apps = {};
 
         const txTiles = currentState.tiles || {};
         const tileStr = String(n);
-        const txTile  = txTiles[tileStr] || { plantedAt: now, lastWatered: null, selectedPlant: 'sunflower', events: [] };
+        const txTile  = txTiles[tileStr];
+        if (!txTile) return currentState; // slot is empty — nothing to water
 
         // ---- Individual streak ----
         const lastStreakDay  = currentState.lastStreakDay  ?? null;
@@ -4356,7 +4378,9 @@ const w95Apps = {};
         const newStage       = calculateStage({ ...txTile, lastWatered: now });
         const isNewBloom     = oldStage !== 'bloom' && newStage === 'bloom';
         const newTotalBlooms = (currentState.totalBlooms || 0) + (isNewBloom ? 1 : 0);
-        const newUnlockedTiles = newTotalBlooms >= 5 ? 3 : newTotalBlooms >= 1 ? 2 : 1;
+        const newUnlockedTiles = TILE_UNLOCK_THRESHOLDS.reduce(
+          (acc, t) => newTotalBlooms >= t ? acc + 1 : acc, 0
+        );
 
         return {
           ...currentState,
@@ -4431,11 +4455,52 @@ const w95Apps = {};
     }
   }
 
+  // ---- Plant an empty slot with the currently selected flower ----
+  async function plantSlot(n) {
+    const snap = await get(gardenRef);
+    const st   = snap.val();
+    if (!st) return;
+    if (st.tiles?.[String(n)]) {
+      showToast('This slot already has a plant');
+      return;
+    }
+    const unlockedTiles = st.unlockedTiles || 1;
+    if (n >= unlockedTiles) {
+      showToast('This slot is locked');
+      return;
+    }
+    const allowed = ['sunflower', ...(st.unlockedPlants ?? [])];
+    if (!allowed.includes(selectedFlower)) {
+      showToast("That plant isn't unlocked yet");
+      return;
+    }
+    await update(gardenRef, {
+      [`tiles/${n}`]: {
+        slotId:      n,
+        flowerType:  selectedFlower,
+        plantedAt:   Date.now(),
+        lastWatered: null,
+        events:      [],
+      },
+    });
+    showToast(`Planted ${PLANT_LABELS[selectedFlower] || selectedFlower}!`);
+    sparkSound('post');
+  }
+
   // Event delegation — one listener on the tiles row handles all water buttons
   tilesRowEl.addEventListener('click', async (e) => {
     const btn = e.target.closest('.garden-water-btn');
     if (!btn || btn.disabled) return;
     await waterTile(Number(btn.dataset.tile));
+  });
+
+  // Plant button delegation
+  tilesRowEl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.garden-plant-btn');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    await plantSlot(Number(btn.dataset.tile));
+    btn.disabled = false;
   });
 
   // Talk button delegation
