@@ -124,6 +124,7 @@ let searchQuery = '';
 let allPosts = {};
 let allRecycleBin = {};
 let currentUser = null;
+let currentUserUid = null;
 let editState = null;
 
 
@@ -553,7 +554,7 @@ function login(displayName, email) {
     activitySeenTs = Number(localStorage.getItem(`activitySeenTs-${displayName}`) || String(Date.now() - 86400000));
     updateNewCount();
     loadPosts();
-    loadUserWallpaper(displayName);
+    loadUserWallpaper();
     setupTypingCleanup();
     setupPresence();
     startNowListening();
@@ -1073,6 +1074,7 @@ onAuthStateChanged(auth, (firebaseUser) => {
     if (!firebaseUser) {
         // Signed out — reset and show login
         currentUser = null;
+        currentUserUid = null;
         achievementsBackfilled = false;
         localStorage.removeItem('currentUser');
         document.getElementById('loginOverlay').style.display = 'flex';
@@ -1093,6 +1095,7 @@ onAuthStateChanged(auth, (firebaseUser) => {
     }
 
     // Authorised — start DB listeners (once) then load the feed
+    currentUserUid = firebaseUser.uid;
     setupDBListeners();
     login(displayName, email);
 });
@@ -6530,13 +6533,12 @@ function renderRecycleBin() {
     });
 })();
 
-// ===== Wallpaper: load from server on login =====
-async function loadUserWallpaper(user) {
+// ===== Wallpaper: load from Firebase on login =====
+async function loadUserWallpaper() {
+    if (!currentUserUid) { applyWallpaper(DEFAULT_WALLPAPER_ID); return; }
     try {
-        const r = await fetch(`${API_BASE}/api/wallpaper?user=${encodeURIComponent(user)}`);
-        if (!r.ok) throw new Error('fetch failed');
-        const data = await r.json();
-        applyWallpaper(data.wallpaperId || DEFAULT_WALLPAPER_ID);
+        const snap = await get(ref(database, `users/${currentUserUid}/settings/wallpaper`));
+        applyWallpaper(snap.exists() ? snap.val() : DEFAULT_WALLPAPER_ID);
     } catch (_) {
         applyWallpaper(DEFAULT_WALLPAPER_ID);
     }
@@ -6610,13 +6612,9 @@ async function loadUserWallpaper(user) {
 
     okBtn.addEventListener('click', async () => {
         hide();
-        if (!currentUser) return;
+        if (!currentUserUid) return;
         try {
-            await fetch(`${API_BASE}/api/wallpaper`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user: currentUser, wallpaperId: currentWallpaperId }),
-            });
+            await set(ref(database, `users/${currentUserUid}/settings/wallpaper`), currentWallpaperId);
         } catch (_) { /* best-effort */ }
     });
 
