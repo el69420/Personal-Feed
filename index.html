@@ -63,6 +63,10 @@
             <div class="desktop-icon-img" style="font-size:22px;">&#127926;</div>
             <div class="desktop-icon-label">Jukebox.exe</div>
         </div>
+        <div class="w95-desktop-icon" data-app="recycleBin" tabindex="0">
+            <div class="desktop-icon-img">&#128465;</div>
+            <div class="desktop-icon-label">Recycle Bin</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -900,6 +904,21 @@
       <button class="w95-btn" id="wallpaper-ok" type="button">OK</button>
       <button class="w95-btn" id="wallpaper-cancel" type="button">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- Recycle Bin window -->
+<div id="w95-win-recycle" class="w95-window is-hidden" style="left:160px;top:80px;width:420px;height:380px;">
+  <div class="w95-titlebar" id="w95-recycle-handle">
+    <div class="w95-title">&#128465; Recycle Bin</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-recycle-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-recycle-max" type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-recycle-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body recycle-bin-body">
+    <div id="recycle-bin-list"></div>
   </div>
 </div>
 

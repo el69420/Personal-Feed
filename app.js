@@ -14,6 +14,7 @@ const boardItemsRef         = ref(database, 'board_items');
 const boardDeleteRequestsRef = ref(database, 'board_delete_requests');
 const lettersRef    = ref(database, 'letters');
 const linkMetaRef   = ref(database, 'linkMeta');
+const recycleBinRef = ref(database, 'recycleBin');
 
 const API_BASE = ''; // Set to the deployed origin (e.g. 'https://your-api.example.com') for GitHub Pages use
 
@@ -121,6 +122,7 @@ let seenPostIds = new Set();
 let notificationsEnabled = localStorage.getItem('notificationsEnabled') === 'true';
 let searchQuery = '';
 let allPosts = {};
+let allRecycleBin = {};
 let currentUser = null;
 let editState = null;
 
@@ -955,6 +957,11 @@ function setupDBListeners() {
     setupBoardDeleteRequestsListener();
     setupLettersListener();
 
+    onValue(recycleBinRef, (snapshot) => {
+        allRecycleBin = snapshot.val() || {};
+        renderRecycleBin();
+    });
+
     onValue(postsRef, (snapshot) => {
         const newPosts = snapshot.val() || {};
         const sig = dataSig(newPosts);
@@ -1455,8 +1462,16 @@ window.confirmDelete = async function() {
         closeBoardDetail();
         showToast('Board deleted');
     } else if (deleteTarget.type === 'post') {
-        await remove(ref(database, `posts/${deleteTarget.postId}`));
-        showToast('Post deleted');
+        const postToTrash = allPosts[deleteTarget.postId];
+        if (postToTrash) {
+            await set(ref(database, `recycleBin/${deleteTarget.postId}`), {
+                id: deleteTarget.postId,
+                post: postToTrash,
+                deletedAt: Date.now(),
+            });
+            await remove(ref(database, `posts/${deleteTarget.postId}`));
+        }
+        showToast('Post moved to Recycle Bin');
     } else {
         const post = allPosts[deleteTarget.postId];
         if (!post) return;
@@ -6356,6 +6371,118 @@ document.querySelectorAll('.w95-window').forEach(win => {
         win.style.zIndex = ++w95TopZ;
     }, true);
 });
+
+// ===== Recycle Bin =====
+window.restoreFromRecycleBin = async function(itemId) {
+    const item = allRecycleBin[itemId];
+    if (!item) return;
+    await set(ref(database, `posts/${itemId}`), item.post);
+    await remove(ref(database, `recycleBin/${itemId}`));
+    showToast('Post restored');
+};
+
+window.deleteFromRecycleBinPermanently = async function(itemId) {
+    await remove(ref(database, `recycleBin/${itemId}`));
+    showToast('Permanently deleted');
+};
+
+function getRecycleBinPreview(post) {
+    if (!post) return '(empty)';
+    if (post.type === 'text') return (post.heading || post.body || '').slice(0, 80);
+    if (post.type === 'link') return (post.note || post.url || '').slice(0, 80);
+    if (post.type === 'poll') return (post.question || '').slice(0, 80);
+    if (post.type === 'image') return (post.note || '[image]').slice(0, 80);
+    if (post.type === 'recommendation') return (post.title || '').slice(0, 80);
+    return (post.body || post.note || '').slice(0, 80) || '(post)';
+}
+
+function renderRecycleBin() {
+    const list = document.getElementById('recycle-bin-list');
+    if (!list) return;
+    const items = Object.entries(allRecycleBin).sort((a, b) => (b[1].deletedAt || 0) - (a[1].deletedAt || 0));
+    if (items.length === 0) {
+        list.innerHTML = '<div class="recycle-bin-empty">Recycle Bin is empty.</div>';
+        return;
+    }
+    list.innerHTML = items.map(([id, item]) => {
+        const preview = getRecycleBinPreview(item.post);
+        const date = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '?';
+        const previewEscaped = preview.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        return `<div class="recycle-bin-item">
+  <div class="recycle-bin-preview">${previewEscaped || '(no preview)'}</div>
+  <div class="recycle-bin-meta">Deleted ${date}</div>
+  <div class="recycle-bin-actions">
+    <button class="w95-btn" onclick="restoreFromRecycleBin('${id}')">Restore</button>
+    <button class="w95-btn recycle-bin-del-btn" onclick="deleteFromRecycleBinPermanently('${id}')">Delete Permanently</button>
+  </div>
+</div>`;
+    }).join('');
+}
+
+(() => {
+    const win = document.getElementById('w95-win-recycle');
+    if (!win) return;
+
+    const handle   = document.getElementById('w95-recycle-handle');
+    const closeBtn = document.getElementById('w95-recycle-close');
+    const minBtn   = document.getElementById('w95-recycle-min');
+    const maxBtn   = document.getElementById('w95-recycle-max');
+
+    let taskbarBtn = null;
+
+    function show() {
+        if (!taskbarBtn) taskbarBtn = w95Mgr.addTaskbarBtn('w95-win-recycle', 'RECYCLE BIN', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        win.style.zIndex = ++w95TopZ;
+        w95Mgr.setPressed(taskbarBtn, true);
+        renderRecycleBin();
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (taskbarBtn) w95Mgr.setPressed(taskbarBtn, false);
+    }
+
+    function closeWin() {
+        if (w95Mgr.isMaximised('w95-win-recycle')) w95Mgr.toggleMaximise(win, 'w95-win-recycle');
+        win.classList.add('is-hidden');
+        if (taskbarBtn) { taskbarBtn.remove(); taskbarBtn = null; }
+    }
+
+    if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
+    if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-recycle'); };
+    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
+
+    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; }, true);
+
+    w95Apps['recycleBin'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else win.style.zIndex = ++w95TopZ;
+    }};
+
+    // Drag
+    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+    handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button')) return;
+        if (w95Mgr.isMaximised('w95-win-recycle')) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const r = win.getBoundingClientRect();
+        winStartX = r.left; winStartY = r.top;
+        win.style.zIndex = ++w95TopZ;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const taskbarH = 40;
+        const maxX = document.documentElement.clientWidth - win.offsetWidth;
+        const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
+        win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+        win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+})();
 
 // ===== Win95 Start Menu =====
 (() => {

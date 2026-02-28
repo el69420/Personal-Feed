@@ -4606,3 +4606,52 @@ body { padding: 0 !important; }
   text-overflow: ellipsis;
   pointer-events: none;
 }
+
+/* ===== Recycle Bin Window ===== */
+.recycle-bin-body {
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recycle-bin-empty {
+  color: #666;
+  font-size: 12px;
+  text-align: center;
+  padding: 20px 0;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+}
+
+.recycle-bin-item {
+  border: 1px solid #999;
+  background: #fff;
+  padding: 6px 8px;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 11px;
+}
+
+.recycle-bin-preview {
+  font-size: 12px;
+  color: #111;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recycle-bin-meta {
+  font-size: 10px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.recycle-bin-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.recycle-bin-del-btn {
+  color: #990000;
+}
