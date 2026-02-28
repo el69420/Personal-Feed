@@ -6778,6 +6778,8 @@ function initPixelCat() {
     let onlinePres  = {};    // { userName: { state, ts } } from presence/
     let drvWasNightSleep = isNightSleepWindow(); // track sleep-window transitions
     let drvWakeStart     = 0; // ms timestamp when wakeup state began (driver)
+    let drvPerchTarget   = null; // { winEl, side } – local-only, never synced to Firebase
+    let drvPerchEnd      = 0;   // ms timestamp when perching ends
 
     // Tuning constants
     const WALK_SPEED  = 0.000085; // normalised x per ms ≈ full-width crossing ~12 s
@@ -6853,6 +6855,23 @@ function initPixelCat() {
             drvState   = fbState;
             drvNextAct = Date.now() + 4000 + Math.random() * 5000;
         }
+    }
+
+    // ---- Perch helpers (local-only, no Firebase involvement) ----
+    function getPerchableWindows() {
+        return Array.from(document.querySelectorAll('[id^="w95-win-"]'))
+            .filter(el => !el.classList.contains('is-hidden') &&
+                          !el.classList.contains('is-maximised'));
+    }
+    function calcPerchPos(winEl, side) {
+        const rect = winEl.getBoundingClientRect();
+        const catW = CW * S;  // 40px
+        const catH = CH * S;  // 40px
+        const vw   = window.innerWidth;
+        let px = side === 'left' ? rect.left + 8 : rect.right - catW - 8;
+        px = Math.max(0, Math.min(vw - catW, px));
+        const py = Math.max(0, rect.top - catH);  // cat sits on top of the title bar
+        return { px, py };
     }
 
     // ---- Helpers: London timezone sleep window ----
@@ -6935,10 +6954,19 @@ function initPixelCat() {
             if (drvX >= 1 - EDGE_PAD) { drvX = 1 - EDGE_PAD; drvDir = 'left'; }
             if (drvX <= EDGE_PAD)     { drvX = EDGE_PAD;     drvDir = 'right'; }
             if (now > drvNextAct) {
-                drvState  = 'sit';
-                const sitDur = (SIT_MIN * sitMinMult) + Math.random() * (SIT_MAX - SIT_MIN);
-                drvSitEnd  = now + sitDur;
-                drvNextAct = drvSitEnd + sitGapBase + Math.random() * 5000;
+                const perchWins = getPerchableWindows();
+                if (perchWins.length > 0 && Math.random() < 0.25) {
+                    // Jump up onto a window title bar (local-only)
+                    const targetWin = perchWins[Math.floor(Math.random() * perchWins.length)];
+                    drvPerchTarget = { winEl: targetWin, side: Math.random() < 0.5 ? 'left' : 'right' };
+                    drvPerchEnd    = now + 5000 + Math.random() * 7000; // 5–12 s
+                    drvState       = 'perch';
+                } else {
+                    drvState  = 'sit';
+                    const sitDur = (SIT_MIN * sitMinMult) + Math.random() * (SIT_MAX - SIT_MIN);
+                    drvSitEnd  = now + sitDur;
+                    drvNextAct = drvSitEnd + sitGapBase + Math.random() * 5000;
+                }
             }
 
         } else if (drvState === 'sit') {
@@ -6951,6 +6979,17 @@ function initPixelCat() {
                 }
             }
 
+        } else if (drvState === 'perch') {
+            // Local-only: return to walk when done or if the window disappears/maximises
+            const gone = !drvPerchTarget ||
+                         drvPerchTarget.winEl.classList.contains('is-hidden') ||
+                         drvPerchTarget.winEl.classList.contains('is-maximised');
+            if (gone || now > drvPerchEnd) {
+                drvState       = 'walk';
+                drvPerchTarget = null;
+                drvNextAct     = now + 2000 + Math.random() * 3000;
+            }
+
         } else { // random sleep (only reachable outside night window)
             if (now > drvSitEnd) {
                 drvState  = 'sit';
@@ -6958,11 +6997,12 @@ function initPixelCat() {
             }
         }
 
-        // Push to Firebase at low frequency (same rate as before)
+        // Push to Firebase at low frequency (same rate as before).
+        // 'perch' is local-only: remote clients see 'sit' so they don't know an unknown state.
         if (now - lastFbWrite > FB_INTERVAL) {
             lastFbWrite = now;
             set(catFbRef, {
-                x: drvX, dir: drvDir, state: drvState,
+                x: drvX, dir: drvDir, state: drvState === 'perch' ? 'sit' : drvState,
                 updatedAt: now, driverUserId: currentUser,
             }).catch(() => {});
         }
@@ -7020,10 +7060,32 @@ function initPixelCat() {
         const targetX = isDriver ? drvX : remoteTargetX(now);
         localX += (targetX - localX) * Math.min(1, LERP_K * dt);
 
-        // Position the canvas along the bottom of the viewport
+        // Position the canvas — either perching on a window title bar or walking on the ground
         const vw = window.innerWidth;
-        canvas.style.left = `${Math.round(localX * (vw - CW * S))}px`;
-        emoteEl.style.left = canvas.style.left; // keep emote overlay aligned with the cat
+        const isPerching = isDriver && drvState === 'perch' && drvPerchTarget &&
+                           !drvPerchTarget.winEl.classList.contains('is-hidden');
+        if (isPerching) {
+            const { px, py } = calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
+            canvas.style.left   = px + 'px';
+            canvas.style.top    = py + 'px';
+            canvas.style.bottom = 'auto';
+            // Render above the target window without blocking pointer events
+            const winZ = parseInt(drvPerchTarget.winEl.style.zIndex) || 2000;
+            canvas.style.zIndex = (winZ + 1) + '';
+            emoteEl.style.left   = px + 'px';
+            emoteEl.style.top    = (py + CH * S) + 'px';  // particles float up from cat's feet
+            emoteEl.style.bottom = 'auto';
+            emoteEl.style.zIndex = (winZ + 2) + '';
+        } else {
+            canvas.style.left   = `${Math.round(localX * (vw - CW * S))}px`;
+            canvas.style.top    = 'auto';
+            canvas.style.bottom = '44px';
+            canvas.style.zIndex = '150';
+            emoteEl.style.left   = canvas.style.left;
+            emoteEl.style.top    = 'auto';
+            emoteEl.style.bottom = '44px';
+            emoteEl.style.zIndex = '151';
+        }
 
         // Choose sprite frame
         // For wakeup, cycle: sleep (0-1 s) → wakeup half-open (1-2 s) → sit (2-3 s)
@@ -7031,11 +7093,11 @@ function initPixelCat() {
             ? (isDriver ? now - drvWakeStart : now - wakeupStartedAt)
             : 0;
         let frame;
-        if (now < surpriseEnd)           frame = 'surprise';
-        else if (catState === 'wakeup')  frame = wakeElapsed < 1000 ? 'sleep' : wakeElapsed < 2000 ? 'wakeup' : 'sit';
-        else if (catState === 'sit')     frame = 'sit';
-        else if (catState === 'sleep')   frame = 'sleep';
-        else                             frame = animIdx === 0 ? 'walkA' : 'walkB';
+        if (now < surpriseEnd)                        frame = 'surprise';
+        else if (catState === 'wakeup')               frame = wakeElapsed < 1000 ? 'sleep' : wakeElapsed < 2000 ? 'wakeup' : 'sit';
+        else if (catState === 'sit' || catState === 'perch') frame = 'sit';
+        else if (catState === 'sleep')                frame = 'sleep';
+        else                                          frame = animIdx === 0 ? 'walkA' : 'walkB';
 
         drawSprite(frame, catDir === 'left');
         requestAnimationFrame(loop);
