@@ -1042,7 +1042,7 @@ function setupDBListeners() {
 
         // Trigger animations for newly received command messages (both users see them)
         const XP_VISUAL_CMDS = new Set([
-            'sparkle', 'glow', 'pulse', 'tint', 'bloom',
+            'sparkle', 'glow', 'pulse', 'tint', 'warm', 'bloom',
             'rain', 'snow', 'comet', 'fireflies', 'constellation',
         ]);
         const newAnimCmds = messages.filter(m =>
@@ -2901,6 +2901,7 @@ const XP_CHAT_COMMANDS = [
     {
         name: 'tint', requiredXP: 50,
         description: 'Tint the chat warm|cool|rose for ~20s',
+        args: 'warm|cool|rose',
         handler: (args) => {
             const VARIANTS = ['warm', 'cool', 'rose'];
             const v = VARIANTS.includes(args[0]) ? args[0] : 'warm';
@@ -2908,10 +2909,21 @@ const XP_CHAT_COMMANDS = [
             return { command: 'tint', tintVariant: v, text: `${LABELS[v]} — ${currentUser} tints the chat` };
         },
     },
+    {
+        name: 'warm', requiredXP: 50,
+        description: 'Apply a warm tint to the chat (0–100 intensity)',
+        args: '<0–100>',
+        handler: (args) => {
+            const n = parseInt(args[0], 10);
+            if (!args.length || isNaN(n) || n < 0 || n > 100) return null;
+            return { command: 'warm', tintIntensity: n, text: `🌅 ${currentUser} warms the chat` };
+        },
+    },
     // ── Tier 3 · 120 XP ─────────────────────────────────────────────────────────
     {
         name: 'whisper', requiredXP: 120,
         description: 'Send a softly styled whisper message',
+        args: '<message>',
         handler: (args) => {
             const msg = args.join(' ');
             if (!msg) return null;
@@ -2921,6 +2933,7 @@ const XP_CHAT_COMMANDS = [
     {
         name: 'echo', requiredXP: 120,
         description: 'Send a message that visually echoes',
+        args: '<message>',
         handler: (args) => {
             const msg = args.join(' ');
             if (!msg) return null;
@@ -2930,6 +2943,7 @@ const XP_CHAT_COMMANDS = [
     {
         name: 'fade', requiredXP: 120,
         description: 'Send a message that fades in slowly',
+        args: '<message>',
         handler: (args) => {
             const msg = args.join(' ');
             if (!msg) return null;
@@ -2982,6 +2996,19 @@ const XP_CHAT_COMMANDS = [
         handler: () => ({ command: 'constellation', text: `🌌 ${currentUser} traces the constellations` }),
     },
 ];
+
+// Show a local-only usage hint in the chat body (not synced to Firebase).
+function showCommandUsageHint(cmd, argsHint) {
+    const body = document.getElementById('chatBody');
+    if (!body) return;
+    const el = document.createElement('div');
+    el.className = 'chat-system-msg chat-system-msg--usage';
+    el.setAttribute('aria-live', 'polite');
+    el.textContent = `Usage: /${cmd} ${argsHint}`;
+    body.appendChild(el);
+    body.scrollTop = body.scrollHeight;
+    setTimeout(() => el.remove(), 5000);
+}
 
 // Show a Windows-95-style lock alert when a locked command is used.
 function showXpLockAlert(requiredXP) {
@@ -3091,7 +3118,11 @@ async function handleSlashCommand(text) {
     }
 
     const result = xpCmd.handler(args);
-    if (!result) return true; // handler returned null (e.g. /whisper with no text)
+    if (!result) {
+        // Handler returned null — show a local usage hint (not synced to Firebase)
+        if (xpCmd.args) showCommandUsageHint(xpCmd.name, xpCmd.args);
+        return true;
+    }
 
     const entry = {
         author:     currentUser,
@@ -3101,8 +3132,9 @@ async function handleSlashCommand(text) {
         command:    result.command,
         text:       result.text,
     };
-    if (result.style)       entry.style       = result.style;
-    if (result.tintVariant) entry.tintVariant = result.tintVariant;
+    if (result.style)           entry.style         = result.style;
+    if (result.tintVariant)     entry.tintVariant   = result.tintVariant;
+    if (result.tintIntensity != null) entry.tintIntensity = result.tintIntensity;
     await push(chatRef, entry);
     return true;
 }
@@ -3716,7 +3748,8 @@ function _acSetActive(idx) {
 
 function _acFill(cmd) {
     if (!chatInput) return;
-    chatInput.value = '/' + cmd;
+    const xpDef = XP_CHAT_COMMANDS.find(c => c.name === cmd);
+    chatInput.value = '/' + cmd + (xpDef?.args ? ' ' : '');
     chatInput.style.height = 'auto';
     chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
     _acClose();
@@ -3757,6 +3790,11 @@ function _acOpen(matches) {
             badge.className = 'chat-autocomplete__xp-badge';
             badge.textContent = xpDef.requiredXP + ' XP';
             li.appendChild(badge);
+        } else if (xpDef?.args) {
+            const argsSpan = document.createElement('span');
+            argsSpan.className = 'chat-autocomplete__args';
+            argsSpan.textContent = xpDef.args;
+            li.appendChild(argsSpan);
         }
 
         li.addEventListener('mousedown', e => {
@@ -3796,6 +3834,7 @@ function triggerXpCommandEffect(msg) {
         case 'glow':         triggerXpGlow(); break;
         case 'pulse':        triggerXpPulse(); break;
         case 'tint':         triggerXpTint(msg.tintVariant); break;
+        case 'warm':         triggerXpWarm(msg.tintIntensity); break;
         case 'bloom':        triggerXpBloom(); break;
         case 'rain':         triggerGardenOverlay('rain',        15000); break;
         case 'snow':         triggerGardenOverlay('snow',        15000); break;
@@ -3874,6 +3913,21 @@ function triggerXpTint(variant) {
     VARIANTS.forEach(v => body.classList.remove('chat-tint-' + v));
     body.classList.add('chat-tint-' + (VARIANTS.includes(variant) ? variant : 'warm'));
     setTimeout(() => VARIANTS.forEach(v => body.classList.remove('chat-tint-' + v)), 20000);
+}
+
+// /warm <0–100> — warm tint with variable intensity for ~20s then revert.
+function triggerXpWarm(intensity) {
+    const body = document.getElementById('chatBody');
+    if (!body) return;
+    // Clear any existing class-based tint so they don't conflict
+    ['warm', 'cool', 'rose'].forEach(v => body.classList.remove('chat-tint-' + v));
+    const alpha = (Math.min(100, Math.max(0, intensity ?? 100)) / 100 * 0.15).toFixed(3);
+    body.style.background = `rgba(255,190,110,${alpha})`;
+    body.style.transition = 'background 1s';
+    setTimeout(() => {
+        body.style.background = '';
+        body.style.transition = '';
+    }, 20000);
 }
 
 // /bloom — brightness/saturation boost on the garden for ~5s.

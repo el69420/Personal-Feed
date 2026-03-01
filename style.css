@@ -1748,6 +1748,16 @@ body.dark-mode .chat-system-msg {
 }
 body.dark-mode .chat-autocomplete__xp-badge { color: #666; }
 
+.chat-autocomplete__args {
+    font-size: 10px;
+    font-style: italic;
+    color: #aaa;
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: 0.01em;
+}
+body.dark-mode .chat-autocomplete__args { color: #666; }
+
 /* ── Windows-95-style XP lock alert ─────────────────────────
    Matches the app's existing win95 aesthetic.                 */
 .xp-lock-alert {
@@ -1942,6 +1952,20 @@ body.dark-mode .chat-autocomplete__xp-badge { color: #666; }
 .chat-body.chat-tint-warm { background: rgba(255,190,110,0.09); transition: background 1s; }
 .chat-body.chat-tint-cool { background: rgba(110,185,255,0.09); transition: background 1s; }
 .chat-body.chat-tint-rose { background: rgba(255,130,170,0.09); transition: background 1s; }
+
+/* ── Usage hint (local only, not synced) ─────────────────── */
+.chat-system-msg--usage {
+    background: rgba(220, 80, 80, 0.07) !important;
+    border-color: rgba(220, 80, 80, 0.18) !important;
+    color: #c0392b;
+    font-weight: 600;
+    font-style: normal;
+}
+body.dark-mode .chat-system-msg--usage {
+    background: rgba(220, 80, 80, 0.12) !important;
+    border-color: rgba(220, 80, 80, 0.25) !important;
+    color: #e07070;
+}
 
 /* ── /whisper ────────────────────────────────────────────── */
 .chat-system-msg--whisper {
