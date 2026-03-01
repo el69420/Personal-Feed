@@ -4257,6 +4257,57 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     if (postId) startCommentTyping(postId);
 });
 
+// ===== Reusable Win95-style dialog =====
+// openW95Dialog({ icon, title, message, buttons: [{label, action}] })
+// Returns { close } — Esc also closes; last button with null action = cancel.
+function openW95Dialog({ icon = '', title = 'Windows', message = '', buttons = [{ label: 'OK', action: null }] } = {}) {
+    const overlay = document.createElement('div');
+    overlay.className = 'w95-dialog-overlay';
+
+    const bHtml = buttons.map(b =>
+        `<button class="w95-btn w95-dialog-btn" type="button">${b.label}</button>`
+    ).join('');
+
+    const iconHtml = icon ? `<div class="w95-dialog-icon">${icon}</div>` : '';
+
+    overlay.innerHTML = `
+        <div class="w95-dialog" role="dialog" aria-modal="true">
+            <div class="w95-titlebar window--active">
+                <div class="w95-title">${title}</div>
+                <div class="w95-controls">
+                    <button class="w95-control w95-control-close w95-dialog-x" type="button" aria-label="Close">X</button>
+                </div>
+            </div>
+            <div class="w95-dialog-body">
+                ${iconHtml}
+                <div class="w95-dialog-message"></div>
+            </div>
+            <div class="w95-dialog-btns">${bHtml}</div>
+        </div>`;
+
+    // Set message safely as text content (supports newlines via white-space:pre-wrap in CSS)
+    overlay.querySelector('.w95-dialog-message').textContent = message;
+    document.body.appendChild(overlay);
+
+    function close() {
+        overlay.remove();
+        document.removeEventListener('keydown', onKey);
+    }
+
+    const btnEls = overlay.querySelectorAll('.w95-dialog-btn');
+    btnEls.forEach((btn, i) => {
+        btn.addEventListener('click', () => { close(); buttons[i]?.action?.(); });
+    });
+    overlay.querySelector('.w95-dialog-x')?.addEventListener('click', close);
+    overlay.addEventListener('pointerdown', e => { if (e.target === overlay) close(); });
+
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', onKey);
+
+    setTimeout(() => btnEls[0]?.focus(), 0);
+    return { close };
+}
+
 // ===== Win95 window z-index management (bring-to-front) =====
 let w95TopZ = 2000;
 
@@ -6818,7 +6869,55 @@ const ICON_DEFAULTS = {
     jukebox:      { x: 16, y: 436 },
     recycleBin:   { x: 16, y: 520 },
     cat:          { x: 16, y: 604 },
+    myComputer:   { x: 16, y: 688 },
 };
+
+// ===== Snap-to-grid + Arrange =====
+const GRID_SIZE = 80; // px — grid cell size for icon snapping
+
+function snapToGrid(x, y) {
+    return { x: Math.round(x / GRID_SIZE) * GRID_SIZE, y: Math.round(y / GRID_SIZE) * GRID_SIZE };
+}
+
+function getDesktopPrefs() {
+    if (!currentUser) return {};
+    try { return JSON.parse(localStorage.getItem(`desktopPrefs_${currentUser}`) || '{}'); } catch { return {}; }
+}
+
+function saveDesktopPrefs(prefs) {
+    if (!currentUser) return;
+    localStorage.setItem(`desktopPrefs_${currentUser}`, JSON.stringify(prefs));
+}
+
+function arrangeByName() {
+    const icons = Array.from(document.querySelectorAll('.w95-desktop-icon'));
+    icons.sort((a, b) => {
+        const la = a.querySelector('.desktop-icon-label')?.textContent || '';
+        const lb = b.querySelector('.desktop-icon-label')?.textContent || '';
+        return la.localeCompare(lb);
+    });
+    const desktop = document.getElementById('w95-desktop');
+    const dh = desktop ? desktop.offsetHeight : window.innerHeight - 40;
+    const perCol = Math.max(1, Math.floor(dh / GRID_SIZE));
+    const positions = getIconPositions();
+    icons.forEach((icon, i) => {
+        const col = Math.floor(i / perCol);
+        const row = i % perCol;
+        const x = col * GRID_SIZE + 8;
+        const y = row * GRID_SIZE + 8;
+        icon.style.left = x + 'px';
+        icon.style.top  = y + 'px';
+        if (icon.dataset.app) positions[icon.dataset.app] = { x, y };
+    });
+    saveIconPositions(positions);
+}
+
+function updateAutoArrangeLabel() {
+    const btn = document.getElementById('ctx-auto-arrange');
+    if (!btn) return;
+    const prefs = getDesktopPrefs();
+    btn.textContent = (prefs.autoArrange ? '\u2713 ' : '') + 'Auto Arrange';
+}
 
 function getIconPositions() {
     if (!currentUser) return {};
@@ -6967,10 +7066,19 @@ function applyIconPositions() {
             if (e.pointerId !== capturedId) return;
             icon.releasePointerCapture(capturedId);
             if (didDrag) {
-                // Persist dragged position — do NOT clear selection
-                const positions = getIconPositions();
-                positions[appKey] = { x: parseInt(icon.style.left), y: parseInt(icon.style.top) };
-                saveIconPositions(positions);
+                const prefs = getDesktopPrefs();
+                if (prefs.autoArrange) {
+                    // Auto Arrange: re-sort all icons into grid order
+                    arrangeByName();
+                } else {
+                    // Snap to grid then persist
+                    const snapped = snapToGrid(parseInt(icon.style.left), parseInt(icon.style.top));
+                    icon.style.left = snapped.x + 'px';
+                    icon.style.top  = snapped.y + 'px';
+                    const positions = getIconPositions();
+                    positions[appKey] = { x: snapped.x, y: snapped.y };
+                    saveIconPositions(positions);
+                }
             } else {
                 // Click: double-click detection
                 const now = Date.now();
@@ -7063,6 +7171,32 @@ document.querySelectorAll('.w95-window').forEach(win => {
         w95Mgr.focusWindow(win.id);
     }, true);
 });
+
+// ===== Window open animation (C) =====
+// Observes every .w95-window for removal of is-hidden → plays scale/fade-in.
+// Respects prefers-reduced-motion.
+(function() {
+    const rmq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const obs = new MutationObserver(muts => {
+        if (rmq.matches) return;
+        muts.forEach(m => {
+            if (m.attributeName !== 'class') return;
+            const el = m.target;
+            if (!el.classList.contains('w95-window')) return;
+            const wasHidden = (m.oldValue || '').split(/\s+/).includes('is-hidden');
+            const isVisible = !el.classList.contains('is-hidden');
+            if (wasHidden && isVisible) {
+                el.classList.remove('win-opening');
+                void el.offsetWidth; // force reflow so animation restarts
+                el.classList.add('win-opening');
+                el.addEventListener('animationend', () => el.classList.remove('win-opening'), { once: true });
+            }
+        });
+    });
+    document.querySelectorAll('.w95-window').forEach(w => {
+        obs.observe(w, { attributes: true, attributeOldValue: true });
+    });
+})();
 
 // ===== Recycle Bin =====
 window.restoreFromRecycleBin = async function(itemId) {
@@ -8303,6 +8437,7 @@ function initPixelCat() {
     if (!menu || !desktop) return;
 
     function showMenu(x, y) {
+        updateAutoArrangeLabel();
         menu.classList.remove('is-hidden');
         // Measure after unhiding so offsetWidth/Height are valid
         const mw = menu.offsetWidth;
@@ -8343,14 +8478,20 @@ function initPixelCat() {
         setTimeout(() => { desktop.style.opacity = ''; }, 120);
     });
 
-    // --- Arrange by Name (placeholder) ---
+    // --- Arrange by Name ---
     document.getElementById('ctx-arrange-name')?.addEventListener('click', () => {
         hideMenu();
+        arrangeByName();
     });
 
-    // --- Auto Arrange (placeholder) ---
+    // --- Auto Arrange toggle ---
     document.getElementById('ctx-auto-arrange')?.addEventListener('click', () => {
         hideMenu();
+        const prefs = getDesktopPrefs();
+        prefs.autoArrange = !prefs.autoArrange;
+        saveDesktopPrefs(prefs);
+        if (prefs.autoArrange) arrangeByName();
+        updateAutoArrangeLabel();
     });
 
     // --- Personalise: open wallpaper window ---
@@ -8359,21 +8500,263 @@ function initPixelCat() {
         w95Apps['wallpaper']?.open();
     });
 
-    // --- Shut Down: show fake shutdown dialog ---
-    const shutdownOverlay = document.getElementById('w95-shutdown-overlay');
-
+    // --- Shut Down: reusable dialog ---
     document.getElementById('ctx-shutdown')?.addEventListener('click', () => {
         hideMenu();
-        shutdownOverlay?.classList.remove('is-hidden');
+        openW95Dialog({
+            icon: '\u26a1',
+            title: 'Shut Down Windows',
+            message: 'What do you want the computer to do?',
+            buttons: [
+                { label: 'Shut down', action: () => {
+                    openW95Dialog({
+                        icon: '\ud83d\udcbb',
+                        title: 'Shut Down',
+                        message: 'It is now safe to close this tab.',
+                        buttons: [{ label: 'OK', action: null }]
+                    });
+                }},
+                { label: 'Restart', action: () => location.reload() },
+                { label: 'Cancel', action: null }
+            ]
+        });
+    });
+})();
+
+// ===== Boot Screen (D) — once per session =====
+(function () {
+    const boot = document.getElementById('boot-screen');
+    if (!boot) return;
+
+    if (sessionStorage.getItem('bootShown')) {
+        boot.classList.add('is-hidden');
+        return;
+    }
+
+    const bar = document.getElementById('boot-progress-bar');
+    const steps = [12, 28, 44, 60, 74, 88, 100];
+    let i = 0;
+
+    function tick() {
+        if (i >= steps.length) {
+            boot.style.transition = 'opacity 0.35s';
+            boot.style.opacity = '0';
+            setTimeout(() => boot.classList.add('is-hidden'), 360);
+            sessionStorage.setItem('bootShown', '1');
+            return;
+        }
+        if (bar) bar.style.width = steps[i] + '%';
+        i++;
+        setTimeout(tick, i < steps.length ? 200 : 350);
+    }
+    setTimeout(tick, 400);
+})();
+
+// ===== Screensaver (E) =====
+(function () {
+    const SS_MS = 5 * 60 * 1000; // 5 minutes
+    const overlay = document.getElementById('screensaver-overlay');
+    if (!overlay) return;
+    const content = overlay.querySelector('.screensaver-content');
+    let timer = null, active = false, rafId = null;
+    let sx = 0, sy = 0, vx = 1.8, vy = 1.4;
+    const rmq = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function startBounce() {
+        if (!content) return;
+        sx = Math.random() * Math.max(0, overlay.offsetWidth  - content.offsetWidth  - 4);
+        sy = Math.random() * Math.max(0, overlay.offsetHeight - content.offsetHeight - 4);
+        function frame() {
+            if (!active) return;
+            const mw = overlay.offsetWidth  - content.offsetWidth;
+            const mh = overlay.offsetHeight - content.offsetHeight;
+            sx += vx; sy += vy;
+            if (sx <= 0 || sx >= mw) { vx = -vx; sx = Math.max(0, Math.min(mw, sx)); }
+            if (sy <= 0 || sy >= mh) { vy = -vy; sy = Math.max(0, Math.min(mh, sy)); }
+            content.style.left = sx + 'px';
+            content.style.top  = sy + 'px';
+            rafId = requestAnimationFrame(frame);
+        }
+        rafId = requestAnimationFrame(frame);
+    }
+
+    function start() {
+        if (active) return;
+        active = true;
+        overlay.classList.remove('is-hidden');
+        if (!rmq.matches) startBounce();
+    }
+
+    function stop() {
+        if (!active) return;
+        active = false;
+        overlay.classList.add('is-hidden');
+        cancelAnimationFrame(rafId);
+        reset();
+    }
+
+    function reset() {
+        clearTimeout(timer);
+        if (!active) timer = setTimeout(start, SS_MS);
+    }
+
+    ['pointermove', 'pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(evt => {
+        document.addEventListener(evt, () => { active ? stop() : reset(); }, { passive: true });
     });
 
-    document.getElementById('w95-shutdown-cancel')?.addEventListener('click', () => {
-        shutdownOverlay?.classList.add('is-hidden');
+    reset();
+})();
+
+// ===== My Computer / Explorer Window (F) =====
+(function () {
+    const win     = document.getElementById('w95-win-mycomputer');
+    const handle  = document.getElementById('w95-mycomputer-handle');
+    const minBtn  = document.getElementById('w95-mycomputer-min');
+    const maxBtn  = document.getElementById('w95-mycomputer-max');
+    const closeBtn= document.getElementById('w95-mycomputer-close');
+    const body    = document.getElementById('w95-mycomputer-body');
+    if (!win || !body) return;
+
+    let btn = null;
+
+    // Hard-coded virtual file system
+    const VFS = {
+        type: 'root', children: {
+            'C:': { type: 'drive', icon: '\ud83d\udcbd', label: 'Local Disk (C:)', children: {
+                'Documents': { type: 'folder', icon: '\ud83d\udcc1', children: {
+                    'readme.txt':  { type: 'file', icon: '\ud83d\udcc4', content: 'Welcome to Personal Feed!\n\nThis is your personal space <3' },
+                    'about.txt':   { type: 'file', icon: '\ud83d\udcc4', content: 'Created with love by El & Tero <3\n\nBuilt on Firebase + Vanilla JS.' },
+                }},
+                'Pictures': { type: 'folder', icon: '\ud83d\uddc2\ufe0f', children: {
+                    'wallpapers':   { type: 'folder', icon: '\ud83d\udcc1', children: {} },
+                    'screenshots':  { type: 'folder', icon: '\ud83d\udcc1', children: {} },
+                }},
+                'Program Files': { type: 'folder', icon: '\ud83d\udcc1', children: {
+                    'Feed.exe':         { type: 'app', icon: '\ud83d\udcc4', app: 'feed' },
+                    'Chat.exe':         { type: 'app', icon: '\ud83d\udcac', app: 'chat' },
+                    'Garden.exe':       { type: 'app', icon: '\ud83c\udf37', app: 'garden' },
+                    'Jukebox.exe':      { type: 'app', icon: '\ud83c\udfba', app: 'jukebox' },
+                    'Achievements.exe': { type: 'app', icon: '\ud83c\udfc6', app: 'achievements' },
+                }},
+                'Windows': { type: 'folder', icon: '\ud83d\udcc1', children: {
+                    'System32': { type: 'folder', icon: '\ud83d\udcc1', children: {
+                        'notepad.exe':   { type: 'file', icon: '\ud83d\udcdd', content: 'C:\\Windows\\System32\\notepad.exe\n[1 KB]' },
+                        'explorer.exe':  { type: 'file', icon: '\ud83d\udcdd', content: 'C:\\Windows\\System32\\explorer.exe\n[512 KB]' },
+                    }},
+                }},
+            }},
+            'D:': { type: 'drive', icon: '\ud83d\udcbf', label: 'CD-ROM (D:)', children: {
+                'AUTORUN.INF': { type: 'file', icon: '\ud83d\udcc4', content: '[autorun]\nopen=setup.exe\nlabel=Personal Feed CD' },
+            }},
+            'Control Panel': { type: 'folder', icon: '\ud83c\udfdb\ufe0f', children: {
+                'Display.cpl':   { type: 'app',  icon: '\ud83d\udda5\ufe0f', app: 'wallpaper' },
+                'Sounds.cpl':    { type: 'file', icon: '\ud83d\udd0a', content: 'Adjust sound settings in the Jukebox app.' },
+            }},
+        }
+    };
+
+    let path = []; // stack of folder-name strings
+
+    function nodeAt(p) {
+        let node = VFS;
+        for (const part of p) {
+            node = node.children?.[part];
+            if (!node) return null;
+        }
+        return node;
+    }
+
+    function safeText(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    function render() {
+        const node = nodeAt(path);
+        if (!node) return;
+        const pathStr = path.length === 0 ? 'My Computer' : path.join(' \u203a ');
+        const items = Object.entries(node.children || {});
+
+        let rows = items.map(([name, child]) => {
+            const displayName = (child.type === 'drive' && child.label) ? child.label : name;
+            return `<div class="explorer-item" data-name="${safeText(name)}" tabindex="0">
+                <span class="explorer-item-icon">${child.icon || '\ud83d\udcc4'}</span>
+                <span class="explorer-item-name">${safeText(displayName)}</span>
+            </div>`;
+        }).join('');
+
+        if (!rows) rows = '<div class="explorer-empty">(empty)</div>';
+
+        body.innerHTML = `
+            <div class="explorer-toolbar">
+                <button class="w95-btn" id="explorer-back" type="button"${path.length === 0 ? ' disabled' : ''}>\u25c4 Back</button>
+                <div class="explorer-addr">${safeText(pathStr)}</div>
+            </div>
+            <div class="explorer-grid">${rows}</div>`;
+
+        document.getElementById('explorer-back')?.addEventListener('click', () => { path.pop(); render(); });
+
+        const clickTimes = {};
+        body.querySelectorAll('.explorer-item').forEach(el => {
+            const name = el.dataset.name;
+            el.addEventListener('click', () => {
+                const now = Date.now();
+                if (now - (clickTimes[name] || 0) < 500) {
+                    activateItem(name, nodeAt(path)?.children?.[name]);
+                } else {
+                    body.querySelectorAll('.explorer-item').forEach(i => i.classList.remove('selected'));
+                    el.classList.add('selected');
+                    clickTimes[name] = now;
+                }
+            });
+            el.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateItem(name, nodeAt(path)?.children?.[name]); }
+            });
+        });
+    }
+
+    function activateItem(name, child) {
+        if (!child) return;
+        if (child.type === 'folder' || child.type === 'drive') {
+            path.push(name); render();
+        } else if (child.type === 'app') {
+            w95Apps[child.app]?.open();
+        } else {
+            openW95Dialog({ icon: child.icon || '\ud83d\udcc4', title: name,
+                message: child.content || '(empty)',
+                buttons: [{ label: 'OK', action: null }] });
+        }
+    }
+
+    function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-mycomputer', 'MY PC', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        path = [];
+        render();
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-mycomputer');
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-mycomputer')) w95Mgr.focusWindow(null);
+    }
+
+    if (minBtn)   minBtn.addEventListener('click',  e => { e.stopPropagation(); hide(); });
+    if (maxBtn)   maxBtn.addEventListener('click',  e => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-mycomputer'); });
+    if (closeBtn) closeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (w95Mgr.isMaximised('w95-win-mycomputer')) w95Mgr.toggleMaximise(win, 'w95-win-mycomputer');
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-mycomputer')) w95Mgr.focusWindow(null);
+        if (btn) { btn.remove(); btn = null; }
     });
 
-    document.getElementById('w95-shutdown-ok')?.addEventListener('click', () => {
-        shutdownOverlay?.classList.add('is-hidden');
-    });
+    makeDraggable(win, handle, 'w95-win-mycomputer');
 
-    // Help button is cosmetic — no action
+    w95Apps['myComputer'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-mycomputer');
+    }};
 })();

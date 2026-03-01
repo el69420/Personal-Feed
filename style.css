@@ -5401,3 +5401,198 @@ body { padding: 0 !important; }
 #pixel-cat-canvas.cat-yarn-zoom {
   animation: catYarnZoom 0.85s ease-in-out;
 }
+
+/* ============================================================
+   Feature pack: Windows-y polish
+   ============================================================ */
+
+/* ---- A) Snap-to-grid: auto-arrange checkmark ---- */
+#ctx-auto-arrange { white-space: nowrap; }
+
+/* ---- B) Reusable Win95 dialog ---- */
+.w95-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 9300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.w95-dialog {
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #404040;
+    border-bottom: 2px solid #404040;
+    min-width: 280px;
+    max-width: 420px;
+    font: 12px Tahoma, Verdana, Arial, sans-serif;
+    box-shadow: 4px 4px 0 #000;
+}
+.w95-dialog .w95-titlebar { cursor: default; }
+.w95-dialog-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px 12px;
+}
+.w95-dialog-icon {
+    font-size: 32px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.w95-dialog-message {
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.w95-dialog-btns {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px 14px;
+    border-top: 1px solid #808080;
+}
+.w95-dialog-btn { min-width: 72px; }
+
+/* ---- C) Window open animation ---- */
+@keyframes w95WinOpen {
+    from { opacity: 0; transform: scale(0.92); }
+    to   { opacity: 1; transform: scale(1); }
+}
+.w95-window.win-opening {
+    animation: w95WinOpen 120ms ease-out both;
+    transform-origin: top left;
+}
+@media (prefers-reduced-motion: reduce) {
+    .w95-window.win-opening { animation: none; }
+}
+
+/* ---- D) Boot screen ---- */
+#boot-screen {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    font-family: Tahoma, Verdana, sans-serif;
+    color: #fff;
+}
+#boot-screen.is-hidden { display: none !important; }
+.boot-logo {
+    font-size: 28px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    user-select: none;
+}
+.boot-bar-track {
+    width: 200px;
+    height: 10px;
+    background: #333;
+    border: 1px solid #555;
+}
+.boot-bar-fill {
+    height: 100%;
+    background: #0078d7;
+    width: 0;
+    transition: width 0.18s linear;
+}
+.boot-label {
+    font-size: 12px;
+    color: #aaa;
+    user-select: none;
+}
+
+/* ---- E) Screensaver ---- */
+#screensaver-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 99998;
+    cursor: none;
+    overflow: hidden;
+}
+#screensaver-overlay.is-hidden { display: none !important; }
+.screensaver-content {
+    position: absolute;
+    left: 100px;
+    top: 100px;
+    font-size: 52px;
+    color: #00c8ff;
+    user-select: none;
+    pointer-events: none;
+    white-space: nowrap;
+    font-family: Tahoma, Verdana, sans-serif;
+    text-shadow: 0 0 18px #00c8ff88;
+}
+@media (prefers-reduced-motion: reduce) {
+    .screensaver-content { left: 50% !important; top: 50% !important; transform: translate(-50%,-50%); }
+}
+
+/* ---- F) My Computer / Explorer ---- */
+#w95-win-mycomputer { display: flex; flex-direction: column; overflow: hidden; }
+.explorer-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 0; }
+.explorer-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-bottom: 1px solid #808080;
+    background: #d4d0c8;
+    flex-shrink: 0;
+}
+.explorer-addr {
+    font: 11px Tahoma, Verdana, sans-serif;
+    flex: 1;
+    background: #fff;
+    border: 2px inset #808080;
+    padding: 1px 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.explorer-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 2px;
+    padding: 6px;
+    overflow-y: auto;
+    flex: 1;
+}
+.explorer-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 72px;
+    padding: 4px 2px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font: 11px Tahoma, Verdana, sans-serif;
+    text-align: center;
+    border-radius: 0;
+    user-select: none;
+    outline: none;
+}
+.explorer-item:hover { background: #d0d8ff; border-color: #0000cd; }
+.explorer-item.selected,
+.explorer-item:focus-visible {
+    background: #000080;
+    color: #fff;
+    border-color: #fff;
+    outline: 1px dotted #fff;
+}
+.explorer-item-icon { font-size: 24px; line-height: 1; }
+.explorer-item-name { word-break: break-word; line-height: 1.2; }
+.explorer-empty {
+    padding: 20px;
+    color: #808080;
+    font: 11px Tahoma, Verdana, sans-serif;
+    font-style: italic;
+}

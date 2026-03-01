@@ -71,6 +71,10 @@
             <div class="desktop-icon-img">&#128008;</div>
             <div class="desktop-icon-label">Cat.exe</div>
         </div>
+        <div class="w95-desktop-icon" data-app="myComputer" tabindex="0">
+            <div class="desktop-icon-img">&#128187;</div>
+            <div class="desktop-icon-label">My Computer</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -754,6 +758,7 @@
         <button class="w95-start-item" data-app="achievements" type="button">&#127942; Achievements</button>
         <button class="w95-start-item" data-app="mailbox" type="button">&#9993; Mailbox</button>
         <button class="w95-start-item" data-app="jukebox" type="button">&#127926; Jukebox</button>
+        <button class="w95-start-item" data-app="myComputer" type="button">&#128187; My Computer</button>
         <hr class="w95-start-separator">
         <button class="w95-start-item" data-app="wallpaper" type="button">&#127912; Personalisation &rsaquo; Wallpaper</button>
     </div>
@@ -770,8 +775,8 @@
         <button class="w95-ctx-item" id="ctx-shutdown" type="button">Shut Down...</button>
     </div>
 
-    <!-- Fake Shutdown Dialog -->
-    <div id="w95-shutdown-overlay" class="w95-shutdown-overlay is-hidden">
+    <!-- Fake Shutdown Dialog (legacy; replaced by openW95Dialog — kept for reference) -->
+    <div id="w95-shutdown-overlay" class="w95-shutdown-overlay is-hidden" style="display:none!important;">
         <div class="w95-shutdown-dialog">
             <div class="w95-titlebar">
                 <div class="w95-title">Shut Down Windows</div>
@@ -1018,6 +1023,31 @@
     <div id="gift-popup-msg"></div>
     <button class="w95-btn" id="gift-collect-btn" type="button">&#10003; Collect!</button>
   </div>
+</div>
+
+<!-- My Computer / Explorer window -->
+<div id="w95-win-mycomputer" class="w95-window is-hidden" style="left:200px;top:80px;width:420px;height:340px;">
+  <div class="w95-titlebar" id="w95-mycomputer-handle">
+    <div class="w95-title">&#128187; My Computer</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-mycomputer-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-mycomputer-max" type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-mycomputer-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body explorer-body" id="w95-mycomputer-body"></div>
+</div>
+
+<!-- Boot screen (D) — shown once per session -->
+<div id="boot-screen">
+  <div class="boot-logo">&#128187; Windows 95</div>
+  <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-progress-bar"></div></div>
+  <div class="boot-label">Starting Windows&hellip;</div>
+</div>
+
+<!-- Screensaver overlay (E) -->
+<div id="screensaver-overlay" class="is-hidden">
+  <div class="screensaver-content">&lt;3</div>
 </div>
 
 </body>
