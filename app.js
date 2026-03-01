@@ -6669,32 +6669,34 @@ function initPixelCat() {
     // Eyes: dark pixel at cols 2 & 5 in the eye row.
     // Nose: two centred pink pixels at cols 3 & 4.
 
-    const HEAD = [          // shared top rows (ears + face)
+    const HEAD = [          // shared top rows (ears + face) – 5 rows
         [0,1,0,0,0,0,1,0],  // row 0 – ear tips at cols 1 & 6 (outer corners)
         [1,3,1,0,0,1,3,1],  // row 1 – ears: outline/pink/outline · gap · outline/pink/outline
         [1,2,2,2,2,2,2,1],  // row 2 – face
         [1,2,1,2,2,1,2,1],  // row 3 – eyes (dark at cols 2 & 5)
-        [1,2,2,2,2,2,2,1],  // row 4 – cheeks
-        [1,2,1,3,3,1,2,1],  // row 5 – whisker hints + two-pixel centred nose
+        [1,2,2,3,3,2,2,1],  // row 4 – centred pink nose (no whisker-hint dots)
     ];
 
     // Walk-A: legs together (stride-in)
     const WALK_A = [
         ...HEAD,
+        [1,2,2,2,2,2,2,1],  // row 5 – body
         [0,1,1,0,0,1,1,0],  // row 6 – legs (2-px wide each)
         [0,1,1,0,0,1,1,0],  // row 7 – paws
     ];
     // Walk-B: legs apart (stride-out)
     const WALK_B = [
         ...HEAD,
-        [0,1,0,0,0,0,1,0],  // row 6 – legs wide
-        [1,1,0,0,0,0,1,1],  // row 7 – paws wide
+        [1,2,2,2,2,2,2,1],  // row 5 – body
+        [0,1,1,0,0,1,1,0],  // row 6 – legs (2-px wide, same as WALK_A)
+        [1,1,0,0,0,0,1,1],  // row 7 – paws spread wide
     ];
     // Sit: haunches visible, paws tucked
     const SIT = [
         ...HEAD,
-        [1,2,2,2,2,2,2,1],  // row 6 – sitting body
-        [1,2,2,1,1,2,2,1],  // row 7 – haunches / tucked paws
+        [1,2,2,2,2,2,2,1],  // row 5 – body
+        [1,2,2,2,2,2,2,1],  // row 6 – haunches
+        [1,2,2,1,1,2,2,1],  // row 7 – tucked paws
     ];
     // Sleep: ears lowered by one row, eyes closed (horizontal bar), rounded body
     const SLEEP = [
@@ -6713,9 +6715,9 @@ function initPixelCat() {
         [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
         [1,2,2,2,2,2,2,1],  // row 2 – face
         [1,1,1,2,2,1,1,1],  // row 3 – wide eyes (dark fills 3 cols each)
-        [1,2,2,2,2,2,2,1],  // row 4 – cheeks
-        [1,1,1,3,3,1,1,1],  // row 5 – big surprised nose / tiny open mouth
-        [0,1,1,2,2,1,1,0],  // row 6 – body
+        [1,2,2,3,3,2,2,1],  // row 4 – surprised nose (no scary dark sides)
+        [1,2,2,2,2,2,2,1],  // row 5 – body
+        [0,1,1,2,2,1,1,0],  // row 6 – body lower
         [0,1,1,0,0,1,1,0],  // row 7 – paws
     ];
 
@@ -6726,19 +6728,19 @@ function initPixelCat() {
         [1,3,1,0,0,1,3,1],  // row 2 – ears with pink inner
         [1,2,2,2,2,2,2,1],  // row 3 – face
         [1,2,1,2,2,1,2,1],  // row 4 – half-open eyes (single dark pixel per eye)
-        [1,2,1,3,3,1,2,1],  // row 5 – nose/whiskers
+        [1,2,2,3,3,2,2,1],  // row 5 – nose (clean, no whisker-hint dots)
         [1,2,2,2,2,2,2,1],  // row 6 – body
         [0,1,2,2,2,2,1,0],  // row 7 – body bottom
     ];
 
-    // Idle: cat standing still, glancing sideways (eyes shifted one pixel)
+    // Idle: cat standing still, glancing sideways (left eye shifted one pixel right)
     const IDLE = [
         [0,1,0,0,0,0,1,0],  // row 0 – ear tips
         [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
         [1,2,2,2,2,2,2,1],  // row 2 – face
-        [1,2,2,1,2,2,1,1],  // row 3 – eyes shifted right (looking sideways)
-        [1,2,2,2,2,2,2,1],  // row 4 – cheeks
-        [1,2,1,3,3,1,2,1],  // row 5 – nose
+        [1,2,2,1,2,1,2,1],  // row 3 – sideways glance: left eye at col 3, right at col 5
+        [1,2,2,3,3,2,2,1],  // row 4 – nose (no whisker-hint dots)
+        [1,2,2,2,2,2,2,1],  // row 5 – body
         [0,1,1,0,0,1,1,0],  // row 6 – legs
         [0,1,1,0,0,1,1,0],  // row 7 – paws
     ];
@@ -6748,8 +6750,8 @@ function initPixelCat() {
         [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
         [1,2,2,2,2,2,2,1],  // row 2 – face
         [1,2,1,2,2,1,2,1],  // row 3 – eyes wide open (alert mid-leap)
-        [1,2,2,2,2,2,2,1],  // row 4 – cheeks
-        [1,2,1,3,3,1,2,1],  // row 5 – nose
+        [1,2,2,3,3,2,2,1],  // row 4 – nose (no whisker-hint dots)
+        [1,2,2,2,2,2,2,1],  // row 5 – body
         [1,0,2,2,2,2,0,1],  // row 6 – front paws extended sideways
         [0,1,0,0,0,0,1,0],  // row 7 – back paws tucked/dangling
     ];
