@@ -7140,6 +7140,21 @@ async function loadUserWallpaper() {
     let btn = null;
     let _catStats = null; // { hunger, thirst, play, catName, lastUpdated }
 
+    const CAT_DECAY_PER_HOUR  = 3;
+    const CAT_ACTION_DELTAS   = { feed: 25, water: 25, yarn: 35 };
+    const CAT_ACTION_STAT     = { feed: 'hunger', water: 'thirst', yarn: 'play' };
+    const CAT_DEFAULTS        = { catName: '', hunger: 75, thirst: 75, play: 75 };
+
+    function applyCatDecay(stored) {
+        const hoursElapsed = (Date.now() - (stored.lastUpdated || Date.now())) / 3_600_000;
+        const d = hoursElapsed * CAT_DECAY_PER_HOUR;
+        return {
+            hunger: Math.max(0, Math.min(100, (stored.hunger ?? 75) - d)),
+            thirst: Math.max(0, Math.min(100, (stored.thirst ?? 75) - d)),
+            play:   Math.max(0, Math.min(100, (stored.play   ?? 75) - d)),
+        };
+    }
+
     function showCat() {
         if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-cat', 'CAT', () => {
             if (win.classList.contains('is-hidden')) showCat(); else hideCat();
@@ -7231,13 +7246,21 @@ async function loadUserWallpaper() {
         if (statusEl) statusEl.textContent = getCatStatus(s);
     }
 
-    // ---- Load stats from server ----
+    // ---- Load stats from Firebase ----
     async function loadCatStats() {
         if (!currentUser) return;
         try {
-            const r = await fetch(`${API_BASE}/api/cat?user=${encodeURIComponent(currentUser)}`);
-            if (!r.ok) throw new Error('fetch failed');
-            _catStats = await r.json();
+            const catRef = ref(database, `cat/${currentUser}`);
+            const snap = await get(catRef);
+            let stored = snap.val();
+            if (!stored) {
+                stored = { ...CAT_DEFAULTS, lastUpdated: Date.now() };
+                await set(catRef, stored);
+            }
+            const decayed = applyCatDecay(stored);
+            const now = Date.now();
+            _catStats = { ...decayed, catName: stored.catName || '', lastUpdated: now };
+            await update(catRef, { hunger: decayed.hunger, thirst: decayed.thirst, play: decayed.play, lastUpdated: now });
             renderCatWindow();
         } catch (e) { console.error('loadCatStats failed', e); }
     }
@@ -7245,15 +7268,26 @@ async function loadUserWallpaper() {
     // ---- Perform a care action ----
     async function doCatAction(action) {
         if (!currentUser || !throttle('catAction', 1500)) return;
+        if (!CAT_ACTION_STAT[action]) return;
         try {
-            const r = await fetch(`${API_BASE}/api/cat/action`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user: currentUser, action }),
+            const catRef = ref(database, `cat/${currentUser}`);
+            const result = await runTransaction(catRef, (stored) => {
+                if (stored === null) stored = { ...CAT_DEFAULTS, lastUpdated: Date.now() };
+                const decayed = applyCatDecay(stored);
+                const delta = CAT_ACTION_DELTAS[action] || 0;
+                const stat  = CAT_ACTION_STAT[action];
+                return {
+                    catName:     stored.catName || '',
+                    hunger:      Math.max(0, Math.min(100, decayed.hunger + (stat === 'hunger' ? delta : 0))),
+                    thirst:      Math.max(0, Math.min(100, decayed.thirst + (stat === 'thirst' ? delta : 0))),
+                    play:        Math.max(0, Math.min(100, decayed.play   + (stat === 'play'   ? delta : 0))),
+                    lastUpdated: Date.now(),
+                };
             });
-            if (!r.ok) throw new Error('action failed');
-            _catStats = await r.json();
-            renderCatWindow();
+            if (result.committed && result.snapshot.exists()) {
+                _catStats = result.snapshot.val();
+                renderCatWindow();
+            }
             // Local-only animations — no Firebase sync
             if (action === 'feed' || action === 'water') {
                 window._catLocalEmote?.('heart');
@@ -7277,12 +7311,7 @@ async function loadUserWallpaper() {
             if (!currentUser) return;
             const newName = nameInput.value.trim().slice(0, 32);
             try {
-                const r = await fetch(`${API_BASE}/api/cat/name`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user: currentUser, catName: newName }),
-                });
-                if (!r.ok) throw new Error('name save failed');
+                await set(ref(database, `cat/${currentUser}/catName`), newName);
                 if (_catStats) _catStats.catName = newName;
                 delete nameInput.dataset.dirty;
                 renderCatWindow();
