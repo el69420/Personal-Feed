@@ -8430,63 +8430,87 @@ function initPixelCat() {
     };
 }
 
-// ===== Desktop Right-Click Context Menu =====
+// ===== Unified Context Menu (event delegation) =====
 (() => {
-    const menu    = document.getElementById('w95-ctx-menu');
-    const desktop = document.getElementById('w95-desktop');
-    if (!menu || !desktop) return;
+    const desktop    = document.getElementById('w95-desktop');
+    const deskMenu   = document.getElementById('w95-ctx-menu');
+    const iconMenu   = document.getElementById('w95-icon-ctx-menu');
+    const winMenu    = document.getElementById('w95-win-ctx-menu');
+    if (!desktop || !deskMenu) return;
 
-    function showMenu(x, y) {
-        updateAutoArrangeLabel();
+    // Track which icon / window was right-clicked so action buttons can reference it
+    let _targetIcon = null;
+    let _targetWin  = null;
+
+    // --- Helpers ---
+    function placeMenu(menu, x, y) {
         menu.classList.remove('is-hidden');
-        // Measure after unhiding so offsetWidth/Height are valid
         const mw = menu.offsetWidth;
         const mh = menu.offsetHeight;
-        const cx = Math.min(x, window.innerWidth  - mw - 2);
-        const cy = Math.min(y, window.innerHeight - mh - 2);
-        menu.style.left = `${Math.max(0, cx)}px`;
-        menu.style.top  = `${Math.max(0, cy)}px`;
+        menu.style.left = Math.max(0, Math.min(x, window.innerWidth  - mw - 2)) + 'px';
+        menu.style.top  = Math.max(0, Math.min(y, window.innerHeight - mh - 2)) + 'px';
     }
 
-    function hideMenu() {
-        menu.classList.add('is-hidden');
+    function hideAll() {
+        deskMenu?.classList.add('is-hidden');
+        iconMenu?.classList.add('is-hidden');
+        winMenu?.classList.add('is-hidden');
     }
 
-    // Suppress browser context menu on the whole desktop (icons are inside desktop)
+    // --- Single contextmenu listener (event delegation) ---
     document.addEventListener('contextmenu', e => {
-        if (!desktop.contains(e.target) && e.target !== desktop) return;
         e.preventDefault();
-        showMenu(e.clientX, e.clientY);
-    });
+        hideAll();
+        _targetIcon = null;
+        _targetWin  = null;
 
-    // Close on any pointer-down outside the menu
-    document.addEventListener('pointerdown', e => {
-        if (!menu.classList.contains('is-hidden') && !menu.contains(e.target)) {
-            hideMenu();
+        const iconEl = e.target.closest('.w95-desktop-icon, .exe-icon');
+        const winEl  = e.target.closest('.w95-window');
+
+        if (iconEl) {
+            _targetIcon = iconEl;
+            if (iconMenu) placeMenu(iconMenu, e.clientX, e.clientY);
+        } else if (winEl) {
+            _targetWin = winEl;
+            if (winMenu) placeMenu(winMenu, e.clientX, e.clientY);
+        } else {
+            updateAutoArrangeLabel();
+            placeMenu(deskMenu, e.clientX, e.clientY);
         }
     });
 
-    // Close on Escape
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') hideMenu();
+    // Close all menus on left-click outside any menu
+    document.addEventListener('click', e => {
+        if (!deskMenu.contains(e.target) && !iconMenu?.contains(e.target) && !winMenu?.contains(e.target)) {
+            hideAll();
+        }
     });
 
-    // --- Refresh: close menu + brief desktop blink ---
+    // Close on Escape, scroll, resize
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') hideAll(); });
+    window.addEventListener('scroll',    hideAll, { passive: true });
+    window.addEventListener('resize',    hideAll, { passive: true });
+
+    // ===== Desktop menu actions =====
+
+    document.getElementById('ctx-wallpaper')?.addEventListener('click', () => {
+        hideAll();
+        w95Apps['wallpaper']?.open();
+    });
+
     document.getElementById('ctx-refresh')?.addEventListener('click', () => {
-        hideMenu();
+        hideAll();
         desktop.style.opacity = '0.5';
         setTimeout(() => { desktop.style.opacity = ''; }, 120);
     });
 
-    // --- Arrange by Name ---
     document.getElementById('ctx-arrange-name')?.addEventListener('click', () => {
-        hideMenu();
+        hideAll();
         arrangeByName();
     });
 
-    // --- Auto Arrange toggle ---
     document.getElementById('ctx-auto-arrange')?.addEventListener('click', () => {
-        hideMenu();
+        hideAll();
         const prefs = getDesktopPrefs();
         prefs.autoArrange = !prefs.autoArrange;
         saveDesktopPrefs(prefs);
@@ -8494,15 +8518,23 @@ function initPixelCat() {
         updateAutoArrangeLabel();
     });
 
-    // --- Personalise: open wallpaper window ---
     document.getElementById('ctx-personalise')?.addEventListener('click', () => {
-        hideMenu();
+        hideAll();
         w95Apps['wallpaper']?.open();
     });
 
-    // --- Shut Down: reusable dialog ---
+    document.getElementById('ctx-new-post')?.addEventListener('click', () => {
+        hideAll();
+        w95Apps['feed']?.open();
+        // Small delay then focus the compose box if present
+        setTimeout(() => {
+            const compose = document.querySelector('#feed-input, #postInput, [data-role="compose"]');
+            compose?.focus();
+        }, 300);
+    });
+
     document.getElementById('ctx-shutdown')?.addEventListener('click', () => {
-        hideMenu();
+        hideAll();
         openW95Dialog({
             icon: '\u26a1',
             title: 'Shut Down Windows',
@@ -8520,6 +8552,53 @@ function initPixelCat() {
                 { label: 'Cancel', action: null }
             ]
         });
+    });
+
+    // ===== Icon menu actions =====
+
+    document.getElementById('icon-ctx-open')?.addEventListener('click', () => {
+        hideAll();
+        if (!_targetIcon) return;
+        const appKey = _targetIcon.dataset.app;
+        if (appKey) openApp(appKey);
+    });
+
+    document.getElementById('icon-ctx-properties')?.addEventListener('click', () => {
+        hideAll();
+        if (!_targetIcon) return;
+        const label = _targetIcon.querySelector('.desktop-icon-label')?.textContent || _targetIcon.dataset.app || 'Unknown';
+        openW95Dialog({
+            icon: '\ud83d\udcc4',
+            title: `${label} Properties`,
+            message: `Name: ${label}\nType: Application shortcut`,
+            buttons: [{ label: 'OK', action: null }]
+        });
+    });
+
+    // ===== Window menu actions =====
+
+    document.getElementById('win-ctx-minimise')?.addEventListener('click', () => {
+        hideAll();
+        if (!_targetWin) return;
+        const winId = _targetWin.id;
+        if (!winId) return;
+        // Find the app and call its minimize behavior (click taskbar button)
+        const tbBtn = document.querySelector(`[data-win-id="${winId}"]`);
+        if (tbBtn) { tbBtn.click(); return; }
+        // Fallback: just hide the window
+        _targetWin.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(winId)) w95Mgr.focusWindow(null);
+    });
+
+    document.getElementById('win-ctx-close')?.addEventListener('click', () => {
+        hideAll();
+        if (!_targetWin) return;
+        // Click the window's own close button so each window's cleanup runs
+        const closeBtn = _targetWin.querySelector('.w95-control[aria-label="Close"], .w95-close');
+        if (closeBtn) { closeBtn.click(); return; }
+        // Fallback
+        _targetWin.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(_targetWin.id)) w95Mgr.focusWindow(null);
     });
 })();
 
@@ -8759,4 +8838,159 @@ function initPixelCat() {
     w95Apps['myComputer'] = { open: () => {
         if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-mycomputer');
     }};
+})();
+
+// ===== System Clock =====
+(() => {
+    const clockEl = document.getElementById('systemClock');
+    if (!clockEl) return;
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function tickClock() {
+        const d = new Date();
+        clockEl.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    tickClock();
+    // Align to the next full minute, then tick every 30s for responsiveness
+    const now = new Date();
+    const msToNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+    setTimeout(() => {
+        tickClock();
+        setInterval(tickClock, 30000);
+    }, msToNextMinute);
+
+    // Click → open Date & Time window
+    clockEl.addEventListener('click', () => w95Apps['datetime']?.open());
+    clockEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); w95Apps['datetime']?.open(); }
+    });
+})();
+
+// ===== Date & Time Window =====
+(() => {
+    const win      = document.getElementById('w95-win-datetime');
+    const handle   = document.getElementById('w95-datetime-handle');
+    const closeBtn = document.getElementById('w95-datetime-close');
+    const dateEl   = document.getElementById('datetime-date');
+    const timeEl   = document.getElementById('datetime-time');
+    if (!win || !dateEl || !timeEl) return;
+
+    let _ticker = null;
+
+    const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function tickDatetime() {
+        const d = new Date();
+        dateEl.textContent = `${DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+        timeEl.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function showDatetime() {
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-datetime');
+        tickDatetime();
+        _ticker = setInterval(tickDatetime, 1000);
+    }
+
+    function hideDatetime() {
+        win.classList.add('is-hidden');
+        clearInterval(_ticker);
+        _ticker = null;
+        if (w95Mgr.isActiveWin('w95-win-datetime')) w95Mgr.focusWindow(null);
+    }
+
+    closeBtn?.addEventListener('click', hideDatetime);
+
+    if (handle) makeDraggable(win, handle, 'w95-win-datetime');
+
+    w95Apps['datetime'] = {
+        open: () => {
+            if (win.classList.contains('is-hidden')) showDatetime();
+            else w95Mgr.focusWindow('w95-win-datetime');
+        }
+    };
+})();
+
+// ===== System Tray =====
+(() => {
+    const trayChat   = document.getElementById('tray-chat');
+    const trayGarden = document.getElementById('tray-garden');
+    const traySound  = document.getElementById('tray-sound');
+    const trayMotion = document.getElementById('tray-motion');
+
+    // ---- Sound toggle icon ----
+    function syncSoundIcon() {
+        if (!traySound) return;
+        const on = soundEnabled;
+        traySound.textContent  = on ? '\uD83D\uDD0A' : '\uD83D\uDD07';
+        traySound.title        = on ? 'Sound: on (click to mute)' : 'Sound: muted (click to unmute)';
+        traySound.classList.toggle('tray-muted', !on);
+    }
+    if (traySound) {
+        syncSoundIcon();
+        traySound.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('soundEnabled', soundEnabled ? 'true' : 'false');
+            syncSoundIcon();
+        });
+    }
+
+    // ---- Motion toggle icon ----
+    // We store a user-override in localStorage; it doesn't change the system preference
+    // but we can use it to skip our own animations.
+    let motionEnabled = localStorage.getItem('motionEnabled') !== 'false';
+
+    function syncMotionIcon() {
+        if (!trayMotion) return;
+        trayMotion.textContent = motionEnabled ? '\u2728' : '\u2B55';
+        trayMotion.title       = motionEnabled ? 'Motion: on (click to reduce)' : 'Motion: reduced (click to enable)';
+        trayMotion.classList.toggle('tray-muted', !motionEnabled);
+        // Expose for other code that may want to respect this setting
+        window._motionEnabled = motionEnabled;
+    }
+    if (trayMotion) {
+        syncMotionIcon();
+        trayMotion.addEventListener('click', () => {
+            motionEnabled = !motionEnabled;
+            localStorage.setItem('motionEnabled', motionEnabled ? 'true' : 'false');
+            syncMotionIcon();
+        });
+    }
+
+    // ---- Chat unread indicator ----
+    // Runs after chat messages are loaded; piggybacks on updateChatUnread patch.
+    function syncChatTrayIcon(unreadCount) {
+        if (!trayChat) return;
+        const hasUnread = unreadCount > 0;
+        trayChat.classList.toggle('tray-has-unread', hasUnread);
+        trayChat.title = hasUnread
+            ? `Chat: ${unreadCount} unread message${unreadCount === 1 ? '' : 's'} (click to open)`
+            : 'Chat (click to open)';
+    }
+
+    // Patch updateChatUnread to also update the tray icon
+    const _origUpdateChatUnread = window.updateChatUnread;
+    window.updateChatUnread = function (messages) {
+        if (typeof _origUpdateChatUnread === 'function') _origUpdateChatUnread(messages);
+        const unread = Array.isArray(messages)
+            ? messages.filter(m => m.timestamp > lastChatSeenTs && m.author !== currentUser).length
+            : 0;
+        syncChatTrayIcon(unread);
+    };
+
+    if (trayChat) {
+        syncChatTrayIcon(0);
+        trayChat.addEventListener('click', () => w95Apps['chat']?.open());
+    }
+
+    // ---- Garden status icon ----
+    if (trayGarden) {
+        trayGarden.title = 'Garden (click to open)';
+        trayGarden.addEventListener('click', () => w95Apps['garden']?.open());
+    }
 })();

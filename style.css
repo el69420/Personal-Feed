@@ -5596,3 +5596,77 @@ body { padding: 0 !important; }
     font: 11px Tahoma, Verdana, sans-serif;
     font-style: italic;
 }
+
+/* ===== Taskbar spacer — pushes tray + clock to the right ===== */
+.w95-taskbar-spacer { flex: 1; }
+
+/* ===== System Tray ===== */
+.w95-tray {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    padding: 2px 4px;
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #fff;
+    border-bottom: 1px solid #fff;
+    background: #c0c0c0;
+    height: 26px;
+    box-sizing: border-box;
+}
+.tray-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    border: 1px solid transparent;
+    box-sizing: border-box;
+}
+.tray-icon:hover {
+    border-top: 1px solid #fff;
+    border-left: 1px solid #fff;
+    border-right: 1px solid #808080;
+    border-bottom: 1px solid #808080;
+}
+.tray-icon:active {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #fff;
+    border-bottom: 1px solid #fff;
+}
+.tray-icon.tray-muted { opacity: 0.45; }
+.tray-icon.tray-has-unread { color: #ff4400; }
+
+/* ===== System Clock ===== */
+.w95-clock {
+    font: bold 12px Tahoma, Verdana, Arial, sans-serif;
+    padding: 3px 8px;
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #fff;
+    border-bottom: 1px solid #fff;
+    background: #c0c0c0;
+    white-space: nowrap;
+    user-select: none;
+    cursor: default;
+    min-width: 42px;
+    text-align: center;
+    height: 26px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.w95-clock:hover { background: rgba(0,0,128,.08); }
+.w95-clock:active {
+    border-top: 1px solid #fff;
+    border-left: 1px solid #fff;
+    border-right: 1px solid #808080;
+    border-bottom: 1px solid #808080;
+}

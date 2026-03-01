@@ -747,6 +747,17 @@
 
     <div id="w95-taskbar" class="w95-taskbar">
         <button id="w95-start-btn" class="w95-btn w95-start-btn" type="button">&#x1F4BB; Menu</button>
+        <!-- taskbar window buttons injected here by JS -->
+        <div class="w95-taskbar-spacer"></div>
+        <!-- System Tray -->
+        <div id="systemTray" class="w95-tray">
+            <span class="tray-icon" id="tray-chat" title="Chat: no new messages" aria-label="Chat">&#128172;</span>
+            <span class="tray-icon" id="tray-garden" title="Garden: healthy" aria-label="Garden">&#127807;</span>
+            <span class="tray-icon" id="tray-sound" title="Sound: on" aria-label="Sound toggle">&#128266;</span>
+            <span class="tray-icon" id="tray-motion" title="Motion: on" aria-label="Motion toggle">&#10024;</span>
+        </div>
+        <!-- System Clock -->
+        <div id="systemClock" class="w95-clock" title="Click to open Date &amp; Time" role="button" tabindex="0" aria-label="System clock">00:00</div>
     </div>
 
     <!-- Start-style popup menu -->
@@ -765,14 +776,43 @@
 
     <!-- Desktop right-click context menu -->
     <div id="w95-ctx-menu" class="w95-ctx-menu is-hidden" role="menu">
-        <button class="w95-ctx-item" id="ctx-refresh" type="button">Refresh</button>
+        <button class="w95-ctx-item" id="ctx-wallpaper" type="button">&#127912; Change Wallpaper</button>
+        <button class="w95-ctx-item" id="ctx-refresh" type="button">&#x1F504; Refresh</button>
         <hr class="w95-ctx-separator">
         <button class="w95-ctx-item" id="ctx-arrange-name" type="button">Arrange by Name</button>
         <button class="w95-ctx-item" id="ctx-auto-arrange" type="button">Auto Arrange</button>
         <hr class="w95-ctx-separator">
-        <button class="w95-ctx-item" id="ctx-personalise" type="button">Personalise</button>
+        <button class="w95-ctx-item" id="ctx-personalise" type="button">&#127912; Personalisation</button>
+        <button class="w95-ctx-item" id="ctx-new-post" type="button">&#10024; New Post</button>
         <hr class="w95-ctx-separator">
         <button class="w95-ctx-item" id="ctx-shutdown" type="button">Shut Down...</button>
+    </div>
+
+    <!-- Icon right-click context menu -->
+    <div id="w95-icon-ctx-menu" class="w95-ctx-menu is-hidden" role="menu">
+        <button class="w95-ctx-item" id="icon-ctx-open" type="button"><b>Open</b></button>
+        <hr class="w95-ctx-separator">
+        <button class="w95-ctx-item" id="icon-ctx-properties" type="button">Properties</button>
+    </div>
+
+    <!-- Window right-click context menu -->
+    <div id="w95-win-ctx-menu" class="w95-ctx-menu is-hidden" role="menu">
+        <button class="w95-ctx-item" id="win-ctx-minimise" type="button">Minimise</button>
+        <button class="w95-ctx-item" id="win-ctx-close" type="button">Close</button>
+    </div>
+
+    <!-- Date & Time window -->
+    <div id="w95-win-datetime" class="w95-window is-hidden" style="left:auto;right:6px;bottom:46px;top:auto;width:220px;">
+        <div class="w95-titlebar" id="w95-datetime-handle">
+            <div class="w95-title">&#128336; Date &amp; Time</div>
+            <div class="w95-controls">
+                <button class="w95-control" id="w95-datetime-close" type="button" aria-label="Close">&#x2715;</button>
+            </div>
+        </div>
+        <div class="w95-body" style="text-align:center;padding:14px 10px;">
+            <div id="datetime-date" style="font:13px Tahoma,Verdana,Arial,sans-serif;margin-bottom:6px;"></div>
+            <div id="datetime-time" style="font:bold 28px Tahoma,Verdana,Arial,sans-serif;letter-spacing:2px;"></div>
+        </div>
     </div>
 
     <!-- Fake Shutdown Dialog (legacy; replaced by openW95Dialog — kept for reference) -->
