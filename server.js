@@ -316,5 +316,80 @@ app.post('/api/wallpaper', (req, res) => {
     res.json({ ok: true, wallpaperId });
 });
 
+// ===== Cat API =====
+
+const CATS_FILE            = path.join(__dirname, 'cats.json');
+const CAT_DECAY_PER_HOUR   = 3;   // stat points lost per hour
+const CAT_ACTION_DELTAS    = { feed: { hunger: 25 }, water: { thirst: 25 }, yarn: { play: 35 } };
+
+function loadCatsStore() {
+    try {
+        if (fs.existsSync(CATS_FILE)) return JSON.parse(fs.readFileSync(CATS_FILE, 'utf8'));
+    } catch (e) { console.error('Failed to read cats store:', e.message); }
+    return {};
+}
+
+function saveCatsStore(store) {
+    try { fs.writeFileSync(CATS_FILE, JSON.stringify(store, null, 2)); }
+    catch (e) { console.error('Failed to save cats store:', e.message); }
+}
+
+let catsStore = loadCatsStore();
+
+function catDecay(stored) {
+    const hoursElapsed = (Date.now() - (stored.lastUpdated || Date.now())) / 3_600_000;
+    const d = hoursElapsed * CAT_DECAY_PER_HOUR;
+    return {
+        hunger: Math.max(0, Math.min(100, (stored.hunger ?? 75) - d)),
+        thirst: Math.max(0, Math.min(100, (stored.thirst ?? 75) - d)),
+        play:   Math.max(0, Math.min(100, (stored.play   ?? 75) - d)),
+    };
+}
+
+// GET /api/cat?user=El  — returns decayed stats + catName
+app.get('/api/cat', (req, res) => {
+    const user = req.query.user;
+    if (!user || typeof user !== 'string' || user.length > 64)
+        return res.status(400).json({ error: 'invalid user' });
+    const stored  = catsStore[user] || { hunger: 75, thirst: 75, play: 75, lastUpdated: Date.now(), catName: '' };
+    const decayed = catDecay(stored);
+    res.json({ ...decayed, catName: stored.catName || '', lastUpdated: stored.lastUpdated || Date.now() });
+});
+
+// POST /api/cat/action  body: { user, action: 'feed'|'water'|'yarn' }
+app.post('/api/cat/action', (req, res) => {
+    const { user, action } = req.body || {};
+    if (!user || typeof user !== 'string' || user.length > 64)
+        return res.status(400).json({ error: 'invalid user' });
+    const delta = CAT_ACTION_DELTAS[action];
+    if (!delta) return res.status(400).json({ error: 'invalid action' });
+
+    const stored  = catsStore[user] || { hunger: 75, thirst: 75, play: 75, lastUpdated: Date.now(), catName: '' };
+    const decayed = catDecay(stored);
+    const updated = {
+        hunger:      Math.max(0, Math.min(100, decayed.hunger + (delta.hunger || 0))),
+        thirst:      Math.max(0, Math.min(100, decayed.thirst + (delta.thirst || 0))),
+        play:        Math.max(0, Math.min(100, decayed.play   + (delta.play   || 0))),
+        lastUpdated: Date.now(),
+        catName:     stored.catName || '',
+    };
+    catsStore[user] = updated;
+    saveCatsStore(catsStore);
+    res.json({ hunger: updated.hunger, thirst: updated.thirst, play: updated.play,
+               catName: updated.catName, lastUpdated: updated.lastUpdated });
+});
+
+// POST /api/cat/name  body: { user, catName }
+app.post('/api/cat/name', (req, res) => {
+    const { user, catName } = req.body || {};
+    if (!user || typeof user !== 'string' || user.length > 64)
+        return res.status(400).json({ error: 'invalid user' });
+    if (typeof catName !== 'string') return res.status(400).json({ error: 'invalid catName' });
+    if (!catsStore[user]) catsStore[user] = { hunger: 75, thirst: 75, play: 75, lastUpdated: Date.now() };
+    catsStore[user].catName = catName.trim().slice(0, 32);
+    saveCatsStore(catsStore);
+    res.json({ ok: true, catName: catsStore[user].catName });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Personal Feed running on http://localhost:${PORT}`));

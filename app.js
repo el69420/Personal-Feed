@@ -7128,6 +7128,182 @@ async function loadUserWallpaper() {
     }};
 })();
 
+// ===== Win95 Cat Window =====
+(() => {
+    const win      = document.getElementById('w95-win-cat');
+    const minBtn   = document.getElementById('w95-cat-min');
+    const maxBtn   = document.getElementById('w95-cat-max');
+    const closeBtn = document.getElementById('w95-cat-close');
+    const handle   = document.getElementById('w95-cat-handle');
+    if (!win || !minBtn || !closeBtn || !handle) return;
+
+    let btn = null;
+    let _catStats = null; // { hunger, thirst, play, catName, lastUpdated }
+
+    function showCat() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-cat', 'CAT', () => {
+            if (win.classList.contains('is-hidden')) showCat(); else hideCat();
+        });
+        win.classList.remove('is-hidden');
+        win.style.zIndex = ++w95TopZ;
+        w95Mgr.setPressed(btn, true);
+        localStorage.setItem('w95_cat_open', '1');
+        loadCatStats();
+    }
+
+    function hideCat() {
+        win.classList.add('is-hidden');
+        w95Mgr.setPressed(btn, false);
+        localStorage.setItem('w95_cat_open', '0');
+    }
+
+    function closeCat() {
+        if (w95Mgr.isMaximised('w95-win-cat')) w95Mgr.toggleMaximise(win, 'w95-win-cat');
+        hideCat();
+        if (btn) { btn.remove(); btn = null; }
+    }
+
+    minBtn.addEventListener('click', (e) => { e.stopPropagation(); hideCat(); });
+    if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-cat'); });
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeCat(); });
+
+    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; }, true);
+
+    // ---- Drag ----
+    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+    handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button')) return;
+        if (w95Mgr.isMaximised('w95-win-cat')) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const r = win.getBoundingClientRect();
+        winStartX = r.left; winStartY = r.top;
+        win.style.zIndex = ++w95TopZ;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const taskbarH = 40;
+        const maxX = document.documentElement.clientWidth  - win.offsetWidth;
+        const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
+        win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+        win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+
+    // ---- Status text logic ----
+    function catDisplayName() {
+        return (_catStats?.catName || '').trim() || 'the cat';
+    }
+
+    function getCatStatus(s) {
+        if (!s) return 'Loading...';
+        const name = catDisplayName();
+        if (s.hunger < 20) return `${name} is hungry! (>_<)`;
+        if (s.thirst < 20) return `${name} is very thirsty...`;
+        if (s.play   < 20) return `${name} is bored. zZz`;
+        if (s.hunger < 40) return `${name} could eat something`;
+        if (s.thirst < 40) return `${name} is a little thirsty`;
+        if (s.play   < 40) return `${name} wants to play`;
+        if (Math.min(s.hunger, s.thirst, s.play) > 75) return `${name} is purring contentedly \u2661`;
+        return `${name} is doing okay :)`;
+    }
+
+    // ---- Render stats into the window ----
+    function renderCatWindow() {
+        const s = _catStats;
+        const nameInput = document.getElementById('cat-name-input');
+        if (nameInput && s?.catName !== undefined && !nameInput.dataset.dirty) {
+            nameInput.value = s.catName || '';
+        }
+        if (!s) return;
+        for (const stat of ['hunger', 'thirst', 'play']) {
+            const val  = Math.round(s[stat] ?? 0);
+            const fill = document.getElementById(`cat-meter-${stat}`);
+            const valEl = document.getElementById(`cat-val-${stat}`);
+            if (fill) {
+                fill.style.width      = val + '%';
+                fill.style.background = val < 25 ? '#cc3333' : val < 50 ? '#cc8833' : '#339944';
+            }
+            if (valEl) valEl.textContent = val;
+        }
+        const statusEl = document.getElementById('cat-status');
+        if (statusEl) statusEl.textContent = getCatStatus(s);
+    }
+
+    // ---- Load stats from server ----
+    async function loadCatStats() {
+        if (!currentUser) return;
+        try {
+            const r = await fetch(`${API_BASE}/api/cat?user=${encodeURIComponent(currentUser)}`);
+            if (!r.ok) throw new Error('fetch failed');
+            _catStats = await r.json();
+            renderCatWindow();
+        } catch (e) { console.error('loadCatStats failed', e); }
+    }
+
+    // ---- Perform a care action ----
+    async function doCatAction(action) {
+        if (!currentUser || !throttle('catAction', 1500)) return;
+        try {
+            const r = await fetch(`${API_BASE}/api/cat/action`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user: currentUser, action }),
+            });
+            if (!r.ok) throw new Error('action failed');
+            _catStats = await r.json();
+            renderCatWindow();
+            // Local-only animations — no Firebase sync
+            if (action === 'feed' || action === 'water') {
+                window._catLocalEmote?.('heart');
+            } else if (action === 'yarn') {
+                window._catLocalYarnZoom?.();
+            }
+        } catch (e) { console.error('doCatAction failed', e); }
+    }
+
+    // ---- Cat name save ----
+    const nameInput  = document.getElementById('cat-name-input');
+    const nameSaveBtn = document.getElementById('cat-name-save');
+    if (nameInput) {
+        nameInput.addEventListener('input', () => { nameInput.dataset.dirty = '1'; });
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') nameSaveBtn?.click();
+        });
+    }
+    if (nameSaveBtn && nameInput) {
+        nameSaveBtn.addEventListener('click', async () => {
+            if (!currentUser) return;
+            const newName = nameInput.value.trim().slice(0, 32);
+            try {
+                const r = await fetch(`${API_BASE}/api/cat/name`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user: currentUser, catName: newName }),
+                });
+                if (!r.ok) throw new Error('name save failed');
+                if (_catStats) _catStats.catName = newName;
+                delete nameInput.dataset.dirty;
+                renderCatWindow();
+                showToast('Cat name saved!');
+            } catch (e) { console.error('saveCatName failed', e); }
+        });
+    }
+
+    // ---- Action buttons ----
+    document.getElementById('cat-feed-btn')?.addEventListener('click',  () => doCatAction('feed'));
+    document.getElementById('cat-water-btn')?.addEventListener('click', () => doCatAction('water'));
+    document.getElementById('cat-yarn-btn')?.addEventListener('click',  () => doCatAction('yarn'));
+
+    // ---- App registry ----
+    w95Apps['cat'] = { open: () => {
+        if (win.classList.contains('is-hidden')) showCat(); else win.style.zIndex = ++w95TopZ;
+    }};
+
+    if (localStorage.getItem('w95_cat_open') === '1') showCat();
+})();
+
 // ===== PIXEL CAT =====
 // Shared desktop mascot. One client drives cat position via Firebase (~1.4 s writes);
 // all clients render smoothly by extrapolating movement locally between updates.
@@ -7860,5 +8036,16 @@ function initPixelCat() {
             canvas.classList.add('cat-bounce');
         }
     });
-    canvas.addEventListener('animationend', () => canvas.classList.remove('cat-bounce'));
+    canvas.addEventListener('animationend', () => {
+        canvas.classList.remove('cat-bounce');
+        canvas.classList.remove('cat-yarn-zoom');
+    });
+
+    // Expose local-only animation helpers for Cat.exe window (no Firebase sync).
+    window._catLocalEmote = triggerEmote;
+    window._catLocalYarnZoom = function () {
+        canvas.classList.remove('cat-yarn-zoom');
+        void canvas.offsetWidth; // force reflow to restart
+        canvas.classList.add('cat-yarn-zoom');
+    };
 }

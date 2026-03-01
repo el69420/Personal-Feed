@@ -67,6 +67,10 @@
             <div class="desktop-icon-img">&#128465;</div>
             <div class="desktop-icon-label">Recycle Bin</div>
         </div>
+        <div class="w95-desktop-icon" data-app="cat" tabindex="0">
+            <div class="desktop-icon-img">&#128008;</div>
+            <div class="desktop-icon-label">Cat.exe</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -919,6 +923,47 @@
   </div>
   <div class="w95-body recycle-bin-body">
     <div id="recycle-bin-list"></div>
+  </div>
+</div>
+
+<!-- Cat.exe window -->
+<div id="w95-win-cat" class="w95-window is-hidden" style="left:140px;top:80px;width:288px;">
+  <div class="w95-titlebar" id="w95-cat-handle">
+    <div class="w95-title">&#128008; Cat.exe</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-cat-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-cat-max" type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-cat-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body cat-app-body" id="w95-cat-body">
+    <div class="cat-name-row">
+      <input id="cat-name-input" type="text" maxlength="32" placeholder="Name your cat..." class="cat-name-input">
+      <button id="cat-name-save" class="w95-btn" type="button">Save</button>
+    </div>
+    <div class="cat-stats">
+      <div class="cat-stat-row">
+        <span class="cat-stat-label">HUNGER</span>
+        <div class="cat-meter"><div class="cat-meter-fill" id="cat-meter-hunger"></div></div>
+        <span class="cat-stat-val" id="cat-val-hunger">--</span>
+      </div>
+      <div class="cat-stat-row">
+        <span class="cat-stat-label">THIRST</span>
+        <div class="cat-meter"><div class="cat-meter-fill" id="cat-meter-thirst"></div></div>
+        <span class="cat-stat-val" id="cat-val-thirst">--</span>
+      </div>
+      <div class="cat-stat-row">
+        <span class="cat-stat-label">PLAY</span>
+        <div class="cat-meter"><div class="cat-meter-fill" id="cat-meter-play"></div></div>
+        <span class="cat-stat-val" id="cat-val-play">--</span>
+      </div>
+    </div>
+    <div class="cat-status" id="cat-status">Loading...</div>
+    <div class="cat-actions">
+      <button class="w95-btn cat-action-btn" id="cat-feed-btn" type="button">&#127829; Feed</button>
+      <button class="w95-btn cat-action-btn" id="cat-water-btn" type="button">&#128167; Water</button>
+      <button class="w95-btn cat-action-btn" id="cat-yarn-btn" type="button">&#129706; Give Yarn</button>
+    </div>
   </div>
 </div>
 

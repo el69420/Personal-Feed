@@ -5235,3 +5235,110 @@ body { padding: 0 !important; }
 #gift-popup-icon  { font-size: 38px; line-height: 1; }
 #gift-popup-label { font: bold 12px Tahoma,Verdana,Arial,sans-serif; }
 #gift-popup-msg   { font: 11px Tahoma,Verdana,Arial,sans-serif; color: #444; margin-bottom: 4px; }
+
+/* ===== Cat.exe Window ===== */
+.cat-app-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: 'Courier New', Courier, monospace;
+}
+.cat-name-row {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.cat-name-input {
+  flex: 1;
+  font: 11px 'Courier New', Courier, monospace;
+  padding: 2px 4px;
+  background: #fff;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+  outline: none;
+}
+.cat-name-input:focus {
+  outline: 1px dotted #000;
+  outline-offset: -2px;
+}
+.cat-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+  padding: 7px 8px;
+  background: #d4d0c8;
+}
+.cat-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cat-stat-label {
+  font: bold 10px 'Courier New', Courier, monospace;
+  letter-spacing: 0.5px;
+  width: 50px;
+  color: #222;
+  flex-shrink: 0;
+}
+.cat-meter {
+  flex: 1;
+  height: 11px;
+  background: #a0a0a0;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+  overflow: hidden;
+}
+.cat-meter-fill {
+  height: 100%;
+  width: 0%;
+  background: #339944;
+  transition: width 0.35s ease, background 0.35s ease;
+}
+.cat-stat-val {
+  font: 10px 'Courier New', Courier, monospace;
+  width: 22px;
+  text-align: right;
+  color: #444;
+  flex-shrink: 0;
+}
+.cat-status {
+  font: italic 11px 'Courier New', Courier, monospace;
+  color: #444;
+  border-top: 1px solid #bbb;
+  padding-top: 6px;
+  text-align: center;
+  min-height: 16px;
+}
+.cat-actions {
+  display: flex;
+  gap: 4px;
+}
+.cat-action-btn {
+  flex: 1;
+  font-size: 11px;
+  padding: 3px 2px;
+  min-width: 0;
+}
+
+/* ---- Yarn zoom animation (local-only) ---- */
+@keyframes catYarnZoom {
+  0%   { transform: translateX(0);    }
+  18%  { transform: translateX(-28px); }
+  36%  { transform: translateX(28px);  }
+  54%  { transform: translateX(-18px); }
+  72%  { transform: translateX(18px);  }
+  86%  { transform: translateX(-8px);  }
+  100% { transform: translateX(0);    }
+}
+#pixel-cat-canvas.cat-yarn-zoom {
+  animation: catYarnZoom 0.85s ease-in-out;
+}
