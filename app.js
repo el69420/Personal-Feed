@@ -6497,7 +6497,48 @@ function renderAchievementsWindow() {
         }
     }
 
-    body.innerHTML = levelHtml + historyHtml + tiersHtml;
+    // Chat commands section — show all XP commands grouped by unlock threshold
+    const XP_TIERS = [
+        { xp: 50,  tier: 2 },
+        { xp: 120, tier: 3 },
+        { xp: 250, tier: 4 },
+        { xp: 500, tier: 5 },
+    ];
+
+    let commandsHtml = `<div class="achievement-tier-header">=== CHAT COMMANDS ===</div>`;
+
+    for (const { xp, tier } of XP_TIERS) {
+        const cmds = XP_CHAT_COMMANDS.filter(c => c.requiredXP === xp);
+        if (!cmds.length) continue;
+
+        const tierUnlocked = xpTotal >= xp;
+        const needed       = xp - xpTotal;
+        const needLabel    = !tierUnlocked ? ` · need ${needed} more XP` : '';
+        const tierClass    = tierUnlocked ? 'xp-cmd-group--unlocked' : 'xp-cmd-group--locked';
+
+        commandsHtml += `<div class="xp-cmd-group ${tierClass}">`;
+        commandsHtml +=
+            `<div class="xp-cmd-group-header">` +
+            `Tier ${tier} · ${xp} XP` +
+            (tierUnlocked
+                ? ` <span class="xp-cmd-unlocked-badge">✓ unlocked</span>`
+                : `<span class="xp-cmd-need-label">${needLabel}</span>`) +
+            `</div>`;
+
+        for (const c of cmds) {
+            const unlocked = xpTotal >= c.requiredXP;
+            commandsHtml +=
+                `<div class="xp-cmd-row${unlocked ? ' xp-cmd-row--unlocked' : ' xp-cmd-row--locked'}">` +
+                `<span class="xp-cmd-status">${unlocked ? '✓' : '🔒'}</span>` +
+                `<span class="xp-cmd-name">/${safeText(c.name)}</span>` +
+                `<span class="xp-cmd-desc">${safeText(c.description)}</span>` +
+                `</div>`;
+        }
+
+        commandsHtml += `</div>`;
+    }
+
+    body.innerHTML = levelHtml + historyHtml + tiersHtml + commandsHtml;
 }
 
 // Achievements window IIFE

@@ -3981,6 +3981,75 @@ body.dark-mode .achievement-item.is-unlocked .achievement-progress{color:#a0c8a0
 .achievement-tier-header{font-family:monospace;font-size:11px;color:#444;padding:4px 4px 2px;letter-spacing:1px;}
 body.dark-mode .achievement-tier-header{color:#909090;}
 
+/* ── XP Chat Commands section in Achievements window ──── */
+.xp-cmd-group {
+    margin: 0 0 2px;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 3px;
+}
+.xp-cmd-group:last-child { border-bottom: none; }
+
+.xp-cmd-group-header {
+    font-family: monospace;
+    font-size: 11px;
+    padding: 4px 4px 3px;
+    color: #444;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    letter-spacing: 0.5px;
+}
+.xp-cmd-group--locked .xp-cmd-group-header { color: #888; }
+
+.xp-cmd-unlocked-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #2a7a2a;
+    letter-spacing: 0;
+}
+.xp-cmd-need-label {
+    font-size: 10px;
+    color: #888;
+    font-weight: normal;
+    letter-spacing: 0;
+}
+
+.xp-cmd-row {
+    display: grid;
+    grid-template-columns: 14px 70px 1fr;
+    align-items: baseline;
+    gap: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-family: monospace;
+}
+.xp-cmd-row--locked  { opacity: 0.45; }
+.xp-cmd-row--unlocked { background: rgba(100,180,100,0.08); }
+
+.xp-cmd-status { font-size: 10px; color: #2a7a2a; text-align: center; }
+.xp-cmd-row--locked .xp-cmd-status { color: #999; }
+
+.xp-cmd-name { font-weight: 700; color: #000; white-space: nowrap; }
+.xp-cmd-row--locked .xp-cmd-name { color: #555; }
+
+.xp-cmd-desc {
+    color: #555;
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.dark-mode .xp-cmd-group          { border-bottom-color: #333; }
+body.dark-mode .xp-cmd-group-header   { color: #909090; }
+body.dark-mode .xp-cmd-unlocked-badge { color: #7acc7a; }
+body.dark-mode .xp-cmd-need-label     { color: #666; }
+body.dark-mode .xp-cmd-row--unlocked  { background: rgba(80,140,80,0.1); }
+body.dark-mode .xp-cmd-status         { color: #7acc7a; }
+body.dark-mode .xp-cmd-name           { color: #d0d0d0; }
+body.dark-mode .xp-cmd-row--locked .xp-cmd-name { color: #666; }
+body.dark-mode .xp-cmd-desc           { color: #707070; }
+
 /* Tier border/background accents (unlocked cards only) */
 .achievement-item.is-unlocked.tier-bronze{border-left-color:#cd7f32;}
 .achievement-item.is-unlocked.tier-silver{border-left-color:#a0a0a0;}
