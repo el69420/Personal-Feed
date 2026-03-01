@@ -6665,14 +6665,13 @@ function initPixelCat() {
     const CW  = 8, CH = 8;
     const CLR = [null, '#2C2C3E', '#C0C2D8', '#E8829A'];
 
-    // Single-pixel ear spikes at cols 2 & 5 (top-centre) → clearly pointy cat ears.
+    // Ear tips at outer cols 1 & 6 form triangle ears; pink at row 1 = inner ear.
     // Eyes: dark pixel at cols 2 & 5 in the eye row.
     // Nose: two centred pink pixels at cols 3 & 4.
-    // Whisker hints: tiny dark marks at cols 1 & 6 in the nose row.
 
     const HEAD = [          // shared top rows (ears + face)
-        [0,0,1,0,0,1,0,0],  // row 0 – pointy ear spikes
-        [0,1,1,1,1,1,1,0],  // row 1 – head top (flat crown)
+        [0,1,0,0,0,0,1,0],  // row 0 – ear tips at cols 1 & 6 (outer corners)
+        [1,3,1,0,0,1,3,1],  // row 1 – ears: outline/pink/outline · gap · outline/pink/outline
         [1,2,2,2,2,2,2,1],  // row 2 – face
         [1,2,1,2,2,1,2,1],  // row 3 – eyes (dark at cols 2 & 5)
         [1,2,2,2,2,2,2,1],  // row 4 – cheeks
@@ -6682,7 +6681,7 @@ function initPixelCat() {
     // Walk-A: legs together (stride-in)
     const WALK_A = [
         ...HEAD,
-        [0,0,1,0,0,1,0,0],  // row 6 – legs narrow
+        [0,1,1,0,0,1,1,0],  // row 6 – legs (2-px wide each)
         [0,1,1,0,0,1,1,0],  // row 7 – paws
     ];
     // Walk-B: legs apart (stride-out)
@@ -6700,8 +6699,8 @@ function initPixelCat() {
     // Sleep: ears lowered by one row, eyes closed (horizontal bar), rounded body
     const SLEEP = [
         [0,0,0,0,0,0,0,0],  // row 0 – empty (cat is curled lower)
-        [0,0,1,0,0,1,0,0],  // row 1 – ear spikes (shifted down)
-        [0,1,1,1,1,1,1,0],  // row 2 – head top
+        [0,1,0,0,0,0,1,0],  // row 1 – ear tips (shifted down)
+        [1,3,1,0,0,1,3,1],  // row 2 – ears with pink inner
         [1,2,2,2,2,2,2,1],  // row 3 – face
         [1,2,1,1,1,1,2,1],  // row 4 – closed eyes (solid horizontal bar)
         [1,2,2,2,2,2,2,1],  // row 5 – body
@@ -6710,21 +6709,21 @@ function initPixelCat() {
     ];
     // Surprise: big eyes — shown for ~700 ms after a click
     const SURPRISE = [
-        [0,0,1,0,0,1,0,0],  // ears
-        [0,1,1,1,1,1,1,0],  // head top
-        [1,2,2,2,2,2,2,1],  // face
+        [0,1,0,0,0,0,1,0],  // row 0 – ear tips
+        [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
+        [1,2,2,2,2,2,2,1],  // row 2 – face
         [1,1,1,2,2,1,1,1],  // row 3 – wide eyes (dark fills 3 cols each)
-        [1,2,2,2,2,2,2,1],  // cheeks
+        [1,2,2,2,2,2,2,1],  // row 4 – cheeks
         [1,1,1,3,3,1,1,1],  // row 5 – big surprised nose / tiny open mouth
-        [0,0,1,0,0,1,0,0],  // legs
-        [0,1,1,0,0,1,1,0],  // paws
+        [0,1,1,2,2,1,1,0],  // row 6 – body
+        [0,1,1,0,0,1,1,0],  // row 7 – paws
     ];
 
     // Wakeup: half-open eyes (horizontal bar thinned to one pixel row), seated posture
     const WAKEUP = [
         [0,0,0,0,0,0,0,0],  // row 0 – empty
-        [0,0,1,0,0,1,0,0],  // row 1 – ear spikes
-        [0,1,1,1,1,1,1,0],  // row 2 – head top
+        [0,1,0,0,0,0,1,0],  // row 1 – ear tips
+        [1,3,1,0,0,1,3,1],  // row 2 – ears with pink inner
         [1,2,2,2,2,2,2,1],  // row 3 – face
         [1,2,1,2,2,1,2,1],  // row 4 – half-open eyes (single dark pixel per eye)
         [1,2,1,3,3,1,2,1],  // row 5 – nose/whiskers
@@ -6734,19 +6733,19 @@ function initPixelCat() {
 
     // Idle: cat standing still, glancing sideways (eyes shifted one pixel)
     const IDLE = [
-        [0,0,1,0,0,1,0,0],  // row 0 – pointy ear spikes
-        [0,1,1,1,1,1,1,0],  // row 1 – head top
+        [0,1,0,0,0,0,1,0],  // row 0 – ear tips
+        [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
         [1,2,2,2,2,2,2,1],  // row 2 – face
-        [1,2,2,1,2,2,1,1],  // row 3 – eyes shifted (looking sideways)
+        [1,2,2,1,2,2,1,1],  // row 3 – eyes shifted right (looking sideways)
         [1,2,2,2,2,2,2,1],  // row 4 – cheeks
-        [1,2,1,3,3,1,2,1],  // row 5 – whiskers + nose
-        [0,0,1,0,0,1,0,0],  // row 6 – legs together (standing still)
-        [0,1,1,0,0,1,1,0],  // row 7 – paws (same as walk-A)
+        [1,2,1,3,3,1,2,1],  // row 5 – nose
+        [0,1,1,0,0,1,1,0],  // row 6 – legs
+        [0,1,1,0,0,1,1,0],  // row 7 – paws
     ];
     // Jump: mid-leap pose – front paws reaching out, back paws dangling
     const JUMP = [
-        [0,0,1,0,0,1,0,0],  // row 0 – ears
-        [0,1,1,1,1,1,1,0],  // row 1 – head top
+        [0,1,0,0,0,0,1,0],  // row 0 – ear tips
+        [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
         [1,2,2,2,2,2,2,1],  // row 2 – face
         [1,2,1,2,2,1,2,1],  // row 3 – eyes wide open (alert mid-leap)
         [1,2,2,2,2,2,2,1],  // row 4 – cheeks
