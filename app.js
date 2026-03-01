@@ -1041,19 +1041,28 @@ function setupDBListeners() {
         }
 
         // Trigger animations for newly received command messages (both users see them)
+        const XP_VISUAL_CMDS = new Set([
+            'sparkle', 'glow', 'pulse', 'tint', 'bloom',
+            'rain', 'snow', 'comet', 'fireflies', 'constellation',
+        ]);
         const newAnimCmds = messages.filter(m =>
             m.kind === 'system' &&
             m.systemType === 'command' &&
             m.timestamp > _lastAnimationTs &&
-            (m.command === 'flurry' || m.command === 'dance' || m.command === 'hug' || m.command === 'kiss')
+            (m.command === 'flurry' || m.command === 'dance' ||
+             m.command === 'hug'    || m.command === 'kiss'  ||
+             XP_VISUAL_CMDS.has(m.command))
         );
         if (newAnimCmds.length > 0) {
             _lastAnimationTs = Math.max(...newAnimCmds.map(c => c.timestamp));
-            const latest = newAnimCmds[newAnimCmds.length - 1];
-            if (latest.command === 'flurry') triggerFlurry();
-            if (latest.command === 'dance')  triggerDance();
-            if (latest.command === 'hug')    triggerHugSparkle(latest.variant);
-            if (latest.command === 'kiss')   triggerKissSparkle(latest.variant);
+            // Run all new commands (not just the latest) so concurrent effects fire correctly
+            for (const cmd of newAnimCmds) {
+                if (cmd.command === 'flurry') triggerFlurry();
+                else if (cmd.command === 'dance')  triggerDance();
+                else if (cmd.command === 'hug')    triggerHugSparkle(cmd.variant);
+                else if (cmd.command === 'kiss')   triggerKissSparkle(cmd.variant);
+                else if (XP_VISUAL_CMDS.has(cmd.command)) triggerXpCommandEffect(cmd);
+            }
         }
         checkGoldenKissSync(messages);
 
@@ -2870,6 +2879,180 @@ function _otherUser() {
     return 'you';
 }
 
+// ---- XP CHAT COMMANDS ----
+// Each entry: { name, requiredXP, description, handler(args) → { command, text [,style] [,tintVariant] } | null }
+const XP_CHAT_COMMANDS = [
+    // ── Tier 2 · 50 XP ──────────────────────────────────────────────────────────
+    {
+        name: 'sparkle', requiredXP: 50,
+        description: 'Sparkle effect around the latest message (~2s)',
+        handler: () => ({ command: 'sparkle', text: `✨ ${currentUser} adds a sparkle` }),
+    },
+    {
+        name: 'glow', requiredXP: 50,
+        description: 'Softly glow the chat window (~5s)',
+        handler: () => ({ command: 'glow', text: `🌟 ${currentUser} adds a soft glow` }),
+    },
+    {
+        name: 'pulse', requiredXP: 50,
+        description: 'Trigger a gentle pulse animation (~3s)',
+        handler: () => ({ command: 'pulse', text: `💫 ${currentUser} sends a pulse` }),
+    },
+    {
+        name: 'tint', requiredXP: 50,
+        description: 'Tint the chat warm|cool|rose for ~20s',
+        handler: (args) => {
+            const VARIANTS = ['warm', 'cool', 'rose'];
+            const v = VARIANTS.includes(args[0]) ? args[0] : 'warm';
+            const LABELS = { warm: '🌅 warm', cool: '❄️ cool', rose: '🌹 rose' };
+            return { command: 'tint', tintVariant: v, text: `${LABELS[v]} — ${currentUser} tints the chat` };
+        },
+    },
+    // ── Tier 3 · 120 XP ─────────────────────────────────────────────────────────
+    {
+        name: 'whisper', requiredXP: 120,
+        description: 'Send a softly styled whisper message',
+        handler: (args) => {
+            const msg = args.join(' ');
+            if (!msg) return null;
+            return { command: 'whisper', style: 'whisper', text: msg };
+        },
+    },
+    {
+        name: 'echo', requiredXP: 120,
+        description: 'Send a message that visually echoes',
+        handler: (args) => {
+            const msg = args.join(' ');
+            if (!msg) return null;
+            return { command: 'echo', style: 'echo', text: msg };
+        },
+    },
+    {
+        name: 'fade', requiredXP: 120,
+        description: 'Send a message that fades in slowly',
+        handler: (args) => {
+            const msg = args.join(' ');
+            if (!msg) return null;
+            return { command: 'fade', style: 'fade', text: msg };
+        },
+    },
+    {
+        name: 'bloom', requiredXP: 120,
+        description: 'Briefly boost garden colours/brightness (~5s)',
+        handler: () => ({ command: 'bloom', text: `🌸 ${currentUser} makes the garden bloom` }),
+    },
+    // ── Tier 4 · 250 XP ─────────────────────────────────────────────────────────
+    {
+        name: 'rain', requiredXP: 250,
+        description: 'Trigger a rain overlay in the garden (~15s)',
+        handler: () => ({ command: 'rain', text: `🌧️ ${currentUser} calls the rain` }),
+    },
+    {
+        name: 'snow', requiredXP: 250,
+        description: 'Trigger a snow overlay in the garden (~15s)',
+        handler: () => ({ command: 'snow', text: `❄️ ${currentUser} calls the snow` }),
+    },
+    {
+        name: 'comet', requiredXP: 250,
+        description: 'A comet streaks across the sky (~8s)',
+        handler: () => ({ command: 'comet', text: `☄️ ${currentUser} summons a comet` }),
+    },
+    {
+        name: 'fireflies', requiredXP: 250,
+        description: 'Firefly particles in the garden (~20s)',
+        handler: () => ({ command: 'fireflies', text: `✨ ${currentUser} awakens the fireflies` }),
+    },
+    // ── Tier 5 · 500 XP ─────────────────────────────────────────────────────────
+    {
+        name: 'memory', requiredXP: 500,
+        description: 'Resurface a random past message as a Memory',
+        handler: () => {
+            const pool = (lastChatMessages || []).filter(
+                m => m.kind !== 'system' && m.author === currentUser && m.text
+            );
+            const picked = pool.length
+                ? pool[Math.floor(Math.random() * pool.length)]
+                : null;
+            return { command: 'memory', style: 'memory', text: picked ? picked.text : '(no memories found yet)' };
+        },
+    },
+    {
+        name: 'constellation', requiredXP: 500,
+        description: 'Star/constellation overlay (~20s, night only)',
+        handler: () => ({ command: 'constellation', text: `🌌 ${currentUser} traces the constellations` }),
+    },
+];
+
+// Show a Windows-95-style lock alert when a locked command is used.
+function showXpLockAlert(requiredXP) {
+    document.getElementById('xp-lock-alert')?.remove();
+    const box = document.createElement('div');
+    box.id = 'xp-lock-alert';
+    box.className = 'xp-lock-alert';
+    box.innerHTML =
+        `<div class="xp-lock-alert__bar">` +
+            `<span>🔒 Locked</span>` +
+            `<button class="xp-lock-alert__close" aria-label="Close">✕</button>` +
+        `</div>` +
+        `<div class="xp-lock-alert__body">` +
+            `Unlocks at <strong>${requiredXP} XP</strong>` +
+            `<div class="xp-lock-alert__cur">You have ${xpTotal} XP</div>` +
+        `</div>` +
+        `<div class="xp-lock-alert__footer">` +
+            `<button class="xp-lock-alert__ok">OK</button>` +
+        `</div>`;
+    document.body.appendChild(box);
+    const close = () => {
+        box.classList.add('xp-lock-alert--out');
+        setTimeout(() => box.remove(), 180);
+    };
+    box.querySelector('.xp-lock-alert__close').addEventListener('click', close);
+    box.querySelector('.xp-lock-alert__ok').addEventListener('click', close);
+    setTimeout(close, 4000);
+}
+
+// Track which XP thresholds have already triggered an "Unlocked!" notification.
+const _notifiedXpThresholds = new Set();
+
+// Seed thresholds already passed at load time so we don't re-notify on startup.
+function _initXpNotifiedThresholds() {
+    for (const c of XP_CHAT_COMMANDS) {
+        if (xpTotal >= c.requiredXP) _notifiedXpThresholds.add(c.requiredXP);
+    }
+}
+
+// Called after xpTotal increases (prevXp = value before the change).
+function checkXpCommandUnlocks(prevXp, newXp) {
+    const newlyUnlocked = XP_CHAT_COMMANDS.filter(
+        c => prevXp < c.requiredXP && newXp >= c.requiredXP && !_notifiedXpThresholds.has(c.requiredXP)
+    );
+    if (!newlyUnlocked.length) return;
+    newlyUnlocked.forEach(c => _notifiedXpThresholds.add(c.requiredXP));
+    showXpCommandUnlockNotification(newlyUnlocked);
+}
+
+// Show a Windows-95-style "Unlocked!" notification listing newly available commands.
+function showXpCommandUnlockNotification(cmds) {
+    document.getElementById('xp-unlock-notification')?.remove();
+    const box = document.createElement('div');
+    box.id = 'xp-unlock-notification';
+    box.className = 'xp-unlock-notification';
+    const items = cmds.map(c => `<li><strong>/${c.name}</strong> — ${c.description}</li>`).join('');
+    box.innerHTML =
+        `<div class="xp-unlock-notification__bar">` +
+            `<span>🔓 Commands Unlocked!</span>` +
+            `<button class="xp-unlock-notification__close" aria-label="Close">✕</button>` +
+        `</div>` +
+        `<div class="xp-unlock-notification__body"><ul>${items}</ul></div>`;
+    document.body.appendChild(box);
+    const close = () => {
+        box.classList.add('xp-unlock-notification--out');
+        setTimeout(() => box.remove(), 300);
+    };
+    box.querySelector('.xp-unlock-notification__close').addEventListener('click', close);
+    setTimeout(close, 8000);
+}
+
 // Pushes a recognised slash command to Firebase as a system entry.
 // Returns true if the text was a recognised slash command (caller should NOT push to Firebase).
 async function handleSlashCommand(text) {
@@ -2877,9 +3060,39 @@ async function handleSlashCommand(text) {
     const parts = text.slice(1).trim().split(/\s+/);
     const cmd   = (parts[0] || '').toLowerCase();
     const args  = parts.slice(1);
-    const handler = SLASH_COMMANDS[cmd];
-    if (!handler) return false;
-    const result = handler(args);
+
+    // ── Legacy commands (hug, kiss, flurry, dance) ──────────────────────────────
+    const legacyHandler = SLASH_COMMANDS[cmd];
+    if (legacyHandler) {
+        const result = legacyHandler(args);
+        const entry = {
+            author:     currentUser,
+            timestamp:  Date.now(),
+            kind:       'system',
+            systemType: 'command',
+            command:    result.command,
+            text:       result.text,
+        };
+        // 5% chance of a subtly upgraded sparkle effect for hug and kiss
+        if ((cmd === 'hug' || cmd === 'kiss') && Math.random() < 0.05) {
+            entry.variant = 'sparkle';
+        }
+        await push(chatRef, entry);
+        return true;
+    }
+
+    // ── XP-gated commands ────────────────────────────────────────────────────────
+    const xpCmd = XP_CHAT_COMMANDS.find(c => c.name === cmd);
+    if (!xpCmd) return false;
+
+    if (xpTotal < xpCmd.requiredXP) {
+        showXpLockAlert(xpCmd.requiredXP);
+        return true;
+    }
+
+    const result = xpCmd.handler(args);
+    if (!result) return true; // handler returned null (e.g. /whisper with no text)
+
     const entry = {
         author:     currentUser,
         timestamp:  Date.now(),
@@ -2888,10 +3101,8 @@ async function handleSlashCommand(text) {
         command:    result.command,
         text:       result.text,
     };
-    // 5% chance of a subtly upgraded sparkle effect for hug and kiss
-    if ((cmd === 'hug' || cmd === 'kiss') && Math.random() < 0.05) {
-        entry.variant = 'sparkle';
-    }
+    if (result.style)       entry.style       = result.style;
+    if (result.tintVariant) entry.tintVariant = result.tintVariant;
     await push(chatRef, entry);
     return true;
 }
@@ -3176,7 +3387,29 @@ function renderChat(messages, updateKind = 'update') {
         // System messages (slash commands) render inline without grouping
         if (m.kind === 'system') {
             flushGroup();
-            htmlParts.push(`<div class="chat-system-msg" aria-live="polite">${safeText(m.text)}</div>`);
+            const style = m.style || '';
+            let sysHtml;
+            if (style === 'whisper') {
+                sysHtml = `<div class="chat-system-msg chat-system-msg--whisper" aria-live="polite">` +
+                    `<span class="chat-whisper-prefix">~${safeText(m.author)} whispers:</span> ` +
+                    `<em>${safeText(m.text)}</em></div>`;
+            } else if (style === 'echo') {
+                sysHtml = `<div class="chat-system-msg chat-system-msg--echo" aria-live="polite">` +
+                    `<span class="chat-echo-text">${safeText(m.text)}</span>` +
+                    `<span class="chat-echo-ghost" aria-hidden="true">${safeText(m.text)}</span>` +
+                    `</div>`;
+            } else if (style === 'fade') {
+                sysHtml = `<div class="chat-system-msg chat-system-msg--fade" aria-live="polite">` +
+                    `${safeText(m.text)}</div>`;
+            } else if (style === 'memory') {
+                sysHtml = `<div class="chat-system-msg chat-system-msg--memory" aria-live="polite">` +
+                    `<span class="chat-memory-label">✦ Memory ✦</span>` +
+                    `<span class="chat-memory-text">${safeText(m.text)}</span>` +
+                    `</div>`;
+            } else {
+                sysHtml = `<div class="chat-system-msg" aria-live="polite">${safeText(m.text)}</div>`;
+            }
+            htmlParts.push(sysHtml);
             continue;
         }
         // Group consecutive normal messages from the same author within 5 minutes
@@ -3371,7 +3604,9 @@ chatInput.addEventListener('keydown', async (e) => {
         if (e.key === 'Tab') {
             e.preventDefault();
             const target = _acIndex >= 0 ? items[_acIndex] : items[0];
-            if (target) _acFill(target.textContent.slice(1)); // strip leading /
+            if (target && !target.classList.contains('chat-autocomplete__item--locked')) {
+                _acFill(target.querySelector('.chat-autocomplete__cmd-name').textContent.slice(1));
+            }
             return;
         }
         if (e.key === 'Escape') {
@@ -3381,7 +3616,9 @@ chatInput.addEventListener('keydown', async (e) => {
         }
         if (e.key === 'Enter' && !e.shiftKey && _acIndex >= 0 && items[_acIndex]) {
             e.preventDefault();
-            chatInput.value = items[_acIndex].textContent; // already includes leading /
+            if (!items[_acIndex].classList.contains('chat-autocomplete__item--locked')) {
+                chatInput.value = items[_acIndex].querySelector('.chat-autocomplete__cmd-name').textContent;
+            }
             _acClose();
             // fall through to the normal Enter send handler below
         }
@@ -3451,12 +3688,14 @@ let   _acIndex = -1;
 
 function _acGetMatches(val) {
     if (!val.startsWith('/')) return [];
-    const typed = val.slice(1).toLowerCase();
-    const cmds  = Object.keys(SLASH_COMMANDS);
-    if (!typed) return cmds;
+    const typed   = val.slice(1).toLowerCase();
+    const legacy  = Object.keys(SLASH_COMMANDS);
+    const xpNames = XP_CHAT_COMMANDS.map(c => c.name);
+    const allCmds = [...legacy, ...xpNames];
+    if (!typed) return allCmds;
     // Hide dropdown when the input is an exact command match (already fully typed)
-    if (cmds.includes(typed)) return [];
-    return cmds.filter(c => c.startsWith(typed));
+    if (allCmds.includes(typed)) return [];
+    return allCmds.filter(c => c.startsWith(typed));
 }
 
 function _acSetActive(idx) {
@@ -3500,13 +3739,29 @@ function _acOpen(matches) {
     _acIndex = -1;
     _acEl.innerHTML = '';
     matches.forEach(cmd => {
+        const xpDef   = XP_CHAT_COMMANDS.find(c => c.name === cmd);
+        const isLocked = xpDef ? xpTotal < xpDef.requiredXP : false;
+
         const li = document.createElement('li');
-        li.className = 'chat-autocomplete__item';
+        li.className = 'chat-autocomplete__item' + (isLocked ? ' chat-autocomplete__item--locked' : '');
         li.setAttribute('role', 'option');
         li.setAttribute('aria-selected', 'false');
-        li.textContent = '/' + cmd;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'chat-autocomplete__cmd-name';
+        nameSpan.textContent = '/' + cmd;
+        li.appendChild(nameSpan);
+
+        if (isLocked) {
+            const badge = document.createElement('span');
+            badge.className = 'chat-autocomplete__xp-badge';
+            badge.textContent = xpDef.requiredXP + ' XP';
+            li.appendChild(badge);
+        }
+
         li.addEventListener('mousedown', e => {
             e.preventDefault(); // prevent blur before fill
+            if (isLocked) { showXpLockAlert(xpDef.requiredXP); return; }
             _acFill(cmd);
         });
         _acEl.appendChild(li);
@@ -3531,6 +3786,190 @@ document.addEventListener('click', e => {
 });
 
 
+
+// ---- XP COMMAND TRIGGER FUNCTIONS ----
+
+// Dispatch a received XP command to its visual trigger (called for both users via Firebase).
+function triggerXpCommandEffect(msg) {
+    switch (msg.command) {
+        case 'sparkle':      triggerXpSparkle(); break;
+        case 'glow':         triggerXpGlow(); break;
+        case 'pulse':        triggerXpPulse(); break;
+        case 'tint':         triggerXpTint(msg.tintVariant); break;
+        case 'bloom':        triggerXpBloom(); break;
+        case 'rain':         triggerGardenOverlay('rain',        15000); break;
+        case 'snow':         triggerGardenOverlay('snow',        15000); break;
+        case 'comet':        triggerGardenOverlay('comet',        8000); break;
+        case 'fireflies':    triggerGardenOverlay('fireflies',   20000); break;
+        case 'constellation': triggerXpConstellation(); break;
+        // whisper/echo/fade/memory: pure render — no extra side-effect needed
+    }
+}
+
+// /sparkle — glitter particles around the last chat bubble (~2s).
+function triggerXpSparkle() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const body = document.getElementById('chatBody');
+    if (!body) return;
+    const bubbles = body.querySelectorAll('.chat-bubble');
+    const target  = bubbles[bubbles.length - 1];
+    if (!target) return;
+
+    // Ensure container positioning
+    const savedPos = target.style.position;
+    target.style.position = 'relative';
+
+    const container = document.createElement('div');
+    container.className = 'chat-sparkle-container';
+    target.appendChild(container);
+
+    const CHARS = ['✦', '✧', '⋆', '✺', '✸', '✹', '✻', '✼', '★', '✱'];
+    const COUNT = 12;
+    for (let i = 0; i < COUNT; i++) {
+        const s = document.createElement('span');
+        s.className = 'chat-sparkle-particle';
+        s.textContent = CHARS[Math.floor(Math.random() * CHARS.length)];
+        const angle = (i / COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+        const dist  = 28 + Math.random() * 22;
+        s.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+        s.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+        s.style.animationDelay    = (Math.random() * 0.25) + 's';
+        s.style.animationDuration = (0.9 + Math.random() * 0.6) + 's';
+        container.appendChild(s);
+    }
+    setTimeout(() => {
+        container.remove();
+        if (!savedPos) target.style.removeProperty('position');
+        else target.style.position = savedPos;
+    }, 2200);
+}
+
+// /glow — softly glow the chat panel background (~5s).
+function triggerXpGlow() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const panel = document.getElementById('chatPanel') || document.getElementById('w95-win-chat');
+    if (!panel) return;
+    panel.classList.remove('chat-xp-glow');
+    void panel.offsetWidth;
+    panel.classList.add('chat-xp-glow');
+    setTimeout(() => panel.classList.remove('chat-xp-glow'), 5200);
+}
+
+// /pulse — gentle pulse animation on the chat panel (~3s).
+function triggerXpPulse() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const panel = document.getElementById('chatPanel') || document.getElementById('w95-win-chat');
+    if (!panel) return;
+    panel.classList.remove('chat-xp-pulse');
+    void panel.offsetWidth;
+    panel.classList.add('chat-xp-pulse');
+    setTimeout(() => panel.classList.remove('chat-xp-pulse'), 3200);
+}
+
+// /tint warm|cool|rose — tint the chat body for ~20s then revert.
+function triggerXpTint(variant) {
+    const body = document.getElementById('chatBody');
+    if (!body) return;
+    const VARIANTS = ['warm', 'cool', 'rose'];
+    VARIANTS.forEach(v => body.classList.remove('chat-tint-' + v));
+    body.classList.add('chat-tint-' + (VARIANTS.includes(variant) ? variant : 'warm'));
+    setTimeout(() => VARIANTS.forEach(v => body.classList.remove('chat-tint-' + v)), 20000);
+}
+
+// /bloom — brightness/saturation boost on the garden for ~5s.
+function triggerXpBloom() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const gardenBody = document.getElementById('w95-win-garden')?.querySelector('.w95-body');
+    if (!gardenBody) return;
+    gardenBody.classList.remove('garden-xp-bloom');
+    void gardenBody.offsetWidth;
+    gardenBody.classList.add('garden-xp-bloom');
+    setTimeout(() => gardenBody.classList.remove('garden-xp-bloom'), 5200);
+}
+
+// /rain · /snow · /comet · /fireflies — overlay in the garden window.
+function triggerGardenOverlay(type, durationMs) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const gardenWin = document.getElementById('w95-win-garden');
+    if (!gardenWin) return;
+
+    // Remove any existing overlay of the same type
+    gardenWin.querySelector(`.garden-xp-overlay--${type}`)?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = `garden-xp-overlay garden-xp-overlay--${type}`;
+
+    if (type === 'rain') {
+        for (let i = 0; i < 40; i++) {
+            const d = document.createElement('div');
+            d.className = 'garden-rain-drop';
+            d.style.left              = (Math.random() * 110 - 5) + '%';
+            d.style.animationDelay    = (Math.random() * 1.5) + 's';
+            d.style.animationDuration = (0.35 + Math.random() * 0.35) + 's';
+            overlay.appendChild(d);
+        }
+    } else if (type === 'snow') {
+        const FLAKES = ['❄', '❅', '❆', '·', '✦'];
+        for (let i = 0; i < 28; i++) {
+            const f = document.createElement('div');
+            f.className = 'garden-snow-flake';
+            f.textContent = FLAKES[Math.floor(Math.random() * FLAKES.length)];
+            f.style.left              = (Math.random() * 110 - 5) + '%';
+            f.style.fontSize          = (7 + Math.random() * 9) + 'px';
+            f.style.opacity           = (0.6 + Math.random() * 0.4).toFixed(2);
+            f.style.animationDelay    = (Math.random() * 4) + 's';
+            f.style.animationDuration = (2.5 + Math.random() * 2.5) + 's';
+            overlay.appendChild(f);
+        }
+    } else if (type === 'fireflies') {
+        for (let i = 0; i < 14; i++) {
+            const ff = document.createElement('div');
+            ff.className = 'garden-firefly';
+            ff.style.left             = (8 + Math.random() * 84) + '%';
+            ff.style.top              = (15 + Math.random() * 65) + '%';
+            ff.style.animationDelay   = (Math.random() * 3) + 's';
+            ff.style.animationDuration = (1.8 + Math.random() * 2.2) + 's';
+            overlay.appendChild(ff);
+        }
+    } else if (type === 'comet') {
+        const comet = document.createElement('div');
+        comet.className = 'garden-comet';
+        overlay.appendChild(comet);
+    }
+
+    gardenWin.appendChild(overlay);
+    setTimeout(() => overlay.remove(), durationMs + 500);
+}
+
+// /constellation — star overlay (~20s). Night only; daytime runs anyway but subtle.
+function triggerXpConstellation() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const gardenWin = document.getElementById('w95-win-garden');
+    if (!gardenWin) return;
+
+    gardenWin.querySelector('.garden-xp-overlay--constellation')?.remove();
+
+    const h = new Date().getHours();
+    const isNight = h < 6 || h >= 20;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'garden-xp-overlay garden-xp-overlay--constellation' +
+        (isNight ? '' : ' garden-xp-overlay--constellation-day');
+
+    for (let i = 0; i < 22; i++) {
+        const s = document.createElement('div');
+        s.className = 'garden-constellation-star';
+        s.style.left             = (4 + Math.random() * 92) + '%';
+        s.style.top              = (4 + Math.random() * 70) + '%';
+        s.style.animationDelay   = (Math.random() * 2) + 's';
+        s.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+        s.style.width = s.style.height = (1.5 + Math.random() * 2.5) + 'px';
+        overlay.appendChild(s);
+    }
+
+    gardenWin.appendChild(overlay);
+    setTimeout(() => overlay.remove(), 20500);
+}
 
 // ---- ABOUT MODAL ----
 function openAbout() {
@@ -5737,6 +6176,7 @@ async function initAchievements() {
             await set(ref(database, 'userStats/' + currentUser + '/xpTotal'), xpTotal);
         }
 
+        _initXpNotifiedThresholds();
         renderAchievementsWindow();
         await backfillAchievements();
     } catch (e) {
@@ -5757,8 +6197,10 @@ async function unlockAchievement(id) {
         unlockedAchievements.set(id, ts);
 
         if (xpGain > 0) {
+            const prevXp = xpTotal;
             xpTotal += xpGain;
             await set(ref(database, 'userStats/' + currentUser + '/xpTotal'), xpTotal);
+            checkXpCommandUnlocks(prevXp, xpTotal);
         }
 
         if (achievement) {

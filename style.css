@@ -1715,6 +1715,432 @@ body.dark-mode .chat-system-msg {
     .chat-golden-sync-msg { animation: none; }
 }
 
+/* ============================================================
+   XP CHAT COMMANDS — styles & animations
+   ============================================================ */
+
+/* ── Autocomplete: locked state ───────────────────────────── */
+.chat-autocomplete__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+.chat-autocomplete__cmd-name { flex: 1; min-width: 0; }
+
+.chat-autocomplete__item--locked {
+    opacity: 0.45;
+    cursor: default;
+    pointer-events: auto; /* keep for mousedown → show alert */
+}
+.chat-autocomplete__item--locked:hover,
+.chat-autocomplete__item--locked.chat-autocomplete__item--active {
+    background: transparent;
+    color: inherit;
+}
+.chat-autocomplete__xp-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #999;
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: 0.01em;
+}
+body.dark-mode .chat-autocomplete__xp-badge { color: #666; }
+
+/* ── Windows-95-style XP lock alert ─────────────────────────
+   Matches the app's existing win95 aesthetic.                 */
+.xp-lock-alert {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9000;
+    min-width: 210px;
+    max-width: 280px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: inset 1px 1px 0 #dfdfdf, 3px 3px 8px rgba(0,0,0,0.35);
+    font-family: 'MS Sans Serif', 'Segoe UI', Tahoma, sans-serif;
+    font-size: 12px;
+    animation: xpAlertIn 0.12s ease;
+}
+.xp-lock-alert--out { animation: xpAlertOut 0.18s ease forwards; }
+
+@keyframes xpAlertIn  { from { opacity: 0; transform: translate(-50%,-50%) scale(0.92); } to { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
+@keyframes xpAlertOut { from { opacity: 1; } to { opacity: 0; transform: translate(-50%,-50%) scale(0.95); } }
+
+.xp-lock-alert__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(to right, #000080, #1084d0);
+    color: #fff;
+    font-weight: 700;
+    padding: 3px 5px 3px 6px;
+    font-size: 11px;
+}
+.xp-lock-alert__close {
+    background: #c0c0c0;
+    border: 1px solid;
+    border-color: #fff #808080 #808080 #fff;
+    color: #000;
+    width: 16px;
+    height: 14px;
+    font-size: 9px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    font-family: inherit;
+}
+.xp-lock-alert__body {
+    padding: 12px 14px 8px;
+    color: #000;
+    line-height: 1.4;
+}
+.xp-lock-alert__cur {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #555;
+}
+.xp-lock-alert__footer {
+    display: flex;
+    justify-content: center;
+    padding: 0 14px 10px;
+}
+.xp-lock-alert__ok {
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    color: #000;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 2px 20px;
+    cursor: pointer;
+    min-width: 68px;
+}
+.xp-lock-alert__ok:active {
+    border-color: #808080 #fff #fff #808080;
+    transform: translate(1px, 1px);
+}
+
+/* ── Windows-95-style "Unlocked!" notification ───────────── */
+.xp-unlock-notification {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9000;
+    min-width: 220px;
+    max-width: 300px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: inset 1px 1px 0 #dfdfdf, 3px 3px 8px rgba(0,0,0,0.35);
+    font-family: 'MS Sans Serif', 'Segoe UI', Tahoma, sans-serif;
+    font-size: 12px;
+    animation: xpNotifIn 0.22s cubic-bezier(0.34,1.4,0.64,1);
+}
+.xp-unlock-notification--out { animation: xpNotifOut 0.3s ease forwards; }
+
+@keyframes xpNotifIn  { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes xpNotifOut { from { opacity: 1; } to { opacity: 0; transform: translateY(14px); } }
+
+.xp-unlock-notification__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(to right, #008000, #20a020);
+    color: #fff;
+    font-weight: 700;
+    padding: 3px 5px 3px 6px;
+    font-size: 11px;
+}
+.xp-unlock-notification__close {
+    background: #c0c0c0;
+    border: 1px solid;
+    border-color: #fff #808080 #808080 #fff;
+    color: #000;
+    width: 16px;
+    height: 14px;
+    font-size: 9px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    font-family: inherit;
+}
+.xp-unlock-notification__body {
+    padding: 10px 12px;
+    color: #000;
+}
+.xp-unlock-notification__body ul {
+    margin: 0;
+    padding: 0 0 0 16px;
+    line-height: 1.7;
+}
+
+/* ── /sparkle ────────────────────────────────────────────── */
+.chat-sparkle-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 10;
+}
+.chat-sparkle-particle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    font-size: 11px;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    animation: xpSparkleOut linear forwards;
+    color: gold;
+    text-shadow: 0 0 4px rgba(255,220,0,0.8);
+}
+@keyframes xpSparkleOut {
+    0%   { opacity: 1;   transform: translate(-50%,-50%) translate(0,0) scale(1.1); }
+    60%  { opacity: 0.9; }
+    100% { opacity: 0;   transform: translate(-50%,-50%) translate(var(--tx,20px), var(--ty,-20px)) scale(0.2); }
+}
+@media (prefers-reduced-motion: reduce) { .chat-sparkle-particle { animation: none; opacity: 0; } }
+
+/* ── /glow ───────────────────────────────────────────────── */
+.chat-panel.chat-xp-glow,
+.w95-window.chat-xp-glow {
+    animation: xpGlowPulse 5.2s ease forwards;
+}
+@keyframes xpGlowPulse {
+    0%   { box-shadow: none; }
+    15%  { box-shadow: 0 0 18px 6px rgba(180,220,255,0.55), inset 0 0 12px rgba(180,220,255,0.18); }
+    70%  { box-shadow: 0 0 14px 4px rgba(180,220,255,0.38), inset 0 0 8px rgba(180,220,255,0.12); }
+    100% { box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) { .chat-panel.chat-xp-glow, .w95-window.chat-xp-glow { animation: none; } }
+
+/* ── /pulse ──────────────────────────────────────────────── */
+.chat-panel.chat-xp-pulse,
+.w95-window.chat-xp-pulse {
+    animation: xpPulseRing 3.2s ease forwards;
+}
+@keyframes xpPulseRing {
+    0%   { box-shadow: 0 0 0 0 rgba(120,180,255,0.5); }
+    30%  { box-shadow: 0 0 0 12px rgba(120,180,255,0.2); }
+    60%  { box-shadow: 0 0 0 22px rgba(120,180,255,0.05); }
+    100% { box-shadow: 0 0 0 0 rgba(120,180,255,0); }
+}
+@media (prefers-reduced-motion: reduce) { .chat-panel.chat-xp-pulse, .w95-window.chat-xp-pulse { animation: none; } }
+
+/* ── /tint warm | cool | rose ────────────────────────────── */
+.chat-body.chat-tint-warm { background: rgba(255,190,110,0.09); transition: background 1s; }
+.chat-body.chat-tint-cool { background: rgba(110,185,255,0.09); transition: background 1s; }
+.chat-body.chat-tint-rose { background: rgba(255,130,170,0.09); transition: background 1s; }
+
+/* ── /whisper ────────────────────────────────────────────── */
+.chat-system-msg--whisper {
+    font-size: 11px;
+    opacity: 0.72;
+    background: transparent !important;
+    border: none !important;
+    padding: 2px 8px;
+    color: #777;
+    animation: none;
+}
+.chat-whisper-prefix {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    margin-right: 3px;
+    color: #aaa;
+}
+body.dark-mode .chat-system-msg--whisper { color: #888; }
+body.dark-mode .chat-whisper-prefix      { color: #666; }
+
+/* ── /echo ───────────────────────────────────────────────── */
+.chat-system-msg--echo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+}
+.chat-echo-text  { display: block; }
+.chat-echo-ghost {
+    display: block;
+    font-size: 0.88em;
+    opacity: 0;
+    animation: xpEchoGhost 2.5s ease-out 0.55s forwards;
+}
+@keyframes xpEchoGhost {
+    0%   { opacity: 0.5;  transform: translateY(0)   scale(1);    }
+    30%  { opacity: 0.32; transform: translateY(2px)  scale(0.98); }
+    100% { opacity: 0;    transform: translateY(6px)  scale(0.95); }
+}
+@media (prefers-reduced-motion: reduce) { .chat-echo-ghost { animation: none; opacity: 0; } }
+
+/* ── /fade ───────────────────────────────────────────────── */
+.chat-system-msg--fade {
+    animation: xpFadeIn 2.6s ease-in both;
+}
+@keyframes xpFadeIn {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .chat-system-msg--fade { animation: none; } }
+
+/* ── /memory ─────────────────────────────────────────────── */
+.chat-system-msg--memory {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-style: italic;
+    background: rgba(180,160,220,0.10) !important;
+    border-color: rgba(160,130,200,0.25) !important;
+    color: #776;
+}
+.chat-memory-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    font-style: normal;
+    letter-spacing: 0.08em;
+    color: rgba(140,100,180,0.8);
+    text-transform: uppercase;
+}
+.chat-memory-text {
+    display: block;
+    font-size: 12px;
+}
+body.dark-mode .chat-system-msg--memory    { background: rgba(120,90,160,0.15) !important; color: #998; }
+body.dark-mode .chat-memory-label          { color: rgba(160,130,200,0.8); }
+
+/* ── /bloom — garden brightness boost ───────────────────── */
+.garden-xp-bloom {
+    transition: filter 0.5s ease;
+    filter: brightness(1.18) saturate(1.35) !important;
+}
+@media (prefers-reduced-motion: reduce) { .garden-xp-bloom { filter: none !important; } }
+
+/* ── Garden XP overlay base ──────────────────────────────── */
+.garden-xp-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 8;
+}
+
+/* ── /rain ───────────────────────────────────────────────── */
+.garden-rain-drop {
+    position: absolute;
+    top: -14px;
+    width: 1.5px;
+    height: 14px;
+    background: linear-gradient(to bottom, rgba(140,190,255,0), rgba(140,190,255,0.72));
+    border-radius: 1px;
+    animation: xpRainFall linear infinite;
+}
+@keyframes xpRainFall {
+    0%   { top: -14px; opacity: 0.8; }
+    90%  { opacity: 0.7; }
+    100% { top: 110%;  opacity: 0;   }
+}
+.garden-xp-overlay--rain::before {
+    content: '';
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: rgba(100,140,200,0.06);
+}
+@media (prefers-reduced-motion: reduce) { .garden-rain-drop { animation: none; } }
+
+/* ── /snow ───────────────────────────────────────────────── */
+.garden-snow-flake {
+    position: absolute;
+    top: -16px;
+    color: rgba(200,225,255,0.9);
+    text-shadow: 0 0 3px rgba(180,210,255,0.5);
+    animation: xpSnowFall linear infinite;
+}
+@keyframes xpSnowFall {
+    0%   { top: -16px; transform: translateX(0)  rotate(0deg);   opacity: 0.9; }
+    50%  {             transform: translateX(8px) rotate(90deg);               }
+    100% { top: 110%;  transform: translateX(-4px) rotate(180deg); opacity: 0;  }
+}
+.garden-xp-overlay--snow::before {
+    content: '';
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: rgba(200,225,255,0.05);
+}
+@media (prefers-reduced-motion: reduce) { .garden-snow-flake { animation: none; } }
+
+/* ── /comet ──────────────────────────────────────────────── */
+.garden-comet {
+    position: absolute;
+    top:  10%;
+    left: -20px;
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(to right, rgba(255,255,200,0), rgba(255,240,160,0.95), rgba(255,255,255,0.6));
+    border-radius: 2px;
+    filter: blur(1px) drop-shadow(0 0 6px rgba(255,240,100,0.8));
+    animation: xpCometFly 1.6s cubic-bezier(0.2,0.8,0.6,1) forwards;
+    transform-origin: left center;
+    transform: rotate(-18deg);
+}
+@keyframes xpCometFly {
+    0%   { left: -20px; top: 10%; opacity: 0; }
+    5%   { opacity: 1; }
+    85%  { opacity: 0.95; }
+    100% { left: 115%;  top: 55%; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .garden-comet { animation: none; opacity: 0; } }
+
+/* ── /fireflies ──────────────────────────────────────────── */
+.garden-firefly {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(200,255,120,0.9);
+    box-shadow: 0 0 6px 2px rgba(180,255,80,0.6);
+    animation: xpFireflyBlink ease-in-out infinite alternate;
+}
+@keyframes xpFireflyBlink {
+    0%   { opacity: 0.1; transform: translate(0, 0); }
+    50%  { opacity: 0.9; transform: translate(8px, -6px); }
+    100% { opacity: 0.2; transform: translate(-5px, 5px); }
+}
+@media (prefers-reduced-motion: reduce) { .garden-firefly { animation: none; } }
+
+/* ── /constellation ──────────────────────────────────────── */
+.garden-xp-overlay--constellation {
+    background: rgba(10,5,30,0.45);
+    transition: background 1s;
+}
+.garden-xp-overlay--constellation-day {
+    background: rgba(10,5,30,0.12);
+}
+.garden-constellation-star {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 4px 1px rgba(200,210,255,0.8);
+    animation: xpStarTwinkle ease-in-out infinite alternate;
+}
+@keyframes xpStarTwinkle {
+    0%   { opacity: 0.3; transform: scale(0.7); }
+    100% { opacity: 1;   transform: scale(1.2); }
+}
+@media (prefers-reduced-motion: reduce) { .garden-constellation-star { animation: none; } }
+
 /* ---- TYPE PICKER ---- */
 .type-picker-grid {
     display: grid;
