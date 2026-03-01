@@ -5329,6 +5329,16 @@ body { padding: 0 !important; }
   min-width: 0;
 }
 
+/* ---- Meter flash feedback on care action ---- */
+@keyframes catMeterFlash {
+  0%   { filter: brightness(1); }
+  35%  { filter: brightness(1.7); }
+  100% { filter: brightness(1); }
+}
+.cat-meter-flash {
+  animation: catMeterFlash 0.4s ease-out;
+}
+
 /* ---- Yarn zoom animation (local-only) ---- */
 @keyframes catYarnZoom {
   0%   { transform: translateX(0);    }

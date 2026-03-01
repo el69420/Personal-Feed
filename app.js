@@ -7156,6 +7156,7 @@ async function loadUserWallpaper() {
     }
 
     function showCat() {
+        initPixelCat(); // ensure mascot helpers (_catLocalEmote etc.) are ready
         if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-cat', 'CAT', () => {
             if (win.classList.contains('is-hidden')) showCat(); else hideCat();
         });
@@ -7269,6 +7270,35 @@ async function loadUserWallpaper() {
     async function doCatAction(action) {
         if (!currentUser || !throttle('catAction', 1500)) return;
         if (!CAT_ACTION_STAT[action]) return;
+
+        // --- Immediate local feedback (fires before any network/db call) ---
+        const BTN_IDS    = { feed: 'cat-feed-btn', water: 'cat-water-btn', yarn: 'cat-yarn-btn' };
+        const STATUS_LBL = { feed: 'Feeding...', water: 'Watering...', yarn: 'Playing...' };
+        const METER_IDS  = { feed: 'cat-meter-hunger', water: 'cat-meter-thirst', yarn: 'cat-meter-play' };
+
+        const actionBtn = document.getElementById(BTN_IDS[action]);
+        const statusEl  = document.getElementById('cat-status');
+
+        if (statusEl) statusEl.textContent = STATUS_LBL[action] || '...';
+
+        const meterFill = document.getElementById(METER_IDS[action]);
+        if (meterFill) {
+            meterFill.classList.add('cat-meter-flash');
+            setTimeout(() => meterFill.classList.remove('cat-meter-flash'), 400);
+        }
+
+        if (actionBtn) {
+            actionBtn.disabled = true;
+            setTimeout(() => { actionBtn.disabled = false; }, 800);
+        }
+
+        if (action === 'feed' || action === 'water') {
+            window._catLocalEmote?.('heart');
+        } else if (action === 'yarn') {
+            window._catLocalYarnZoom?.();
+        }
+
+        // --- Network / DB sync (runs after immediate feedback) ---
         try {
             const catRef = ref(database, `cat/${currentUser}`);
             const result = await runTransaction(catRef, (stored) => {
@@ -7288,13 +7318,10 @@ async function loadUserWallpaper() {
                 _catStats = result.snapshot.val();
                 renderCatWindow();
             }
-            // Local-only animations — no Firebase sync
-            if (action === 'feed' || action === 'water') {
-                window._catLocalEmote?.('heart');
-            } else if (action === 'yarn') {
-                window._catLocalYarnZoom?.();
-            }
-        } catch (e) { console.error('doCatAction failed', e); }
+        } catch (e) {
+            console.error('doCatAction failed', e);
+            showToast("Couldn\u2019t sync, but the cat still enjoyed it locally \u2665");
+        }
     }
 
     // ---- Cat name save ----
