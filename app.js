@@ -6995,16 +6995,65 @@ function applyIconPositions() {
         });
     });
 
-    // Clear selection when clicking bare desktop or anything outside icons/windows
+    // ---- Desktop drag-select (rubber-band selection) ----
+    const desktop = document.getElementById('w95-desktop');
+
+    const selBox = document.createElement('div');
+    selBox.id = 'desktop-selection-box';
+    desktop.appendChild(selBox);
+
+    let selActive = false;
+    let selStartX = 0, selStartY = 0;
+    let selDeskRect = null;
+
+    function hitTestIcons(l, t, r, b) {
+        document.querySelectorAll('.w95-desktop-icon').forEach(icon => {
+            const ir = icon.getBoundingClientRect();
+            const iL = ir.left - selDeskRect.left, iT = ir.top - selDeskRect.top;
+            const iR = iL + ir.width,              iB = iT + ir.height;
+            icon.classList.toggle('selected', !(iR < l || iL > r || iB < t || iT > b));
+        });
+    }
+
+    function cancelDragSelect() {
+        selActive = false;
+        selBox.style.display = 'none';
+    }
+
+    // Pointerdown on empty desktop — icons use stopPropagation so won't bubble here
     document.addEventListener('pointerdown', (e) => {
-        if (!e.target.closest('.w95-desktop-icon') && !e.target.closest('.w95-window')) {
-            clearIconSelection();
-        }
+        if (e.button !== 0) return;
+        if (e.target.closest('.w95-desktop-icon') || e.target.closest('.w95-window') || e.target.closest('#w95-taskbar')) return;
+        clearIconSelection();
+        selDeskRect  = desktop.getBoundingClientRect();
+        selStartX    = e.clientX - selDeskRect.left;
+        selStartY    = e.clientY - selDeskRect.top;
+        selActive    = true;
+        selBox.style.left    = selStartX + 'px';
+        selBox.style.top     = selStartY + 'px';
+        selBox.style.width   = '0';
+        selBox.style.height  = '0';
+        selBox.style.display = 'none';
     });
 
-    // Clear selection on Escape
+    document.addEventListener('pointermove', (e) => {
+        if (!selActive) return;
+        const curX = Math.max(0, Math.min(selDeskRect.width,  e.clientX - selDeskRect.left));
+        const curY = Math.max(0, Math.min(selDeskRect.height, e.clientY - selDeskRect.top));
+        if (Math.abs(curX - selStartX) > 3 || Math.abs(curY - selStartY) > 3) selBox.style.display = 'block';
+        const l = Math.min(selStartX, curX), t = Math.min(selStartY, curY);
+        const r = Math.max(selStartX, curX), b = Math.max(selStartY, curY);
+        selBox.style.left   = l + 'px';      selBox.style.top    = t + 'px';
+        selBox.style.width  = (r - l) + 'px'; selBox.style.height = (b - t) + 'px';
+        hitTestIcons(l, t, r, b);
+    });
+
+    document.addEventListener('pointerup',     () => { if (selActive) cancelDragSelect(); });
+    document.addEventListener('pointercancel', () => { if (selActive) { clearIconSelection(); cancelDragSelect(); } });
+
+    // Escape: clear selection + cancel box
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') clearIconSelection();
+        if (e.key === 'Escape') { clearIconSelection(); cancelDragSelect(); }
     });
 })();
 

@@ -5011,6 +5011,15 @@ body.dark-mode .garden-talk-btn:hover{
   outline: 1px dotted #FFFFFF;
 }
 
+#desktop-selection-box {
+  position: absolute;
+  border: 1px solid #0000CD;
+  background: rgba(0, 0, 139, 0.12);
+  pointer-events: none;
+  z-index: 9998;
+  display: none;
+}
+
 /* ============================================================
    Feed Window — large / near-maximised
    ============================================================ */
