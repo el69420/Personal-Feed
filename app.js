@@ -4335,7 +4335,9 @@ const w95Mgr = (() => {
         focusWindow(winId);
       }
     });
-    taskbar.appendChild(btn);
+    const trayEl = document.getElementById('systemTray') || taskbar.querySelector('.w95-tray');
+    if (trayEl) taskbar.insertBefore(btn, trayEl);
+    else taskbar.appendChild(btn);
     _btns[winId] = btn;
     return btn;
   }

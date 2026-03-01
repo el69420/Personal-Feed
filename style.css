@@ -5597,11 +5597,9 @@ body { padding: 0 !important; }
     font-style: italic;
 }
 
-/* ===== Taskbar spacer — pushes tray + clock to the right ===== */
-.w95-taskbar-spacer { flex: 1; }
-
-/* ===== System Tray ===== */
+/* ===== System Tray — margin-left:auto pushes it (and the clock) to the right ===== */
 .w95-tray {
+    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 1px;
