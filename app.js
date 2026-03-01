@@ -4263,6 +4263,8 @@ let w95TopZ = 2000;
 // ===== Win95 shared window manager =====
 const w95Mgr = (() => {
   const _maxState = {}; // winId -> { isMax, prevRect }
+  let _activeWinId = null;
+  const _btns = {}; // winId -> taskbar btn element
 
   function addTaskbarBtn(winId, label, onToggle) {
     const taskbar = document.getElementById('w95-taskbar');
@@ -4271,14 +4273,44 @@ const w95Mgr = (() => {
     btn.className = 'w95-btn';
     btn.type = 'button';
     btn.textContent = label;
-    btn.addEventListener('click', onToggle);
+    // 3-way toggle: hidden→show | visible+active→minimize | visible+inactive→focus
+    btn.addEventListener('click', () => {
+      const win = document.getElementById(winId);
+      if (!win || win.classList.contains('is-hidden')) {
+        onToggle();
+      } else if (_activeWinId === winId) {
+        onToggle();
+      } else {
+        focusWindow(winId);
+      }
+    });
     taskbar.appendChild(btn);
+    _btns[winId] = btn;
     return btn;
   }
 
   function setPressed(btn, pressed) {
-    if (btn) btn.classList.toggle('is-pressed', pressed);
+    if (!btn) return;
+    btn.classList.toggle('is-pressed', pressed);
   }
+
+  function focusWindow(winId) {
+    // Clean up any detached btn references
+    Object.keys(_btns).forEach(id => { if (!_btns[id].isConnected) delete _btns[id]; });
+    // Clear active state from all windows and taskbar buttons
+    document.querySelectorAll('.w95-window').forEach(w => w.classList.remove('window--active'));
+    Object.values(_btns).forEach(b => b.classList.remove('is-active'));
+    _activeWinId = null;
+    if (!winId) return;
+    const win = document.getElementById(winId);
+    if (!win || win.classList.contains('is-hidden')) return;
+    win.classList.add('window--active');
+    win.style.zIndex = ++w95TopZ;
+    _activeWinId = winId;
+    if (_btns[winId]) _btns[winId].classList.add('is-active');
+  }
+
+  function isActiveWin(winId) { return _activeWinId === winId; }
 
   function toggleMaximise(win, winId) {
     if (!_maxState[winId]) _maxState[winId] = { isMax: false, prevRect: null };
@@ -4303,7 +4335,7 @@ const w95Mgr = (() => {
 
   function isMaximised(winId) { return !!_maxState[winId]?.isMax; }
 
-  return { addTaskbarBtn, setPressed, toggleMaximise, isMaximised };
+  return { addTaskbarBtn, setPressed, focusWindow, isActiveWin, toggleMaximise, isMaximised };
 })();
 
 // Registry so desktop icons can open windows via a shared open() callback
@@ -5323,8 +5355,7 @@ const w95Apps = {};
       if (win.classList.contains('is-hidden')) show(); else hide();
     });
     win.classList.remove('is-hidden');
-    win.style.zIndex = ++w95TopZ;
-    w95Mgr.setPressed(btn, true);
+    w95Mgr.focusWindow('w95-win-garden');
     localStorage.setItem('w95_garden_open', '1');
     // Record today's garden visit (streak / day-map) and check achievements.
     // This is the correct place — not during achievement init — so that
@@ -5344,7 +5375,7 @@ const w95Apps = {};
 
   function hide() {
     win.classList.add('is-hidden');
-    w95Mgr.setPressed(btn, false);
+    if (w95Mgr.isActiveWin('w95-win-garden')) w95Mgr.focusWindow(null);
     localStorage.setItem('w95_garden_open', '0');
     stopCritters();
   }
@@ -5360,7 +5391,7 @@ const w95Apps = {};
   if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
 
   w95Apps['garden'] = { open: () => {
-    if (win.classList.contains('is-hidden')) show(); else win.style.zIndex = ++w95TopZ;
+    if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-garden');
   }};
 
   // Restore open state
@@ -5378,7 +5409,6 @@ const w95Apps = {};
     const r = win.getBoundingClientRect();
     winStartX = r.left;
     winStartY = r.top;
-    win.style.zIndex = ++w95TopZ;
     e.preventDefault();
   });
 
@@ -5471,8 +5501,7 @@ const w95Apps = {};
       if (winChat.classList.contains('is-hidden')) showChat(); else hideChat();
     });
     winChat.classList.remove('is-hidden');
-    winChat.style.zIndex = ++w95TopZ;
-    w95Mgr.setPressed(btnChat, true);
+    w95Mgr.focusWindow('w95-win-chat');
     localStorage.setItem('w95_chat_open', '1');
     if (wasHidden) snap(winChat, 'br');
     chatOpen = true;
@@ -5486,7 +5515,7 @@ const w95Apps = {};
 
   function hideChat() {
     winChat.classList.add('is-hidden');
-    w95Mgr.setPressed(btnChat, false);
+    if (w95Mgr.isActiveWin('w95-win-chat')) w95Mgr.focusWindow(null);
     localStorage.setItem('w95_chat_open', '0');
     chatOpen = false;
     stopChatTyping();
@@ -5507,8 +5536,7 @@ const w95Apps = {};
       if (winNew.classList.contains('is-hidden')) showNew(); else hideNew();
     });
     winNew.classList.remove('is-hidden');
-    winNew.style.zIndex = ++w95TopZ;
-    w95Mgr.setPressed(btnNew, true);
+    w95Mgr.focusWindow('w95-win-new');
     localStorage.setItem('w95_new_open', '1');
     if (wasHidden) snap(winNew, 'bl');
     renderActivityPanel();
@@ -5516,7 +5544,7 @@ const w95Apps = {};
 
   function hideNew() {
     winNew.classList.add('is-hidden');
-    w95Mgr.setPressed(btnNew, false);
+    if (w95Mgr.isActiveWin('w95-win-new')) w95Mgr.focusWindow(null);
     localStorage.setItem('w95_new_open', '0');
   }
 
@@ -5534,8 +5562,8 @@ const w95Apps = {};
   if (closeBtnChat) closeBtnChat.onclick = (e) => { e.stopPropagation(); closeChatWin(); };
   if (closeBtnNew)  closeBtnNew.onclick  = (e) => { e.stopPropagation(); closeNewWin(); };
 
-  w95Apps['chat'] = { open: () => { if (winChat.classList.contains('is-hidden')) showChat(); else winChat.style.zIndex = ++w95TopZ; } };
-  w95Apps['new']  = { open: () => { if (winNew.classList.contains('is-hidden'))  showNew();  else winNew.style.zIndex  = ++w95TopZ; } };
+  w95Apps['chat'] = { open: () => { if (winChat.classList.contains('is-hidden')) showChat(); else w95Mgr.focusWindow('w95-win-chat'); } };
+  w95Apps['new']  = { open: () => { if (winNew.classList.contains('is-hidden'))  showNew();  else w95Mgr.focusWindow('w95-win-new'); } };
 
   // Restore open state — default closed if no preference stored
   if (localStorage.getItem('w95_chat_open') === '1') showChat();
@@ -5558,7 +5586,7 @@ function makeDraggable(winEl, handleEl, winId) {
     const r = winEl.getBoundingClientRect();
     winStartX = r.left;
     winStartY = r.top;
-    winEl.style.zIndex = ++w95TopZ;
+    // z-index / focus already handled by the generic capture handler on the window
     e.preventDefault();
   });
   window.addEventListener('mousemove', (e) => {
@@ -6613,13 +6641,12 @@ function renderAchievementsWindow() {
             if (win.classList.contains('is-hidden')) show(); else hide();
         });
         win.classList.remove('is-hidden');
-        win.style.zIndex = ++w95TopZ;
-        w95Mgr.setPressed(btn, true);
+        w95Mgr.focusWindow('w95-win-achievements');
         localStorage.setItem('w95_achievements_open', '1');
     }
     function hide() {
         win.classList.add('is-hidden');
-        w95Mgr.setPressed(btn, false);
+        if (w95Mgr.isActiveWin('w95-win-achievements')) w95Mgr.focusWindow(null);
         localStorage.setItem('w95_achievements_open', '0');
     }
     function closeWin() {
@@ -6633,7 +6660,7 @@ function renderAchievementsWindow() {
     if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
 
     w95Apps['achievements'] = { open: () => {
-        if (win.classList.contains('is-hidden')) show(); else win.style.zIndex = ++w95TopZ;
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-achievements');
     }};
 
     if (localStorage.getItem('w95_achievements_open') === '1') show();
@@ -6647,7 +6674,6 @@ function renderAchievementsWindow() {
         startX = e.clientX; startY = e.clientY;
         const r = win.getBoundingClientRect();
         winStartX = r.left; winStartY = r.top;
-        win.style.zIndex = ++w95TopZ;
         e.preventDefault();
     });
     window.addEventListener('mousemove', (e) => {
@@ -6677,14 +6703,13 @@ function renderAchievementsWindow() {
             if (win.classList.contains('is-hidden')) showMailbox(); else hideMailbox();
         });
         win.classList.remove('is-hidden');
-        win.style.zIndex = ++w95TopZ;
-        w95Mgr.setPressed(btn, true);
+        w95Mgr.focusWindow('w95-win-mailbox');
         renderMailbox();
     }
 
     function hideMailbox() {
         win.classList.add('is-hidden');
-        w95Mgr.setPressed(btn, false);
+        if (w95Mgr.isActiveWin('w95-win-mailbox')) w95Mgr.focusWindow(null);
     }
 
     function closeMailbox() {
@@ -6697,8 +6722,6 @@ function renderAchievementsWindow() {
     if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-mailbox'); });
     closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeMailbox(); });
 
-    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; }, true);
-
     // Drag support
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
     handle.addEventListener('mousedown', (e) => {
@@ -6708,7 +6731,6 @@ function renderAchievementsWindow() {
         startX = e.clientX; startY = e.clientY;
         const r = win.getBoundingClientRect();
         winStartX = r.left; winStartY = r.top;
-        win.style.zIndex = ++w95TopZ;
         e.preventDefault();
     });
     window.addEventListener('mousemove', (e) => {
@@ -6722,7 +6744,7 @@ function renderAchievementsWindow() {
     window.addEventListener('mouseup', () => { dragging = false; });
 
     w95Apps['mailbox'] = { open: () => {
-        if (win.classList.contains('is-hidden')) showMailbox(); else win.style.zIndex = ++w95TopZ;
+        if (win.classList.contains('is-hidden')) showMailbox(); else w95Mgr.focusWindow('w95-win-mailbox');
     }};
 })();
 
@@ -6742,13 +6764,12 @@ function renderAchievementsWindow() {
             if (win.classList.contains('is-hidden')) showJukebox(); else hideJukebox();
         });
         win.classList.remove('is-hidden');
-        win.style.zIndex = ++w95TopZ;
-        w95Mgr.setPressed(btn, true);
+        w95Mgr.focusWindow('w95-win-jukebox');
     }
 
     function hideJukebox() {
         win.classList.add('is-hidden');
-        w95Mgr.setPressed(btn, false);
+        if (w95Mgr.isActiveWin('w95-win-jukebox')) w95Mgr.focusWindow(null);
     }
 
     function closeJukebox() {
@@ -6761,8 +6782,6 @@ function renderAchievementsWindow() {
     if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-jukebox'); });
     closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeJukebox(); });
 
-    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; }, true);
-
     // Drag support
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
     handle.addEventListener('mousedown', (e) => {
@@ -6772,7 +6791,6 @@ function renderAchievementsWindow() {
         startX = e.clientX; startY = e.clientY;
         const r = win.getBoundingClientRect();
         winStartX = r.left; winStartY = r.top;
-        win.style.zIndex = ++w95TopZ;
         e.preventDefault();
     });
     window.addEventListener('mousemove', (e) => {
@@ -6786,7 +6804,7 @@ function renderAchievementsWindow() {
     window.addEventListener('mouseup', () => { dragging = false; });
 
     w95Apps['jukebox'] = { open: () => {
-        if (win.classList.contains('is-hidden')) showJukebox(); else win.style.zIndex = ++w95TopZ;
+        if (win.classList.contains('is-hidden')) showJukebox(); else w95Mgr.focusWindow('w95-win-jukebox');
     }};
 })();
 
@@ -6838,26 +6856,22 @@ function applyIconPositions() {
             if (win.classList.contains('is-hidden')) showFeed(); else hideFeed();
         });
         win.classList.remove('is-hidden');
-        win.style.zIndex = ++w95TopZ;
-        w95Mgr.setPressed(btn, true);
+        w95Mgr.focusWindow('w95-win-feed');
         localStorage.setItem('w95_feed_open', '1');
     }
 
     function hideFeed() {
         win.classList.add('is-hidden');
-        w95Mgr.setPressed(btn, false);
+        if (w95Mgr.isActiveWin('w95-win-feed')) w95Mgr.focusWindow(null);
         localStorage.setItem('w95_feed_open', '0');
     }
 
     function closeFeed() {
         if (w95Mgr.isMaximised('w95-win-feed')) w95Mgr.toggleMaximise(win, 'w95-win-feed');
         win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-feed')) w95Mgr.focusWindow(null);
         localStorage.setItem('w95_feed_open', '0');
         if (btn) { btn.remove(); btn = null; }
-    }
-
-    function bringFeedToFront() {
-        win.style.zIndex = ++w95TopZ;
     }
 
     // Minimize button
@@ -6869,9 +6883,6 @@ function applyIconPositions() {
     // Close button: fully closes the window and removes taskbar button
     closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeFeed(); });
 
-    // Bring to front on any mousedown on the window
-    win.addEventListener('mousedown', () => bringFeedToFront(), true);
-
     // Drag support
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
     handle.addEventListener('mousedown', (e) => {
@@ -6881,7 +6892,6 @@ function applyIconPositions() {
         startX = e.clientX; startY = e.clientY;
         const r = win.getBoundingClientRect();
         winStartX = r.left; winStartY = r.top;
-        win.style.zIndex = ++w95TopZ;
         e.preventDefault();
     });
     window.addEventListener('mousemove', (e) => {
@@ -6898,7 +6908,7 @@ function applyIconPositions() {
     if (localStorage.getItem('w95_feed_open') === '1') showFeed();
 
     w95Apps['feed'] = { open: () => {
-        if (win.classList.contains('is-hidden')) showFeed(); else bringFeedToFront();
+        if (win.classList.contains('is-hidden')) showFeed(); else w95Mgr.focusWindow('w95-win-feed');
     }};
 
     // ---- Desktop icon drag + selection logic ----
@@ -6998,10 +7008,10 @@ function applyIconPositions() {
     });
 })();
 
-// Bring any W95 window to front on mousedown (generic handler for all existing windows)
+// Bring any W95 window to front on mousedown and mark it active (single source of truth)
 document.querySelectorAll('.w95-window').forEach(win => {
     win.addEventListener('mousedown', () => {
-        win.style.zIndex = ++w95TopZ;
+        w95Mgr.focusWindow(win.id);
     }, true);
 });
 
@@ -7068,14 +7078,13 @@ function renderRecycleBin() {
             if (win.classList.contains('is-hidden')) show(); else hide();
         });
         win.classList.remove('is-hidden');
-        win.style.zIndex = ++w95TopZ;
-        w95Mgr.setPressed(taskbarBtn, true);
+        w95Mgr.focusWindow('w95-win-recycle');
         renderRecycleBin();
     }
 
     function hide() {
         win.classList.add('is-hidden');
-        if (taskbarBtn) w95Mgr.setPressed(taskbarBtn, false);
+        if (w95Mgr.isActiveWin('w95-win-recycle')) w95Mgr.focusWindow(null);
     }
 
     function closeWin() {
@@ -7088,10 +7097,8 @@ function renderRecycleBin() {
     if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-recycle'); };
     if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
 
-    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; }, true);
-
     w95Apps['recycleBin'] = { open: () => {
-        if (win.classList.contains('is-hidden')) show(); else win.style.zIndex = ++w95TopZ;
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-recycle');
     }};
 
     // Drag
@@ -7103,7 +7110,6 @@ function renderRecycleBin() {
         startX = e.clientX; startY = e.clientY;
         const r = win.getBoundingClientRect();
         winStartX = r.left; winStartY = r.top;
-        win.style.zIndex = ++w95TopZ;
         e.preventDefault();
     });
     window.addEventListener('mousemove', (e) => {
@@ -7218,11 +7224,12 @@ async function loadUserWallpaper() {
         if (preview) preview.style.background = cur.css;
         renderGrid();
         win.classList.remove('is-hidden');
-        win.style.zIndex = ++w95TopZ;
+        w95Mgr.focusWindow('w95-win-wallpaper');
     }
 
     function hide() {
         win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-wallpaper')) w95Mgr.focusWindow(null);
     }
 
     closeBtn.addEventListener('click', e => {
@@ -7244,9 +7251,6 @@ async function loadUserWallpaper() {
         } catch (_) { /* best-effort */ }
     });
 
-    // Bring to front on click
-    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; });
-
     // Dragging
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
     handle.addEventListener('mousedown', e => {
@@ -7255,7 +7259,6 @@ async function loadUserWallpaper() {
         startX = e.clientX; startY = e.clientY;
         const r = win.getBoundingClientRect();
         winStartX = r.left; winStartY = r.top;
-        win.style.zIndex = ++w95TopZ;
         e.preventDefault();
     });
     window.addEventListener('mousemove', e => {
@@ -7266,7 +7269,7 @@ async function loadUserWallpaper() {
     window.addEventListener('mouseup', () => { dragging = false; });
 
     w95Apps['wallpaper'] = { open: () => {
-        if (win.classList.contains('is-hidden')) show(); else win.style.zIndex = ++w95TopZ;
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-wallpaper');
     }};
 })();
 
@@ -7303,15 +7306,14 @@ async function loadUserWallpaper() {
             if (win.classList.contains('is-hidden')) showCat(); else hideCat();
         });
         win.classList.remove('is-hidden');
-        win.style.zIndex = ++w95TopZ;
-        w95Mgr.setPressed(btn, true);
+        w95Mgr.focusWindow('w95-win-cat');
         localStorage.setItem('w95_cat_open', '1');
         loadCatStats();
     }
 
     function hideCat() {
         win.classList.add('is-hidden');
-        w95Mgr.setPressed(btn, false);
+        if (w95Mgr.isActiveWin('w95-win-cat')) w95Mgr.focusWindow(null);
         localStorage.setItem('w95_cat_open', '0');
     }
 
@@ -7325,8 +7327,6 @@ async function loadUserWallpaper() {
     if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-cat'); });
     closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeCat(); });
 
-    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; }, true);
-
     // ---- Drag ----
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
     handle.addEventListener('mousedown', (e) => {
@@ -7336,7 +7336,6 @@ async function loadUserWallpaper() {
         startX = e.clientX; startY = e.clientY;
         const r = win.getBoundingClientRect();
         winStartX = r.left; winStartY = r.top;
-        win.style.zIndex = ++w95TopZ;
         e.preventDefault();
     });
     window.addEventListener('mousemove', (e) => {
@@ -7496,7 +7495,7 @@ async function loadUserWallpaper() {
 
     // ---- App registry ----
     w95Apps['cat'] = { open: () => {
-        if (win.classList.contains('is-hidden')) showCat(); else win.style.zIndex = ++w95TopZ;
+        if (win.classList.contains('is-hidden')) showCat(); else w95Mgr.focusWindow('w95-win-cat');
     }};
 
     if (localStorage.getItem('w95_cat_open') === '1') showCat();
