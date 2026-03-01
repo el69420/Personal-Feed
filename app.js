@@ -6895,7 +6895,7 @@ function initPixelCat() {
             drvX       = localX;
             drvDir     = fbDir;
             drvState   = fbState;
-            drvNextAct = Date.now() + 4000 + Math.random() * 5000;
+            drvNextAct = performance.now() + 4000 + Math.random() * 5000;
         }
     }
 
@@ -7262,6 +7262,7 @@ function initPixelCat() {
     function loop(now) {
         const dt = Math.min(now - lastTs, 100); // cap delta so a tab-wake doesn't teleport the cat
         lastTs = now;
+        try {
 
         if (isDriver) driverTick(now, dt);
 
@@ -7338,6 +7339,7 @@ function initPixelCat() {
         else                                                          frame = animIdx === 0 ? 'walkA' : 'walkB';
 
         drawSprite(frame, catDir === 'left');
+        } catch (e) { console.error('[cat]', e); }
         requestAnimationFrame(loop);
     }
 
