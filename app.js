@@ -3740,6 +3740,7 @@ function _acSetActive(idx) {
         if (active) el.id = 'chat-ac-active'; else el.removeAttribute('id');
     });
     _acIndex = idx;
+    if (idx >= 0 && items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
     if (chatInput) {
         if (idx >= 0) chatInput.setAttribute('aria-activedescendant', 'chat-ac-active');
         else chatInput.removeAttribute('aria-activedescendant');
