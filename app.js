@@ -555,6 +555,7 @@ function login(displayName, email) {
     updateNewCount();
     loadPosts();
     loadUserWallpaper();
+    applyIconPositions();
     setupTypingCleanup();
     setupPresence();
     startNowListening();
@@ -6789,6 +6790,38 @@ function renderAchievementsWindow() {
     }};
 })();
 
+// ===== Desktop Icon Positions =====
+const ICON_DEFAULTS = {
+    feed:         { x: 16, y: 16  },
+    chat:         { x: 16, y: 100 },
+    garden:       { x: 16, y: 184 },
+    achievements: { x: 16, y: 268 },
+    mailbox:      { x: 16, y: 352 },
+    jukebox:      { x: 16, y: 436 },
+    recycleBin:   { x: 16, y: 520 },
+    cat:          { x: 16, y: 604 },
+};
+
+function getIconPositions() {
+    if (!currentUser) return {};
+    try { return JSON.parse(localStorage.getItem(`iconPositions_${currentUser}`) || '{}'); } catch { return {}; }
+}
+
+function saveIconPositions(positions) {
+    if (!currentUser) return;
+    localStorage.setItem(`iconPositions_${currentUser}`, JSON.stringify(positions));
+}
+
+function applyIconPositions() {
+    const positions = getIconPositions();
+    document.querySelectorAll('.w95-desktop-icon').forEach(icon => {
+        const appKey = icon.dataset.app;
+        const pos = positions[appKey] || ICON_DEFAULTS[appKey] || { x: 16, y: 16 };
+        icon.style.left = pos.x + 'px';
+        icon.style.top  = pos.y + 'px';
+    });
+}
+
 // ===== Win95 Feed Window + Desktop Icon Management =====
 (() => {
     const win      = document.getElementById('w95-win-feed');
@@ -6868,46 +6901,100 @@ function renderAchievementsWindow() {
         if (win.classList.contains('is-hidden')) showFeed(); else bringFeedToFront();
     }};
 
-    // ---- Desktop icon double-click logic ----
+    // ---- Desktop icon drag + selection logic ----
     function openApp(appKey) {
         const app = w95Apps[appKey];
         if (app) app.open();
     }
 
-    // Track click timing for double-click detection (dblclick doesn't fire reliably on some devices)
+    function clearIconSelection() {
+        document.querySelectorAll('.w95-desktop-icon').forEach(i => i.classList.remove('selected'));
+    }
+
+    // Apply saved (or default) positions on first load
+    applyIconPositions();
+
+    const DRAG_THRESHOLD = 4; // px — below this, treat as a click not a drag
     const clickTimes = {};
+
     document.querySelectorAll('.w95-desktop-icon').forEach(icon => {
         const appKey = icon.dataset.app;
+        let startX, startY, startLeft, startTop, didDrag, capturedId;
 
-        // Selection on single click
-        icon.addEventListener('click', () => {
-            document.querySelectorAll('.w95-desktop-icon').forEach(i => i.classList.remove('selected'));
+        icon.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return;
+            e.stopPropagation();
+            clearIconSelection();
             icon.classList.add('selected');
+            startX     = e.clientX;
+            startY     = e.clientY;
+            startLeft  = parseInt(icon.style.left) || (ICON_DEFAULTS[appKey]?.x ?? 16);
+            startTop   = parseInt(icon.style.top)  || (ICON_DEFAULTS[appKey]?.y ?? 16);
+            didDrag    = false;
+            capturedId = e.pointerId;
+            icon.setPointerCapture(e.pointerId);
+        });
 
-            const now = Date.now();
-            if (clickTimes[appKey] && now - clickTimes[appKey] < 500) {
-                // Double-click detected
-                openApp(appKey);
-                clickTimes[appKey] = 0;
-            } else {
-                clickTimes[appKey] = now;
+        icon.addEventListener('pointermove', (e) => {
+            if (e.pointerId !== capturedId) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            if (!didDrag && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+                didDrag = true;
+            }
+            if (didDrag) {
+                const desktop = document.getElementById('w95-desktop');
+                const dw = desktop.offsetWidth;
+                const dh = desktop.offsetHeight;
+                const iconW = icon.offsetWidth  || 72;
+                const iconH = icon.offsetHeight || 68;
+                icon.style.left = Math.max(0, Math.min(dw - iconW, startLeft + dx)) + 'px';
+                icon.style.top  = Math.max(0, Math.min(dh - iconH, startTop  + dy)) + 'px';
             }
         });
 
-        // Also handle native dblclick for accessibility
-        icon.addEventListener('dblclick', () => { openApp(appKey); });
+        icon.addEventListener('pointerup', (e) => {
+            if (e.pointerId !== capturedId) return;
+            icon.releasePointerCapture(capturedId);
+            if (didDrag) {
+                // Persist dragged position — do NOT clear selection
+                const positions = getIconPositions();
+                positions[appKey] = { x: parseInt(icon.style.left), y: parseInt(icon.style.top) };
+                saveIconPositions(positions);
+            } else {
+                // Click: double-click detection
+                const now = Date.now();
+                if (clickTimes[appKey] && now - clickTimes[appKey] < 500) {
+                    openApp(appKey);
+                    clickTimes[appKey] = 0;
+                } else {
+                    clickTimes[appKey] = now;
+                }
+            }
+            didDrag    = false;
+            capturedId = undefined;
+        });
 
-        // Keyboard: Enter to open
+        icon.addEventListener('pointercancel', (e) => {
+            if (e.pointerId === capturedId) { capturedId = undefined; didDrag = false; }
+        });
+
+        // Keyboard: Enter/Space to open
         icon.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openApp(appKey); }
         });
     });
 
-    // Deselect icons when clicking on bare desktop
-    document.getElementById('w95-desktop')?.addEventListener('click', (e) => {
-        if (e.target === document.getElementById('w95-desktop')) {
-            document.querySelectorAll('.w95-desktop-icon').forEach(i => i.classList.remove('selected'));
+    // Clear selection when clicking bare desktop or anything outside icons/windows
+    document.addEventListener('pointerdown', (e) => {
+        if (!e.target.closest('.w95-desktop-icon') && !e.target.closest('.w95-window')) {
+            clearIconSelection();
         }
+    });
+
+    // Clear selection on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') clearIconSelection();
     });
 })();
 
