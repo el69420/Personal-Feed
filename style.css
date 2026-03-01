@@ -3840,6 +3840,19 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 .w95-start-menu{position:fixed;bottom:40px;left:0;min-width:160px;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;z-index:9000;font:12px Tahoma,Verdana,Arial,sans-serif;padding:2px 0}
 .w95-start-item{display:flex;align-items:center;gap:8px;width:100%;padding:5px 12px;background:none;border:none;cursor:pointer;font:12px Tahoma,Verdana,Arial,sans-serif;text-align:left;white-space:nowrap;color:#000}
 .w95-start-item:hover,.w95-start-item:focus{background:#000080;color:#fff;outline:none}
+/* Desktop right-click context menu */
+.w95-ctx-menu{position:fixed;min-width:180px;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;z-index:9100;font:12px Tahoma,Verdana,Arial,sans-serif;padding:2px 0;box-shadow:2px 2px 0 #000}
+.w95-ctx-item{display:flex;align-items:center;width:100%;padding:5px 20px 5px 16px;background:none;border:none;cursor:pointer;font:12px Tahoma,Verdana,Arial,sans-serif;text-align:left;white-space:nowrap;color:#000}
+.w95-ctx-item:hover,.w95-ctx-item:focus{background:#000080;color:#fff;outline:none}
+.w95-ctx-separator{margin:3px 0;border:none;border-top:1px solid #808080;border-bottom:1px solid #fff}
+/* Fake Shutdown dialog */
+.w95-shutdown-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9200;display:flex;align-items:center;justify-content:center}
+.w95-shutdown-overlay.is-hidden{display:none}
+.w95-shutdown-dialog{background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;width:320px;font:12px Tahoma,Verdana,Arial,sans-serif}
+.w95-shutdown-body{display:flex;align-items:flex-start;gap:14px;padding:16px 20px 12px}
+.w95-shutdown-icon{font-size:42px;line-height:1;flex-shrink:0}
+.w95-shutdown-select{display:block;margin-top:8px;width:180px;font:12px Tahoma,Verdana,Arial,sans-serif;background:#fff;border:2px inset #808080;padding:2px 4px}
+.w95-shutdown-btns{display:flex;justify-content:center;gap:8px;padding:8px 16px 14px;border-top:1px solid #808080}
 .w95-btn{font:12px Tahoma,Verdana,Arial,sans-serif;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;padding:4px 10px;cursor:pointer;user-select:none}
 .w95-btn:active,.w95-btn.is-pressed,.w95-btn.is-active{border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #fff;border-bottom:2px solid #fff;padding:5px 9px 3px 11px}
 .w95-btn.is-active{font-weight:bold}

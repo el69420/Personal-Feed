@@ -8246,3 +8246,85 @@ function initPixelCat() {
         canvas.classList.add('cat-yarn-zoom');
     };
 }
+
+// ===== Desktop Right-Click Context Menu =====
+(() => {
+    const menu    = document.getElementById('w95-ctx-menu');
+    const desktop = document.getElementById('w95-desktop');
+    if (!menu || !desktop) return;
+
+    function showMenu(x, y) {
+        menu.classList.remove('is-hidden');
+        // Measure after unhiding so offsetWidth/Height are valid
+        const mw = menu.offsetWidth;
+        const mh = menu.offsetHeight;
+        const cx = Math.min(x, window.innerWidth  - mw - 2);
+        const cy = Math.min(y, window.innerHeight - mh - 2);
+        menu.style.left = `${Math.max(0, cx)}px`;
+        menu.style.top  = `${Math.max(0, cy)}px`;
+    }
+
+    function hideMenu() {
+        menu.classList.add('is-hidden');
+    }
+
+    // Suppress browser context menu on the whole desktop (icons are inside desktop)
+    document.addEventListener('contextmenu', e => {
+        if (!desktop.contains(e.target) && e.target !== desktop) return;
+        e.preventDefault();
+        showMenu(e.clientX, e.clientY);
+    });
+
+    // Close on any pointer-down outside the menu
+    document.addEventListener('pointerdown', e => {
+        if (!menu.classList.contains('is-hidden') && !menu.contains(e.target)) {
+            hideMenu();
+        }
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') hideMenu();
+    });
+
+    // --- Refresh: close menu + brief desktop blink ---
+    document.getElementById('ctx-refresh')?.addEventListener('click', () => {
+        hideMenu();
+        desktop.style.opacity = '0.5';
+        setTimeout(() => { desktop.style.opacity = ''; }, 120);
+    });
+
+    // --- Arrange by Name (placeholder) ---
+    document.getElementById('ctx-arrange-name')?.addEventListener('click', () => {
+        hideMenu();
+    });
+
+    // --- Auto Arrange (placeholder) ---
+    document.getElementById('ctx-auto-arrange')?.addEventListener('click', () => {
+        hideMenu();
+    });
+
+    // --- Personalise: open wallpaper window ---
+    document.getElementById('ctx-personalise')?.addEventListener('click', () => {
+        hideMenu();
+        w95Apps['wallpaper']?.open();
+    });
+
+    // --- Shut Down: show fake shutdown dialog ---
+    const shutdownOverlay = document.getElementById('w95-shutdown-overlay');
+
+    document.getElementById('ctx-shutdown')?.addEventListener('click', () => {
+        hideMenu();
+        shutdownOverlay?.classList.remove('is-hidden');
+    });
+
+    document.getElementById('w95-shutdown-cancel')?.addEventListener('click', () => {
+        shutdownOverlay?.classList.add('is-hidden');
+    });
+
+    document.getElementById('w95-shutdown-ok')?.addEventListener('click', () => {
+        shutdownOverlay?.classList.add('is-hidden');
+    });
+
+    // Help button is cosmetic — no action
+})();

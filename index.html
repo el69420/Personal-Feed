@@ -758,6 +758,43 @@
         <button class="w95-start-item" data-app="wallpaper" type="button">&#127912; Personalisation &rsaquo; Wallpaper</button>
     </div>
 
+    <!-- Desktop right-click context menu -->
+    <div id="w95-ctx-menu" class="w95-ctx-menu is-hidden" role="menu">
+        <button class="w95-ctx-item" id="ctx-refresh" type="button">Refresh</button>
+        <hr class="w95-ctx-separator">
+        <button class="w95-ctx-item" id="ctx-arrange-name" type="button">Arrange by Name</button>
+        <button class="w95-ctx-item" id="ctx-auto-arrange" type="button">Auto Arrange</button>
+        <hr class="w95-ctx-separator">
+        <button class="w95-ctx-item" id="ctx-personalise" type="button">Personalise</button>
+        <hr class="w95-ctx-separator">
+        <button class="w95-ctx-item" id="ctx-shutdown" type="button">Shut Down...</button>
+    </div>
+
+    <!-- Fake Shutdown Dialog -->
+    <div id="w95-shutdown-overlay" class="w95-shutdown-overlay is-hidden">
+        <div class="w95-shutdown-dialog">
+            <div class="w95-titlebar">
+                <div class="w95-title">Shut Down Windows</div>
+            </div>
+            <div class="w95-shutdown-body">
+                <div class="w95-shutdown-icon">&#128736;</div>
+                <div>
+                    <p>What do you want the computer to do?</p>
+                    <select class="w95-shutdown-select" id="w95-shutdown-select">
+                        <option>Shut down</option>
+                        <option>Restart</option>
+                        <option>Stand by</option>
+                    </select>
+                </div>
+            </div>
+            <div class="w95-shutdown-btns">
+                <button class="w95-btn" id="w95-shutdown-ok" type="button">OK</button>
+                <button class="w95-btn" id="w95-shutdown-cancel" type="button">Cancel</button>
+                <button class="w95-btn" id="w95-shutdown-help" type="button">Help</button>
+            </div>
+        </div>
+    </div>
+
 <div id="w95-win-garden" class="w95-window is-hidden">
   <div class="w95-titlebar" id="w95-garden-handle">
     <div class="w95-title">Our Garden</div>
