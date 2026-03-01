@@ -5047,34 +5047,35 @@ const w95Apps = {};
   if (localStorage.getItem('w95_new_open')  === '1') showNew();
 
   // Drag support for both windows
-  function makeDraggable(winEl, handleEl, winId) {
-    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
-    handleEl.addEventListener('mousedown', (e) => {
-      if (e.target.closest('button')) return;
-      if (w95Mgr.isMaximised(winId)) return;
-      dragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      const r = winEl.getBoundingClientRect();
-      winStartX = r.left;
-      winStartY = r.top;
-      winEl.style.zIndex = ++w95TopZ;
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-      if (!dragging) return;
-      const taskbarH = 40;
-      const maxX = document.documentElement.clientWidth - winEl.offsetWidth;
-      const maxY = document.documentElement.clientHeight - winEl.offsetHeight - taskbarH;
-      winEl.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
-      winEl.style.top = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
-    });
-    window.addEventListener('mouseup', () => { dragging = false; });
-  }
-
   makeDraggable(winChat, document.getElementById('w95-chat-handle'), 'w95-win-chat');
   makeDraggable(winNew,  document.getElementById('w95-new-handle'),  'w95-win-new');
 })();
+
+// Shared drag helper used by window IIFEs and initPixelCat (must be module-level).
+function makeDraggable(winEl, handleEl, winId) {
+  let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+  handleEl.addEventListener('mousedown', (e) => {
+    if (e.target.closest('button')) return;
+    if (w95Mgr.isMaximised(winId)) return;
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    const r = winEl.getBoundingClientRect();
+    winStartX = r.left;
+    winStartY = r.top;
+    winEl.style.zIndex = ++w95TopZ;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const taskbarH = 40;
+    const maxX = document.documentElement.clientWidth - winEl.offsetWidth;
+    const maxY = document.documentElement.clientHeight - winEl.offsetHeight - taskbarH;
+    winEl.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+    winEl.style.top = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
+  });
+  window.addEventListener('mouseup', () => { dragging = false; });
+}
 
 // ===== ACHIEVEMENTS =====
 
