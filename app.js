@@ -7103,15 +7103,16 @@ function renderAchievementsWindow() {
 
 // ===== Desktop Icon Positions =====
 const ICON_DEFAULTS = {
-    feed:         { x: 16, y: 16  },
-    chat:         { x: 16, y: 100 },
-    garden:       { x: 16, y: 184 },
-    achievements: { x: 16, y: 268 },
-    mailbox:      { x: 16, y: 352 },
-    jukebox:      { x: 16, y: 436 },
-    recycleBin:   { x: 16, y: 520 },
-    cat:          { x: 16, y: 604 },
-    myComputer:   { x: 16, y: 688 },
+    feed:         { x: 16,  y: 16  },
+    chat:         { x: 16,  y: 100 },
+    garden:       { x: 16,  y: 184 },
+    achievements: { x: 16,  y: 268 },
+    mailbox:      { x: 16,  y: 352 },
+    jukebox:      { x: 16,  y: 436 },
+    recycleBin:   { x: 16,  y: 520 },
+    cat:          { x: 16,  y: 604 },
+    myComputer:   { x: 16,  y: 688 },
+    console:      { x: 104, y: 16  },
 };
 
 // ===== Snap-to-grid + Arrange =====
@@ -7173,9 +7174,38 @@ function saveIconPositions(positions) {
 
 function applyIconPositions() {
     const positions = getIconPositions();
+
+    // Collect all positions already claimed (saved or default) for free-slot detection.
+    const allocated = [];
+    document.querySelectorAll('.w95-desktop-icon').forEach(icon => {
+        const p = positions[icon.dataset.app] || ICON_DEFAULTS[icon.dataset.app];
+        if (p) allocated.push(p);
+    });
+
+    // Returns the first grid slot not within icon-size proximity of any allocated position.
+    // Uses the same column/row spacing as the existing ICON_DEFAULTS layout.
+    function nextFreeSlot() {
+        const deskEl = document.getElementById('w95-desktop');
+        const dh = deskEl ? deskEl.offsetHeight : window.innerHeight - 40;
+        const COL_W = 88; // icon width (72) + gap — keeps columns visually separated
+        const ROW_H = 84; // matches the 84 px row stride used in ICON_DEFAULTS
+        for (let col = 0; ; col++) {
+            for (let row = 0; ; row++) {
+                const x = 16 + col * COL_W;
+                const y = 16 + row * ROW_H;
+                if (y + 68 > dh) break; // column is full, try next
+                if (!allocated.some(p => Math.abs(p.x - x) < 72 && Math.abs(p.y - y) < 68)) {
+                    allocated.push({ x, y });
+                    return { x, y };
+                }
+            }
+        }
+        return { x: 16, y: 16 }; // unreachable fallback
+    }
+
     document.querySelectorAll('.w95-desktop-icon').forEach(icon => {
         const appKey = icon.dataset.app;
-        const pos = positions[appKey] || ICON_DEFAULTS[appKey] || { x: 16, y: 16 };
+        const pos = positions[appKey] || ICON_DEFAULTS[appKey] || nextFreeSlot();
         icon.style.left = pos.x + 'px';
         icon.style.top  = pos.y + 'px';
     });
@@ -9375,7 +9405,9 @@ function initPixelCat() {
         if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-console');
     }};
 
-    if (localStorage.getItem('w95_console_open') === '1') show();
+    // Defer auto-restore until after the first paint so the window system is
+    // fully initialised and the flex layout is applied before show() runs.
+    if (localStorage.getItem('w95_console_open') === '1') requestAnimationFrame(show);
 
     // ---- Easter egg implementations ----
     function _overlay(cls, duration) {

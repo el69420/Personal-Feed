@@ -5764,6 +5764,20 @@ body { padding: 0 !important; }
 }
 
 /* ===== Console.exe ===== */
+/* Make the window a flex column so the body fills remaining space without
+   overflowing — same pattern used by Feed and Garden windows.
+   Without this, .console-body height:100% overflows the window container,
+   and input.focus() scrolls the window, hiding the titlebar. */
+#w95-win-console {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+#w95-win-console .w95-body {
+    flex: 1;
+    min-height: 0;
+    height: auto; /* override .console-body height:100% */
+}
 .console-body {
     display: flex;
     flex-direction: column;
