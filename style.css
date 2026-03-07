@@ -4503,10 +4503,25 @@ body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
 
 /* ===== Garden Vibe & Feedback additions ===== */
 
-/* 1) Talk to Plant — action button row */
-.garden-tile-actions{display:flex;gap:3px;margin-top:3px;width:100%;}
-.garden-tile-actions .w95-btn{font-size:10px;padding:3px 2px;min-width:0;}
-.garden-water-btn{flex:1;}
+/* 1) Shared garden actions bar (Water Garden + Talk to Garden) */
+.garden-actions-bar{
+  display:flex;gap:4px;padding:4px 6px;
+  background:rgba(0,0,0,0.18);
+  border-top:1px solid rgba(0,0,0,0.25);
+}
+.garden-actions-bar .w95-btn{flex:1;font-size:10px;padding:2px 4px;}
+
+/* Talk input row — shown when Talk to Garden is toggled open */
+.garden-talk-input-row{
+  display:flex;gap:4px;padding:3px 6px 4px;
+  background:rgba(0,0,0,0.12);
+  border-top:1px solid rgba(0,0,0,0.15);
+}
+.garden-talk-input{
+  flex:1;font-size:10px;padding:1px 3px;
+  font-family:Tahoma,sans-serif;
+}
+.garden-talk-input-row .w95-btn{font-size:10px;padding:1px 6px;white-space:nowrap;}
 
 /* 2) Daily Weather — text label */
 .garden-weather-display{font-size:10px;color:#444;margin-top:4px;min-height:14px;}
@@ -4838,16 +4853,13 @@ body.dark-mode .garden-water-btn--partial{
   user-select:none;
 }
 
-/* Talk button: secondary weight — smaller, reduced visual prominence */
-.garden-talk-btn{
-  flex:0 0 auto;
-  font-size:9px;
-  padding:2px 5px;
-  opacity:0.78;
+/* Talk to Garden button: secondary weight in the shared actions bar */
+.garden-talk-garden-btn{
+  opacity:0.82;
   background:#bdbdbd;
   color:#222;
 }
-.garden-talk-btn:hover{
+.garden-talk-garden-btn:hover{
   opacity:1;
   background:#c8c8c8;
 }
@@ -4875,12 +4887,20 @@ body.dark-mode .garden-section-hdr{
 body.dark-mode .garden-tile-status-el{
   background:rgba(0,0,0,0.55);
 }
-body.dark-mode .garden-talk-btn{
+body.dark-mode .garden-talk-garden-btn{
   background:#3a3a4a;
   color:#ccc;
 }
-body.dark-mode .garden-talk-btn:hover{
+body.dark-mode .garden-talk-garden-btn:hover{
   background:#4a4a5a;
+}
+body.dark-mode .garden-actions-bar{
+  background:rgba(0,0,0,0.35);
+  border-top-color:rgba(255,255,255,0.08);
+}
+body.dark-mode .garden-talk-input-row{
+  background:rgba(0,0,0,0.25);
+  border-top-color:rgba(255,255,255,0.06);
 }
 
 /* ===== Time-of-day theming (visual only) ===== */

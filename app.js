@@ -4550,11 +4550,7 @@ const w95Apps = {};
             `<div class="garden-plant-el"></div>` +
             `<div class="garden-tile-events"></div>` +
           `</div>` +
-          `<div class="garden-tile-status-el"></div>` +
-          `<div class="garden-tile-actions">` +
-            `<button class="w95-btn garden-water-btn" data-tile="${n}">Water</button>` +
-            `<button class="w95-btn garden-talk-btn" data-tile="${n}">Talk</button>` +
-          `</div>`;
+          `<div class="garden-tile-status-el"></div>`;
       } else {
         col.innerHTML =
           `<div class="garden-soil-tile">` +
@@ -4593,31 +4589,6 @@ const w95Apps = {};
         : wateredAgo === 0 ? 'just now' : `${wateredAgo}h ago`;
       statusDiv.textContent =
         `${PLANT_LABELS[plantType] || plantType} · ${STAGE_LABELS[stage] || stage} · ${wateredText}`;
-    }
-
-    // Water button: reflect daily water count (per-user limit: 3/day)
-    const waterBtnEl = col.querySelector('.garden-water-btn');
-    if (waterBtnEl) {
-      const todayCount   = dailyWaterCounts[localDateStr()] || 0;
-      const limitReached = todayCount >= 3;
-      const WATER_FLAVOUR = [
-        '',
-        'Watered 1/3 today \u2013 A little sip \uD83D\uDCA7',
-        'Watered 2/3 today \u2013 Growing nicely \uD83C\uDF3F',
-        'Watered 3/3 today \u2013 Thriving today \uD83C\uDF38',
-      ];
-      if (limitReached) {
-        waterBtnEl.textContent = WATER_FLAVOUR[3];
-        waterBtnEl.disabled    = true;
-      } else if (todayCount > 0) {
-        waterBtnEl.textContent = WATER_FLAVOUR[todayCount] || `Watered ${todayCount}/3 today`;
-        waterBtnEl.disabled    = false;
-      } else {
-        waterBtnEl.textContent = 'Water';
-        waterBtnEl.disabled    = false;
-      }
-      waterBtnEl.classList.toggle('garden-water-btn--done', limitReached);
-      waterBtnEl.classList.toggle('garden-water-btn--partial', !limitReached && todayCount > 0);
     }
 
     // Event overlays — stored events from Firebase plus client-computed mushroom
@@ -4743,6 +4714,8 @@ const w95Apps = {};
       ritualEl.textContent  = ritualOn ? 'Ritual active: ✔' : '';
       ritualEl.style.display = ritualOn ? '' : 'none';
     }
+
+    updateWaterGardenBtn();
   }
 
   // ---- Initialise / migrate ----
@@ -4819,8 +4792,26 @@ const w95Apps = {};
     renderGarden(snap.val());
   });
 
-  // ---- Water a specific tile ----
-  async function waterTile(n) {
+  // ---- Shared Water Garden button state ----
+  function updateWaterGardenBtn() {
+    const btn = document.getElementById('garden-water-garden-btn');
+    if (!btn) return;
+    const todayCount   = dailyWaterCounts[localDateStr()] || 0;
+    const limitReached = todayCount >= 3;
+    const WATER_FLAVOUR = [
+      'Water Garden',
+      'Watered 1\u20443 today \u2013 A little sip \uD83D\uDCA7',
+      'Watered 2\u20443 today \u2013 Growing nicely \uD83C\uDF3F',
+      'Watered 3\u20443 today \u2013 Thriving today \uD83C\uDF38',
+    ];
+    btn.textContent = WATER_FLAVOUR[Math.min(todayCount, 3)];
+    btn.disabled    = limitReached;
+    btn.classList.toggle('garden-water-btn--done',    limitReached);
+    btn.classList.toggle('garden-water-btn--partial', !limitReached && todayCount > 0);
+  }
+
+  // ---- Water the whole garden ----
+  async function waterGarden() {
     // Step 1 — Reserve a water credit for the current user (per-user daily limit: 3)
     const todayKey      = localDateStr();
     const dailyCountRef = ref(database, `userStats/${currentUser}/dailyWaterCounts/${todayKey}`);
@@ -4863,14 +4854,19 @@ const w95Apps = {};
       }
     }
 
-    const waterBtn = tilesRowEl.querySelector(`.garden-water-btn[data-tile="${n}"]`);
+    const waterBtn = document.getElementById('garden-water-garden-btn');
     if (waterBtn) waterBtn.disabled = true;
 
     try {
-      // Step 2 — Run the existing garden watering transaction
+      // Step 2 — Run the garden watering transaction (all occupied tiles)
       const snap  = await get(gardenRef);
       const state = snap.val();
       if (!state) return;
+
+      if (!Object.values(state.tiles || {}).some(Boolean)) {
+        showToast('No plants to water yet');
+        return;
+      }
 
       // Exploration unlocks checked once per water press
       const withExplore = await computeExploreUnlocks(state.unlockedPlants ?? []);
@@ -4882,23 +4878,21 @@ const w95Apps = {};
         const today     = new Date(now).toISOString().slice(0, 10);
         const yesterday = new Date(now - 86400000).toISOString().slice(0, 10);
 
-        const txTiles = currentState.tiles || {};
-        const tileStr = String(n);
-        const txTile  = txTiles[tileStr];
-        if (!txTile) return currentState; // slot is empty — nothing to water
+        const txTiles         = currentState.tiles || {};
+        const occupiedEntries = Object.entries(txTiles).filter(([, t]) => t);
+        if (occupiedEntries.length === 0) return currentState;
 
-        // ---- Individual streak ----
+        // ---- Streak: reset if any tile is wilted ----
         const lastStreakDay  = currentState.lastStreakDay  ?? null;
         const wateringStreak = currentState.wateringStreak ?? 0;
-        const plantedAt      = txTile.plantedAt            ?? null;
-        const lastWatered    = txTile.lastWatered          ?? null;
-
-        const ageHrs        = plantedAt ? (now - plantedAt) / MS_HOUR : 0;
-        const wateredHrsAgo = lastWatered ? (now - lastWatered) / MS_HOUR : Infinity;
-        const isWilted      = ageHrs >= 24 && wateredHrsAgo >= 48;
+        const anyWilted = occupiedEntries.some(([, t]) => {
+          const ageHrs       = t.plantedAt ? (now - t.plantedAt) / MS_HOUR : 0;
+          const wateredHrsAgo = t.lastWatered ? (now - t.lastWatered) / MS_HOUR : Infinity;
+          return ageHrs >= 24 && wateredHrsAgo >= 48;
+        });
 
         let newStreak;
-        if (isWilted || lastStreakDay === null) {
+        if (anyWilted || lastStreakDay === null) {
           newStreak = 1;
         } else if (lastStreakDay === today) {
           newStreak = wateringStreak;
@@ -4951,34 +4945,48 @@ const w95Apps = {};
           if (newSharedStreak >= u.streak && !newUnlocked.includes(u.id)) newUnlocked.push(u.id);
         }
 
-        // ---- Rare tile events ----
-        const events = [];
-        if (isWilted) {
-          const wiltedSince = lastWatered
-            ? lastWatered + 48 * MS_HOUR
-            : (plantedAt ? plantedAt + 24 * MS_HOUR : null);
-          if (wiltedSince && (now - wiltedSince) >= 7 * 86400000) events.push('mushroom');
-        }
-        if (new Date(now).getUTCHours() === 0 && Math.random() < 0.3) events.push('moonflowerVariant');
-        if (whoIsWatering && GARDEN_COOP_USERS.includes(whoIsWatering)) {
-          const otherUser = GARDEN_COOP_USERS.find(u => u !== whoIsWatering);
-          const otherTs   = (lastWateredByUser || {})[otherUser];
-          if (otherTs && Math.floor(otherTs / MS_HOUR) === Math.floor(now / MS_HOUR) && Math.random() < 0.10) {
-            events.push('shootingStar');
-          }
-        }
-
         // ---- Update lastWateredByUser ----
         const newLastWateredByUser = { ...lastWateredByUser };
         if (whoIsWatering && GARDEN_COOP_USERS.includes(whoIsWatering)) {
           newLastWateredByUser[whoIsWatering] = now;
         }
 
-        // ---- Bloom counting → tile unlock ----
-        const oldStage       = calculateStage(txTile);
-        const newStage       = calculateStage({ ...txTile, lastWatered: now });
-        const isNewBloom     = oldStage !== 'bloom' && newStage === 'bloom';
-        const newTotalBlooms = (currentState.totalBlooms || 0) + (isNewBloom ? 1 : 0);
+        // ---- Roll rare events once for the whole watering action ----
+        const rolledMoonflower = new Date(now).getUTCHours() === 0 && Math.random() < 0.3;
+        const otherCoopUser    = GARDEN_COOP_USERS.find(u => u !== whoIsWatering);
+        const otherTs          = (lastWateredByUser || {})[otherCoopUser];
+        const rolledShootingStar = whoIsWatering && GARDEN_COOP_USERS.includes(whoIsWatering)
+          && otherTs && Math.floor(otherTs / MS_HOUR) === Math.floor(now / MS_HOUR)
+          && Math.random() < 0.10;
+
+        // ---- Update all occupied tiles + count new blooms ----
+        let newTotalBlooms = currentState.totalBlooms || 0;
+        const newTiles = { ...txTiles };
+
+        for (const [tileStr, txTile] of occupiedEntries) {
+          const plantedAt     = txTile.plantedAt  ?? null;
+          const lastWatered   = txTile.lastWatered ?? null;
+          const ageHrs        = plantedAt ? (now - plantedAt) / MS_HOUR : 0;
+          const wateredHrsAgo = lastWatered ? (now - lastWatered) / MS_HOUR : Infinity;
+          const tileWilted    = ageHrs >= 24 && wateredHrsAgo >= 48;
+
+          const tileEvents = [];
+          if (tileWilted) {
+            const wiltedSince = lastWatered
+              ? lastWatered + 48 * MS_HOUR
+              : (plantedAt ? plantedAt + 24 * MS_HOUR : null);
+            if (wiltedSince && (now - wiltedSince) >= 7 * 86400000) tileEvents.push('mushroom');
+          }
+          if (rolledMoonflower)   tileEvents.push('moonflowerVariant');
+          if (rolledShootingStar) tileEvents.push('shootingStar');
+
+          const oldStage = calculateStage(txTile);
+          const newStage = calculateStage({ ...txTile, lastWatered: now });
+          if (oldStage !== 'bloom' && newStage === 'bloom') newTotalBlooms++;
+
+          newTiles[tileStr] = { ...txTile, lastWatered: now, events: tileEvents };
+        }
+
         const newUnlockedTiles = TILE_UNLOCK_THRESHOLDS.reduce(
           (acc, t) => newTotalBlooms >= t ? acc + 1 : acc, 0
         );
@@ -4994,14 +5002,7 @@ const w95Apps = {};
           lastWateredByUser: newLastWateredByUser,
           totalBlooms:       newTotalBlooms,
           unlockedTiles:     newUnlockedTiles,
-          tiles: {
-            ...txTiles,
-            [tileStr]: {
-              ...txTile,
-              lastWatered: now,
-              events,
-            },
-          },
+          tiles:             newTiles,
         };
       });
 
@@ -5051,9 +5052,7 @@ const w95Apps = {};
       showToast('Could not water. Please try again.');
     } finally {
       // Only re-enable the button if the user still has waters remaining today.
-      if (waterBtn && (dailyWaterCounts[localDateStr()] || 0) < 3) {
-        waterBtn.disabled = false;
-      }
+      updateWaterGardenBtn();
     }
   }
 
@@ -5089,14 +5088,12 @@ const w95Apps = {};
     sparkSound('post');
   }
 
-  // Event delegation — one listener on the tiles row handles all water buttons
-  tilesRowEl.addEventListener('click', async (e) => {
-    const btn = e.target.closest('.garden-water-btn');
-    if (!btn || btn.disabled) return;
-    await waterTile(Number(btn.dataset.tile));
+  // Shared Water Garden button
+  document.getElementById('garden-water-garden-btn')?.addEventListener('click', async () => {
+    await waterGarden();
   });
 
-  // Plant button delegation
+  // Plant button delegation (per-tile, kept as-is)
   tilesRowEl.addEventListener('click', async (e) => {
     const btn = e.target.closest('.garden-plant-btn');
     if (!btn || btn.disabled) return;
@@ -5105,12 +5102,28 @@ const w95Apps = {};
     btn.disabled = false;
   });
 
-  // Talk button delegation
-  tilesRowEl.addEventListener('click', (e) => {
-    const talkBtn = e.target.closest('.garden-talk-btn');
-    if (!talkBtn) return;
-    doTalkToPlant(Number(talkBtn.dataset.tile));
-  });
+  // Shared Talk to Garden button + inline input
+  {
+    const talkGardenBtn = document.getElementById('garden-talk-garden-btn');
+    const talkInputRow  = document.getElementById('garden-talk-input-row');
+    const talkInput     = document.getElementById('garden-talk-input');
+    const talkSendBtn   = document.getElementById('garden-talk-send-btn');
+
+    talkGardenBtn?.addEventListener('click', () => {
+      const isOpen = talkInputRow.style.display !== 'none';
+      talkInputRow.style.display = isOpen ? 'none' : '';
+      if (!isOpen) talkInput?.focus();
+    });
+
+    function submitTalk() {
+      doTalkToPlant();
+      if (talkInputRow)  talkInputRow.style.display = 'none';
+      if (talkInput)     talkInput.value = '';
+    }
+
+    talkSendBtn?.addEventListener('click', submitTalk);
+    talkInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitTalk(); });
+  }
 
   // ================================================================
   // VIBE + FEEDBACK FEATURES
