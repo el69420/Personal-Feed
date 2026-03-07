@@ -5688,3 +5688,176 @@ body { padding: 0 !important; }
     border-right: 1px solid #808080;
     border-bottom: 1px solid #808080;
 }
+
+/* ===== Console.exe ===== */
+.console-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #000;
+    color: #c0ffc0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    padding: 4px;
+    box-sizing: border-box;
+}
+#console-output {
+    flex: 1;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    padding-bottom: 4px;
+}
+.console-line {
+    line-height: 1.4;
+    min-height: 1.4em;
+}
+.console-line-header  { color: #fff; font-weight: bold; }
+.console-line-dim     { color: #6a9f6a; }
+.console-line-err     { color: #ff6060; }
+.console-line-prompt  { color: #80ff80; }
+.console-line-egg     { color: #ffff60; }
+.console-input-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-top: 1px solid #1a6f1a;
+    padding-top: 4px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+.console-prompt {
+    color: #80ff80;
+    white-space: nowrap;
+    user-select: none;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+}
+.console-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #c0ffc0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    caret-color: #c0ffc0;
+}
+.console-input::placeholder { color: #3a6f3a; }
+#console-output::-webkit-scrollbar { width: 8px; }
+#console-output::-webkit-scrollbar-track { background: #000; }
+#console-output::-webkit-scrollbar-thumb { background: #1a6f1a; }
+
+/* ===== Easter egg animations ===== */
+.egg-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9000;
+}
+/* Rain */
+.egg-rain { overflow: hidden; }
+.egg-raindrop {
+    position: absolute;
+    top: -16px;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, #60a0ff);
+    border-radius: 1px;
+    animation: eggRainFall linear infinite;
+}
+@keyframes eggRainFall {
+    from { transform: translateY(0); }
+    to   { transform: translateY(110vh); }
+}
+/* Spin */
+@keyframes eggSpinKf {
+    0%   { transform: rotate(0deg) scale(1); }
+    50%  { transform: rotate(180deg) scale(1.15); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+.egg-spin { animation: eggSpinKf 1.2s ease-in-out; }
+/* Dance */
+@keyframes eggDanceKf {
+    0%,100% { transform: translateY(0); }
+    25%     { transform: translateY(-10px) rotate(-5deg); }
+    75%     { transform: translateY(-10px) rotate(5deg); }
+}
+.egg-dance {
+    animation: eggDanceKf 0.5s ease-in-out infinite;
+    animation-delay: var(--egg-dance-delay, 0ms);
+    animation-duration: 2s;
+}
+/* Summon cat */
+@keyframes eggCatWalk {
+    from { transform: translateX(-80px); }
+    to   { transform: translateX(110vw); }
+}
+.egg-summon-cat {
+    position: absolute;
+    bottom: 60px;
+    font-size: 32px;
+    animation: eggCatWalk 4s linear forwards;
+    pointer-events: none;
+    z-index: 9000;
+}
+/* Tree */
+.egg-tree {
+    position: absolute;
+    font-size: 48px;
+    z-index: 8000;
+    animation: eggTreePop 0.4s ease-out;
+    pointer-events: none;
+    transition: opacity 1.2s ease;
+}
+.egg-tree-fade { opacity: 0; }
+@keyframes eggTreePop {
+    0%   { transform: scale(0); }
+    80%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+/* Matrix */
+.egg-matrix {
+    position: absolute;
+    top: 60px; left: 60px;
+    background: rgba(0,0,0,.92);
+    color: #00ff41;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    padding: 10px 14px;
+    border: 2px solid #00ff41;
+    z-index: 9500;
+    pointer-events: none;
+    white-space: pre;
+    letter-spacing: 2px;
+}
+/* Love hearts */
+@keyframes eggHeartFloat {
+    from { transform: translateY(0) scale(1); opacity: 1; }
+    to   { transform: translateY(-180px) scale(1.4); opacity: 0; }
+}
+.egg-heart {
+    position: absolute;
+    bottom: 80px;
+    font-size: 22px;
+    color: #ff6090;
+    animation: eggHeartFloat 2.5s ease-out forwards;
+    pointer-events: none;
+    z-index: 9000;
+}
+/* Ghost */
+@keyframes eggGhostFloat {
+    0%   { transform: translate(0, 0) rotate(0deg); opacity: 0.9; }
+    30%  { transform: translate(60px, -40px) rotate(10deg); }
+    70%  { transform: translate(160px, -20px) rotate(-8deg); }
+    100% { transform: translate(260px, 30px) rotate(4deg); opacity: 0; }
+}
+.egg-ghost {
+    position: absolute;
+    top: 120px;
+    left: 80px;
+    font-size: 40px;
+    animation: eggGhostFloat 4s ease-in-out forwards;
+    pointer-events: none;
+    z-index: 9000;
+}
+

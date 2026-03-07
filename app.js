@@ -857,6 +857,7 @@ window.sendLetter = async function() {
     document.getElementById('letterBody').value = '';
     closeModal(document.getElementById('composeLetterModal'));
     showToast('Letter sent 💌');
+    _afterLetter();
 };
 
 window.openComposeLetter = function() {
@@ -1980,6 +1981,7 @@ window.toggleReaction = async function(postId, emoji, btn) {
     const reactionsBy = structuredClone(post.reactionsBy || {});
     reactionsBy[emoji] = reactionsBy[emoji] || {};
 
+    const _wasAdding = !reactionsBy[emoji][currentUser];
     if (reactionsBy[emoji][currentUser]) {
         delete reactionsBy[emoji][currentUser];
         if (Object.keys(reactionsBy[emoji]).length === 0) delete reactionsBy[emoji];
@@ -2009,6 +2011,7 @@ window.toggleReaction = async function(postId, emoji, btn) {
 
     await update(ref(database, `posts/${postId}`), { reactionsBy });
     sparkSound('react');
+    if (_wasAdding) _afterReaction();
 };
 
 window.toggleCommentReaction = async function(postId, replyId, emoji, btn) {
@@ -2081,6 +2084,7 @@ window.addReply = async function(postId) {
     input.value = '';
     showToast('Reply added');
     sparkSound('reply');
+    _afterReply();
 };
 
 window.openInlineReply = function(postId, replyId) {
@@ -2120,6 +2124,7 @@ window.submitInlineReply = async function(postId, replyToId) {
     document.getElementById(`inline-reply-${postId}-${replyToId}`).classList.add('hidden');
     showToast('Reply added');
     sparkSound('reply');
+    _afterReply();
 };
 
 // ---- RENDER ----
@@ -5159,6 +5164,7 @@ const w95Apps = {};
     sparkSound('chat');
     const count = Number(localStorage.getItem('garden_talkCount') || '0') + 1;
     localStorage.setItem('garden_talkCount', String(count));
+    _afterGardenTalk(count);
   }
 
   // ---- 2) Daily Weather ----
@@ -6281,6 +6287,119 @@ const ACHIEVEMENTS = [
         tier:   'mythic',
         xp:     200,
     },
+
+    // ---- Replies ----
+    {
+        id:    'first_reply',
+        title: 'First Reply',
+        desc:  'Send your first reply to a post',
+        icon:  '[>]',
+        xp:    10,
+        tier:  'bronze',
+    },
+    {
+        id:          'ten_replies',
+        title:       'Regular Commenter',
+        desc:        'Send 10 replies',
+        icon:        '[>>]',
+        xp:          25,
+        tier:        'silver',
+        target:      10,
+        getProgress: () => Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0),
+    },
+
+    // ---- Reactions ----
+    {
+        id:    'first_reaction',
+        title: 'First Reaction',
+        desc:  'React to a post for the first time',
+        icon:  '[<3]',
+        xp:    10,
+        tier:  'bronze',
+    },
+    {
+        id:          'twentyfive_reactions',
+        title:       'Reactor',
+        desc:        'React to posts 25 times',
+        icon:        '[:D]',
+        xp:          30,
+        tier:        'silver',
+        target:      25,
+        getProgress: () => Object.values(allPosts).reduce((acc, p) => {
+            const rxBy = p.reactionsBy || {};
+            return acc + Object.values(rxBy).filter(users => users && users[currentUser]).length;
+        }, 0),
+    },
+
+    // ---- Letters ----
+    {
+        id:    'first_letter',
+        title: 'First Letter',
+        desc:  'Send your first letter',
+        icon:  '[L]',
+        xp:    10,
+        tier:  'bronze',
+    },
+    {
+        id:          'five_letters',
+        title:       'Pen Pal',
+        desc:        'Send 5 letters',
+        icon:        '[LL]',
+        xp:          25,
+        tier:        'silver',
+        target:      5,
+        getProgress: () => Object.values(allLetters).filter(l => l.from === currentUser).length,
+    },
+
+    // ---- Cat ----
+    {
+        id:    'first_cat_action',
+        title: 'Cat Parent',
+        desc:  'Perform your first cat action (feed, water, yarn)',
+        icon:  '[~]',
+        xp:    10,
+        tier:  'bronze',
+    },
+    {
+        id:          'ten_cat_actions',
+        title:       'Devoted Cat Parent',
+        desc:        'Perform 10 total cat actions',
+        icon:        '[~~]',
+        xp:          25,
+        tier:        'silver',
+        target:      10,
+        getProgress: () => Number(localStorage.getItem('catActionCount') || 0),
+    },
+
+    // ---- Garden Talk ----
+    {
+        id:    'first_garden_talk',
+        title: 'Plant Whisperer',
+        desc:  'Talk to the garden for the first time',
+        icon:  '[T]',
+        xp:    10,
+        tier:  'bronze',
+    },
+    {
+        id:          'ten_garden_talks',
+        title:       'Garden Conversationalist',
+        desc:        'Talk to the garden 10 times',
+        icon:        '[TT]',
+        xp:          20,
+        tier:        'silver',
+        target:      10,
+        getProgress: () => Number(localStorage.getItem('garden_talkCount') || 0),
+    },
+
+    // ---- Personalisation ----
+    {
+        id:    'first_wallpaper_change',
+        title: 'Interior Decorator',
+        desc:  'Change your wallpaper for the first time',
+        icon:  '[wp]',
+        xp:    10,
+        tier:  'bronze',
+    },
 ];
 
 // ---- XP / Level helpers ----
@@ -6327,6 +6446,7 @@ async function initAchievements() {
         }
 
         _initXpNotifiedThresholds();
+        _seedConsoleCmds();
         renderAchievementsWindow();
         await backfillAchievements();
     } catch (e) {
@@ -6366,6 +6486,7 @@ async function unlockAchievement(id) {
         }
 
         renderAchievementsWindow();
+        _checkConsoleCmdUnlock(id);
     } catch (e) {
         console.error('unlockAchievement failed', e);
     }
@@ -6507,12 +6628,118 @@ async function backfillAchievements() {
     if (currentWateringStreak >= 7)  await unlockAchievement('water_7_days');
     if (currentWateringStreak >= 14) await unlockAchievement('water_14_days');
 
+    // ---- Replies ----
+    const myReplyCount = Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0);
+    if (myReplyCount >= 1)  await unlockAchievement('first_reply');
+    if (myReplyCount >= 10) await unlockAchievement('ten_replies');
+
+    // ---- Reactions ----
+    const myReactionCount = Object.values(allPosts).reduce((acc, p) => {
+        const rxBy = p.reactionsBy || {};
+        return acc + Object.values(rxBy).filter(users => users && users[currentUser]).length;
+    }, 0);
+    if (myReactionCount >= 1)  await unlockAchievement('first_reaction');
+    if (myReactionCount >= 25) await unlockAchievement('twentyfive_reactions');
+
+    // ---- Letters ----
+    const myLetterCount = Object.values(allLetters).filter(l => l.from === currentUser).length;
+    if (myLetterCount >= 1) await unlockAchievement('first_letter');
+    if (myLetterCount >= 5) await unlockAchievement('five_letters');
+
+    // ---- Cat actions (localStorage-based, no historical Firebase data) ----
+    const catCount = Number(localStorage.getItem('catActionCount') || 0);
+    if (catCount >= 1)  await unlockAchievement('first_cat_action');
+    if (catCount >= 10) await unlockAchievement('ten_cat_actions');
+
+    // ---- Garden talk (already in localStorage as garden_talkCount) ----
+    const talkCount = Number(localStorage.getItem('garden_talkCount') || 0);
+    if (talkCount >= 1)  await unlockAchievement('first_garden_talk');
+    if (talkCount >= 10) await unlockAchievement('ten_garden_talks');
+
     // XP / meta — checked last so all prior unlocks are counted.
     if (xpToLevel(xpTotal) >= 5)        await unlockAchievement('level_5');
     if (unlockedAchievements.size >= 25) await unlockAchievement('unlock_25');
 
     await checkMythics();
     renderAchievementsWindow();
+}
+
+// ---- Achievement trigger helpers ----
+// Called after the user sends a reply. Counts all of their replies across all posts.
+function _afterReply() {
+    unlockAchievement('first_reply');
+    const total = Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0) + 1; // +1 for the just-pushed reply (allPosts not yet updated)
+    if (total >= 10) unlockAchievement('ten_replies');
+    if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+}
+
+// Called after the user ADDS a reaction (not removes).
+function _afterReaction() {
+    unlockAchievement('first_reaction');
+    const total = Object.values(allPosts).reduce((acc, p) => {
+        const rxBy = p.reactionsBy || {};
+        return acc + Object.values(rxBy).filter(users => users && users[currentUser]).length;
+    }, 0) + 1; // +1 for the just-updated reaction (allPosts not yet synced)
+    if (total >= 25) unlockAchievement('twentyfive_reactions');
+    if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+}
+
+// Called after the user sends a letter.
+function _afterLetter() {
+    unlockAchievement('first_letter');
+    const total = Object.values(allLetters).filter(l => l.from === currentUser).length;
+    if (total >= 5) unlockAchievement('five_letters');
+    if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+}
+
+// Called after any cat action (feed / water / yarn).
+function _afterCatAction() {
+    const count = Number(localStorage.getItem('catActionCount') || 0) + 1;
+    localStorage.setItem('catActionCount', String(count));
+    unlockAchievement('first_cat_action');
+    if (count >= 10) unlockAchievement('ten_cat_actions');
+    if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+}
+
+// Called after talking to the garden plant. count is the new total.
+function _afterGardenTalk(count) {
+    unlockAchievement('first_garden_talk');
+    if (count >= 10) unlockAchievement('ten_garden_talks');
+    if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+}
+
+// ---- Console command unlocks (achievement-gated) ----
+// Maps achievement id → console command name unlocked when that achievement fires.
+const ACHIEVEMENT_CMD_UNLOCKS = {
+    'ten_replies':          'stats',
+    'twentyfive_reactions': 'reactstats',
+    'five_letters':         'letters',
+    'ten_cat_actions':      'catstats',
+    'ten_garden_talks':     'gardenlog',
+};
+
+// Set of currently unlocked console commands, persisted to localStorage.
+const _consoleCmdsKey = 'unlockedConsoleCmds';
+let unlockedConsoleCmds = new Set(
+    JSON.parse(localStorage.getItem(_consoleCmdsKey) || '[]')
+);
+
+function _checkConsoleCmdUnlock(achievementId) {
+    const cmd = ACHIEVEMENT_CMD_UNLOCKS[achievementId];
+    if (cmd && !unlockedConsoleCmds.has(cmd)) {
+        unlockedConsoleCmds.add(cmd);
+        localStorage.setItem(_consoleCmdsKey, JSON.stringify([...unlockedConsoleCmds]));
+        showToast(`Console command unlocked: ${cmd}`);
+    }
+}
+
+// Seed unlockedConsoleCmds from already-unlocked achievements on load.
+function _seedConsoleCmds() {
+    for (const [id] of unlockedAchievements) {
+        const cmd = ACHIEVEMENT_CMD_UNLOCKS[id];
+        if (cmd) unlockedConsoleCmds.add(cmd);
+    }
+    localStorage.setItem(_consoleCmdsKey, JSON.stringify([...unlockedConsoleCmds]));
 }
 
 function renderAchievementsWindow() {
@@ -7447,6 +7674,7 @@ async function loadUserWallpaper() {
         try {
             await set(ref(database, `users/${currentUserUid}/settings/wallpaper`), currentWallpaperId);
         } catch (_) { /* best-effort */ }
+        if (currentWallpaperId !== savedId) unlockAchievement('first_wallpaper_change');
     });
 
     // Dragging
@@ -7661,6 +7889,7 @@ async function loadUserWallpaper() {
             console.error('doCatAction failed', e);
             showToast("Couldn\u2019t sync, but the cat still enjoyed it locally \u2665");
         }
+        _afterCatAction();
     }
 
     // ---- Cat name save ----
@@ -8853,6 +9082,383 @@ function initPixelCat() {
     w95Apps['myComputer'] = { open: () => {
         if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-mycomputer');
     }};
+})();
+
+// ===== Console.exe =====
+(() => {
+    const win      = document.getElementById('w95-win-console');
+    const handle   = document.getElementById('w95-console-handle');
+    const minBtn   = document.getElementById('w95-console-min');
+    const maxBtn   = document.getElementById('w95-console-max');
+    const closeBtn = document.getElementById('w95-console-close');
+    const output   = document.getElementById('console-output');
+    const input    = document.getElementById('console-input');
+    if (!win || !handle || !output || !input) return;
+
+    let taskbarBtn = null;
+    const history  = [];  // command history for up-arrow recall
+    let histIdx    = -1;
+
+    // ---- Output helpers ----
+    function print(text, cls) {
+        const line = document.createElement('div');
+        line.className = 'console-line' + (cls ? ' ' + cls : '');
+        line.textContent = text;
+        output.appendChild(line);
+        output.scrollTop = output.scrollHeight;
+    }
+    function printHtml(html, cls) {
+        const line = document.createElement('div');
+        line.className = 'console-line' + (cls ? ' ' + cls : '');
+        line.innerHTML = html;
+        output.appendChild(line);
+        output.scrollTop = output.scrollHeight;
+    }
+    function printBlank() { print(''); }
+    function clearOutput() { output.innerHTML = ''; }
+
+    // ---- Fortune messages ----
+    const FORTUNES = [
+        'A small act of kindness ripples further than you know.',
+        'The answer you seek is closer than the question.',
+        'Today is a good day to water something.',
+        'Error 404: Worry not found. Carry on.',
+        'The universe noticed you showing up today.',
+        'Every pixel in this window was placed with care.',
+        'You have mail you haven\'t opened yet — in your heart.',
+        'Somewhere a cat is thinking of you.',
+        'The garden remembers every visit.',
+        'Reboot. Refresh. Try again. It usually works.',
+        'You are running low on sleep. Consider a restore point.',
+        'The best feature is the one that makes you smile.',
+        'Connection established: ♡ → you.',
+        'A wildflower has your name on it.',
+        'Proceed anyway? [Y/n]: Y',
+    ];
+
+    // ---- Stats helpers ----
+    function getMyPostCount()     { return Object.values(allPosts).filter(p => p.author === currentUser).length; }
+    function getMyReplyCount()    { return Object.values(allPosts).reduce((a, p) => a + (p.replies||[]).filter(r => r.author === currentUser).length, 0); }
+    function getMyReactionCount() {
+        return Object.values(allPosts).reduce((a, p) => {
+            return a + Object.values(p.reactionsBy||{}).filter(u => u && u[currentUser]).length;
+        }, 0);
+    }
+    function getMyLetterCount()   { return Object.values(allLetters).filter(l => l.from === currentUser).length; }
+
+    // ---- Command registry ----
+    // Base commands always available in the console.
+    const BASE_CMDS = new Set(['help','clear','achievements','commands','stats','reactstats','letters','catstats','gardenlog',
+        'rain','spin','dance','summon-cat','grow-tree','matrix','love','party','ghost','fortune']);
+
+    function getCmdList() {
+        // Always include base; also include achievement-unlocked commands
+        return [...BASE_CMDS, ...unlockedConsoleCmds];
+    }
+
+    // ---- Command handlers ----
+    const CMD_HANDLERS = {
+        help() {
+            print('Available commands:', 'console-line-header');
+            printBlank();
+            [
+                ['help',        'Show this help'],
+                ['clear',       'Clear the console'],
+                ['achievements','List your unlocked achievements'],
+                ['commands',    'Show console commands unlocked via achievements'],
+                ['stats',       'Your post & reply stats'],
+                ['reactstats',  'Your reaction stats'],
+                ['letters',     'Your letter stats'],
+                ['catstats',    'Your cat care stats'],
+                ['gardenlog',   'Your garden talk count'],
+            ].forEach(([cmd, desc]) => print(`  ${cmd.padEnd(14)} ${desc}`));
+            printBlank();
+            print('Easter eggs: rain  spin  dance  summon-cat  grow-tree');
+            print('             matrix  love  party  ghost  fortune');
+        },
+
+        clear() { clearOutput(); },
+
+        achievements() {
+            if (!currentUser) { print('Sign in to view achievements.', 'console-line-err'); return; }
+            const unlocked = ACHIEVEMENTS.filter(a => unlockedAchievements.has(a.id));
+            if (unlocked.length === 0) { print('No achievements unlocked yet.'); return; }
+            print(`Achievements (${unlocked.length}/${ACHIEVEMENTS.length}):`, 'console-line-header');
+            printBlank();
+            unlocked.forEach(a => print(`  ${a.icon.padEnd(6)} ${a.title}`));
+        },
+
+        commands() {
+            const cmds = [...unlockedConsoleCmds];
+            if (cmds.length === 0) {
+                print('No commands unlocked yet.', 'console-line-dim');
+                print('Tip: earn achievements to unlock commands.', 'console-line-dim');
+                return;
+            }
+            print('Unlocked commands:', 'console-line-header');
+            const info = {
+                stats:      'Your post & reply stats',
+                reactstats: 'Your reaction stats',
+                letters:    'Your letter stats',
+                catstats:   'Your cat care stats',
+                gardenlog:  'Your garden talk count',
+            };
+            cmds.forEach(c => print(`  ${c.padEnd(14)} ${info[c] || ''}`));
+        },
+
+        stats() {
+            if (!currentUser) { print('Sign in first.', 'console-line-err'); return; }
+            print('--- STATS ---', 'console-line-header');
+            print(`  Posts:    ${getMyPostCount()}`);
+            print(`  Replies:  ${getMyReplyCount()}`);
+            print(`  XP:       ${xpTotal}  (Level ${xpToLevel(xpTotal)})`);
+        },
+
+        reactstats() {
+            if (!currentUser) { print('Sign in first.', 'console-line-err'); return; }
+            print('--- REACTION STATS ---', 'console-line-header');
+            const rxMap = {};
+            Object.values(allPosts).forEach(p => {
+                Object.entries(p.reactionsBy || {}).forEach(([emoji, users]) => {
+                    if (users && users[currentUser]) rxMap[emoji] = (rxMap[emoji] || 0) + 1;
+                });
+            });
+            const total = Object.values(rxMap).reduce((a, b) => a + b, 0);
+            print(`  Total reactions given: ${total}`);
+            Object.entries(rxMap).sort((a, b) => b[1] - a[1]).forEach(([e, n]) => {
+                print(`  ${(EMOTICON_MAP[e] || e).padEnd(4)} ${n}`);
+            });
+        },
+
+        letters() {
+            if (!currentUser) { print('Sign in first.', 'console-line-err'); return; }
+            print('--- LETTERS ---', 'console-line-header');
+            print(`  Sent:     ${getMyLetterCount()}`);
+            const recv = Object.values(allLetters).filter(l => l.to === currentUser).length;
+            print(`  Received: ${recv}`);
+        },
+
+        catstats() {
+            if (!currentUser) { print('Sign in first.', 'console-line-err'); return; }
+            print('--- CAT STATS ---', 'console-line-header');
+            print(`  Total actions: ${Number(localStorage.getItem('catActionCount') || 0)}`);
+        },
+
+        gardenlog() {
+            print('--- GARDEN LOG ---', 'console-line-header');
+            const talks = Number(localStorage.getItem('garden_talkCount') || 0);
+            print(`  Times talked to plant: ${talks}`);
+            if (talks === 0) print('  (try the "Talk to Garden" button!)');
+        },
+
+        // ---- Easter eggs ----
+        rain()        { _eggRain();        print('It begins to rain...', 'console-line-egg'); },
+        spin()        { _eggSpin();        print('The icons are dizzy.', 'console-line-egg'); },
+        dance()       { _eggDance();       print('(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ dance break!', 'console-line-egg'); },
+        'summon-cat'(){ _eggSummonCat();   print('A cat wanders in from the east...', 'console-line-egg'); },
+        'grow-tree'() { _eggGrowTree();    print('A pixel tree sprouts on the desktop.', 'console-line-egg'); },
+        matrix()      { _eggMatrix();      print('Wake up, Neo...', 'console-line-egg'); },
+        love()        { _eggLove();        print('♡ ♡ ♡', 'console-line-egg'); },
+        party()       { _eggParty();       print('🎉 Party mode activated!', 'console-line-egg'); },
+        ghost()       { _eggGhost();       print('Boo!', 'console-line-egg'); },
+        fortune()     { print(FORTUNES[Math.floor(Math.random() * FORTUNES.length)], 'console-line-egg'); },
+    };
+
+    // ---- Run a command ----
+    function runCmd(raw) {
+        const trimmed = raw.trim();
+        if (!trimmed) return;
+        history.unshift(trimmed);
+        if (history.length > 30) history.pop();
+        histIdx = -1;
+
+        print(`C:\\> ${trimmed}`, 'console-line-prompt');
+
+        const [cmd, ...args] = trimmed.split(/\s+/);
+        const handler = CMD_HANDLERS[cmd.toLowerCase()];
+        if (handler) {
+            handler(args);
+        } else {
+            print(`'${cmd}' is not recognized as a command.`, 'console-line-err');
+            print("Type 'help' for a list of commands.", 'console-line-dim');
+        }
+        printBlank();
+    }
+
+    // ---- Input handling ----
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const val = input.value;
+            input.value = '';
+            runCmd(val);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (histIdx < history.length - 1) { histIdx++; input.value = history[histIdx] || ''; }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (histIdx > 0) { histIdx--; input.value = history[histIdx] || ''; }
+            else { histIdx = -1; input.value = ''; }
+        }
+    });
+
+    // ---- Show / hide ----
+    function show() {
+        if (!taskbarBtn) taskbarBtn = w95Mgr.addTaskbarBtn('w95-win-console', 'CONSOLE', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-console');
+        localStorage.setItem('w95_console_open', '1');
+        if (output.children.length === 0) {
+            print('Personal Feed Console  v1.0', 'console-line-header');
+            print('Type \'help\' for available commands.', 'console-line-dim');
+            printBlank();
+        }
+        setTimeout(() => input.focus(), 50);
+    }
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-console')) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_console_open', '0');
+    }
+
+    if (minBtn)   minBtn.addEventListener('click',  e => { e.stopPropagation(); hide(); });
+    if (maxBtn)   maxBtn.addEventListener('click',  e => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-console'); });
+    if (closeBtn) closeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (w95Mgr.isMaximised('w95-win-console')) w95Mgr.toggleMaximise(win, 'w95-win-console');
+        hide();
+        if (taskbarBtn) { taskbarBtn.remove(); taskbarBtn = null; }
+    });
+
+    makeDraggable(win, handle, 'w95-win-console');
+
+    w95Apps['console'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-console');
+    }};
+
+    if (localStorage.getItem('w95_console_open') === '1') show();
+
+    // ---- Easter egg implementations ----
+    function _overlay(cls, duration) {
+        const el = document.createElement('div');
+        el.className = 'egg-overlay ' + cls;
+        document.getElementById('w95-desktop')?.appendChild(el);
+        setTimeout(() => el.remove(), duration);
+        return el;
+    }
+
+    function _eggRain() {
+        const desk = document.getElementById('w95-desktop');
+        if (!desk) return;
+        const el = document.createElement('div');
+        el.className = 'egg-overlay egg-rain';
+        desk.appendChild(el);
+        const W = desk.offsetWidth, H = desk.offsetHeight;
+        for (let i = 0; i < 60; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'egg-raindrop';
+            drop.style.cssText = `left:${Math.random()*W}px;animation-delay:${Math.random()*1.5}s;animation-duration:${0.6+Math.random()*0.6}s;height:${8+Math.random()*12}px;`;
+            el.appendChild(drop);
+        }
+        setTimeout(() => el.remove(), 5000);
+    }
+
+    function _eggSpin() {
+        document.querySelectorAll('.w95-desktop-icon').forEach(ic => {
+            ic.classList.add('egg-spin');
+            setTimeout(() => ic.classList.remove('egg-spin'), 1200);
+        });
+    }
+
+    function _eggDance() {
+        document.querySelectorAll('.w95-desktop-icon').forEach((ic, i) => {
+            ic.style.setProperty('--egg-dance-delay', `${i * 60}ms`);
+            ic.classList.add('egg-dance');
+            setTimeout(() => ic.classList.remove('egg-dance'), 2000);
+        });
+    }
+
+    function _eggSummonCat() {
+        const desk = document.getElementById('w95-desktop');
+        if (!desk) return;
+        const cat = document.createElement('div');
+        cat.className = 'egg-summon-cat';
+        cat.textContent = '🐱';
+        desk.appendChild(cat);
+        setTimeout(() => cat.remove(), 4000);
+    }
+
+    function _eggGrowTree() {
+        const desk = document.getElementById('w95-desktop');
+        if (!desk) return;
+        const tree = document.createElement('div');
+        tree.className = 'egg-tree';
+        tree.textContent = '🌲';
+        tree.style.left = `${100 + Math.random() * 300}px`;
+        tree.style.top  = `${60  + Math.random() * 200}px`;
+        desk.appendChild(tree);
+        setTimeout(() => tree.classList.add('egg-tree-fade'), 6000);
+        setTimeout(() => tree.remove(), 7200);
+    }
+
+    function _eggMatrix() {
+        const desk = document.getElementById('w95-desktop');
+        if (!desk) return;
+        const el = document.createElement('div');
+        el.className = 'egg-matrix';
+        desk.appendChild(el);
+        const chars = '01アイウエオカキクケコ';
+        let frame = 0;
+        const iv = setInterval(() => {
+            let html = '';
+            for (let r = 0; r < 14; r++) {
+                let row = '';
+                for (let c = 0; c < 24; c++) {
+                    row += chars[Math.floor(Math.random() * chars.length)];
+                }
+                html += `<div>${row}</div>`;
+            }
+            el.innerHTML = html;
+            if (++frame > 50) { clearInterval(iv); el.remove(); }
+        }, 80);
+    }
+
+    function _eggLove() {
+        const desk = document.getElementById('w95-desktop');
+        if (!desk) return;
+        const W = desk.offsetWidth;
+        for (let i = 0; i < 15; i++) {
+            const h = document.createElement('div');
+            h.className = 'egg-heart';
+            h.textContent = '♡';
+            h.style.left = `${Math.random() * W}px`;
+            h.style.animationDelay = `${Math.random() * 1.5}s`;
+            desk.appendChild(h);
+            setTimeout(() => h.remove(), 3500);
+        }
+    }
+
+    function _eggParty() {
+        const desk = document.getElementById('w95-desktop');
+        if (!desk) return;
+        const colors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8'];
+        let t = 0;
+        const iv = setInterval(() => {
+            desk.style.outline = `4px solid ${colors[t % colors.length]}`;
+            if (++t > 14) { clearInterval(iv); desk.style.outline = ''; }
+        }, 120);
+    }
+
+    function _eggGhost() {
+        const desk = document.getElementById('w95-desktop');
+        if (!desk) return;
+        const g = document.createElement('div');
+        g.className = 'egg-ghost';
+        g.textContent = '👻';
+        desk.appendChild(g);
+        setTimeout(() => g.remove(), 4000);
+    }
 })();
 
 // ===== System Clock =====

@@ -71,6 +71,10 @@
             <div class="desktop-icon-img">&#128008;</div>
             <div class="desktop-icon-label">Cat.exe</div>
         </div>
+        <div class="w95-desktop-icon" data-app="console" tabindex="0">
+            <div class="desktop-icon-img">&#9000;</div>
+            <div class="desktop-icon-label">Console.exe</div>
+        </div>
         <div class="w95-desktop-icon" data-app="myComputer" tabindex="0">
             <div class="desktop-icon-img">&#128187;</div>
             <div class="desktop-icon-label">My Computer</div>
@@ -1083,6 +1087,25 @@
     </div>
   </div>
   <div class="w95-body explorer-body" id="w95-mycomputer-body"></div>
+</div>
+
+<!-- Console.exe window -->
+<div id="w95-win-console" class="w95-window is-hidden" style="left:180px;top:80px;width:480px;height:340px;">
+  <div class="w95-titlebar" id="w95-console-handle">
+    <div class="w95-title">&#9000; Console.exe</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-console-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-console-max" type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-console-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body console-body">
+    <div id="console-output" class="console-output"></div>
+    <div class="console-input-row">
+      <span class="console-prompt">C:\&gt;</span>
+      <input id="console-input" class="console-input" type="text" maxlength="120" autocomplete="off" spellcheck="false" placeholder="type a command...">
+    </div>
+  </div>
 </div>
 
 <!-- Boot screen (D) — shown once per session -->
