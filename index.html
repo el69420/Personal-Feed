@@ -1020,7 +1020,7 @@
 </div>
 
 <!-- Cat.exe window -->
-<div id="w95-win-cat" class="w95-window is-hidden" style="left:140px;top:80px;width:288px;">
+<div id="w95-win-cat" class="w95-window is-hidden" style="left:140px;top:80px;width:300px;">
   <div class="w95-titlebar" id="w95-cat-handle">
     <div class="w95-title">&#128008; Cat.exe</div>
     <div class="w95-controls">
@@ -1030,32 +1030,45 @@
     </div>
   </div>
   <div class="w95-body cat-app-body" id="w95-cat-body">
-    <div class="cat-name-row">
-      <input id="cat-name-input" type="text" maxlength="32" placeholder="Name your cat..." class="cat-name-input">
-      <button id="cat-name-save" class="w95-btn" type="button">Save</button>
+    <!-- Portrait / mood panel -->
+    <div class="cat-portrait-panel">
+      <div class="cat-face" id="cat-face">=^.^=</div>
+      <div class="cat-name-display" id="cat-name-display">the cat</div>
+      <div class="cat-mood-badge" id="cat-mood-badge">loading...</div>
     </div>
+    <!-- Stats -->
     <div class="cat-stats">
       <div class="cat-stat-row">
-        <span class="cat-stat-label">HUNGER</span>
+        <span class="cat-stat-icon">&#127833;</span>
+        <span class="cat-stat-label">Hunger</span>
         <div class="cat-meter"><div class="cat-meter-fill" id="cat-meter-hunger"></div></div>
         <span class="cat-stat-val" id="cat-val-hunger">--</span>
       </div>
       <div class="cat-stat-row">
-        <span class="cat-stat-label">THIRST</span>
+        <span class="cat-stat-icon">&#128167;</span>
+        <span class="cat-stat-label">Thirst</span>
         <div class="cat-meter"><div class="cat-meter-fill" id="cat-meter-thirst"></div></div>
         <span class="cat-stat-val" id="cat-val-thirst">--</span>
       </div>
       <div class="cat-stat-row">
-        <span class="cat-stat-label">PLAY</span>
+        <span class="cat-stat-icon">&#129706;</span>
+        <span class="cat-stat-label">Play</span>
         <div class="cat-meter"><div class="cat-meter-fill" id="cat-meter-play"></div></div>
         <span class="cat-stat-val" id="cat-val-play">--</span>
       </div>
     </div>
-    <div class="cat-status" id="cat-status">Loading...</div>
+    <!-- Action feedback -->
+    <div class="cat-last-action" id="cat-last-action"></div>
+    <!-- Care buttons -->
     <div class="cat-actions">
-      <button class="w95-btn cat-action-btn" id="cat-feed-btn" type="button">&#127829; Feed</button>
+      <button class="w95-btn cat-action-btn" id="cat-feed-btn" type="button">&#127833; Feed</button>
       <button class="w95-btn cat-action-btn" id="cat-water-btn" type="button">&#128167; Water</button>
-      <button class="w95-btn cat-action-btn" id="cat-yarn-btn" type="button">&#129706; Give Yarn</button>
+      <button class="w95-btn cat-action-btn" id="cat-yarn-btn" type="button">&#129706; Play</button>
+    </div>
+    <!-- Name editing (secondary) -->
+    <div class="cat-name-row">
+      <input id="cat-name-input" type="text" maxlength="32" placeholder="name your cat..." class="cat-name-input">
+      <button id="cat-name-save" class="w95-btn cat-name-save-btn" type="button">&#10003; Save</button>
     </div>
   </div>
 </div>

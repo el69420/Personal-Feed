@@ -7709,7 +7709,9 @@ async function loadUserWallpaper() {
     if (!win || !minBtn || !closeBtn || !handle) return;
 
     let btn = null;
-    let _catStats = null; // { hunger, thirst, play, catName, lastUpdated }
+    let _catStats      = null; // { hunger, thirst, play, catName, lastUpdated }
+    let _lastActionText = '';
+    let _lastActionTimer = null;
 
     const CAT_DECAY_PER_HOUR  = 3;
     const CAT_ACTION_DELTAS   = { feed: 25, water: 25, yarn: 35 };
@@ -7774,22 +7776,31 @@ async function loadUserWallpaper() {
     });
     window.addEventListener('mouseup', () => { dragging = false; });
 
-    // ---- Status text logic ----
+    // ---- Display helpers ----
     function catDisplayName() {
         return (_catStats?.catName || '').trim() || 'the cat';
     }
 
-    function getCatStatus(s) {
-        if (!s) return 'Loading...';
-        const name = catDisplayName();
-        if (s.hunger < 20) return `${name} is hungry! (>_<)`;
-        if (s.thirst < 20) return `${name} is very thirsty...`;
-        if (s.play   < 20) return `${name} is bored. zZz`;
-        if (s.hunger < 40) return `${name} could eat something`;
-        if (s.thirst < 40) return `${name} is a little thirsty`;
-        if (s.play   < 40) return `${name} wants to play`;
-        if (Math.min(s.hunger, s.thirst, s.play) > 75) return `${name} is purring contentedly \u2661`;
-        return `${name} is doing okay :)`;
+    function getCatFace(s) {
+        if (!s) return '=^.^=';
+        if (s.hunger < 20) return '=^;_;^=';
+        if (s.thirst < 20) return '=^-.-^=';
+        if (s.play   < 20) return '=^_.^= z';
+        if (s.hunger < 40 || s.thirst < 40 || s.play < 40) return '=^~.~^=';
+        if (Math.min(s.hunger, s.thirst, s.play) > 75) return '=^o^= \u2661';
+        return '=^-^=';
+    }
+
+    function getCatMoodBadge(s) {
+        if (!s) return { text: '...', cls: '' };
+        if (s.hunger < 20) return { text: 'hungry!',  cls: 'mood-urgent' };
+        if (s.thirst < 20) return { text: 'thirsty!', cls: 'mood-urgent' };
+        if (s.play   < 20) return { text: 'bored...',  cls: 'mood-urgent' };
+        if (s.hunger < 40) return { text: 'peckish',  cls: 'mood-warn' };
+        if (s.thirst < 40) return { text: 'parched',  cls: 'mood-warn' };
+        if (s.play   < 40) return { text: 'restless', cls: 'mood-warn' };
+        if (Math.min(s.hunger, s.thirst, s.play) > 75) return { text: 'purring \u2661', cls: '' };
+        return { text: 'content', cls: '' };
     }
 
     // ---- Render stats into the window ----
@@ -7799,6 +7810,19 @@ async function loadUserWallpaper() {
         if (nameInput && s?.catName !== undefined && !nameInput.dataset.dirty) {
             nameInput.value = s.catName || '';
         }
+
+        // Portrait panel
+        const faceEl = document.getElementById('cat-face');
+        if (faceEl) faceEl.textContent = getCatFace(s);
+        const nameDisplay = document.getElementById('cat-name-display');
+        if (nameDisplay) nameDisplay.textContent = catDisplayName();
+        const moodBadge = document.getElementById('cat-mood-badge');
+        if (moodBadge && s) {
+            const { text, cls } = getCatMoodBadge(s);
+            moodBadge.textContent = text;
+            moodBadge.className = 'cat-mood-badge' + (cls ? ' ' + cls : '');
+        }
+
         if (!s) return;
         for (const stat of ['hunger', 'thirst', 'play']) {
             const val  = Math.round(s[stat] ?? 0);
@@ -7810,8 +7834,6 @@ async function loadUserWallpaper() {
             }
             if (valEl) valEl.textContent = val;
         }
-        const statusEl = document.getElementById('cat-status');
-        if (statusEl) statusEl.textContent = getCatStatus(s);
     }
 
     // ---- Load stats from Firebase ----
@@ -7840,13 +7862,18 @@ async function loadUserWallpaper() {
 
         // --- Immediate local feedback (fires before any network/db call) ---
         const BTN_IDS    = { feed: 'cat-feed-btn', water: 'cat-water-btn', yarn: 'cat-yarn-btn' };
-        const STATUS_LBL = { feed: 'Feeding...', water: 'Watering...', yarn: 'Playing...' };
+        const STATUS_LBL = { feed: 'Feeding\u2026', water: 'Watering\u2026', yarn: 'Playing\u2026' };
+        const DONE_LBL   = { feed: '\u2713 fed!', water: '\u2713 watered!', yarn: '\u2713 played!' };
         const METER_IDS  = { feed: 'cat-meter-hunger', water: 'cat-meter-thirst', yarn: 'cat-meter-play' };
 
-        const actionBtn = document.getElementById(BTN_IDS[action]);
-        const statusEl  = document.getElementById('cat-status');
+        const actionBtn   = document.getElementById(BTN_IDS[action]);
+        const lastActEl   = document.getElementById('cat-last-action');
 
-        if (statusEl) statusEl.textContent = STATUS_LBL[action] || '...';
+        if (lastActEl) {
+            lastActEl.textContent = STATUS_LBL[action] || '\u2026';
+            lastActEl.classList.add('is-visible');
+            clearTimeout(_lastActionTimer);
+        }
 
         const meterFill = document.getElementById(METER_IDS[action]);
         if (meterFill) {
@@ -7885,9 +7912,20 @@ async function loadUserWallpaper() {
                 _catStats = result.snapshot.val();
                 renderCatWindow();
             }
+            // Update last-action to done state
+            const lastActElDone = document.getElementById('cat-last-action');
+            if (lastActElDone) {
+                lastActElDone.textContent = DONE_LBL[action] || '\u2713 done';
+                _lastActionTimer = setTimeout(() => lastActElDone.classList.remove('is-visible'), 5000);
+            }
         } catch (e) {
             console.error('doCatAction failed', e);
             showToast("Couldn\u2019t sync, but the cat still enjoyed it locally \u2665");
+            const lastActElErr = document.getElementById('cat-last-action');
+            if (lastActElErr) {
+                lastActElErr.textContent = '\u26a0 sync failed, but the cat felt it \u2665';
+                _lastActionTimer = setTimeout(() => lastActElErr.classList.remove('is-visible'), 5000);
+            }
         }
         _afterCatAction();
     }

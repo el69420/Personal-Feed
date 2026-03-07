@@ -5307,52 +5307,89 @@ body { padding: 0 !important; }
 
 /* ===== Cat.exe Window ===== */
 .cat-app-body {
-  padding: 10px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   font-family: 'Courier New', Courier, monospace;
+  background: #c8c4bc;
 }
-.cat-name-row {
+
+/* --- Portrait / mood panel --- */
+.cat-portrait-panel {
+  background: #bcb8b0;
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 2px solid #dfdbcf;
+  border-bottom: 2px solid #dfdbcf;
+  padding: 10px 12px 9px;
   display: flex;
-  gap: 5px;
+  flex-direction: column;
   align-items: center;
+  gap: 4px;
+  text-align: center;
 }
-.cat-name-input {
-  flex: 1;
-  font: 11px 'Courier New', Courier, monospace;
-  padding: 2px 4px;
-  background: #fff;
-  border-top: 1px solid #808080;
-  border-left: 1px solid #808080;
-  border-right: 1px solid #fff;
-  border-bottom: 1px solid #fff;
-  outline: none;
+.cat-face {
+  font: bold 20px 'Courier New', Courier, monospace;
+  color: #1a1a1a;
+  letter-spacing: 2px;
+  line-height: 1.3;
+  animation: catFaceBob 3.6s ease-in-out infinite;
+  min-height: 1.4em;
 }
-.cat-name-input:focus {
-  outline: 1px dotted #000;
-  outline-offset: -2px;
+@keyframes catFaceBob {
+  0%, 100% { transform: translateY(0);    }
+  45%, 55% { transform: translateY(-3px); }
 }
+.cat-name-display {
+  font: bold 13px 'Courier New', Courier, monospace;
+  color: #1a1a1a;
+  letter-spacing: 0.5px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cat-mood-badge {
+  font: 10px Tahoma, Verdana, Arial, sans-serif;
+  padding: 1px 9px 2px;
+  border-radius: 8px;
+  background: #7ec86e;
+  color: #1a3d12;
+  border: 1px solid rgba(0,0,0,0.18);
+  min-width: 48px;
+}
+.cat-mood-badge.mood-urgent { background: #e07060; color: #5a0f06; }
+.cat-mood-badge.mood-warn   { background: #e0b248; color: #4a3000; }
+
+/* --- Stat bars --- */
 .cat-stats {
   display: flex;
   flex-direction: column;
   gap: 5px;
   border-top: 1px solid #808080;
   border-left: 1px solid #808080;
-  border-right: 1px solid #fff;
-  border-bottom: 1px solid #fff;
-  padding: 7px 8px;
-  background: #d4d0c8;
+  border-right: 1px solid #dfdbcf;
+  border-bottom: 1px solid #dfdbcf;
+  padding: 6px 8px;
+  background: #cbc7bf;
 }
 .cat-stat-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+}
+.cat-stat-icon {
+  font-size: 11px;
+  width: 15px;
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1;
 }
 .cat-stat-label {
   font: bold 10px 'Courier New', Courier, monospace;
-  letter-spacing: 0.5px;
-  width: 50px;
+  letter-spacing: 0.3px;
+  width: 42px;
   color: #222;
   flex-shrink: 0;
 }
@@ -5362,8 +5399,8 @@ body { padding: 0 !important; }
   background: #a0a0a0;
   border-top: 1px solid #808080;
   border-left: 1px solid #808080;
-  border-right: 1px solid #fff;
-  border-bottom: 1px solid #fff;
+  border-right: 1px solid #dfdbcf;
+  border-bottom: 1px solid #dfdbcf;
   overflow: hidden;
 }
 .cat-meter-fill {
@@ -5374,28 +5411,65 @@ body { padding: 0 !important; }
 }
 .cat-stat-val {
   font: 10px 'Courier New', Courier, monospace;
-  width: 22px;
+  width: 24px;
   text-align: right;
-  color: #444;
+  color: #333;
   flex-shrink: 0;
 }
-.cat-status {
-  font: italic 11px 'Courier New', Courier, monospace;
-  color: #444;
-  border-top: 1px solid #bbb;
-  padding-top: 6px;
+
+/* --- Action feedback line --- */
+.cat-last-action {
+  font: italic 10px 'Courier New', Courier, monospace;
+  color: #555;
   text-align: center;
-  min-height: 16px;
+  min-height: 13px;
+  opacity: 0;
+  transition: opacity 0.35s;
 }
+.cat-last-action.is-visible { opacity: 1; }
+
+/* --- Care buttons --- */
 .cat-actions {
   display: flex;
-  gap: 4px;
+  gap: 5px;
 }
 .cat-action-btn {
   flex: 1;
   font-size: 11px;
-  padding: 3px 2px;
+  padding: 5px 3px;
   min-width: 0;
+  line-height: 1.25;
+}
+
+/* --- Name editing row (secondary, bottom) --- */
+.cat-name-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  border-top: 1px solid #aba7a0;
+  padding-top: 6px;
+  margin-top: 1px;
+}
+.cat-name-input {
+  flex: 1;
+  font: 11px 'Courier New', Courier, monospace;
+  color: #000;   /* explicit – prevents white-on-white in some browser/theme contexts */
+  padding: 2px 5px;
+  background: #fff;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #dfdbcf;
+  border-bottom: 1px solid #dfdbcf;
+  outline: none;
+}
+.cat-name-input:focus {
+  outline: 1px dotted #000;
+  outline-offset: -2px;
+}
+.cat-name-save-btn {
+  font-size: 11px;
+  padding: 2px 7px;
+  white-space: nowrap;
 }
 
 /* ---- Meter flash feedback on care action ---- */
