@@ -5155,28 +5155,10 @@ const w95Apps = {};
     btn.disabled = false;
   });
 
-  // Shared Talk to Garden button + inline input
-  {
-    const talkGardenBtn = document.getElementById('garden-talk-garden-btn');
-    const talkInputRow  = document.getElementById('garden-talk-input-row');
-    const talkInput     = document.getElementById('garden-talk-input');
-    const talkSendBtn   = document.getElementById('garden-talk-send-btn');
-
-    talkGardenBtn?.addEventListener('click', () => {
-      const isOpen = talkInputRow.style.display !== 'none';
-      talkInputRow.style.display = isOpen ? 'none' : '';
-      if (!isOpen) talkInput?.focus();
-    });
-
-    function submitTalk() {
-      doTalkToPlant();
-      if (talkInputRow)  talkInputRow.style.display = 'none';
-      if (talkInput)     talkInput.value = '';
-    }
-
-    talkSendBtn?.addEventListener('click', submitTalk);
-    talkInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitTalk(); });
-  }
+  // Talk to Garden button — fires directly, no text input needed
+  document.getElementById('garden-talk-garden-btn')?.addEventListener('click', () => {
+    doTalkToPlant();
+  });
 
   // ================================================================
   // VIBE + FEEDBACK FEATURES

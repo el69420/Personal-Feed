@@ -4556,17 +4556,6 @@ body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
 }
 .garden-actions-bar .w95-btn{flex:1;font-size:10px;padding:2px 4px;}
 
-/* Talk input row — shown when Talk to Garden is toggled open */
-.garden-talk-input-row{
-  display:flex;gap:4px;padding:3px 6px 4px;
-  background:rgba(0,0,0,0.12);
-  border-top:1px solid rgba(0,0,0,0.15);
-}
-.garden-talk-input{
-  flex:1;font-size:10px;padding:1px 3px;
-  font-family:Tahoma,sans-serif;
-}
-.garden-talk-input-row .w95-btn{font-size:10px;padding:1px 6px;white-space:nowrap;}
 
 /* 2) Daily Weather — text label */
 .garden-weather-display{font-size:10px;color:#444;margin-top:4px;min-height:14px;}
@@ -4942,10 +4931,6 @@ body.dark-mode .garden-talk-garden-btn:hover{
 body.dark-mode .garden-actions-bar{
   background:rgba(0,0,0,0.35);
   border-top-color:rgba(255,255,255,0.08);
-}
-body.dark-mode .garden-talk-input-row{
-  background:rgba(0,0,0,0.25);
-  border-top-color:rgba(255,255,255,0.06);
 }
 
 /* ===== Time-of-day theming (visual only) ===== */
