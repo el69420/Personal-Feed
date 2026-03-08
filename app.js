@@ -1044,8 +1044,7 @@ function setupDBListeners() {
 
         // Trigger animations for newly received command messages (both users see them)
         const XP_VISUAL_CMDS = new Set([
-            'sparkle', 'glow', 'pulse', 'tint', 'warm', 'bloom',
-            'rain', 'snow', 'comet', 'fireflies', 'constellation',
+            'sparkle', 'glow', 'pulse', 'tint', 'warm',
         ]);
         const newAnimCmds = messages.filter(m =>
             m.kind === 'system' &&
@@ -2956,32 +2955,7 @@ const XP_CHAT_COMMANDS = [
             return { command: 'fade', style: 'fade', text: msg };
         },
     },
-    {
-        name: 'bloom', requiredXP: 120,
-        description: 'Briefly boost garden colours/brightness (~5s)',
-        handler: () => ({ command: 'bloom', text: `🌸 ${currentUser} makes the garden bloom` }),
-    },
     // ── Tier 4 · 250 XP ─────────────────────────────────────────────────────────
-    {
-        name: 'rain', requiredXP: 250,
-        description: 'Trigger a rain overlay in the garden (~15s)',
-        handler: () => ({ command: 'rain', text: `🌧️ ${currentUser} calls the rain` }),
-    },
-    {
-        name: 'snow', requiredXP: 250,
-        description: 'Trigger a snow overlay in the garden (~15s)',
-        handler: () => ({ command: 'snow', text: `❄️ ${currentUser} calls the snow` }),
-    },
-    {
-        name: 'comet', requiredXP: 250,
-        description: 'A comet streaks across the sky (~8s)',
-        handler: () => ({ command: 'comet', text: `☄️ ${currentUser} summons a comet` }),
-    },
-    {
-        name: 'fireflies', requiredXP: 250,
-        description: 'Firefly particles in the garden (~20s)',
-        handler: () => ({ command: 'fireflies', text: `✨ ${currentUser} awakens the fireflies` }),
-    },
     // ── Tier 5 · 500 XP ─────────────────────────────────────────────────────────
     {
         name: 'memory', requiredXP: 500,
@@ -2995,11 +2969,6 @@ const XP_CHAT_COMMANDS = [
                 : null;
             return { command: 'memory', style: 'memory', text: picked ? picked.text : '(no memories found yet)' };
         },
-    },
-    {
-        name: 'constellation', requiredXP: 500,
-        description: 'Star/constellation overlay (~20s, night only)',
-        handler: () => ({ command: 'constellation', text: `🌌 ${currentUser} traces the constellations` }),
     },
 ];
 
@@ -3842,12 +3811,6 @@ function triggerXpCommandEffect(msg) {
         case 'pulse':        triggerXpPulse(); break;
         case 'tint':         triggerXpTint(msg.tintVariant); break;
         case 'warm':         triggerXpWarm(msg.tintIntensity); break;
-        case 'bloom':        triggerXpBloom(); break;
-        case 'rain':         triggerGardenOverlay('rain',        15000); break;
-        case 'snow':         triggerGardenOverlay('snow',        15000); break;
-        case 'comet':        triggerGardenOverlay('comet',        8000); break;
-        case 'fireflies':    triggerGardenOverlay('fireflies',   20000); break;
-        case 'constellation': triggerXpConstellation(); break;
         // whisper/echo/fade/memory: pure render — no extra side-effect needed
     }
 }
@@ -9217,7 +9180,8 @@ function initPixelCat() {
     // ---- Command registry ----
     // Base commands always available in the console.
     const BASE_CMDS = new Set(['help','clear','achievements','commands','stats','reactstats','letters','catstats','gardenlog',
-        'rain','spin','dance','summon-cat','grow-tree','matrix','love','party','ghost','fortune']);
+        'rain','spin','dance','summon-cat','grow-tree','matrix','love','party','ghost','fortune',
+        'bloom','snow','comet','fireflies','constellation']);
 
     function getCmdList() {
         // Always include base; also include achievement-unlocked commands
@@ -9241,7 +9205,17 @@ function initPixelCat() {
                 ['gardenlog',   'Your garden talk count'],
             ].forEach(([cmd, desc]) => print(`  ${cmd.padEnd(14)} ${desc}`));
             printBlank();
-            print('Easter eggs: rain  spin  dance  summon-cat  grow-tree');
+            print('Garden effects:', 'console-line-header');
+            [
+                ['bloom',         'Garden bloom effect (~5s)'],
+                ['rain',          'Garden rain overlay (~15s)'],
+                ['snow',          'Garden snow overlay (~15s)'],
+                ['comet',         'Comet overlay (~8s)'],
+                ['fireflies',     'Firefly overlay (~20s)'],
+                ['constellation', 'Constellation overlay (~20s)'],
+            ].forEach(([cmd, desc]) => print(`  ${cmd.padEnd(14)} ${desc}`));
+            printBlank();
+            print('Easter eggs: spin  dance  summon-cat  grow-tree');
             print('             matrix  love  party  ghost  fortune');
         },
 
@@ -9320,7 +9294,6 @@ function initPixelCat() {
         },
 
         // ---- Easter eggs ----
-        rain()        { _eggRain();        print('It begins to rain...', 'console-line-egg'); },
         spin()        { _eggSpin();        print('The icons are dizzy.', 'console-line-egg'); },
         dance()       { _eggDance();       print('(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ dance break!', 'console-line-egg'); },
         'summon-cat'(){ _eggSummonCat();   print('A cat wanders in from the east...', 'console-line-egg'); },
@@ -9330,6 +9303,50 @@ function initPixelCat() {
         party()       { _eggParty();       print('🎉 Party mode activated!', 'console-line-egg'); },
         ghost()       { _eggGhost();       print('Boo!', 'console-line-egg'); },
         fortune()     { print(FORTUNES[Math.floor(Math.random() * FORTUNES.length)], 'console-line-egg'); },
+
+        // ---- Garden effects ----
+        bloom() {
+            if (!document.getElementById('w95-win-garden')) {
+                print('Open Garden.exe first, then try again.', 'console-line-dim'); return;
+            }
+            triggerXpBloom();
+            print('🌸 Garden bloom activated.', 'console-line-egg');
+        },
+        rain() {
+            if (!document.getElementById('w95-win-garden')) {
+                print('Open Garden.exe first, then try again.', 'console-line-dim'); return;
+            }
+            triggerGardenOverlay('rain', 15000);
+            print('🌧️ Rain overlay started (~15s).', 'console-line-egg');
+        },
+        snow() {
+            if (!document.getElementById('w95-win-garden')) {
+                print('Open Garden.exe first, then try again.', 'console-line-dim'); return;
+            }
+            triggerGardenOverlay('snow', 15000);
+            print('❄️ Snow overlay started (~15s).', 'console-line-egg');
+        },
+        comet() {
+            if (!document.getElementById('w95-win-garden')) {
+                print('Open Garden.exe first, then try again.', 'console-line-dim'); return;
+            }
+            triggerGardenOverlay('comet', 8000);
+            print('☄️ Comet streaking across the sky (~8s).', 'console-line-egg');
+        },
+        fireflies() {
+            if (!document.getElementById('w95-win-garden')) {
+                print('Open Garden.exe first, then try again.', 'console-line-dim'); return;
+            }
+            triggerGardenOverlay('fireflies', 20000);
+            print('✨ Fireflies awakened (~20s).', 'console-line-egg');
+        },
+        constellation() {
+            if (!document.getElementById('w95-win-garden')) {
+                print('Open Garden.exe first, then try again.', 'console-line-dim'); return;
+            }
+            triggerXpConstellation();
+            print('🌌 Constellation overlay active (~20s).', 'console-line-egg');
+        },
     };
 
     // ---- Run a command ----
