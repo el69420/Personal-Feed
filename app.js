@@ -394,6 +394,69 @@ function sparkSound(type) {
             ping: [
                 { f: 750.00, t: 0.00, dur: 0.25 }    // Default Beep
             ],
+            // ---- Window / desktop sounds ----
+            window_open: [
+                { f: 523.25, t: 0.00, dur: 0.07 },   // C5
+                { f: 659.25, t: 0.06, dur: 0.09 },   // E5
+            ],
+            window_close: [
+                { f: 659.25, t: 0.00, dur: 0.07 },   // E5
+                { f: 392.00, t: 0.06, dur: 0.09 },   // G4
+            ],
+            window_min: [
+                { f: 523.25, t: 0.00, dur: 0.06 },   // C5
+                { f: 392.00, t: 0.05, dur: 0.08 },   // G4
+            ],
+            window_max: [
+                { f: 392.00, t: 0.00, dur: 0.06 },   // G4
+                { f: 523.25, t: 0.05, dur: 0.06 },   // C5
+                { f: 659.25, t: 0.10, dur: 0.09 },   // E5
+            ],
+            window_restore: [
+                { f: 659.25, t: 0.00, dur: 0.06 },   // E5
+                { f: 523.25, t: 0.05, dur: 0.06 },   // C5
+                { f: 392.00, t: 0.10, dur: 0.08 },   // G4
+            ],
+            // ---- System sounds ----
+            startup: [
+                { f: 392.00, t: 0.00, dur: 0.14 },   // G4
+                { f: 523.25, t: 0.12, dur: 0.14 },   // C5
+                { f: 659.25, t: 0.26, dur: 0.14 },   // E5
+                { f: 783.99, t: 0.40, dur: 0.16 },   // G5
+                { f: 1046.5, t: 0.54, dur: 0.36 },   // C6 (held)
+            ],
+            shutdown: [
+                { f: 1046.5, t: 0.00, dur: 0.14 },   // C6
+                { f: 783.99, t: 0.13, dur: 0.13 },   // G5
+                { f: 659.25, t: 0.25, dur: 0.13 },   // E5
+                { f: 523.25, t: 0.37, dur: 0.13 },   // C5
+                { f: 392.00, t: 0.49, dur: 0.28 },   // G4 (held)
+            ],
+            // ---- App sounds ----
+            cat: [
+                { f: 880.00, t: 0.00, dur: 0.06 },   // A5
+                { f: 1108.7, t: 0.05, dur: 0.09 },   // C#6
+            ],
+            water: [
+                { f: 392.00, t: 0.00, dur: 0.07 },   // G4
+                { f: 523.25, t: 0.06, dur: 0.07 },   // C5
+                { f: 659.25, t: 0.12, dur: 0.07 },   // E5
+                { f: 783.99, t: 0.18, dur: 0.11 },   // G5
+            ],
+            letter: [
+                { f: 523.25, t: 0.00, dur: 0.09 },   // C5
+                { f: 659.25, t: 0.08, dur: 0.09 },   // E5
+                { f: 783.99, t: 0.16, dur: 0.14 },   // G5
+            ],
+            // ---- Console sounds ----
+            cmd_success: [
+                { f: 523.25, t: 0.00, dur: 0.07 },   // C5
+                { f: 659.25, t: 0.06, dur: 0.08 },   // E5
+            ],
+            cmd_error: [
+                { f: 220.00, t: 0.00, dur: 0.10 },   // A3
+                { f: 196.00, t: 0.09, dur: 0.14 },   // G3
+            ],
             ach: [
                 { f: 659.25, t: 0.00, dur: 0.10 },   // E5
                 { f: 783.99, t: 0.10, dur: 0.10 },   // G5
@@ -535,6 +598,7 @@ function login(displayName, email) {
     localStorage.setItem('currentUser', displayName);
 
     ensureAudio();
+    sparkSound('startup');
     document.getElementById('loginOverlay').style.display = 'none';
 
     const emoji = AUTHOR_EMOJI[displayName] || '[?]';
@@ -571,6 +635,7 @@ function login(displayName, email) {
 }
 
 window.logout = function() {
+    sparkSound('shutdown');
     stopChatTyping();
     signOut(auth);
     // onAuthStateChanged(null) will clear currentUser and show the login screen
@@ -821,6 +886,7 @@ function renderMailbox() {
 window.openLetter = async function(letterId) {
     const letter = allLetters[letterId];
     if (!letter) return;
+    sparkSound('letter');
     if (!letter.readAt && letter.to === currentUser) {
         await update(ref(database, `letters/${letterId}`), { readAt: Date.now() });
     }
@@ -4980,7 +5046,7 @@ const w95Apps = {};
 
       // Success feedback
       showToast('Watered!');
-      sparkSound('post');
+      sparkSound('water');
 
       // Same-day Water Ritual: toast the moment the second user completes the pair
       if (todayAfterWater.el && todayAfterWater.tero) {
@@ -7884,6 +7950,7 @@ async function loadUserWallpaper() {
         } else if (action === 'yarn') {
             window._catLocalYarnZoom?.();
         }
+        sparkSound('cat');
 
         // --- Network / DB sync (runs after immediate feedback) ---
         try {
@@ -9374,9 +9441,11 @@ function initPixelCat() {
         const handler = CMD_HANDLERS[cmd.toLowerCase()];
         if (handler) {
             handler(args);
+            sparkSound('cmd_success');
         } else {
             print(`'${cmd}' is not recognized as a command.`, 'console-line-err');
             print("Type 'help' for a list of commands.", 'console-line-dim');
+            sparkSound('cmd_error');
         }
         printBlank();
     }
@@ -9712,4 +9781,38 @@ function initPixelCat() {
         trayGarden.title = 'Garden (click to open)';
         trayGarden.addEventListener('click', () => w95Apps['garden']?.open());
     }
+})();
+
+// ===== Window sound wiring =====
+// Event delegation (capture phase) for close / min / max button clicks.
+// Fires before each window IIFE's own handler so sound plays on the interaction.
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const win = btn.closest('.w95-window');
+    if (!win) return;
+    if (btn.classList.contains('w95-control-close')) {
+        sparkSound('window_close');
+    } else if (btn.getAttribute('aria-label') === 'Minimise') {
+        sparkSound('window_min');
+    } else if (btn.getAttribute('aria-label') === 'Maximise') {
+        // Read state before the handler flips it
+        sparkSound(win.classList.contains('is-maximised') ? 'window_restore' : 'window_max');
+    }
+}, true);
+
+// MutationObserver: play window_open whenever a window transitions from hidden → visible.
+// (Close/minimise are covered by the event delegation above.)
+(() => {
+    const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            if (m.type !== 'attributes' || m.attributeName !== 'class') continue;
+            const wasHidden = (m.oldValue || '').includes('is-hidden');
+            const isHidden  = m.target.classList.contains('is-hidden');
+            if (wasHidden && !isHidden) sparkSound('window_open');
+        }
+    });
+    document.querySelectorAll('.w95-window').forEach(w => {
+        observer.observe(w, { attributes: true, attributeOldValue: true });
+    });
 })();
