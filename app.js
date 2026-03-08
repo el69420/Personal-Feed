@@ -9183,35 +9183,99 @@ function initPixelCat() {
     // Hard-coded virtual file system
     const VFS = {
         type: 'root', children: {
-            'C:': { type: 'drive', icon: '\ud83d\udcbd', label: 'Local Disk (C:)', children: {
-                'Documents': { type: 'folder', icon: '\ud83d\udcc1', children: {
-                    'readme.txt':  { type: 'file', icon: '\ud83d\udcc4', content: 'Welcome to Personal Feed!\n\nThis is your personal space <3' },
-                    'about.txt':   { type: 'file', icon: '\ud83d\udcc4', content: 'Created with love by El & Tero <3\n\nBuilt on Firebase + Vanilla JS.' },
-                }},
-                'Pictures': { type: 'folder', icon: '\ud83d\uddc2\ufe0f', children: {
-                    'wallpapers':   { type: 'folder', icon: '\ud83d\udcc1', children: {} },
-                    'screenshots':  { type: 'folder', icon: '\ud83d\udcc1', children: {} },
-                }},
-                'Program Files': { type: 'folder', icon: '\ud83d\udcc1', children: {
-                    'Feed.exe':         { type: 'app', icon: '\ud83d\udcc4', app: 'feed' },
-                    'Chat.exe':         { type: 'app', icon: '\ud83d\udcac', app: 'chat' },
-                    'Garden.exe':       { type: 'app', icon: '\ud83c\udf37', app: 'garden' },
-                    'Jukebox.exe':      { type: 'app', icon: '\ud83c\udfba', app: 'jukebox' },
-                    'Achievements.exe': { type: 'app', icon: '\ud83c\udfc6', app: 'achievements' },
-                }},
-                'Windows': { type: 'folder', icon: '\ud83d\udcc1', children: {
-                    'System32': { type: 'folder', icon: '\ud83d\udcc1', children: {
-                        'notepad.exe':   { type: 'file', icon: '\ud83d\udcdd', content: 'C:\\Windows\\System32\\notepad.exe\n[1 KB]' },
-                        'explorer.exe':  { type: 'file', icon: '\ud83d\udcdd', content: 'C:\\Windows\\System32\\explorer.exe\n[512 KB]' },
+            'C:': { type: 'drive', icon: '💾', label: 'Local Disk (C:)', children: {
+                'Documents': { type: 'folder', icon: '📁', children: {
+                    'readme.txt':       { type: 'file', icon: '📄', size: '1 KB',  date: '03/08/2024', content: 'Welcome to Personal Feed!\n\nThis is your personal space <3' },
+                    'about.txt':        { type: 'file', icon: '📄', size: '1 KB',  date: '03/08/2024', content: 'Created with love by El & Tero <3\n\nBuilt on Firebase + Vanilla JS.' },
+                    'GardenLog.txt':    { type: 'file', icon: '📄', size: '2 KB',  date: '03/08/2024', content: () => {
+                        const t = Number(localStorage.getItem('garden_talkCount') || 0);
+                        return '--- Garden Log ---\n\nTimes talked to plant: ' + t + '\n' + (t === 0 ? '(Try the "Talk to Garden" button!)' : 'Your plant remembers every kind word.');
+                    }},
+                    'CatNotes.txt':     { type: 'file', icon: '📄', size: '1 KB',  date: '03/08/2024', content: () => {
+                        const c = Number(localStorage.getItem('catActionCount') || 0);
+                        return '--- Cat Notes ---\n\nCat interactions: ' + c + '\n' + (c === 0 ? '(Visit Cat.exe to meet your cat!)' : 'Your cat remembers every visit. ♡');
+                    }},
+                    'Achievements.log': { type: 'file', icon: '📋', size: '3 KB',  date: '03/08/2024', content: () => {
+                        if (!currentUser) return 'Sign in to view achievements.';
+                        const unlocked = ACHIEVEMENTS.filter(a => unlockedAchievements.has(a.id));
+                        if (!unlocked.length) return '--- Achievements Log ---\n\nNo achievements unlocked yet.\nKeep using the site!';
+                        return '--- Achievements Log ---\n\n' + unlocked.map(a => a.icon + '  ' + a.title).join('\n');
+                    }},
+                    'StatsReport.txt':  { type: 'file', icon: '📄', size: '2 KB',  date: '03/08/2024', content: () => {
+                        if (!currentUser) return 'Sign in to view your stats.';
+                        const posts   = Object.values(allPosts).filter(p => p.author === currentUser).length;
+                        const replies = Object.values(allPosts).reduce((a, p) => a + (p.replies||[]).filter(r => r.author === currentUser).length, 0);
+                        const talks   = Number(localStorage.getItem('garden_talkCount') || 0);
+                        const cats    = Number(localStorage.getItem('catActionCount') || 0);
+                        return '--- Stats Report ---\n\nPosts:         ' + posts + '\nReplies:       ' + replies + '\nGarden Talks:  ' + talks + '\nCat Actions:   ' + cats + '\nAchievements:  ' + unlockedAchievements.size + ' / ' + ACHIEVEMENTS.length;
+                    }},
+                    'Letters.txt':      { type: 'file', icon: '📄', size: '1 KB',  date: '03/08/2024', content: () => {
+                        if (!currentUser) return 'Sign in to view letters.';
+                        const sent = Object.values(allLetters).filter(l => l.from === currentUser).length;
+                        const recv = Object.values(allLetters).filter(l => l.to   === currentUser).length;
+                        return '--- Letters ---\n\nSent:     ' + sent + '\nReceived: ' + recv;
                     }},
                 }},
+                'Pictures': { type: 'folder', icon: '🗂️', children: {
+                    'Wallpapers':  { type: 'folder', icon: '📁', children: {
+                        'about.txt': { type: 'file', icon: '📄', size: '1 KB', date: '03/08/2024', content: 'Wallpapers are managed via the Display control panel.\n\nOpen Control Panel → Display.cpl to change your wallpaper.' },
+                    }},
+                    'Screenshots': { type: 'folder', icon: '📁', children: {
+                        'placeholder.txt': { type: 'file', icon: '📄', size: '1 KB', date: '03/08/2024', content: '[ Screenshots ]\n\nThis folder will hold desktop screenshots in a future update.' },
+                    }},
+                    'Memories':    { type: 'folder', icon: '📁', children: {
+                        'placeholder.txt': { type: 'file', icon: '📄', size: '1 KB', date: '03/08/2024', content: '[ Memories ]\n\nThis folder will hold special moments in a future update.' },
+                    }},
+                }},
+                'Program Files': { type: 'folder', icon: '📁', children: {
+                    'Feed.exe':         { type: 'app', icon: '⚙️', size: '32 KB', date: '03/08/2024', app: 'feed' },
+                    'Mailbox.exe':      { type: 'app', icon: '⚙️', size: '28 KB', date: '03/08/2024', app: 'mailbox' },
+                    'Chat.exe':         { type: 'app', icon: '⚙️', size: '24 KB', date: '03/08/2024', app: 'chat' },
+                    'Garden.exe':       { type: 'app', icon: '⚙️', size: '18 KB', date: '03/08/2024', app: 'garden' },
+                    'Cat.exe':          { type: 'app', icon: '⚙️', size: '12 KB', date: '03/08/2024', app: 'cat' },
+                    'Jukebox.exe':      { type: 'app', icon: '⚙️', size: '20 KB', date: '03/08/2024', app: 'jukebox' },
+                    'Console.exe':      { type: 'app', icon: '⚙️', size: '8 KB',  date: '03/08/2024', app: 'console' },
+                    'Stats.exe':        { type: 'app', icon: '⚙️', size: '16 KB', date: '03/08/2024', app: 'stats' },
+                    'Presence.exe':     { type: 'app', icon: '⚙️', size: '10 KB', date: '03/08/2024', app: 'presence' },
+                    'Achievements.exe': { type: 'app', icon: '⚙️', size: '14 KB', date: '03/08/2024', app: 'achievements' },
+                }},
+                'Windows': { type: 'folder', icon: '📁', children: {
+                    'System32': { type: 'folder', icon: '📁', children: {
+                        'notepad.exe':  { type: 'file', icon: '⚙️', size: '69 KB',  date: '08/24/1996', content: 'C:\\Windows\\System32\\notepad.exe\n[69 KB]\n\nMicrosoft Notepad\nVersion 4.00' },
+                        'explorer.exe': { type: 'file', icon: '⚙️', size: '512 KB', date: '08/24/1996', content: 'C:\\Windows\\System32\\explorer.exe\n[512 KB]\n\nWindows Explorer\nVersion 4.00.950' },
+                        'win.ini':      { type: 'file', icon: '📄', size: '2 KB',   date: '08/24/1996', content: '[windows]\nload=\nrun=\nBeep=yes\nspooler=yes\n\n[Desktop]\nWallpaper=(None)\nTileWallpaper=0' },
+                        'system.ini':   { type: 'file', icon: '📄', size: '1 KB',   date: '08/24/1996', content: '[boot]\nsystem.drv=system.drv\nuser.exe=user.exe\ngdi.exe=gdi.exe\n\n[386Enh]\nwoafont=dosapp.fon' },
+                    }},
+                    'Fonts': { type: 'folder', icon: '📁', children: {
+                        'Arial.ttf':            { type: 'file', icon: '🔤', size: '63 KB', date: '08/24/1996', content: 'Arial\nMonotype Typography, 1992\n\nA clean sans-serif typeface.' },
+                        'Courier New.ttf':      { type: 'file', icon: '🔤', size: '45 KB', date: '08/24/1996', content: 'Courier New\nMonotype Typography, 1992\n\nA monospaced serif typeface.' },
+                        'Times New Roman.ttf':  { type: 'file', icon: '🔤', size: '56 KB', date: '08/24/1996', content: 'Times New Roman\nMonotype Typography, 1992\n\nA classic serif typeface.' },
+                        'Wingdings.ttf':        { type: 'file', icon: '🔤', size: '28 KB', date: '08/24/1996', content: 'Wingdings\nMicrosoft, 1990\n\n✉ ✈ ✂ ☎ ✌ ✍ ♫ ✎ ✏ ☺' },
+                    }},
+                    'Media': { type: 'folder', icon: '📁', children: {
+                        'chimes.wav': { type: 'file', icon: '🎵', size: '11 KB', date: '08/24/1996', content: 'chimes.wav  [11 KB]\n\nWindows chime sound.\nPlayback available via Jukebox.exe.' },
+                        'chord.wav':  { type: 'file', icon: '🎵', size: '24 KB', date: '08/24/1996', content: 'chord.wav  [24 KB]\n\nWindows chord sound.' },
+                        'ding.wav':   { type: 'file', icon: '🎵', size: '11 KB', date: '08/24/1996', content: 'ding.wav  [11 KB]\n\nWindows ding sound.' },
+                        'tada.wav':   { type: 'file', icon: '🎵', size: '28 KB', date: '08/24/1996', content: 'tada.wav  [28 KB]\n\nWindows startup fanfare.' },
+                    }},
+                }},
+                'Logs': { type: 'folder', icon: '📁', children: {
+                    'error.log': { type: 'file', icon: '📋', size: '1 KB', date: '03/08/2024', content: 'Windows Error Log\n------------------\n[03/08/2024 09:41] System started.\n[03/08/2024 09:41] No errors found.\n[03/08/2024 09:41] Have a nice day.' },
+                    'boot.log':  { type: 'file', icon: '📋', size: '1 KB', date: '03/08/2024', content: 'Boot Log\n---------\n[OK] Loading HIMEM.SYS\n[OK] Loading EMM386.EXE\n[OK] Starting Windows 95\n[OK] Personal Feed loaded.' },
+                }},
             }},
-            'D:': { type: 'drive', icon: '\ud83d\udcbf', label: 'CD-ROM (D:)', children: {
-                'AUTORUN.INF': { type: 'file', icon: '\ud83d\udcc4', content: '[autorun]\nopen=setup.exe\nlabel=Personal Feed CD' },
+            'D:': { type: 'drive', icon: '💿', label: 'CD-ROM (D:)', children: {
+                'AUTORUN.INF':     { type: 'file', icon: '📄', size: '1 KB', date: '02/14/2024', content: '[autorun]\nopen=setup.exe\nlabel=Personal Feed CD' },
+                'readme.txt':      { type: 'file', icon: '📄', size: '2 KB', date: '02/14/2024', content: 'Personal Feed — Limited Edition CD\n\nThank you for being here.\nThis disc contains everything we made together.\n\nTracks: 12\nRuntime: 47:32\n\nInsert disc to begin.' },
+                'tracklist.txt':   { type: 'file', icon: '📄', size: '1 KB', date: '02/14/2024', content: 'Tracklist\n----------\n01. Startup Fanfare          (0:04)\n02. Garden Theme             (3:22)\n03. Cat Nap Jazz             (2:48)\n04. Loading Screen Blues     (1:12)\n05. Notification Ping        (0:01)\n06. Letter Day               (4:05)\n07. Midnight Garden          (5:17)\n08. Jukebox Shuffle          (3:55)\n09. Achievement Unlocked     (0:03)\n10. Error 404 Not Found      (2:11)\n11. Goodbye Screen           (1:33)\n12. Credits Roll             (7:01)' },
+                'love_letter.txt': { type: 'file', icon: '📄', size: '1 KB', date: '02/14/2024', content: 'Dear You,\n\nWe made this for us.\nEvery pixel, every plant, every purr.\n\nThank you for showing up.\n\n  \u2661\n  El & Tero' },
             }},
-            'Control Panel': { type: 'folder', icon: '\ud83c\udfdb\ufe0f', children: {
-                'Display.cpl':   { type: 'app',  icon: '\ud83d\udda5\ufe0f', app: 'wallpaper' },
-                'Sounds.cpl':    { type: 'file', icon: '\ud83d\udd0a', content: 'Adjust sound settings in the Jukebox app.' },
+            'Control Panel': { type: 'folder', icon: '🏛️', children: {
+                'Display.cpl':  { type: 'app',  icon: '🖥️', size: '4 KB', date: '03/08/2024', app: 'wallpaper' },
+                'Sounds.cpl':   { type: 'app',  icon: '🔊', size: '4 KB', date: '03/08/2024', app: 'jukebox' },
+                'DateTime.cpl': { type: 'app',  icon: '🕐', size: '2 KB', date: '03/08/2024', app: 'datetime' },
+                'Mouse.cpl':    { type: 'file', icon: '🖱️', size: '2 KB', date: '03/08/2024', content: 'Mouse Properties\n\nPointer speed: Normal\nDouble-click speed: Normal\nLeft-handed: No\n\n[ This panel is read-only ]' },
+                'About.cpl':    { type: 'file', icon: 'ℹ️', size: '1 KB', date: '03/08/2024', content: () => 'Personal Feed\nVersion 1.0\n\nBuilt with love by El & Tero.\nPowered by Firebase + Vanilla JS.\n\nSystem:\n  Date: ' + new Date().toLocaleDateString() + '\n  Time: ' + new Date().toLocaleTimeString() },
             }},
         }
     };
@@ -9284,8 +9348,9 @@ function initPixelCat() {
         } else if (child.type === 'app') {
             w95Apps[child.app]?.open();
         } else {
-            openW95Dialog({ icon: child.icon || '\ud83d\udcc4', title: name,
-                message: child.content || '(empty)',
+            const msg = typeof child.content === 'function' ? child.content() : (child.content || '(empty)');
+            openW95Dialog({ icon: child.icon || '📄', title: name,
+                message: msg,
                 buttons: [{ label: 'OK', action: null }] });
         }
     }
