@@ -1018,11 +1018,50 @@
     </div>
     <!-- Sound tab -->
     <div class="settings-panel is-hidden" id="stab-sound" role="tabpanel">
-      <div class="settings-group-label">Volume</div>
+      <div class="settings-group-label">Global</div>
       <label class="settings-check-row">
         <input type="checkbox" id="settings-mute-chk"> Mute all sounds
       </label>
       <div class="settings-hint">The sound toggle in the system tray also controls this.</div>
+      <div class="settings-vol-row" style="margin-top:8px;">
+        <label for="settings-vol-slider" style="font:11px Tahoma,Verdana,Arial,sans-serif;white-space:nowrap;">Master volume</label>
+        <input type="range" id="settings-vol-slider" min="0" max="100" step="1" style="flex:1;min-width:0;">
+        <span id="settings-vol-pct" style="font:11px Tahoma,Verdana,Arial,sans-serif;width:30px;text-align:right;"></span>
+      </div>
+      <div class="settings-divider" style="margin-top:10px;"></div>
+      <div class="settings-group-label" style="margin-top:6px;">UI &amp; System</div>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-snd-ui"> UI sound effects (windows, menus)
+      </label>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-snd-startup"> Startup &amp; shutdown sounds
+      </label>
+      <label class="settings-check-row settings-check-row--disabled">
+        <input type="checkbox" id="settings-snd-ambience" disabled> Ambience sounds <span class="settings-hint" style="margin:0;">(not yet available)</span>
+      </label>
+      <div class="settings-divider" style="margin-top:10px;"></div>
+      <div class="settings-group-label" style="margin-top:6px;">Notifications</div>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-snd-chat"> Chat messages
+      </label>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-snd-post"> Post, reaction &amp; reply sounds
+      </label>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-snd-mail"> Letter / mail notifications
+      </label>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-snd-cat"> Cat notifications
+      </label>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-snd-garden"> Garden notifications
+      </label>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-snd-ach"> Achievement &amp; unlock sounds
+      </label>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-snd-console"> Console command sounds
+      </label>
     </div>
     <!-- Desktop tab -->
     <div class="settings-panel is-hidden" id="stab-desktop" role="tabpanel">

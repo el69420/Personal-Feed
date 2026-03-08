@@ -5272,6 +5272,15 @@ body { padding: 0 !important; }
   border-bottom: 1px solid #ffffff;
   margin: 8px 0;
 }
+.settings-vol-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.settings-check-row--disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .settings-about {
   font: 11px Tahoma, Verdana, Arial, sans-serif;
   text-align: center;

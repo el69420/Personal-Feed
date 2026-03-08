@@ -138,6 +138,26 @@ let gardenVisitStreak = { current: 0, lastDate: null };    // consecutive-day vi
 let xpTotal = 0;   // total XP earned; persisted at /userStats/{user}/xpTotal in Firebase
 // Sound toggle — default ON; set localStorage soundEnabled='false' to mute.
 let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+
+// Master volume (0–1, default 1)
+let soundMasterVolume = parseFloat(localStorage.getItem('soundMasterVolume') || '1');
+if (isNaN(soundMasterVolume) || soundMasterVolume < 0 || soundMasterVolume > 1) soundMasterVolume = 1;
+
+// Global sound category toggles
+let soundUiEffects = localStorage.getItem('soundUiEffects') !== 'false';
+let soundStartup   = localStorage.getItem('soundStartup')   !== 'false';
+// soundAmbience: ready for future ambience sounds; no ambience implemented yet
+let soundAmbience  = localStorage.getItem('soundAmbience')  !== 'false';
+
+// Per-feature sound toggles
+let sndChat    = localStorage.getItem('snd_chat')    !== 'false';
+let sndPost    = localStorage.getItem('snd_post')    !== 'false';
+let sndMail    = localStorage.getItem('snd_mail')    !== 'false';
+let sndCat     = localStorage.getItem('snd_cat')     !== 'false';
+let sndGarden  = localStorage.getItem('snd_garden')  !== 'false';
+let sndAch     = localStorage.getItem('snd_ach')     !== 'false';
+let sndConsole = localStorage.getItem('snd_console') !== 'false';
+
 let focusedPostId = null;
 let prevDataSig = null;
 let prevVisualSig = null;
@@ -354,14 +374,54 @@ function burstEmoji(emoji, sourceEl) {
     }
 }
 
+let _masterGain = null;
+
 function ensureAudio() {
-    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!_audioCtx) {
+        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        _masterGain = _audioCtx.createGain();
+        _masterGain.gain.value = soundMasterVolume;
+        _masterGain.connect(_audioCtx.destination);
+    }
     if (_audioCtx.state === 'suspended') _audioCtx.resume();
 }
 
-function sparkSound(type) {
+// Maps a sound type to its feature category when no explicit category is passed.
+const _SOUND_CATEGORIES = {
+    window_open: 'ui', window_close: 'ui', window_min: 'ui', window_max: 'ui', window_restore: 'ui',
+    startup: 'startup', shutdown: 'startup',
+    post: 'post', react: 'post', reply: 'post',
+    chat: 'chat',
+    letter: 'mail',
+    cat: 'cat',
+    water: 'garden',
+    ach: 'ach',
+    cmd_success: 'console', cmd_error: 'console',
+    // ping: resolved at call site via explicit category arg
+};
+
+// Returns false if the sound should be suppressed by category toggles.
+function _soundCategoryAllowed(category) {
+    switch (category) {
+        case 'ui':      return soundUiEffects;
+        case 'startup': return soundStartup;
+        case 'ambience': return soundAmbience;
+        case 'chat':    return sndChat;
+        case 'post':    return sndPost;
+        case 'mail':    return sndMail;
+        case 'cat':     return sndCat;
+        case 'garden':  return sndGarden;
+        case 'ach':     return sndAch;
+        case 'console': return sndConsole;
+        default:        return true;
+    }
+}
+
+function sparkSound(type, category) {
     try {
         if (!soundEnabled) return;
+        const cat = category || _SOUND_CATEGORIES[type] || null;
+        if (cat && !_soundCategoryAllowed(cat)) return;
         ensureAudio();
         const ctx = _audioCtx;
         const t0 = ctx.currentTime;
@@ -473,7 +533,7 @@ function sparkSound(type) {
             osc.frequency.setValueAtTime(f, t0 + t);
 
             osc.connect(gain);
-            gain.connect(ctx.destination);
+            gain.connect(_masterGain || ctx.destination);
 
             const s = t0 + t;
             const e = s + dur;
@@ -676,7 +736,7 @@ function setupBoardDeleteRequestsListener() {
             document.getElementById('boardDeleteRequestTitle').textContent = req.boardTitle;
             if (!modal.classList.contains('show')) {
                 openModal(modal);
-                sparkSound('ping');
+                sparkSound('ping', 'ui');
                 sendNotification('Board deletion request', `${req.requestedBy} wants to delete "${req.boardTitle}"`, 'board-delete');
             }
         } else {
@@ -1037,7 +1097,7 @@ function setupDBListeners() {
         const sig = dataSig(newPosts);
 
         if (!isInitialLoad && sig !== prevDataSig) {
-            sparkSound('ping');
+            sparkSound('ping', 'post');
 
             // Desktop notification for brand-new posts
             const newIds = Object.keys(newPosts).filter(id => !seenPostIds.has(id));
@@ -5436,7 +5496,7 @@ const w95Apps = {};
     gardenBodyEl.appendChild(el);
     setTimeout(() => el.remove(), 2000);
     showToast('A shooting star! ✨☄️');
-    sparkSound('ping');
+    sparkSound('ping', 'garden');
   }
 
   // Glitch moment (0.2 % chance on garden open, CSS-only, 1–2 s).
@@ -5445,7 +5505,7 @@ const w95Apps = {};
     setTimeout(() => {
       gardenBodyEl.classList.add('garden-glitch');
       showToast('The garden shimmered strangely…');
-      sparkSound('ping');
+      sparkSound('ping', 'garden');
       gardenBodyEl.addEventListener('animationend', () =>
         gardenBodyEl.classList.remove('garden-glitch'), { once: true });
     }, 600);
@@ -7725,11 +7785,22 @@ async function loadUserWallpaper() {
 
     function takeSnap() {
         snap = {
-            wallpaper:   currentWallpaperId,
-            sound:       soundEnabled,
-            motion:      localStorage.getItem('motionEnabled') !== 'false',
-            boot:        localStorage.getItem('bootEnabled') !== 'false',
-            screensaver: localStorage.getItem('screensaverEnabled') !== 'false',
+            wallpaper:    currentWallpaperId,
+            sound:        soundEnabled,
+            masterVolume: soundMasterVolume,
+            uiEffects:    soundUiEffects,
+            startup:      soundStartup,
+            ambience:     soundAmbience,
+            sndChat:      sndChat,
+            sndPost:      sndPost,
+            sndMail:      sndMail,
+            sndCat:       sndCat,
+            sndGarden:    sndGarden,
+            sndAch:       sndAch,
+            sndConsole:   sndConsole,
+            motion:       localStorage.getItem('motionEnabled') !== 'false',
+            boot:         localStorage.getItem('bootEnabled') !== 'false',
+            screensaver:  localStorage.getItem('screensaverEnabled') !== 'false',
         };
     }
 
@@ -7780,12 +7851,23 @@ async function loadUserWallpaper() {
     }
 
     // ---- Sound tab ----
-    const muteChk = document.getElementById('settings-mute-chk');
+    const muteChk    = document.getElementById('settings-mute-chk');
+    const volSlider  = document.getElementById('settings-vol-slider');
+    const volPct     = document.getElementById('settings-vol-pct');
+    const sndUiChk   = document.getElementById('settings-snd-ui');
+    const sndStrtChk = document.getElementById('settings-snd-startup');
+    const sndChatChk = document.getElementById('settings-snd-chat');
+    const sndPostChk = document.getElementById('settings-snd-post');
+    const sndMailChk = document.getElementById('settings-snd-mail');
+    const sndCatChk  = document.getElementById('settings-snd-cat');
+    const sndGardChk = document.getElementById('settings-snd-garden');
+    const sndAchChk  = document.getElementById('settings-snd-ach');
+    const sndConChk  = document.getElementById('settings-snd-console');
+
     if (muteChk) {
         muteChk.addEventListener('change', () => {
             soundEnabled = !muteChk.checked;
             localStorage.setItem('soundEnabled', soundEnabled ? 'true' : 'false');
-            // sync tray icon if available
             const traySound = document.getElementById('tray-sound');
             if (traySound) {
                 traySound.textContent = soundEnabled ? '\uD83D\uDD0A' : '\uD83D\uDD07';
@@ -7794,6 +7876,34 @@ async function loadUserWallpaper() {
             }
         });
     }
+
+    if (volSlider && volPct) {
+        volSlider.addEventListener('input', () => {
+            soundMasterVolume = parseInt(volSlider.value, 10) / 100;
+            localStorage.setItem('soundMasterVolume', String(soundMasterVolume));
+            volPct.textContent = volSlider.value + '%';
+            if (_masterGain) _masterGain.gain.value = soundMasterVolume;
+        });
+    }
+
+    function _mkSndToggle(el, getter, setter, lsKey) {
+        if (!el) return;
+        el.addEventListener('change', () => {
+            const on = el.checked;
+            setter(on);
+            localStorage.setItem(lsKey, on ? 'true' : 'false');
+        });
+    }
+
+    _mkSndToggle(sndUiChk,   () => soundUiEffects, v => { soundUiEffects = v; }, 'soundUiEffects');
+    _mkSndToggle(sndStrtChk, () => soundStartup,   v => { soundStartup   = v; }, 'soundStartup');
+    _mkSndToggle(sndChatChk, () => sndChat,        v => { sndChat    = v; }, 'snd_chat');
+    _mkSndToggle(sndPostChk, () => sndPost,        v => { sndPost    = v; }, 'snd_post');
+    _mkSndToggle(sndMailChk, () => sndMail,        v => { sndMail    = v; }, 'snd_mail');
+    _mkSndToggle(sndCatChk,  () => sndCat,         v => { sndCat     = v; }, 'snd_cat');
+    _mkSndToggle(sndGardChk, () => sndGarden,      v => { sndGarden  = v; }, 'snd_garden');
+    _mkSndToggle(sndAchChk,  () => sndAch,         v => { sndAch     = v; }, 'snd_ach');
+    _mkSndToggle(sndConChk,  () => sndConsole,     v => { sndConsole = v; }, 'snd_console');
 
     // ---- Desktop tab ----
     const motionChk     = document.getElementById('settings-motion-chk');
@@ -7839,6 +7949,21 @@ async function loadUserWallpaper() {
         renderWallpaperGrid();
 
         if (muteChk)        muteChk.checked        = !soundEnabled;
+        if (volSlider) {
+            const pct = Math.round(soundMasterVolume * 100);
+            volSlider.value = pct;
+            if (volPct) volPct.textContent = pct + '%';
+        }
+        if (sndUiChk)   sndUiChk.checked   = soundUiEffects;
+        if (sndStrtChk) sndStrtChk.checked = soundStartup;
+        if (sndChatChk) sndChatChk.checked = sndChat;
+        if (sndPostChk) sndPostChk.checked = sndPost;
+        if (sndMailChk) sndMailChk.checked = sndMail;
+        if (sndCatChk)  sndCatChk.checked  = sndCat;
+        if (sndGardChk) sndGardChk.checked = sndGarden;
+        if (sndAchChk)  sndAchChk.checked  = sndAch;
+        if (sndConChk)  sndConChk.checked  = sndConsole;
+
         if (motionChk)      motionChk.checked      = localStorage.getItem('motionEnabled') !== 'false';
         if (bootChk)        bootChk.checked        = localStorage.getItem('bootEnabled') !== 'false';
         if (screensaverChk) screensaverChk.checked = localStorage.getItem('screensaverEnabled') !== 'false';
@@ -7875,6 +8000,21 @@ async function loadUserWallpaper() {
             traySound.title       = soundEnabled ? 'Sound: on (click to mute)' : 'Sound: muted (click to unmute)';
             traySound.classList.toggle('tray-muted', !soundEnabled);
         }
+
+        soundMasterVolume = snap.masterVolume;
+        localStorage.setItem('soundMasterVolume', String(soundMasterVolume));
+        if (_masterGain) _masterGain.gain.value = soundMasterVolume;
+
+        soundUiEffects = snap.uiEffects;  localStorage.setItem('soundUiEffects', soundUiEffects ? 'true' : 'false');
+        soundStartup   = snap.startup;    localStorage.setItem('soundStartup',   soundStartup   ? 'true' : 'false');
+        soundAmbience  = snap.ambience;   localStorage.setItem('soundAmbience',  soundAmbience  ? 'true' : 'false');
+        sndChat    = snap.sndChat;    localStorage.setItem('snd_chat',    sndChat    ? 'true' : 'false');
+        sndPost    = snap.sndPost;    localStorage.setItem('snd_post',    sndPost    ? 'true' : 'false');
+        sndMail    = snap.sndMail;    localStorage.setItem('snd_mail',    sndMail    ? 'true' : 'false');
+        sndCat     = snap.sndCat;     localStorage.setItem('snd_cat',     sndCat     ? 'true' : 'false');
+        sndGarden  = snap.sndGarden;  localStorage.setItem('snd_garden',  sndGarden  ? 'true' : 'false');
+        sndAch     = snap.sndAch;     localStorage.setItem('snd_ach',     sndAch     ? 'true' : 'false');
+        sndConsole = snap.sndConsole; localStorage.setItem('snd_console', sndConsole ? 'true' : 'false');
 
         localStorage.setItem('motionEnabled', snap.motion ? 'true' : 'false');
         window._motionEnabled = snap.motion;
