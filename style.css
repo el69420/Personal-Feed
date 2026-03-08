@@ -6018,3 +6018,101 @@ body { padding: 0 !important; }
     z-index: 9000;
 }
 
+/* =====================================
+   STATS.EXE
+   ===================================== */
+.stats-win-body {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 26px);
+    background: #c0c0c0;
+    overflow: hidden;
+}
+.stats-tabs {
+    display: flex;
+    gap: 0;
+    background: #c0c0c0;
+    padding: 4px 6px 0;
+    border-bottom: 2px solid #808080;
+    flex-shrink: 0;
+}
+.stats-tab {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    background: #a8a8a8;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #808080;
+    border-bottom: none;
+    padding: 3px 10px 5px;
+    cursor: pointer;
+    position: relative;
+    bottom: -2px;
+    margin-right: 2px;
+    user-select: none;
+    color: #000;
+}
+.stats-tab.active {
+    background: #c0c0c0;
+    font-weight: bold;
+    z-index: 1;
+    border-bottom: 2px solid #c0c0c0;
+    padding-bottom: 6px;
+}
+.stats-tab:hover:not(.active) { background: #b4b4b4; }
+.stats-panel {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    font: 12px Tahoma, Verdana, Arial, sans-serif;
+    color: #000;
+    box-sizing: border-box;
+}
+.stats-section {
+    border: 1px solid #808080;
+    border-top: 2px solid #808080;
+    margin-bottom: 12px;
+    padding: 10px 8px 6px;
+    position: relative;
+    background: #c0c0c0;
+}
+.stats-section-title {
+    font: bold 10px Tahoma, Verdana, Arial, sans-serif;
+    background: #c0c0c0;
+    position: absolute;
+    top: -7px;
+    left: 8px;
+    padding: 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #000;
+}
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 2px 0;
+    border-bottom: 1px dotted #b0b0b0;
+    gap: 8px;
+}
+.stats-row:last-child { border-bottom: none; }
+.stats-label {
+    color: #333;
+    flex-shrink: 0;
+}
+.stats-value {
+    font-weight: bold;
+    text-align: right;
+    word-break: break-word;
+}
+.stats-empty {
+    color: #808080;
+    font-style: italic;
+    padding: 20px;
+    text-align: center;
+}
+.stats-na {
+    color: #808080;
+    font-style: italic;
+    font-weight: normal;
+}
+

@@ -9475,10 +9475,21 @@ function initPixelCat() {
 
         stats() {
             if (!currentUser) { print('Sign in first.', 'console-line-err'); return; }
-            print('--- STATS ---', 'console-line-header');
-            print(`  Posts:    ${getMyPostCount()}`);
-            print(`  Replies:  ${getMyReplyCount()}`);
-            print(`  XP:       ${xpTotal}  (Level ${xpToLevel(xpTotal)})`);
+            print('--- STATS SUMMARY ---', 'console-line-header');
+            const rxGiven  = Object.values(allPosts).reduce((a, p) =>
+                a + Object.values(p.reactionsBy||{}).filter(u => u && u[currentUser]).length, 0);
+            const letSent  = Object.values(allLetters).filter(l => l.from === currentUser).length;
+            const talks    = Number(localStorage.getItem('garden_talkCount') || 0);
+            const cats     = Number(localStorage.getItem('catActionCount') || 0);
+            print(`  Posts:            ${getMyPostCount()}`);
+            print(`  Replies:          ${getMyReplyCount()}`);
+            print(`  Reactions Given:  ${rxGiven}`);
+            print(`  Letters Sent:     ${letSent}`);
+            print(`  Garden Talks:     ${talks}`);
+            print(`  Cat Actions:      ${cats}`);
+            print(`  Achievements:     ${unlockedAchievements.size} / ${ACHIEVEMENTS.length}`);
+            printBlank();
+            print('For full details, open Stats.exe', 'console-line-dim');
         },
 
         reactstats() {
@@ -9942,6 +9953,233 @@ function initPixelCat() {
         window.addEventListener('online',  syncNetworkIcon);
         window.addEventListener('offline', syncNetworkIcon);
     }
+})();
+
+// ===== Win95 Stats.exe Window =====
+(() => {
+    const win      = document.getElementById('w95-win-stats');
+    const minBtn   = document.getElementById('w95-stats-min');
+    const maxBtn   = document.getElementById('w95-stats-max');
+    const closeBtn = document.getElementById('w95-stats-close');
+    const handle   = document.getElementById('w95-stats-handle');
+    if (!win || !minBtn || !closeBtn || !handle) return;
+
+    let btn = null;
+    let activeTab = 'overview';
+
+    // ---- Helpers ----
+    function na() { return '<span class="stats-na">No data yet</span>'; }
+    function fmtDate(ts) {
+        if (!ts) return na();
+        return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    function row(label, value) {
+        return `<div class="stats-row"><span class="stats-label">${label}</span><span class="stats-value">${value}</span></div>`;
+    }
+    function section(title, rows) {
+        return `<div class="stats-section"><div class="stats-section-title">${title}</div>${rows.join('')}</div>`;
+    }
+    function myPosts()   { return Object.values(allPosts).filter(p => p.author === currentUser); }
+    function myReplies() { return Object.values(allPosts).flatMap(p => (p.replies||[]).filter(r => r.author === currentUser)); }
+
+    // ---- Tab renderers ----
+    function renderOverview() {
+        const posts      = myPosts().length;
+        const replies    = myReplies().length;
+        const rxGiven    = Object.values(allPosts).reduce((a, p) =>
+            a + Object.values(p.reactionsBy||{}).filter(u => u && u[currentUser]).length, 0);
+        const rxReceived = Object.values(allPosts)
+            .filter(p => p.author === currentUser)
+            .reduce((a, p) => a + Object.values(p.reactionsBy||{})
+                .reduce((b, users) => b + Object.keys(users||{}).length, 0), 0);
+        const letSent    = Object.values(allLetters).filter(l => l.from === currentUser).length;
+        const letRecv    = Object.values(allLetters).filter(l => l.to   === currentUser).length;
+        const talks      = Number(localStorage.getItem('garden_talkCount') || 0);
+        const cats       = Number(localStorage.getItem('catActionCount') || 0);
+        return section('Overview', [
+            row('Posts',               posts),
+            row('Replies',             replies),
+            row('Reactions Given',     rxGiven),
+            row('Reactions Received',  rxReceived),
+            row('Letters Sent',        letSent),
+            row('Letters Received',    letRecv),
+            row('Garden Talks',        talks),
+            row('Cat Actions',         cats),
+            row('Achievements',        `${unlockedAchievements.size} / ${ACHIEVEMENTS.length}`),
+            row('XP',                  xpTotal),
+            row('Level',               xpToLevel(xpTotal)),
+        ]);
+    }
+
+    function renderFeed() {
+        const posts = myPosts();
+        if (!posts.length) return section('Feed', [row('Total Posts', 0), row('', '<span class="stats-na">No posts yet</span>')]);
+        posts.sort((a, b) => (a.timestamp||0) - (b.timestamp||0));
+        const first   = posts[0];
+        const latest  = posts[posts.length - 1];
+        const lengths = posts.map(p => (p.body||'').length).filter(l => l > 0);
+        const maxLen  = lengths.length ? Math.max(...lengths) : 0;
+        const minLen  = lengths.length ? Math.min(...lengths) : 0;
+        const totalWords = posts.reduce((a, p) =>
+            a + (p.body||'').trim().split(/\s+/).filter(Boolean).length, 0);
+        const imagePosts = posts.filter(p => p.mediaUrl || p.imageUrl).length;
+        let avgPerWeek = na();
+        if (first?.timestamp) {
+            const weeks = Math.max(1, (Date.now() - first.timestamp) / (7 * 24 * 3600 * 1000));
+            avgPerWeek  = (posts.length / weeks).toFixed(1) + ' / week';
+        }
+        return section('Feed', [
+            row('Total Posts',       posts.length),
+            row('First Post',        fmtDate(first?.timestamp)),
+            row('Most Recent Post',  fmtDate(latest?.timestamp)),
+            row('Avg Posts / Week',  avgPerWeek),
+            row('Longest Post',      maxLen ? `${maxLen} chars` : na()),
+            row('Shortest Post',     minLen ? `${minLen} chars` : na()),
+            row('Total Words',       totalWords.toLocaleString()),
+            row('Image Posts',       imagePosts),
+        ]);
+    }
+
+    function renderLetters() {
+        const sent = Object.values(allLetters).filter(l => l.from === currentUser)
+            .sort((a, b) => (a.createdAt||0) - (b.createdAt||0));
+        const recv = Object.values(allLetters).filter(l => l.to === currentUser)
+            .sort((a, b) => (a.createdAt||0) - (b.createdAt||0));
+        const longestSent = sent.length ? Math.max(...sent.map(l => (l.body||'').length)) : 0;
+        const totalWords  = sent.reduce((a, l) =>
+            a + (l.body||'').trim().split(/\s+/).filter(Boolean).length, 0);
+        const firstDate   = sent[0]?.createdAt || recv[0]?.createdAt || null;
+        return section('Letters', [
+            row('Sent',              sent.length),
+            row('Received',          recv.length),
+            row('First Letter',      fmtDate(firstDate)),
+            row('Most Recent Sent',  fmtDate(sent[sent.length - 1]?.createdAt)),
+            row('Most Recent Recv',  fmtDate(recv[recv.length - 1]?.createdAt)),
+            row('Longest Sent',      longestSent ? `${longestSent} chars` : na()),
+            row('Total Words Sent',  totalWords.toLocaleString()),
+        ]);
+    }
+
+    function renderGarden() {
+        const talks     = Number(localStorage.getItem('garden_talkCount') || 0);
+        const visitDays = Object.keys(gardenVisitDays).length;
+        return section('Garden', [
+            row('Times Watered',      totalWaterings),
+            row('Garden Visit Days',  visitDays),
+            row('Watering Streak',    currentWateringStreak ? `${currentWateringStreak} days` : '0 days'),
+            row('Visit Streak',       gardenVisitStreak.current ? `${gardenVisitStreak.current} days` : '0 days'),
+            row('Times Talked To',    talks),
+            row('3x/day Streak',      water3Streak.current ? `${water3Streak.current} days` : '0 days'),
+        ]);
+    }
+
+    async function renderCatAsync() {
+        const panel = document.getElementById('stats-panel');
+        if (!panel) return;
+        const total = Number(localStorage.getItem('catActionCount') || 0);
+        panel.innerHTML = section('Cat', [
+            row('Total Actions', total),
+            row('Cat Name',   '<span class="stats-na">Loading…</span>'),
+            row('Hunger',     '<span class="stats-na">Loading…</span>'),
+            row('Thirst',     '<span class="stats-na">Loading…</span>'),
+            row('Play',       '<span class="stats-na">Loading…</span>'),
+        ]);
+        try {
+            const snap = await get(ref(database, `cat/${currentUser}`));
+            const c    = snap.val() || {};
+            if (activeTab !== 'cat') return;
+            panel.innerHTML = section('Cat', [
+                row('Total Actions', total),
+                row('Cat Name',  c.catName || na()),
+                row('Hunger',    c.hunger != null ? `${Math.round(c.hunger)}%` : na()),
+                row('Thirst',    c.thirst != null ? `${Math.round(c.thirst)}%` : na()),
+                row('Play',      c.play   != null ? `${Math.round(c.play)}%`   : na()),
+            ]);
+        } catch (_) { /* ignore */ }
+    }
+
+    function renderXP() {
+        const unlocked = ACHIEVEMENTS.filter(a => unlockedAchievements.has(a.id));
+        const locked   = ACHIEVEMENTS.filter(a => !unlockedAchievements.has(a.id) && !a.hidden);
+        const level    = xpToLevel(xpTotal);
+        const nextXp   = xpForLevel(level + 1);
+        const rarest   = unlocked.length
+            ? unlocked.reduce((best, a) => (a.xp||0) > (best.xp||0) ? a : best, unlocked[0])
+            : null;
+        return section('Achievements & XP', [
+            row('Total XP',           xpTotal),
+            row('Level',              level),
+            row('Next Level At',      `${nextXp} XP`),
+            row('Unlocked',           `${unlocked.length} / ${ACHIEVEMENTS.length}`),
+            row('Locked (visible)',   locked.length),
+            row('Rarest Unlocked',    rarest ? `${rarest.icon} ${rarest.title}` : na()),
+        ]);
+    }
+
+    // ---- Render panel ----
+    function renderPanel() {
+        const panel = document.getElementById('stats-panel');
+        if (!panel) return;
+        if (!currentUser) {
+            panel.innerHTML = '<div class="stats-empty">Sign in to view stats</div>';
+            return;
+        }
+        if (activeTab === 'cat') { renderCatAsync(); return; }
+        let html = '';
+        if      (activeTab === 'overview') html = renderOverview();
+        else if (activeTab === 'feed')     html = renderFeed();
+        else if (activeTab === 'letters')  html = renderLetters();
+        else if (activeTab === 'garden')   html = renderGarden();
+        else if (activeTab === 'xp')       html = renderXP();
+        panel.innerHTML = html;
+    }
+
+    // ---- Tab switching ----
+    document.getElementById('stats-tabs')?.addEventListener('click', e => {
+        const tab = e.target.closest('.stats-tab');
+        if (!tab) return;
+        activeTab = tab.dataset.tab;
+        document.querySelectorAll('#stats-tabs .stats-tab').forEach(t =>
+            t.classList.toggle('active', t === tab));
+        renderPanel();
+    });
+
+    // ---- Show / hide ----
+    function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-stats', 'STATS', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-stats');
+        localStorage.setItem('w95_stats_open', '1');
+        renderPanel();
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-stats')) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_stats_open', '0');
+    }
+
+    function closeWin() {
+        if (w95Mgr.isMaximised('w95-win-stats')) w95Mgr.toggleMaximise(win, 'w95-win-stats');
+        hide();
+        if (btn) { btn.remove(); btn = null; }
+    }
+
+    minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
+    maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-stats'); };
+    closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
+
+    win.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-stats'));
+
+    if (localStorage.getItem('w95_stats_open') === '1') show();
+
+    makeDraggable(win, handle, 'w95-win-stats');
+
+    w95Apps['stats'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-stats');
+    }};
 })();
 
 // ===== Window sound wiring =====
