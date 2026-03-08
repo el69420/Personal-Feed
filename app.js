@@ -8954,6 +8954,18 @@ function initPixelCat() {
         }, 300);
     });
 
+    document.getElementById('ctx-properties')?.addEventListener('click', () => {
+        hideAll();
+        const ua = navigator.userAgent;
+        const cpu = ua.includes('Win') ? 'x86' : ua.includes('Mac') ? 'ARM/x86' : 'x86';
+        openW95Dialog({
+            icon: '\uD83D\uDCBB',
+            title: 'System Properties',
+            message: `Personal Feed v1.0\n\nOperating System: Windows 95\nProcessor: ${cpu}, ~66 MHz\nMemory: 16.0 MB RAM\n\nRegistered to: You \u2665`,
+            buttons: [{ label: 'OK', action: null }]
+        });
+    });
+
     document.getElementById('ctx-shutdown')?.addEventListener('click', () => {
         hideAll();
         openW95Dialog({
@@ -9033,58 +9045,125 @@ function initPixelCat() {
         return;
     }
 
-    const bar = document.getElementById('boot-progress-bar');
-    const steps = [12, 28, 44, 60, 74, 88, 100];
-    let i = 0;
+    const bar   = document.getElementById('boot-progress-bar');
+    const label = document.getElementById('boot-label');
+    const log   = document.getElementById('boot-log');
 
+    // Each entry: [progress%, log line, label text]
+    const STEPS = [
+        [10, 'Initializing system...',          'Starting Windows\u2026'],
+        [22, 'Loading HIMEM.SYS...',            'Starting Windows\u2026'],
+        [34, 'Loading Feed.exe',                'Loading programs\u2026'],
+        [46, 'Loading Garden.exe',              'Loading programs\u2026'],
+        [56, 'Loading Cat.exe',                 'Loading programs\u2026'],
+        [66, 'Loading Mail.exe',                'Loading programs\u2026'],
+        [76, 'Loading Jukebox.exe',             'Loading programs\u2026'],
+        [88, 'Checking for updates...',         'Almost ready\u2026'],
+        [100, 'Desktop ready.',                 'Welcome'],
+    ];
+
+    function addLine(text) {
+        if (!log) return;
+        const span = document.createElement('span');
+        span.className = 'boot-log-line';
+        span.textContent = text;
+        log.appendChild(span);
+        // Keep last 5 lines visible
+        while (log.children.length > 5) log.removeChild(log.firstChild);
+    }
+
+    let i = 0;
     function tick() {
-        if (i >= steps.length) {
-            boot.style.transition = 'opacity 0.35s';
+        if (i >= STEPS.length) {
+            boot.style.transition = 'opacity 0.4s';
             boot.style.opacity = '0';
-            setTimeout(() => boot.classList.add('is-hidden'), 360);
+            setTimeout(() => boot.classList.add('is-hidden'), 420);
             sessionStorage.setItem('bootShown', '1');
             return;
         }
-        if (bar) bar.style.width = steps[i] + '%';
+        const [pct, line, lbl] = STEPS[i];
+        if (bar) bar.style.width = pct + '%';
+        if (label && lbl) label.textContent = lbl;
+        addLine(line);
         i++;
-        setTimeout(tick, i < steps.length ? 200 : 350);
+        setTimeout(tick, i < STEPS.length ? 210 : 400);
     }
-    setTimeout(tick, 400);
+    setTimeout(tick, 300);
 })();
 
-// ===== Screensaver (E) =====
+// ===== Screensaver (E) — starfield =====
 (function () {
-    const SS_MS = 5 * 60 * 1000; // 5 minutes
+    const SS_MS  = 5 * 60 * 1000; // 5 minutes idle
     const overlay = document.getElementById('screensaver-overlay');
-    if (!overlay) return;
-    const content = overlay.querySelector('.screensaver-content');
-    let timer = null, active = false, rafId = null;
-    let sx = 0, sy = 0, vx = 1.8, vy = 1.4;
-    const rmq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const canvas  = document.getElementById('screensaver-canvas');
+    if (!overlay || !canvas) return;
 
-    function startBounce() {
-        if (!content) return;
-        sx = Math.random() * Math.max(0, overlay.offsetWidth  - content.offsetWidth  - 4);
-        sy = Math.random() * Math.max(0, overlay.offsetHeight - content.offsetHeight - 4);
-        function frame() {
-            if (!active) return;
-            const mw = overlay.offsetWidth  - content.offsetWidth;
-            const mh = overlay.offsetHeight - content.offsetHeight;
-            sx += vx; sy += vy;
-            if (sx <= 0 || sx >= mw) { vx = -vx; sx = Math.max(0, Math.min(mw, sx)); }
-            if (sy <= 0 || sy >= mh) { vy = -vy; sy = Math.max(0, Math.min(mh, sy)); }
-            content.style.left = sx + 'px';
-            content.style.top  = sy + 'px';
-            rafId = requestAnimationFrame(frame);
+    const ctx = canvas.getContext('2d');
+    const rmq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let timer = null, active = false, rafId = null;
+
+    const STAR_COUNT = 160;
+    let stars = [];
+
+    function initStars() {
+        const W = canvas.width, H = canvas.height;
+        stars = Array.from({ length: STAR_COUNT }, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            z: Math.random() * W,
+            pz: 0,
+        }));
+        stars.forEach(s => { s.pz = s.z; });
+    }
+
+    function resizeCanvas() {
+        canvas.width  = overlay.offsetWidth  || window.innerWidth;
+        canvas.height = overlay.offsetHeight || window.innerHeight;
+        initStars();
+    }
+
+    function drawFrame() {
+        if (!active) return;
+        const W = canvas.width, H = canvas.height;
+        const cx = W / 2, cy = H / 2;
+        const speed = 6;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(0, 0, W, H);
+
+        for (const s of stars) {
+            s.pz = s.z;
+            s.z -= speed;
+            if (s.z <= 0) { s.x = Math.random() * W; s.y = Math.random() * H; s.z = W; s.pz = W; }
+
+            const sx = (s.x - cx) * (W / s.z) + cx;
+            const sy = (s.y - cy) * (W / s.z) + cy;
+            const px = (s.x - cx) * (W / s.pz) + cx;
+            const py = (s.y - cy) * (W / s.pz) + cy;
+
+            const size = Math.max(0.5, (1 - s.z / W) * 2.5);
+            const bright = Math.floor((1 - s.z / W) * 255);
+            ctx.strokeStyle = `rgb(${bright},${bright},${bright})`;
+            ctx.lineWidth = size;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(sx, sy);
+            ctx.stroke();
         }
-        rafId = requestAnimationFrame(frame);
+
+        rafId = requestAnimationFrame(drawFrame);
     }
 
     function start() {
         if (active) return;
         active = true;
+        resizeCanvas();
         overlay.classList.remove('is-hidden');
-        if (!rmq.matches) startBounce();
+        if (!rmq.matches) {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawFrame();
+        }
     }
 
     function stop() {
@@ -9848,6 +9927,20 @@ function initPixelCat() {
     if (trayGarden) {
         trayGarden.title = 'Garden (click to open)';
         trayGarden.addEventListener('click', () => w95Apps['garden']?.open());
+    }
+
+    // ---- Network status icon ----
+    const trayNetwork = document.getElementById('tray-network');
+    if (trayNetwork) {
+        function syncNetworkIcon() {
+            const online = navigator.onLine;
+            trayNetwork.textContent = online ? '\uD83D\uDCF6' : '\uD83D\uDCF5'; // 📶 or 📵
+            trayNetwork.title = online ? 'Network: connected' : 'Network: disconnected';
+            trayNetwork.classList.toggle('tray-muted', !online);
+        }
+        syncNetworkIcon();
+        window.addEventListener('online',  syncNetworkIcon);
+        window.addEventListener('offline', syncNetworkIcon);
     }
 })();
 

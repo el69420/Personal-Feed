@@ -760,6 +760,8 @@
         <div id="systemTray" class="w95-tray">
             <span class="tray-icon" id="tray-chat" title="Chat: no new messages" aria-label="Chat">&#128172;</span>
             <span class="tray-icon" id="tray-garden" title="Garden: healthy" aria-label="Garden">&#127807;</span>
+            <span class="tray-divider" aria-hidden="true"></span>
+            <span class="tray-icon" id="tray-network" title="Network: connected" aria-label="Network status">&#128225;</span>
             <span class="tray-icon" id="tray-sound" title="Sound: on" aria-label="Sound toggle">&#128266;</span>
             <span class="tray-icon" id="tray-motion" title="Motion: on" aria-label="Motion toggle">&#10024;</span>
         </div>
@@ -791,6 +793,8 @@
         <hr class="w95-ctx-separator">
         <button class="w95-ctx-item" id="ctx-personalise" type="button">&#127912; Personalisation</button>
         <button class="w95-ctx-item" id="ctx-new-post" type="button">&#10024; New Post</button>
+        <hr class="w95-ctx-separator">
+        <button class="w95-ctx-item" id="ctx-properties" type="button">&#9881;&#65039; Properties</button>
         <hr class="w95-ctx-separator">
         <button class="w95-ctx-item" id="ctx-shutdown" type="button">Shut Down...</button>
     </div>
@@ -1152,13 +1156,14 @@
 <!-- Boot screen (D) — shown once per session -->
 <div id="boot-screen">
   <div class="boot-logo">&#128187; Windows 95</div>
+  <div class="boot-log" id="boot-log"></div>
   <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-progress-bar"></div></div>
-  <div class="boot-label">Starting Windows&hellip;</div>
+  <div class="boot-label" id="boot-label">Starting Windows&hellip;</div>
 </div>
 
 <!-- Screensaver overlay (E) -->
 <div id="screensaver-overlay" class="is-hidden">
-  <div class="screensaver-content">&lt;3</div>
+  <canvas id="screensaver-canvas"></canvas>
 </div>
 
 </body>
