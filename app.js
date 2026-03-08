@@ -8508,6 +8508,33 @@ function initPixelCat() {
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
+    // ---- Interactive hit area — transparent overlay that captures clicks on the cat ----
+    const hitArea = document.createElement('div');
+    hitArea.id    = 'cat-hit-area';
+    hitArea.title = 'Desktop Cat \u00b7 double-click to open Cat.exe';
+    document.body.appendChild(hitArea);
+
+    // Single click: light local reaction (heart + bounce) without a Firebase write
+    let _lastCatClick = 0;
+    hitArea.addEventListener('click', (e) => {
+        const now = Date.now();
+        if (now - _lastCatClick < 400) return; // ignore if part of a dblclick
+        _lastCatClick = now;
+        setTimeout(() => {
+            if (Date.now() - _lastCatClick < 350) return; // dblclick fired, skip
+            window._catLocalEmote?.('heart');
+            canvas.classList.remove('cat-bounce');
+            void canvas.offsetWidth;
+            canvas.classList.add('cat-bounce');
+        }, 220);
+    });
+
+    // Double click: open / focus Cat.exe
+    hitArea.addEventListener('dblclick', (e) => {
+        _lastCatClick = 0; // prevent single-click from firing
+        w95Apps['cat']?.open();
+    });
+
     // ---- Firebase refs ----
     const catFbRef    = ref(database, 'desktop/cat');
     const catEventRef = ref(database, 'desktop/catEvent');
@@ -9118,6 +9145,11 @@ function initPixelCat() {
             emoteEl.style.zIndex = '151';
         }
 
+        // Mirror canvas position to the interactive hit area overlay
+        hitArea.style.left   = canvas.style.left;
+        hitArea.style.top    = canvas.style.top;
+        hitArea.style.bottom = canvas.style.bottom;
+
         // Choose sprite frame
         // For wakeup, cycle: sleep (0-1 s) → wakeup half-open (1-2 s) → sit (2-3 s)
         const wakeElapsed = catState === 'wakeup'
@@ -9291,6 +9323,7 @@ function initPixelCat() {
     const deskMenu   = document.getElementById('w95-ctx-menu');
     const iconMenu   = document.getElementById('w95-icon-ctx-menu');
     const winMenu    = document.getElementById('w95-win-ctx-menu');
+    const catMenu    = document.getElementById('w95-cat-ctx-menu');
     if (!desktop || !deskMenu) return;
 
     // Track which icon / window was right-clicked so action buttons can reference it
@@ -9310,6 +9343,7 @@ function initPixelCat() {
         deskMenu?.classList.add('is-hidden');
         iconMenu?.classList.add('is-hidden');
         winMenu?.classList.add('is-hidden');
+        catMenu?.classList.add('is-hidden');
     }
 
     // --- Single contextmenu listener (event delegation) ---
@@ -9319,10 +9353,13 @@ function initPixelCat() {
         _targetIcon = null;
         _targetWin  = null;
 
+        const catEl  = e.target.closest('#cat-hit-area');
         const iconEl = e.target.closest('.w95-desktop-icon, .exe-icon');
         const winEl  = e.target.closest('.w95-window');
 
-        if (iconEl) {
+        if (catEl) {
+            if (catMenu) placeMenu(catMenu, e.clientX, e.clientY);
+        } else if (iconEl) {
             _targetIcon = iconEl;
             if (iconMenu) placeMenu(iconMenu, e.clientX, e.clientY);
         } else if (winEl) {
@@ -9466,6 +9503,28 @@ function initPixelCat() {
         // Fallback
         _targetWin.classList.add('is-hidden');
         if (w95Mgr.isActiveWin(_targetWin.id)) w95Mgr.focusWindow(null);
+    });
+
+    // ===== Cat context menu actions =====
+
+    document.getElementById('cat-ctx-open')?.addEventListener('click', () => {
+        hideAll();
+        w95Apps['cat']?.open();
+    });
+
+    document.getElementById('cat-ctx-pet')?.addEventListener('click', () => {
+        hideAll();
+        window._catController?.petCat();
+    });
+
+    document.getElementById('cat-ctx-call')?.addEventListener('click', () => {
+        hideAll();
+        window._catController?.callCat();
+    });
+
+    document.getElementById('cat-ctx-roam')?.addEventListener('click', () => {
+        hideAll();
+        window._catController?.toggleRoaming();
     });
 })();
 

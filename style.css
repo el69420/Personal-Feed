@@ -5352,6 +5352,13 @@ body { padding: 0 !important; }
   image-rendering: crisp-edges;
   pointer-events: none;   /* never block clicks on things below */
 }
+#cat-hit-area {
+  position: fixed;
+  width: 40px;            /* CW(8) × S(5) = 40 */
+  height: 40px;           /* CH(8) × S(5) = 40 */
+  z-index: 152;           /* just above canvas (150) and emotes (151) */
+  cursor: pointer;
+}
 
 @keyframes catBounce {
   0%   { transform: translateY(0)    scaleY(1);    }
