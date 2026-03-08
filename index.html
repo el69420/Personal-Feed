@@ -75,6 +75,10 @@
             <div class="desktop-icon-img">&#9000;</div>
             <div class="desktop-icon-label">Console.exe</div>
         </div>
+        <div class="w95-desktop-icon" data-app="stats" tabindex="0">
+            <div class="desktop-icon-img">&#128202;</div>
+            <div class="desktop-icon-label">Stats.exe</div>
+        </div>
         <div class="w95-desktop-icon" data-app="myComputer" tabindex="0">
             <div class="desktop-icon-img">&#128187;</div>
             <div class="desktop-icon-label">My Computer</div>
@@ -1146,6 +1150,31 @@
     <div class="console-input-row">
       <span class="console-prompt">C:\&gt;</span>
       <input id="console-input" class="console-input" type="text" maxlength="120" autocomplete="off" spellcheck="false" placeholder="type a command...">
+    </div>
+  </div>
+</div>
+
+<!-- Stats.exe window -->
+<div id="w95-win-stats" class="w95-window is-hidden" style="left:160px;top:70px;width:480px;height:440px;">
+  <div class="w95-titlebar" id="w95-stats-handle">
+    <div class="w95-title">&#128202; Stats.exe</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-stats-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-stats-max" type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-stats-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="stats-win-body" id="w95-stats-body">
+    <div class="stats-tabs" id="stats-tabs">
+      <button class="stats-tab active" data-tab="overview">Overview</button>
+      <button class="stats-tab" data-tab="feed">Feed</button>
+      <button class="stats-tab" data-tab="letters">Letters</button>
+      <button class="stats-tab" data-tab="garden">Garden</button>
+      <button class="stats-tab" data-tab="cat">Cat</button>
+      <button class="stats-tab" data-tab="xp">XP</button>
+    </div>
+    <div class="stats-panel" id="stats-panel">
+      <div class="stats-empty">Sign in to view stats</div>
     </div>
   </div>
 </div>
