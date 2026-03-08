@@ -2893,12 +2893,31 @@ function _resetPresIdle() {
     _presIdleTimer = setTimeout(() => _setPresState('idle'), 60_000);
 }
 
+function _presRelativeTime(ts) {
+    if (!ts) return '';
+    const diff = Math.floor((Date.now() - ts) / 1000);
+    if (diff < 10)  return 'just now';
+    if (diff < 60)  return `${diff}s ago`;
+    const mins = Math.floor(diff / 60);
+    if (mins < 60)  return `${mins} min${mins !== 1 ? 's' : ''} ago`;
+    const hrs = Math.floor(mins / 60);
+    return `${hrs} hr${hrs !== 1 ? 's' : ''} ago`;
+}
+
 function updatePresenceDots(data) {
+    const STATE_LABEL = { online: 'Online', idle: 'Idle', typing: 'Typing…', offline: 'Offline' };
     ['El', 'Tero'].forEach(user => {
-        const state = data[user]?.state || 'offline';
+        const entry = data[user] || {};
+        const state = entry.state || 'offline';
+        const ts    = entry.ts   || null;
         document.querySelectorAll(`.presence-dot[data-user="${user}"]`).forEach(dot => {
             dot.className = `presence-dot ${state}`;
         });
+        // Update Presence.exe window rows
+        const statusEl = document.getElementById(`pres-status-${user}`);
+        const lastEl   = document.getElementById(`pres-last-${user}`);
+        if (statusEl) statusEl.textContent = STATE_LABEL[state] || state;
+        if (lastEl)   lastEl.textContent   = state !== 'offline' ? '' : _presRelativeTime(ts);
     });
 }
 
@@ -5675,6 +5694,52 @@ const w95Apps = {};
   makeDraggable(winNew,  document.getElementById('w95-new-handle'),  'w95-win-new');
 })();
 
+// ===== Presence.exe Window =====
+(() => {
+  const win      = document.getElementById('w95-win-presence');
+  const minBtn   = document.getElementById('w95-presence-min');
+  const closeBtn = document.getElementById('w95-presence-close');
+  const handle   = document.getElementById('w95-presence-handle');
+  if (!win || !minBtn || !closeBtn || !handle) return;
+
+  let btn = null;
+
+  function showPresence() {
+    if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-presence', 'PRESENCE', () => {
+      if (win.classList.contains('is-hidden')) showPresence(); else hidePresence();
+    });
+    win.classList.remove('is-hidden');
+    w95Mgr.focusWindow('w95-win-presence');
+    localStorage.setItem('w95_presence_open', '1');
+  }
+
+  function hidePresence() {
+    win.classList.add('is-hidden');
+    if (w95Mgr.isActiveWin('w95-win-presence')) w95Mgr.focusWindow(null);
+    localStorage.setItem('w95_presence_open', '0');
+  }
+
+  function closePresence() {
+    win.classList.add('is-hidden');
+    if (w95Mgr.isActiveWin('w95-win-presence')) w95Mgr.focusWindow(null);
+    localStorage.setItem('w95_presence_open', '0');
+    if (btn) { btn.remove(); btn = null; }
+  }
+
+  minBtn.onclick   = (e) => { e.stopPropagation(); hidePresence(); };
+  closeBtn.onclick = (e) => { e.stopPropagation(); closePresence(); };
+
+  win.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-presence'));
+
+  w95Apps['presence'] = { open: () => {
+    if (win.classList.contains('is-hidden')) showPresence(); else w95Mgr.focusWindow('w95-win-presence');
+  }};
+
+  if (localStorage.getItem('w95_presence_open') === '1') showPresence();
+
+  makeDraggable(win, handle, 'w95-win-presence');
+})();
+
 // Shared drag helper used by window IIFEs and initPixelCat (must be module-level).
 function makeDraggable(winEl, handleEl, winId) {
   let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
@@ -8429,9 +8494,11 @@ function initPixelCat() {
 
     // ---- Helper: derive mood from presence (no Firebase writes) ----
     function getMood() {
-        const onlineCount = Object.values(onlinePres)
-            .filter(v => v && v.state !== 'offline').length;
-        return onlineCount >= 2 ? 'excited' : 'calm';
+        const present = Object.values(onlinePres).filter(v => v && v.state !== 'offline');
+        if (present.length >= 2) return 'excited';
+        // Drowsy: at least one present but all who are present are idle
+        if (present.length > 0 && present.every(v => v.state === 'idle')) return 'drowsy';
+        return 'calm';
     }
 
     // ---- Firebase → receive shared cat state ----
@@ -8455,10 +8522,10 @@ function initPixelCat() {
         const mood = getMood();
 
         // Mood multipliers derived locally from presence — no extra Firebase writes
-        const speedMult   = mood === 'excited' ? 1.3  : 0.78;
-        const sitMinMult  = mood === 'excited' ? 0.55 : 1.5;
-        const sleepProb   = mood === 'excited' ? 0    : (mood === 'calm' ? 0.38 : SLEEP_P);
-        const sitGapBase  = mood === 'excited' ? 3000 : 7000; // ms gap between sits
+        const speedMult   = mood === 'excited' ? 1.3  : (mood === 'drowsy' ? 0.45 : 0.78);
+        const sitMinMult  = mood === 'excited' ? 0.55 : (mood === 'drowsy' ? 2.2  : 1.5);
+        const sleepProb   = mood === 'excited' ? 0    : (mood === 'drowsy' ? 0.72 : (mood === 'calm' ? 0.38 : SLEEP_P));
+        const sitGapBase  = mood === 'excited' ? 3000 : (mood === 'drowsy' ? 12000 : 7000); // ms gap between sits
 
         // ---- Night-time forced sleep (23:00–07:00 Europe/London) ----
         if (nightSleep) {
@@ -8628,7 +8695,8 @@ function initPixelCat() {
         if (fbState !== 'walk') return fbX; // sleep / sit / wakeup: stay put
         const elapsed = now - fbUpdatedAt;
         // Mirror the driver's mood-adjusted speed so extrapolation stays in sync
-        const rSpeedMult = getMood() === 'excited' ? 1.3 : 0.78;
+        const _rm = getMood();
+        const rSpeedMult = _rm === 'excited' ? 1.3 : (_rm === 'drowsy' ? 0.45 : 0.78);
         const dx = (fbDir === 'right' ? 1 : -1) * WALK_SPEED * rSpeedMult * elapsed;
         return Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, fbX + dx));
     }

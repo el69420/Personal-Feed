@@ -3341,6 +3341,49 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 }
 
 /* ============================================================
+   PRESENCE.EXE WINDOW BODY
+   ============================================================ */
+.presence-win-body {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.pres-user {
+    padding: 8px 0;
+}
+
+.pres-name {
+    font: bold 12px Tahoma, Verdana, Arial, sans-serif;
+    color: #000;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 2px;
+}
+
+.pres-status {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    color: #444;
+    margin-left: 2px;
+}
+
+.pres-last {
+    font: 10px Tahoma, Verdana, Arial, sans-serif;
+    color: #808080;
+    margin-left: 2px;
+    min-height: 14px;
+}
+
+.pres-divider {
+    height: 1px;
+    background: #808080;
+    box-shadow: 0 1px 0 #fff;
+    margin: 0 0 2px;
+}
+
+/* ============================================================
    PREFERS-REDUCED-MOTION
    Disable / significantly reduce non-essential animations.
    ============================================================ */

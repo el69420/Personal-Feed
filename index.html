@@ -79,6 +79,10 @@
             <div class="desktop-icon-img">&#128187;</div>
             <div class="desktop-icon-label">My Computer</div>
         </div>
+        <div class="w95-desktop-icon" data-app="presence" tabindex="0">
+            <div class="desktop-icon-img">&#128100;</div>
+            <div class="desktop-icon-label">Presence.exe</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -645,7 +649,7 @@
     <div id="chatPanel" class="chat-panel">
         <div class="chat-header">
             <div class="chat-title">
-                <span class="presence-dot offline" data-user="El" title="El"></span>&lt;3 el &amp; tero &lt;3<span class="presence-dot offline" data-user="Tero" title="Tero"></span>
+                &lt;3 el &amp; tero &lt;3
             </div>
         </div>
         <div id="chatBody" class="chat-body"></div>
@@ -885,7 +889,7 @@
 <!-- Chat window wrapper -->
 <div id="w95-win-chat" class="w95-window is-hidden" style="left:420px; top:60px; width:360px; height:420px;">
   <div class="w95-titlebar" id="w95-chat-handle">
-    <div class="w95-title"><span class="presence-dot offline" data-user="El" title="El"></span> Chat <span class="presence-dot offline" data-user="Tero" title="Tero"></span></div>
+    <div class="w95-title">Chat</div>
     <div class="w95-controls">
       <button class="w95-control" id="w95-chat-min" type="button" aria-label="Minimise">_</button>
       <button class="w95-control" id="w95-chat-max" type="button" aria-label="Maximise">&#9633;</button>
@@ -1100,6 +1104,30 @@
     </div>
   </div>
   <div class="w95-body explorer-body" id="w95-mycomputer-body"></div>
+</div>
+
+<!-- Presence.exe window -->
+<div id="w95-win-presence" class="w95-window is-hidden" style="left:120px; top:80px; width:220px;">
+  <div class="w95-titlebar" id="w95-presence-handle">
+    <div class="w95-title">&#128100; Presence</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-presence-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control w95-control-close" id="w95-presence-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body presence-win-body" id="w95-presence-body">
+    <div class="pres-user" id="pres-user-El">
+      <div class="pres-name">El <span class="presence-dot offline" data-user="El"></span></div>
+      <div class="pres-status" id="pres-status-El">Offline</div>
+      <div class="pres-last" id="pres-last-El"></div>
+    </div>
+    <div class="pres-divider"></div>
+    <div class="pres-user" id="pres-user-Tero">
+      <div class="pres-name">Tero <span class="presence-dot offline" data-user="Tero"></span></div>
+      <div class="pres-status" id="pres-status-Tero">Offline</div>
+      <div class="pres-last" id="pres-last-Tero"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Console.exe window -->
