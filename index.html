@@ -784,7 +784,7 @@
         <button class="w95-start-item" data-app="jukebox" type="button">&#127926; Jukebox</button>
         <button class="w95-start-item" data-app="myComputer" type="button">&#128187; My Computer</button>
         <hr class="w95-start-separator">
-        <button class="w95-start-item" data-app="wallpaper" type="button">&#127912; Personalisation &rsaquo; Wallpaper</button>
+        <button class="w95-start-item" data-app="settings" type="button">&#9881;&#65039; Settings</button>
     </div>
 
     <!-- Desktop right-click context menu -->
@@ -994,21 +994,74 @@
   </div>
 </div>
 
-<!-- Desktop Properties (Wallpaper) window -->
-<div id="w95-win-wallpaper" class="w95-window is-hidden" style="left:120px;top:90px;width:360px;">
-  <div class="w95-titlebar" id="w95-wallpaper-handle">
-    <div class="w95-title">Desktop Properties</div>
+<!-- Settings / Preferences window -->
+<div id="w95-win-settings" class="w95-window is-hidden" style="left:110px;top:70px;width:410px;">
+  <div class="w95-titlebar" id="w95-settings-handle">
+    <div class="w95-title">&#9881;&#65039; Settings</div>
     <div class="w95-controls">
-      <button class="w95-control w95-control-close" id="w95-wallpaper-close" type="button" aria-label="Close">X</button>
+      <button class="w95-control w95-control-close" id="w95-settings-close" type="button" aria-label="Close">X</button>
     </div>
   </div>
-  <div class="w95-body">
-    <div class="wallpaper-section-label">Wallpaper</div>
-    <div id="wallpaper-preview" class="wallpaper-preview"></div>
-    <div id="wallpaper-grid" class="wallpaper-grid"></div>
-    <div class="w95-row" style="justify-content:flex-end;gap:6px;margin-top:10px;">
-      <button class="w95-btn" id="wallpaper-ok" type="button">OK</button>
-      <button class="w95-btn" id="wallpaper-cancel" type="button">Cancel</button>
+  <div class="w95-body settings-body">
+    <!-- Tab buttons -->
+    <div class="settings-tabs" role="tablist">
+      <button class="settings-tab-btn is-active" data-tab="appearance" type="button" role="tab" aria-selected="true">Appearance</button>
+      <button class="settings-tab-btn" data-tab="sound" type="button" role="tab" aria-selected="false">Sound</button>
+      <button class="settings-tab-btn" data-tab="desktop" type="button" role="tab" aria-selected="false">Desktop</button>
+      <button class="settings-tab-btn" data-tab="about" type="button" role="tab" aria-selected="false">About</button>
+    </div>
+    <!-- Appearance tab -->
+    <div class="settings-panel" id="stab-appearance" role="tabpanel">
+      <div class="wallpaper-section-label">Wallpaper</div>
+      <div id="wallpaper-preview" class="wallpaper-preview"></div>
+      <div id="wallpaper-grid" class="wallpaper-grid"></div>
+    </div>
+    <!-- Sound tab -->
+    <div class="settings-panel is-hidden" id="stab-sound" role="tabpanel">
+      <div class="settings-group-label">Volume</div>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-mute-chk"> Mute all sounds
+      </label>
+      <div class="settings-hint">The sound toggle in the system tray also controls this.</div>
+    </div>
+    <!-- Desktop tab -->
+    <div class="settings-panel is-hidden" id="stab-desktop" role="tabpanel">
+      <div class="settings-group-label">Effects</div>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-motion-chk"> Enable animations &amp; motion effects
+      </label>
+      <div class="settings-group-label" style="margin-top:10px;">Startup</div>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-boot-chk"> Show boot screen on startup
+      </label>
+      <div class="settings-group-label" style="margin-top:10px;">Screensaver</div>
+      <label class="settings-check-row">
+        <input type="checkbox" id="settings-screensaver-chk"> Enable screensaver (activates after 5 min idle)
+      </label>
+    </div>
+    <!-- About tab -->
+    <div class="settings-panel is-hidden" id="stab-about" role="tabpanel">
+      <div class="settings-about">
+        <div class="settings-about-logo">&#128187;</div>
+        <div class="settings-about-title">Personal Feed</div>
+        <div class="settings-about-ver">Version 1.0 &mdash; 1996 Edition</div>
+        <div class="settings-divider"></div>
+        <div class="settings-about-body">
+          <p>A cosy Windows&nbsp;95&#x2011;style personal desktop<br>for your feed, garden, jukebox, and more.</p>
+          <p>&#x1F4BE; 640 KB ought to be enough for anybody.</p>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-about-footer">
+          This product is licensed to:<br>
+          <span id="settings-about-user"><em>Not signed in</em></span>
+        </div>
+      </div>
+    </div>
+    <!-- Action buttons -->
+    <div class="w95-row" style="justify-content:flex-end;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #808080;">
+      <button class="w95-btn" id="settings-ok" type="button">OK</button>
+      <button class="w95-btn" id="settings-cancel" type="button">Cancel</button>
+      <button class="w95-btn" id="settings-apply" type="button">Apply</button>
     </div>
   </div>
 </div>

@@ -7707,40 +7707,71 @@ async function loadUserWallpaper() {
     }
 }
 
-// ===== Desktop Properties (Wallpaper) Window =====
+// ===== Settings / Preferences Window =====
 (() => {
-    const win       = document.getElementById('w95-win-wallpaper');
-    const handle    = document.getElementById('w95-wallpaper-handle');
-    const closeBtn  = document.getElementById('w95-wallpaper-close');
-    const okBtn     = document.getElementById('wallpaper-ok');
-    const cancelBtn = document.getElementById('wallpaper-cancel');
+    const WIN_ID    = 'w95-win-settings';
+    const win       = document.getElementById(WIN_ID);
+    const handle    = document.getElementById('w95-settings-handle');
+    const closeBtn  = document.getElementById('w95-settings-close');
+    const okBtn     = document.getElementById('settings-ok');
+    const cancelBtn = document.getElementById('settings-cancel');
+    const applyBtn  = document.getElementById('settings-apply');
     const grid      = document.getElementById('wallpaper-grid');
     const preview   = document.getElementById('wallpaper-preview');
     if (!win) return;
 
-    let savedId   = DEFAULT_WALLPAPER_ID;  // wallpaper before the dialog opened
-    let selectedId = DEFAULT_WALLPAPER_ID; // currently highlighted in dialog
+    // ---- State snapshot on open (for Cancel) ----
+    let snap = {};
 
-    function renderGrid() {
+    function takeSnap() {
+        snap = {
+            wallpaper:   currentWallpaperId,
+            sound:       soundEnabled,
+            motion:      localStorage.getItem('motionEnabled') !== 'false',
+            boot:        localStorage.getItem('bootEnabled') !== 'false',
+            screensaver: localStorage.getItem('screensaverEnabled') !== 'false',
+        };
+    }
+
+    // ---- Tab switching ----
+    let activeTab = 'appearance';
+    function switchTab(tab) {
+        activeTab = tab;
+        win.querySelectorAll('.settings-tab-btn').forEach(btn => {
+            const on = btn.dataset.tab === tab;
+            btn.classList.toggle('is-active', on);
+            btn.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        win.querySelectorAll('.settings-panel').forEach(panel => {
+            panel.classList.toggle('is-hidden', panel.id !== 'stab-' + tab);
+        });
+    }
+    win.querySelectorAll('.settings-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // ---- Wallpaper (Appearance tab) ----
+    let wpSavedId   = DEFAULT_WALLPAPER_ID;
+    let wpSelectedId = DEFAULT_WALLPAPER_ID;
+
+    function renderWallpaperGrid() {
+        if (!grid) return;
         grid.innerHTML = '';
         WALLPAPERS.forEach(wp => {
             const sw = document.createElement('button');
-            sw.className = 'wallpaper-swatch' + (wp.id === selectedId ? ' selected' : '');
+            sw.className = 'wallpaper-swatch' + (wp.id === wpSelectedId ? ' selected' : '');
             sw.style.background = wp.css;
             sw.setAttribute('aria-label', wp.label);
             sw.setAttribute('title', wp.label);
             sw.type = 'button';
-
             const lbl = document.createElement('span');
             lbl.className = 'wallpaper-swatch-label';
             lbl.textContent = wp.label;
             sw.appendChild(lbl);
-
             sw.addEventListener('click', () => {
-                selectedId = wp.id;
-                // Immediate preview
-                applyWallpaper(selectedId);
-                preview.style.background = wp.css;
+                wpSelectedId = wp.id;
+                applyWallpaper(wpSelectedId);
+                if (preview) preview.style.background = wp.css;
                 grid.querySelectorAll('.wallpaper-swatch').forEach(s => s.classList.remove('selected'));
                 sw.classList.add('selected');
             });
@@ -7748,60 +7779,148 @@ async function loadUserWallpaper() {
         });
     }
 
-    function show() {
-        savedId    = currentWallpaperId;
-        selectedId = currentWallpaperId;
-        const cur = WALLPAPERS.find(w => w.id === selectedId) || WALLPAPERS[0];
+    // ---- Sound tab ----
+    const muteChk = document.getElementById('settings-mute-chk');
+    if (muteChk) {
+        muteChk.addEventListener('change', () => {
+            soundEnabled = !muteChk.checked;
+            localStorage.setItem('soundEnabled', soundEnabled ? 'true' : 'false');
+            // sync tray icon if available
+            const traySound = document.getElementById('tray-sound');
+            if (traySound) {
+                traySound.textContent = soundEnabled ? '\uD83D\uDD0A' : '\uD83D\uDD07';
+                traySound.title       = soundEnabled ? 'Sound: on (click to mute)' : 'Sound: muted (click to unmute)';
+                traySound.classList.toggle('tray-muted', !soundEnabled);
+            }
+        });
+    }
+
+    // ---- Desktop tab ----
+    const motionChk     = document.getElementById('settings-motion-chk');
+    const bootChk       = document.getElementById('settings-boot-chk');
+    const screensaverChk = document.getElementById('settings-screensaver-chk');
+
+    if (motionChk) {
+        motionChk.addEventListener('change', () => {
+            const on = motionChk.checked;
+            localStorage.setItem('motionEnabled', on ? 'true' : 'false');
+            window._motionEnabled = on;
+            const trayMotion = document.getElementById('tray-motion');
+            if (trayMotion) {
+                trayMotion.textContent = on ? '\u2728' : '\u2B55';
+                trayMotion.title       = on ? 'Motion: on (click to reduce)' : 'Motion: reduced (click to enable)';
+                trayMotion.classList.toggle('tray-muted', !on);
+            }
+        });
+    }
+    if (bootChk) {
+        bootChk.addEventListener('change', () => {
+            localStorage.setItem('bootEnabled', bootChk.checked ? 'true' : 'false');
+        });
+    }
+    if (screensaverChk) {
+        screensaverChk.addEventListener('change', () => {
+            const on = screensaverChk.checked;
+            localStorage.setItem('screensaverEnabled', on ? 'true' : 'false');
+            if (on) {
+                window._screensaverCtrl?.reset();
+            } else {
+                window._screensaverCtrl?.disable();
+            }
+        });
+    }
+
+    // ---- Populate controls on open ----
+    function populateControls() {
+        wpSavedId    = currentWallpaperId;
+        wpSelectedId = currentWallpaperId;
+        const cur = WALLPAPERS.find(w => w.id === wpSelectedId) || WALLPAPERS[0];
         if (preview) preview.style.background = cur.css;
-        renderGrid();
+        renderWallpaperGrid();
+
+        if (muteChk)        muteChk.checked        = !soundEnabled;
+        if (motionChk)      motionChk.checked      = localStorage.getItem('motionEnabled') !== 'false';
+        if (bootChk)        bootChk.checked        = localStorage.getItem('bootEnabled') !== 'false';
+        if (screensaverChk) screensaverChk.checked = localStorage.getItem('screensaverEnabled') !== 'false';
+
+        // About tab: show current user
+        const userSpan = document.getElementById('settings-about-user');
+        if (userSpan) userSpan.textContent = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : 'Not signed in';
+    }
+
+    // ---- Apply / save ----
+    async function applySettings() {
+        // Wallpaper — save to Firebase
+        if (currentWallpaperId !== wpSavedId) {
+            if (currentUserUid) {
+                try {
+                    await set(ref(database, `users/${currentUserUid}/settings/wallpaper`), currentWallpaperId);
+                } catch (_) { /* best-effort */ }
+            }
+            unlockAchievement('first_wallpaper_change');
+            wpSavedId = currentWallpaperId;
+        }
+        // Other settings are already in localStorage via their change handlers
+    }
+
+    // ---- Cancel / revert ----
+    function revertSettings() {
+        applyWallpaper(snap.wallpaper);
+
+        soundEnabled = snap.sound;
+        localStorage.setItem('soundEnabled', soundEnabled ? 'true' : 'false');
+        const traySound = document.getElementById('tray-sound');
+        if (traySound) {
+            traySound.textContent = soundEnabled ? '\uD83D\uDD0A' : '\uD83D\uDD07';
+            traySound.title       = soundEnabled ? 'Sound: on (click to mute)' : 'Sound: muted (click to unmute)';
+            traySound.classList.toggle('tray-muted', !soundEnabled);
+        }
+
+        localStorage.setItem('motionEnabled', snap.motion ? 'true' : 'false');
+        window._motionEnabled = snap.motion;
+        const trayMotion = document.getElementById('tray-motion');
+        if (trayMotion) {
+            trayMotion.textContent = snap.motion ? '\u2728' : '\u2B55';
+            trayMotion.title       = snap.motion ? 'Motion: on (click to reduce)' : 'Motion: reduced (click to enable)';
+            trayMotion.classList.toggle('tray-muted', !snap.motion);
+        }
+
+        localStorage.setItem('bootEnabled', snap.boot ? 'true' : 'false');
+
+        localStorage.setItem('screensaverEnabled', snap.screensaver ? 'true' : 'false');
+        if (snap.screensaver) window._screensaverCtrl?.reset(); else window._screensaverCtrl?.disable();
+    }
+
+    // ---- Show / hide ----
+    function show(tab) {
+        takeSnap();
+        populateControls();
+        if (tab) switchTab(tab); else switchTab(activeTab);
         win.classList.remove('is-hidden');
-        w95Mgr.focusWindow('w95-win-wallpaper');
+        w95Mgr.focusWindow(WIN_ID);
     }
 
     function hide() {
         win.classList.add('is-hidden');
-        if (w95Mgr.isActiveWin('w95-win-wallpaper')) w95Mgr.focusWindow(null);
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
     }
 
-    closeBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        applyWallpaper(savedId);
-        hide();
-    });
+    // ---- Button handlers ----
+    closeBtn.addEventListener('click', e => { e.stopPropagation(); revertSettings(); hide(); });
+    cancelBtn.addEventListener('click', () => { revertSettings(); hide(); });
+    okBtn.addEventListener('click', async () => { await applySettings(); hide(); });
+    applyBtn.addEventListener('click', async () => { await applySettings(); takeSnap(); });
 
-    cancelBtn.addEventListener('click', () => {
-        applyWallpaper(savedId);
-        hide();
-    });
+    // ---- Dragging ----
+    makeDraggable(win, handle, WIN_ID);
 
-    okBtn.addEventListener('click', async () => {
-        hide();
-        if (!currentUserUid) return;
-        try {
-            await set(ref(database, `users/${currentUserUid}/settings/wallpaper`), currentWallpaperId);
-        } catch (_) { /* best-effort */ }
-        if (currentWallpaperId !== savedId) unlockAchievement('first_wallpaper_change');
-    });
-
-    // Dragging
-    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
-    handle.addEventListener('mousedown', e => {
-        if (e.target.closest('button')) return;
-        dragging = true;
-        startX = e.clientX; startY = e.clientY;
-        const r = win.getBoundingClientRect();
-        winStartX = r.left; winStartY = r.top;
-        e.preventDefault();
-    });
-    window.addEventListener('mousemove', e => {
-        if (!dragging) return;
-        win.style.left = `${winStartX + e.clientX - startX}px`;
-        win.style.top  = `${winStartY + e.clientY - startY}px`;
-    });
-    window.addEventListener('mouseup', () => { dragging = false; });
-
+    // ---- Register apps ----
+    w95Apps['settings'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow(WIN_ID);
+    }};
+    // Backward-compat: anything that opens 'wallpaper' now opens Settings > Appearance
     w95Apps['wallpaper'] = { open: () => {
-        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-wallpaper');
+        if (win.classList.contains('is-hidden')) show('appearance'); else { switchTab('appearance'); w95Mgr.focusWindow(WIN_ID); }
     }};
 })();
 
@@ -9022,7 +9141,7 @@ function initPixelCat() {
     const boot = document.getElementById('boot-screen');
     if (!boot) return;
 
-    if (sessionStorage.getItem('bootShown')) {
+    if (sessionStorage.getItem('bootShown') || localStorage.getItem('bootEnabled') === 'false') {
         boot.classList.add('is-hidden');
         return;
     }
@@ -9156,14 +9275,24 @@ function initPixelCat() {
         reset();
     }
 
+    function ssEnabled() {
+        return localStorage.getItem('screensaverEnabled') !== 'false';
+    }
+
     function reset() {
         clearTimeout(timer);
-        if (!active) timer = setTimeout(start, SS_MS);
+        if (!active && ssEnabled()) timer = setTimeout(start, SS_MS);
     }
 
     ['pointermove', 'pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(evt => {
         document.addEventListener(evt, () => { active ? stop() : reset(); }, { passive: true });
     });
+
+    // Expose control so the Settings window can toggle the screensaver live.
+    window._screensaverCtrl = {
+        reset,
+        disable: () => { clearTimeout(timer); if (active) stop(); },
+    };
 
     reset();
 })();
