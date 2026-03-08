@@ -7947,9 +7947,20 @@ async function loadUserWallpaper() {
     }
 
     // ---- Action buttons ----
-    document.getElementById('cat-feed-btn')?.addEventListener('click',  () => doCatAction('feed'));
-    document.getElementById('cat-water-btn')?.addEventListener('click', () => doCatAction('water'));
-    document.getElementById('cat-yarn-btn')?.addEventListener('click',  () => doCatAction('yarn'));
+    // Use mousedown instead of click so the action fires on the first press even when the
+    // window is not yet focused. The window's capture-phase mousedown handler focuses the
+    // window at the same moment, so focus + action happen in a single interaction.
+    document.getElementById('cat-feed-btn')?.addEventListener('mousedown',  (e) => { if (e.button === 0) doCatAction('feed');  });
+    document.getElementById('cat-water-btn')?.addEventListener('mousedown', (e) => { if (e.button === 0) doCatAction('water'); });
+    document.getElementById('cat-yarn-btn')?.addEventListener('mousedown',  (e) => { if (e.button === 0) doCatAction('yarn');  });
+
+    // ---- Auth recovery: reload stats if auth resolves while window is already visible ----
+    // When the window is auto-restored from localStorage before Firebase auth fires,
+    // loadCatStats() is called with currentUser = null and returns early. This listener
+    // re-runs it once the user is confirmed, so the first button click is never silently dropped.
+    onAuthStateChanged(auth, (firebaseUser) => {
+        if (firebaseUser && !win.classList.contains('is-hidden')) loadCatStats();
+    });
 
     // ---- App registry ----
     w95Apps['cat'] = { open: () => {
