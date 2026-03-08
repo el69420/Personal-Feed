@@ -8102,6 +8102,8 @@ async function loadUserWallpaper() {
         w95Mgr.focusWindow('w95-win-cat');
         localStorage.setItem('w95_cat_open', '1');
         loadCatStats();
+        // Desktop cat notices Cat.exe being opened and walks toward it
+        window._catController?.onCatOpen();
     }
 
     function hideCat() {
@@ -8327,6 +8329,46 @@ async function loadUserWallpaper() {
     document.getElementById('cat-water-btn')?.addEventListener('mousedown', (e) => { if (e.button === 0) doCatAction('water'); });
     document.getElementById('cat-yarn-btn')?.addEventListener('mousedown',  (e) => { if (e.button === 0) doCatAction('yarn');  });
 
+    // ---- Desktop cat status display (updates every second) ----
+    function renderDesktopCatStatus() {
+        const el = document.getElementById('cat-desktop-state');
+        if (el) el.textContent = window._catController?.getDesktopState() ?? 'loading...';
+        // Keep roam button label in sync with paused state
+        const roamBtn = document.getElementById('cat-roam-btn');
+        if (roamBtn) {
+            const paused = window._catController?.isRoamingPaused();
+            roamBtn.textContent = paused ? '\u25B6 Resume Roaming' : '\u23F8 Pause Roaming';
+        }
+    }
+    setInterval(renderDesktopCatStatus, 1000);
+
+    // ---- Desktop cat control panel buttons ----
+    document.getElementById('cat-call-btn')?.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        window._catController?.callCat();
+        const lastActEl = document.getElementById('cat-last-action');
+        if (lastActEl) {
+            lastActEl.textContent = '\uD83D\uDCCD calling\u2026';
+            lastActEl.classList.add('is-visible');
+            clearTimeout(_lastActionTimer);
+            _lastActionTimer = setTimeout(() => lastActEl.classList.remove('is-visible'), 4000);
+        }
+    });
+    document.getElementById('cat-roam-btn')?.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        window._catController?.toggleRoaming();
+        renderDesktopCatStatus();
+    });
+    document.getElementById('cat-nap-btn')?.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        window._catController?.napCat();
+        renderDesktopCatStatus();
+    });
+    document.getElementById('cat-pet-btn')?.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        window._catController?.petCat();
+    });
+
     // ---- Auth recovery: reload stats if auth resolves while window is already visible ----
     // When the window is auto-restored from localStorage before Firebase auth fires,
     // loadCatStats() is called with currentUser = null and returns early. This listener
@@ -8509,6 +8551,11 @@ function initPixelCat() {
     let drvJumpTargetX   = 0;   // jump arc: destination screen-px x
     let drvJumpTargetY   = 0;   // jump arc: destination screen-px y
     let drvJumpTime      = 0;   // timestamp when current jump arc began
+
+    // ---- Cat controller state (commands from Cat.exe control panel) ----
+    let drvRoamingPaused = false;   // when true, cat won't auto-walk between sits
+    let drvCallTarget    = null;    // normalised x (0–1) to walk toward; null = no call
+    let drvForcedNapEnd  = 0;       // performance.now() timestamp: force sleep until this time
 
     // ---- Gift drop driver state ----
     const GIFT_MIN_INTERVAL_MS = 90 * 60 * 1000;  // 90 min minimum between gifts
@@ -8790,6 +8837,22 @@ function initPixelCat() {
             drvWakeStart = now;
         }
 
+        // ---- Forced nap (Cat.exe "Nap" command) ----
+        if (drvForcedNapEnd > now) {
+            if (drvState !== 'sleep') drvState = 'sleep';
+            if (now - lastFbWrite > FB_INTERVAL) {
+                lastFbWrite = now;
+                set(catFbRef, { x: drvX, dir: drvDir, state: 'sleep', updatedAt: now, driverUserId: currentUser }).catch(() => {});
+            }
+            return;
+        }
+        // Transition out of forced nap once timer expires
+        if (drvState === 'sleep' && drvForcedNapEnd > 0 && drvForcedNapEnd <= now) {
+            drvForcedNapEnd = 0;
+            drvState     = 'wakeup';
+            drvWakeStart = now;
+        }
+
         // ---- State machine (daytime only) ----
         if (drvState === 'wakeup') {
             // Hold wakeup pose ~3 s, then stand and walk
@@ -8800,18 +8863,42 @@ function initPixelCat() {
             // no movement during wakeup
 
         } else if (drvState === 'walk') {
-            drvX += (drvDir === 'right' ? 1 : -1) * WALK_SPEED * speedMult * dt;
-            if (drvX >= 1 - EDGE_PAD) { drvX = 1 - EDGE_PAD; drvDir = 'left'; }
-            if (drvX <= EDGE_PAD)     { drvX = EDGE_PAD;     drvDir = 'right'; }
-            if (now > drvNextAct) {
-                // Pause in idle briefly before deciding what to do next
-                drvState   = 'idle';
-                drvIdleEnd = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
+            if (drvCallTarget !== null) {
+                // Walk toward the Cat.exe-requested target position
+                const diff = drvCallTarget - drvX;
+                if (Math.abs(diff) < 0.05) {
+                    // Close enough: sit down near the window
+                    drvCallTarget = null;
+                    drvState  = 'sit';
+                    const sitDur = (SIT_MIN * sitMinMult) + Math.random() * (SIT_MAX - SIT_MIN);
+                    drvSitEnd  = now + sitDur;
+                    drvNextAct = drvSitEnd + sitGapBase + Math.random() * 5000;
+                } else {
+                    drvDir = diff > 0 ? 'right' : 'left';
+                    drvX  += (drvDir === 'right' ? 1 : -1) * WALK_SPEED * speedMult * dt;
+                    if (drvX >= 1 - EDGE_PAD) { drvX = 1 - EDGE_PAD; drvDir = 'left'; }
+                    if (drvX <= EDGE_PAD)     { drvX = EDGE_PAD;     drvDir = 'right'; }
+                }
+            } else {
+                drvX += (drvDir === 'right' ? 1 : -1) * WALK_SPEED * speedMult * dt;
+                if (drvX >= 1 - EDGE_PAD) { drvX = 1 - EDGE_PAD; drvDir = 'left'; }
+                if (drvX <= EDGE_PAD)     { drvX = EDGE_PAD;     drvDir = 'right'; }
+                if (now > drvNextAct) {
+                    // Pause in idle briefly before deciding what to do next
+                    drvState   = 'idle';
+                    drvIdleEnd = now + IDLE_MIN + Math.random() * (IDLE_MAX - IDLE_MIN);
+                }
             }
 
         } else if (drvState === 'idle') {
             // Cat glances around; once done, decides to perch or sit
             if (now > drvIdleEnd) {
+                if (drvRoamingPaused) {
+                    // Roaming paused: settle into a sit instead of walking again
+                    drvState  = 'sit';
+                    drvSitEnd = now + 4000 + Math.random() * 3000;
+                    drvNextAct = now + 9999999; // won't auto-walk while paused
+                } else {
                 const perchWins = getPerchableWindows();
                 if (perchWins.length > 0 && Math.random() < 0.30) {
                     // Choose a window and jump up onto its title bar (local-only)
@@ -8836,6 +8923,7 @@ function initPixelCat() {
                     drvSitEnd  = now + sitDur;
                     drvNextAct = drvSitEnd + sitGapBase + Math.random() * 5000;
                 }
+                } // end else (not roaming paused)
             }
 
         } else if (drvState === 'jumping') {
@@ -8892,6 +8980,9 @@ function initPixelCat() {
                 if (Math.random() < sleepProb) {
                     drvState  = 'sleep';
                     drvSitEnd = now + 5000 + Math.random() * 10000;
+                } else if (drvRoamingPaused) {
+                    // Stay sitting while roaming is paused
+                    drvSitEnd = now + 4000 + Math.random() * 3000;
                 } else {
                     drvState = 'walk';
                 }
@@ -9089,6 +9180,108 @@ function initPixelCat() {
         canvas.classList.remove('cat-yarn-zoom');
         void canvas.offsetWidth; // force reflow to restart
         canvas.classList.add('cat-yarn-zoom');
+    };
+
+    // ---- Cat controller: shared interface for Cat.exe control panel ----
+    // All movement commands are driver-only (only one client controls cat position).
+    // Emote commands (pet) always work via Firebase and are visible to all clients.
+    window._catController = {
+
+        // Returns a readable status string for the desktop cat status line.
+        getDesktopState() {
+            const now = performance.now();
+            if (isDriver) {
+                if (drvForcedNapEnd > now)     return 'napping';
+                if (drvCallTarget !== null)    return 'following';
+                if (drvRoamingPaused)          return 'paused';
+                switch (drvState) {
+                    case 'walk':     return 'roaming';
+                    case 'sit':      return 'sitting';
+                    case 'idle':     return 'sitting';
+                    case 'sleep':    return 'sleeping';
+                    case 'wakeup':   return 'waking up';
+                    case 'perched':  return 'perched';
+                    case 'jumping':
+                    case 'jumpDown': return 'jumping';
+                    default:         return drvState;
+                }
+            } else {
+                switch (fbState) {
+                    case 'walk':   return 'roaming';
+                    case 'sit':    return 'sitting';
+                    case 'sleep':  return 'sleeping';
+                    case 'wakeup': return 'waking up';
+                    default:       return fbState;
+                }
+            }
+        },
+
+        // Walk the desktop cat toward the Cat.exe window position.
+        callCat() {
+            if (!isDriver) { fireCatEvent('sparkle'); return; }
+            const catWin = document.getElementById('w95-win-cat');
+            if (!catWin || catWin.classList.contains('is-hidden')) return;
+            const rect = catWin.getBoundingClientRect();
+            const targetPx = rect.left + rect.width / 2;
+            const vw = window.innerWidth;
+            drvCallTarget   = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, targetPx / (vw - CW * S)));
+            drvForcedNapEnd = 0;
+            drvPerchTarget  = null;
+            // Wake the cat from any stationary/perched state
+            if (drvState !== 'walk') {
+                drvState   = 'walk';
+                drvNextAct = performance.now() + 9999999; // call target handles the transition
+            }
+        },
+
+        // Toggle autonomous roaming on/off. Returns the new paused state.
+        toggleRoaming() {
+            drvRoamingPaused = !drvRoamingPaused;
+            if (!drvRoamingPaused && (drvState === 'idle' || drvState === 'sit')) {
+                // Resume: walk again
+                drvState   = 'walk';
+                drvNextAct = performance.now() + 5000 + Math.random() * 5000;
+            }
+            return drvRoamingPaused;
+        },
+
+        isRoamingPaused() { return drvRoamingPaused; },
+
+        // Force the desktop cat to take a nap (15–25 s).
+        napCat() {
+            drvForcedNapEnd = performance.now() + 15000 + Math.random() * 10000;
+            drvCallTarget   = null;
+            drvPerchTarget  = null;
+            if (drvState !== 'sleep') drvState = 'sleep';
+        },
+
+        // Trigger a happy reaction on the desktop cat (sparkle emotes + bounce).
+        petCat() {
+            fireCatEvent('heart');
+            triggerEmote('heart');
+            canvas.classList.remove('cat-bounce');
+            void canvas.offsetWidth;
+            canvas.classList.add('cat-bounce');
+        },
+
+        // Called when Cat.exe window is opened: cat notices and walks toward it.
+        onCatOpen() {
+            if (!isDriver) return;
+            const catWin = document.getElementById('w95-win-cat');
+            if (!catWin || catWin.classList.contains('is-hidden')) return;
+            const rect = catWin.getBoundingClientRect();
+            const targetPx = rect.left + rect.width / 2;
+            const vw = window.innerWidth;
+            drvCallTarget   = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, targetPx / (vw - CW * S)));
+            drvForcedNapEnd = 0;
+            drvPerchTarget  = null;
+            if (drvState !== 'walk') {
+                drvState   = 'walk';
+                drvNextAct = performance.now() + 9999999;
+            }
+            // Brief surprise expression before walking over
+            surpriseEnd = performance.now() + 700;
+        },
     };
 }
 

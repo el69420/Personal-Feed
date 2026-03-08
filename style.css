@@ -5436,6 +5436,56 @@ body { padding: 0 !important; }
   background: #c8c4bc;
 }
 
+/* --- Subtitle (control-panel link line) --- */
+.cat-subtitle {
+  font: italic 9px Tahoma, Verdana, Arial, sans-serif;
+  color: #555;
+  text-align: center;
+  padding: 0 4px 2px;
+  letter-spacing: 0.2px;
+}
+
+/* --- Desktop cat live status --- */
+.cat-desktop-status {
+  font: 10px 'Courier New', Courier, monospace;
+  color: #222;
+  text-align: center;
+  background: #bcb8b0;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #dfdbcf;
+  border-bottom: 1px solid #dfdbcf;
+  padding: 3px 6px;
+}
+#cat-desktop-state {
+  font-weight: bold;
+  color: #1a3d12;
+}
+
+/* --- Desktop cat control panel --- */
+.cat-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid #aba7a0;
+  padding-top: 5px;
+  margin-top: 1px;
+}
+.cat-controls-row {
+  display: flex;
+  gap: 5px;
+}
+.cat-ctrl-btn {
+  flex: 1;
+  font-size: 10px;
+  padding: 4px 3px;
+  min-width: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* --- Portrait / mood panel --- */
 .cat-portrait-panel {
   background: #bcb8b0;

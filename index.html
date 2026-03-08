@@ -1131,6 +1131,12 @@
     </div>
   </div>
   <div class="w95-body cat-app-body" id="w95-cat-body">
+    <!-- Subtitle: makes the link to the desktop cat explicit -->
+    <div class="cat-subtitle">Controls the cat that walks around your desktop</div>
+    <!-- Desktop cat live status -->
+    <div class="cat-desktop-status">
+      Desktop cat: <span id="cat-desktop-state">loading...</span>
+    </div>
     <!-- Portrait / mood panel -->
     <div class="cat-portrait-panel">
       <div class="cat-face" id="cat-face">=^.^=</div>
@@ -1165,6 +1171,17 @@
       <button class="w95-btn cat-action-btn" id="cat-feed-btn" type="button">&#127833; Feed</button>
       <button class="w95-btn cat-action-btn" id="cat-water-btn" type="button">&#128167; Water</button>
       <button class="w95-btn cat-action-btn" id="cat-yarn-btn" type="button">&#129706; Play</button>
+    </div>
+    <!-- Desktop cat control panel -->
+    <div class="cat-controls">
+      <div class="cat-controls-row">
+        <button class="w95-btn cat-ctrl-btn" id="cat-call-btn" type="button">&#128205; Call Cat</button>
+        <button class="w95-btn cat-ctrl-btn" id="cat-roam-btn" type="button">&#9208; Pause Roaming</button>
+      </div>
+      <div class="cat-controls-row">
+        <button class="w95-btn cat-ctrl-btn" id="cat-nap-btn" type="button">&#128164; Nap</button>
+        <button class="w95-btn cat-ctrl-btn" id="cat-pet-btn" type="button">&#128062; Pet</button>
+      </div>
     </div>
     <!-- Name editing (secondary) -->
     <div class="cat-name-row">
