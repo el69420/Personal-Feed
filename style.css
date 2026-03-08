@@ -4309,8 +4309,10 @@ body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
   font:10px Tahoma,Verdana,Arial,sans-serif;
   color:#eee;
   background:rgba(0,0,0,0.38);
-  text-align:center;
+  text-align:left;
   white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
   margin-top:2px;
   padding:1px 5px;
   width:100%;
