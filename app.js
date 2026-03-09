@@ -8910,6 +8910,19 @@ function initPixelCat() {
         // ---- Forced nap (Cat.exe "Nap" command) ----
         if (drvForcedNapEnd > now) {
             if (drvState !== 'sleep') drvState = 'sleep';
+            // If napping on a perch, track the window so the cat stays on it;
+            // drop off if the window is closed or maximised.
+            if (drvPerchTarget) {
+                const napPerchGone = drvPerchTarget.winEl.classList.contains('is-hidden') ||
+                                     drvPerchTarget.winEl.classList.contains('is-maximised');
+                if (!napPerchGone) {
+                    const { px: curPx } = calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
+                    drvX = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, curPx / (window.innerWidth - CW * S)));
+                } else {
+                    drvPerchTarget  = null;
+                    drvPerchLastPos = null;
+                }
+            }
             if (now - lastFbWrite > FB_INTERVAL) {
                 lastFbWrite = now;
                 set(catFbRef, { x: drvX, dir: drvDir, state: 'sleep', updatedAt: now, driverUserId: currentUser }).catch(() => {});
@@ -8919,8 +8932,14 @@ function initPixelCat() {
         // Transition out of forced nap once timer expires
         if (drvState === 'sleep' && drvForcedNapEnd > 0 && drvForcedNapEnd <= now) {
             drvForcedNapEnd = 0;
-            drvState     = 'wakeup';
-            drvWakeStart = now;
+            if (drvPerchTarget) {
+                // Wake up still on the window; let the perched state machine take over
+                drvState    = 'perched';
+                drvPerchEnd = now + 1000 + Math.random() * 2000; // linger briefly then jump down
+            } else {
+                drvState     = 'wakeup';
+                drvWakeStart = now;
+            }
         }
 
         // ---- State machine (daytime only) ----
@@ -9247,7 +9266,7 @@ function initPixelCat() {
         // Position the canvas: jump arc → perched on title bar → ground
         const vw = window.innerWidth;
         const isJumping  = isDriver && (drvState === 'jumping' || drvState === 'jumpDown');
-        const isPerching = isDriver && drvState === 'perched' && drvPerchTarget &&
+        const isPerching = isDriver && (drvState === 'perched' || (drvState === 'sleep' && drvPerchTarget !== null)) && drvPerchTarget &&
                            !drvPerchTarget.winEl.classList.contains('is-hidden');
 
         if (isJumping) {
@@ -9436,8 +9455,11 @@ function initPixelCat() {
             drvForcedNapEnd = performance.now() + 15000 + Math.random() * 10000;
             drvCallTarget   = null;
             drvCallPerchWin = null;
-            drvPerchTarget  = null;
-            drvPerchLastPos = null;
+            // If cat is currently perched, let it nap there; only clear perch data otherwise
+            if (drvState !== 'perched') {
+                drvPerchTarget  = null;
+                drvPerchLastPos = null;
+            }
             if (drvState !== 'sleep') drvState = 'sleep';
         },
 
