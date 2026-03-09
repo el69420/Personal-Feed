@@ -879,13 +879,23 @@ window.confirmBoardDeletion = async function() {
     const modal = document.getElementById('boardDeleteRequestModal');
     const boardId = modal.dataset.boardId;
     if (!boardId) return;
+    const board = allBoards[boardId];
+    const itemsSnap = await get(ref(database, `board_items/${boardId}`));
+    const boardItems = itemsSnap.val() || {};
+    await set(ref(database, `recycleBin/b_${boardId}`), {
+        id: boardId,
+        type: 'board',
+        board: board,
+        boardItems: boardItems,
+        deletedAt: Date.now(),
+    });
     await remove(ref(database, `board_delete_requests/${boardId}`));
     await remove(ref(database, `board_items/${boardId}`));
     await remove(ref(database, `boards/${boardId}`));
     closeModal(modal);
     const sbWin = document.getElementById('w95-win-scrapbook');
     if (sbWin && !sbWin.classList.contains('is-hidden')) closeBoardDetail();
-    showToast('Board deleted');
+    showToast('Board moved to Recycle Bin');
 };
 
 window.denyBoardDeletion = async function() {
@@ -1601,10 +1611,20 @@ window.confirmDelete = async function() {
 
     if (deleteTarget.type === 'board') {
         const boardId = deleteTarget.boardId;
+        const board = allBoards[boardId];
+        const itemsSnap = await get(ref(database, `board_items/${boardId}`));
+        const boardItems = itemsSnap.val() || {};
+        await set(ref(database, `recycleBin/b_${boardId}`), {
+            id: boardId,
+            type: 'board',
+            board: board,
+            boardItems: boardItems,
+            deletedAt: Date.now(),
+        });
         await remove(ref(database, `board_items/${boardId}`));
         await remove(ref(database, `boards/${boardId}`));
         closeBoardDetail();
-        showToast('Board deleted');
+        showToast('Board moved to Recycle Bin');
     } else if (deleteTarget.type === 'post') {
         const postToTrash = allPosts[deleteTarget.postId];
         if (postToTrash) {
@@ -1622,10 +1642,18 @@ window.confirmDelete = async function() {
 
         const replies = post.replies || [];
         const toRemove = new Set([deleteTarget.replyId, ...collectReplyDescendants(replies, deleteTarget.replyId)]);
+        const removedReplies = replies.filter(r => toRemove.has(r.id));
         const nextReplies = replies.filter(r => !toRemove.has(r.id));
 
+        await set(ref(database, `recycleBin/c_${deleteTarget.replyId}`), {
+            id: deleteTarget.replyId,
+            type: 'comment',
+            postId: deleteTarget.postId,
+            replies: removedReplies,
+            deletedAt: Date.now(),
+        });
         await update(ref(database, `posts/${deleteTarget.postId}`), { replies: nextReplies });
-        showToast('Comment deleted');
+        showToast('Comment moved to Recycle Bin');
     }
 
     closeDeleteModal();
@@ -7705,9 +7733,30 @@ document.querySelectorAll('.w95-window').forEach(win => {
 window.restoreFromRecycleBin = async function(itemId) {
     const item = allRecycleBin[itemId];
     if (!item) return;
-    await set(ref(database, `posts/${itemId}`), item.post);
-    await remove(ref(database, `recycleBin/${itemId}`));
-    showToast('Post restored');
+
+    if (item.type === 'comment') {
+        const post = allPosts[item.postId];
+        if (!post) {
+            showToast('Cannot restore: parent post no longer exists');
+            return;
+        }
+        const currentReplies = post.replies || [];
+        const restoredReplies = [...currentReplies, ...(item.replies || [])];
+        await update(ref(database, `posts/${item.postId}`), { replies: restoredReplies });
+        await remove(ref(database, `recycleBin/${itemId}`));
+        showToast('Comment restored');
+    } else if (item.type === 'board') {
+        await set(ref(database, `boards/${item.id}`), item.board);
+        if (item.boardItems && Object.keys(item.boardItems).length > 0) {
+            await set(ref(database, `board_items/${item.id}`), item.boardItems);
+        }
+        await remove(ref(database, `recycleBin/${itemId}`));
+        showToast('Board restored');
+    } else {
+        await set(ref(database, `posts/${item.id || itemId}`), item.post);
+        await remove(ref(database, `recycleBin/${itemId}`));
+        showToast('Post restored');
+    }
 };
 
 window.deleteFromRecycleBinPermanently = async function(itemId) {
@@ -7715,7 +7764,15 @@ window.deleteFromRecycleBinPermanently = async function(itemId) {
     showToast('Permanently deleted');
 };
 
-function getRecycleBinPreview(post) {
+function getRecycleBinPreview(item) {
+    if (item.type === 'comment') {
+        const mainComment = item.replies && item.replies[0];
+        return mainComment ? (mainComment.text || '').slice(0, 80) : '(comment)';
+    }
+    if (item.type === 'board') {
+        return item.board ? (item.board.title || '(untitled board)') : '(board)';
+    }
+    const post = item.post;
     if (!post) return '(empty)';
     if (post.type === 'text') return (post.heading || post.body || '').slice(0, 80);
     if (post.type === 'link') return (post.note || post.url || '').slice(0, 80);
@@ -7734,12 +7791,13 @@ function renderRecycleBin() {
         return;
     }
     list.innerHTML = items.map(([id, item]) => {
-        const preview = getRecycleBinPreview(item.post);
+        const preview = getRecycleBinPreview(item);
         const date = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '?';
         const previewEscaped = preview.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const typeLabel = item.type === 'comment' ? 'Comment' : item.type === 'board' ? 'Board' : 'Post';
         return `<div class="recycle-bin-item">
+  <div class="recycle-bin-meta">${typeLabel} · Deleted ${date}</div>
   <div class="recycle-bin-preview">${previewEscaped || '(no preview)'}</div>
-  <div class="recycle-bin-meta">Deleted ${date}</div>
   <div class="recycle-bin-actions">
     <button class="w95-btn" onclick="restoreFromRecycleBin('${id}')">Restore</button>
     <button class="w95-btn recycle-bin-del-btn" onclick="deleteFromRecycleBinPermanently('${id}')">Delete Permanently</button>
