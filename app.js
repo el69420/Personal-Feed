@@ -8635,6 +8635,8 @@ function initPixelCat() {
     let _prevDrvState    = null;    // tracks previous state for activity-log transition events
     let drvCallPerchWin  = null;    // window element to jump onto once call-cat walk completes
     let drvPerchLastPos  = null;    // { x, y, ts } – last perch pixel pos for shake detection
+    let drvPerchLastPixel = null;  // { px, py } – saved pixel pos for fall start position
+    let drvFalling        = false; // true when cat fell from a closed window (vs graceful jump-down)
 
     // ---- Gift drop driver state ----
     const GIFT_MIN_INTERVAL_MS = 90 * 60 * 1000;  // 90 min minimum between gifts
@@ -9094,6 +9096,7 @@ function initPixelCat() {
             let shakenOff = false;
             if (!gone && drvPerchTarget) {
                 const { px: curPx, py: curPy } = calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
+                drvPerchLastPixel = { px: curPx, py: curPy }; // save for fall start position
                 if (drvPerchLastPos !== null) {
                     const elapsed = now - drvPerchLastPos.ts;
                     if (elapsed > 0) {
@@ -9110,14 +9113,15 @@ function initPixelCat() {
             }
 
             if (gone || shakenOff || now > drvPerchEnd) {
+                const windowClosed = drvPerchTarget?.winEl.classList.contains('is-hidden');
                 drvPerchLastPos = null;
                 // Compute jump-down arc back to the ground
                 const vw      = window.innerWidth;
                 const groundY = window.innerHeight - 44 - CH * S;
-                // If the window is gone, fall from approximate last position; otherwise use live pos
-                const { px: spx, py: spy } = gone
-                    ? { px: Math.round(drvX * (vw - CW * S)), py: 0 }
-                    : calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
+                // Start from last saved perch pos, live pos, or approximate pos
+                const { px: spx, py: spy } = (!gone)
+                    ? calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side)
+                    : (drvPerchLastPixel || { px: Math.round(drvX * (vw - CW * S)), py: 0 });
                 // Land somewhere near the window, with a little randomness
                 const landX = Math.max(CW * S,
                                 Math.min(vw - CW * S * 2,
@@ -9127,8 +9131,10 @@ function initPixelCat() {
                 drvJumpTargetX = landX;
                 drvJumpTargetY = groundY;
                 drvJumpTime    = now;
-                drvDir   = landX > spx ? 'right' : 'left';
-                drvState = 'jumpDown';
+                drvDir     = landX > spx ? 'right' : 'left';
+                drvFalling = !!windowClosed; // true = gravity fall; false = graceful jump-down
+                drvState   = 'jumpDown';
+                drvPerchLastPixel = null;
                 if (gone || shakenOff) drvPerchTarget = null;
             }
 
@@ -9139,6 +9145,7 @@ function initPixelCat() {
                 drvX           = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD,
                                     drvJumpTargetX / (window.innerWidth - CW * S)));
                 drvPerchTarget = null;
+                drvFalling     = false;
                 drvState       = 'walk';
                 drvNextAct     = now + 3000 + Math.random() * 4000;
             }
@@ -9281,12 +9288,21 @@ function initPixelCat() {
                            !drvPerchTarget.winEl.classList.contains('is-hidden');
 
         if (isJumping) {
-            // Parabolic arc: ease-in-out horizontal, sine-arch vertical (always curves upward)
-            const t    = Math.min(1, (now - drvJumpTime) / JUMP_DURATION);
-            const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease-in-out quadratic
-            const px   = drvJumpStartX + (drvJumpTargetX - drvJumpStartX) * ease;
-            const py   = drvJumpStartY + (drvJumpTargetY - drvJumpStartY) * ease
-                         - JUMP_ARC * Math.sin(Math.PI * t); // negative = arcs upward
+            const t = Math.min(1, (now - drvJumpTime) / JUMP_DURATION);
+            let px, py;
+            if (drvState === 'jumpDown' && drvFalling) {
+                // Gravity fall: ease-in vertical (accelerates downward), no upward arc
+                const gravEase = t * t; // ease-in = gravity acceleration
+                const hEase    = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                px = drvJumpStartX + (drvJumpTargetX - drvJumpStartX) * hEase;
+                py = drvJumpStartY + (drvJumpTargetY - drvJumpStartY) * gravEase;
+            } else {
+                // Parabolic arc: ease-in-out horizontal, sine-arch vertical (always curves upward)
+                const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease-in-out quadratic
+                px = drvJumpStartX + (drvJumpTargetX - drvJumpStartX) * ease;
+                py = drvJumpStartY + (drvJumpTargetY - drvJumpStartY) * ease
+                     - JUMP_ARC * Math.sin(Math.PI * t); // negative = arcs upward
+            }
             canvas.style.left   = Math.round(px) + 'px';
             canvas.style.top    = Math.round(py) + 'px';
             canvas.style.bottom = 'auto';
