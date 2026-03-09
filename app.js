@@ -8622,6 +8622,8 @@ function initPixelCat() {
     let drvCallTarget    = null;    // normalised x (0–1) to walk toward; null = no call
     let drvForcedNapEnd  = 0;       // performance.now() timestamp: force sleep until this time
     let _prevDrvState    = null;    // tracks previous state for activity-log transition events
+    let drvCallPerchWin  = null;    // window element to jump onto once call-cat walk completes
+    let drvPerchLastPos  = null;    // { x, y, ts } – last perch pixel pos for shake detection
 
     // ---- Gift drop driver state ----
     const GIFT_MIN_INTERVAL_MS = 90 * 60 * 1000;  // 90 min minimum between gifts
@@ -8641,10 +8643,12 @@ function initPixelCat() {
     const SIT_MIN     = 3500;     // min sit/sleep duration (ms)
     const SIT_MAX     = 8000;
     const SLEEP_P     = 0.28;     // probability that sit transitions to sleep
-    const JUMP_DURATION = 650;    // ms for a jump arc animation (up or down)
-    const JUMP_ARC      = 85;     // extra upward px at the peak of the arc
-    const IDLE_MIN      = 500;    // ms cat pauses in idle before deciding next action
-    const IDLE_MAX      = 1400;
+    const JUMP_DURATION   = 650;  // ms for a jump arc animation (up or down)
+    const JUMP_ARC        = 85;   // extra upward px at the peak of the arc
+    const IDLE_MIN        = 500;  // ms cat pauses in idle before deciding next action
+    const IDLE_MAX        = 1400;
+    const SHAKE_THRESHOLD = 5;    // px/ms – window speed that shakes cat off perch
+    const PERCH_PROX_PX   = 120;  // px – max horizontal gap for the cat to jump to a window
 
     // ---- Presence listener → driver election + both-online heart ----
     let _presInitDone   = false; // skip very first snapshot (avoid heart on page load)
@@ -8933,17 +8937,45 @@ function initPixelCat() {
                 // Walk toward the Cat.exe-requested target position
                 const diff = drvCallTarget - drvX;
                 if (Math.abs(diff) < 0.05) {
-                    // Close enough: sit down near the window
+                    // Arrived at the window edge
                     drvCallTarget = null;
-                    drvState  = 'sit';
-                    const sitDur = (SIT_MIN * sitMinMult) + Math.random() * (SIT_MAX - SIT_MIN);
-                    drvSitEnd  = now + sitDur;
-                    drvNextAct = drvSitEnd + sitGapBase + Math.random() * 5000;
+                    const perchWin = drvCallPerchWin;
+                    drvCallPerchWin = null;
+                    if (perchWin && !perchWin.classList.contains('is-hidden') &&
+                                    !perchWin.classList.contains('is-maximised')) {
+                        // Jump up onto the window
+                        const vw       = window.innerWidth;
+                        const catW     = CW * S;
+                        const catPx    = Math.round(drvX * (vw - catW));
+                        const rect     = perchWin.getBoundingClientRect();
+                        const side     = catPx < rect.left + rect.width / 2 ? 'left' : 'right';
+                        drvPerchTarget = { winEl: perchWin, side };
+                        const groundY  = window.innerHeight - 44 - CH * S;
+                        const { px: tpx, py: tpy } = calcPerchPos(perchWin, side);
+                        drvJumpStartX  = catPx;
+                        drvJumpStartY  = groundY;
+                        drvJumpTargetX = tpx;
+                        drvJumpTargetY = tpy;
+                        drvJumpTime    = now;
+                        drvPerchLastPos = null;
+                        drvDir         = tpx > catPx ? 'right' : 'left';
+                        drvState       = 'jumping';
+                    } else {
+                        // Window gone or closed — just sit
+                        drvState  = 'sit';
+                        const sitDur = (SIT_MIN * sitMinMult) + Math.random() * (SIT_MAX - SIT_MIN);
+                        drvSitEnd  = now + sitDur;
+                        drvNextAct = drvSitEnd + sitGapBase + Math.random() * 5000;
+                    }
                 } else {
                     drvDir = diff > 0 ? 'right' : 'left';
                     drvX  += (drvDir === 'right' ? 1 : -1) * WALK_SPEED * speedMult * dt;
                     if (drvX >= 1 - EDGE_PAD) { drvX = 1 - EDGE_PAD; drvDir = 'left'; }
                     if (drvX <= EDGE_PAD)     { drvX = EDGE_PAD;     drvDir = 'right'; }
+                    // If the call-perch window was closed mid-walk, drop the perch intent
+                    if (drvCallPerchWin && drvCallPerchWin.classList.contains('is-hidden')) {
+                        drvCallPerchWin = null;
+                    }
                 }
             } else {
                 drvX += (drvDir === 'right' ? 1 : -1) * WALK_SPEED * speedMult * dt;
@@ -8967,22 +8999,39 @@ function initPixelCat() {
                 } else {
                 const perchWins = getPerchableWindows();
                 if (perchWins.length > 0 && Math.random() < 0.30) {
-                    // Choose a window and jump up onto its title bar (local-only)
+                    // Choose a window; only jump if the cat is physically next to it
                     const targetWin = perchWins[Math.floor(Math.random() * perchWins.length)];
-                    const side      = Math.random() < 0.5 ? 'left' : 'right';
-                    drvPerchTarget  = { winEl: targetWin, side };
                     const vw        = window.innerWidth;
-                    const groundY   = window.innerHeight - 44 - CH * S;
-                    const startPixX = Math.round(localX * (vw - CW * S));
-                    const { px: tpx, py: tpy } = calcPerchPos(targetWin, side);
-                    drvJumpStartX  = startPixX;
-                    drvJumpStartY  = groundY;
-                    drvJumpTargetX = tpx;
-                    drvJumpTargetY = tpy;
-                    drvJumpTime    = now;
-                    // Face the target window before leaping
-                    drvDir  = tpx > startPixX ? 'right' : 'left';
-                    drvState = 'jumping';
+                    const catW      = CW * S;
+                    const catPx     = Math.round(drvX * (vw - catW));
+                    const wRect     = targetWin.getBoundingClientRect();
+                    // Horizontal gap: positive = cat is outside the window's x-span
+                    const hDistL    = wRect.left - (catPx + catW); // gap if cat is left of window
+                    const hDistR    = catPx - wRect.right;          // gap if cat is right of window
+                    const hDist     = Math.max(0, Math.max(hDistL, hDistR));
+                    if (hDist <= PERCH_PROX_PX) {
+                        // Close enough — jump up onto the window
+                        const side      = Math.random() < 0.5 ? 'left' : 'right';
+                        drvPerchTarget  = { winEl: targetWin, side };
+                        const groundY   = window.innerHeight - 44 - CH * S;
+                        const startPixX = catPx;
+                        const { px: tpx, py: tpy } = calcPerchPos(targetWin, side);
+                        drvJumpStartX  = startPixX;
+                        drvJumpStartY  = groundY;
+                        drvJumpTargetX = tpx;
+                        drvJumpTargetY = tpy;
+                        drvJumpTime    = now;
+                        drvPerchLastPos = null;
+                        // Face the target window before leaping
+                        drvDir   = tpx > startPixX ? 'right' : 'left';
+                        drvState = 'jumping';
+                    } else {
+                        // Too far away — sit instead of teleporting across the screen
+                        drvState  = 'sit';
+                        const sitDur = (SIT_MIN * sitMinMult) + Math.random() * (SIT_MAX - SIT_MIN);
+                        drvSitEnd  = now + sitDur;
+                        drvNextAct = drvSitEnd + sitGapBase + Math.random() * 5000;
+                    }
                 } else {
                     drvState  = 'sit';
                     const sitDur = (SIT_MIN * sitMinMult) + Math.random() * (SIT_MAX - SIT_MIN);
@@ -8998,9 +9047,10 @@ function initPixelCat() {
             const t = Math.min(1, (now - drvJumpTime) / JUMP_DURATION);
             if (t >= 1) {
                 // Arrived at perch — normalise drvX to the perch pixel x
-                drvX      = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD,
-                                drvJumpTargetX / (window.innerWidth - CW * S)));
-                drvState  = 'perched';
+                drvX        = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD,
+                                  drvJumpTargetX / (window.innerWidth - CW * S)));
+                drvPerchLastPos = null; // start fresh for shake detection
+                drvState    = 'perched';
                 drvPerchEnd = now + 4000 + Math.random() * 6000; // sit 4–10 s
             }
 
@@ -9009,10 +9059,32 @@ function initPixelCat() {
             const gone = !drvPerchTarget ||
                          drvPerchTarget.winEl.classList.contains('is-hidden') ||
                          drvPerchTarget.winEl.classList.contains('is-maximised');
-            if (gone || now > drvPerchEnd) {
+
+            // Detect rapid window movement (shake) — cat loses balance and falls off
+            let shakenOff = false;
+            if (!gone && drvPerchTarget) {
+                const { px: curPx, py: curPy } = calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
+                if (drvPerchLastPos !== null) {
+                    const elapsed = now - drvPerchLastPos.ts;
+                    if (elapsed > 0) {
+                        const dx = curPx - drvPerchLastPos.x;
+                        const dy = curPy - drvPerchLastPos.y;
+                        if (Math.sqrt(dx * dx + dy * dy) / elapsed > SHAKE_THRESHOLD) {
+                            shakenOff = true;
+                        }
+                    }
+                }
+                drvPerchLastPos = { x: curPx, y: curPy, ts: now };
+            } else {
+                drvPerchLastPos = null;
+            }
+
+            if (gone || shakenOff || now > drvPerchEnd) {
+                drvPerchLastPos = null;
                 // Compute jump-down arc back to the ground
                 const vw      = window.innerWidth;
                 const groundY = window.innerHeight - 44 - CH * S;
+                // If the window is gone, fall from approximate last position; otherwise use live pos
                 const { px: spx, py: spy } = gone
                     ? { px: Math.round(drvX * (vw - CW * S)), py: 0 }
                     : calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
@@ -9027,7 +9099,7 @@ function initPixelCat() {
                 drvJumpTime    = now;
                 drvDir   = landX > spx ? 'right' : 'left';
                 drvState = 'jumpDown';
-                if (gone) drvPerchTarget = null;
+                if (gone || shakenOff) drvPerchTarget = null;
             }
 
         } else if (drvState === 'jumpDown') {
@@ -9320,17 +9392,25 @@ function initPixelCat() {
             }
         },
 
-        // Walk the desktop cat toward the Cat.exe window position.
+        // Walk the desktop cat to the edge of the Cat.exe window, then jump on top.
         callCat() {
             if (!isDriver) { fireCatEvent('sparkle'); return; }
             const catWin = document.getElementById('w95-win-cat');
             if (!catWin || catWin.classList.contains('is-hidden')) return;
-            const rect = catWin.getBoundingClientRect();
-            const targetPx = rect.left + rect.width / 2;
-            const vw = window.innerWidth;
-            drvCallTarget   = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, targetPx / (vw - CW * S)));
+            const rect   = catWin.getBoundingClientRect();
+            const vw     = window.innerWidth;
+            const catW   = CW * S;
+            // Approach the nearer edge so the cat walks up beside the window, not through it
+            const catPx    = Math.round(drvX * (vw - catW));
+            const midWin   = rect.left + rect.width / 2;
+            const targetPx = catPx < midWin
+                ? rect.left - catW  // cat comes from the left, stops at left edge
+                : rect.right;       // cat comes from the right, stops at right edge
+            drvCallTarget   = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, targetPx / (vw - catW)));
+            drvCallPerchWin = catWin;
             drvForcedNapEnd = 0;
             drvPerchTarget  = null;
+            drvPerchLastPos = null;
             // Wake the cat from any stationary/perched state
             if (drvState !== 'walk') {
                 drvState   = 'walk';
@@ -9355,7 +9435,9 @@ function initPixelCat() {
         napCat() {
             drvForcedNapEnd = performance.now() + 15000 + Math.random() * 10000;
             drvCallTarget   = null;
+            drvCallPerchWin = null;
             drvPerchTarget  = null;
+            drvPerchLastPos = null;
             if (drvState !== 'sleep') drvState = 'sleep';
         },
 
@@ -9368,17 +9450,25 @@ function initPixelCat() {
             canvas.classList.add('cat-bounce');
         },
 
-        // Called when Cat.exe window is opened: cat notices and walks toward it.
+        // Called when Cat.exe window is opened: cat notices and walks over to jump on top.
         onCatOpen() {
             if (!isDriver) return;
             const catWin = document.getElementById('w95-win-cat');
             if (!catWin || catWin.classList.contains('is-hidden')) return;
-            const rect = catWin.getBoundingClientRect();
-            const targetPx = rect.left + rect.width / 2;
-            const vw = window.innerWidth;
-            drvCallTarget   = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, targetPx / (vw - CW * S)));
+            const rect   = catWin.getBoundingClientRect();
+            const vw     = window.innerWidth;
+            const catW   = CW * S;
+            // Approach the nearer edge (same logic as callCat)
+            const catPx    = Math.round(drvX * (vw - catW));
+            const midWin   = rect.left + rect.width / 2;
+            const targetPx = catPx < midWin
+                ? rect.left - catW
+                : rect.right;
+            drvCallTarget   = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, targetPx / (vw - catW)));
+            drvCallPerchWin = catWin;
             drvForcedNapEnd = 0;
             drvPerchTarget  = null;
+            drvPerchLastPos = null;
             if (drvState !== 'walk') {
                 drvState   = 'walk';
                 drvNextAct = performance.now() + 9999999;
