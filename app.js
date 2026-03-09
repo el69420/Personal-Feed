@@ -9292,7 +9292,7 @@ function initPixelCat() {
                 drvJumpTargetY = groundY;
                 drvJumpTime    = now;
                 drvDir     = landX > spx ? 'right' : 'left';
-                drvFalling = !!windowClosed; // true = gravity fall; false = graceful jump-down
+                drvFalling = !!(windowClosed || shakenOff); // true = uncontrolled fall → dazed landing
                 drvState   = 'jumpDown';
                 drvPerchLastPixel = null;
                 if (gone || shakenOff) drvPerchTarget = null;
