@@ -8379,14 +8379,25 @@ async function loadUserWallpaper() {
     // ---- Desktop cat control panel buttons ----
     document.getElementById('cat-call-btn')?.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
-        window._catController?.callCat();
-        _addCatLog('Cat came when called');
+        const callResult = window._catController?.callCat();
         const lastActEl = document.getElementById('cat-last-action');
-        if (lastActEl) {
-            lastActEl.textContent = '\uD83D\uDCCD calling\u2026';
-            lastActEl.classList.add('is-visible');
-            clearTimeout(_lastActionTimer);
-            _lastActionTimer = setTimeout(() => lastActEl.classList.remove('is-visible'), 4000);
+        if (callResult === 'already_here') {
+            const name = catDisplayName();
+            const label = name === 'the cat' ? 'The cat' : name;
+            if (lastActEl) {
+                lastActEl.textContent = `${label} is already here!`;
+                lastActEl.classList.add('is-visible');
+                clearTimeout(_lastActionTimer);
+                _lastActionTimer = setTimeout(() => lastActEl.classList.remove('is-visible'), 4000);
+            }
+        } else {
+            _addCatLog('Cat came when called');
+            if (lastActEl) {
+                lastActEl.textContent = '\uD83D\uDCCD calling\u2026';
+                lastActEl.classList.add('is-visible');
+                clearTimeout(_lastActionTimer);
+                _lastActionTimer = setTimeout(() => lastActEl.classList.remove('is-visible'), 4000);
+            }
         }
     });
     document.getElementById('cat-roam-btn')?.addEventListener('mousedown', (e) => {
@@ -9412,10 +9423,15 @@ function initPixelCat() {
         },
 
         // Walk the desktop cat to the edge of the Cat.exe window, then jump on top.
+        // Returns 'already_here' if the cat is already perched/napping on Cat.exe.
         callCat() {
             if (!isDriver) { fireCatEvent('sparkle'); return; }
             const catWin = document.getElementById('w95-win-cat');
             if (!catWin || catWin.classList.contains('is-hidden')) return;
+            // If the cat is already perched on (or napping on) the Cat.exe window, do nothing.
+            const alreadyThere = drvPerchTarget?.winEl === catWin &&
+                                 (drvState === 'perched' || drvState === 'sleep');
+            if (alreadyThere) return 'already_here';
             const rect   = catWin.getBoundingClientRect();
             const vw     = window.innerWidth;
             const catW   = CW * S;
