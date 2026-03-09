@@ -8078,6 +8078,31 @@ async function loadUserWallpaper() {
     let _lastActionText = '';
     let _lastActionTimer = null;
 
+    // ---- Activity log (local-only, up to 8 recent entries) ----
+    const _CAT_LOG_MAX = 8;
+    const _catActivityLog = [];
+    function _addCatLog(msg) {
+        const d = new Date();
+        const ts = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        _catActivityLog.unshift(ts + ' ' + msg);
+        if (_catActivityLog.length > _CAT_LOG_MAX) _catActivityLog.length = _CAT_LOG_MAX;
+        _renderCatLog();
+    }
+    function _renderCatLog() {
+        const el = document.getElementById('cat-activity-log');
+        if (!el) return;
+        el.innerHTML = '';
+        _catActivityLog.forEach((entry, i) => {
+            const span = document.createElement('span');
+            span.className = 'cat-log-entry';
+            span.textContent = entry;
+            span.style.opacity = i === 0 ? '1' : String(Math.max(0.3, 1 - i * 0.13));
+            el.appendChild(span);
+        });
+    }
+    // Expose so the pixel cat driver (initPixelCat) can log state transitions
+    window._catLog = _addCatLog;
+
     const CAT_DECAY_PER_HOUR  = 3;
     const CAT_ACTION_DELTAS   = { feed: 25, water: 25, yarn: 35 };
     const CAT_ACTION_STAT     = { feed: 'hunger', water: 'thirst', yarn: 'play' };
@@ -8259,6 +8284,8 @@ async function loadUserWallpaper() {
             window._catLocalYarnZoom?.();
         }
         sparkSound('cat');
+        const _ACT_LOG = { feed: 'Cat was fed', water: 'Cat was watered', yarn: 'Cat played with yarn' };
+        if (_ACT_LOG[action]) _addCatLog(_ACT_LOG[action]);
 
         // --- Network / DB sync (runs after immediate feedback) ---
         try {
@@ -8346,6 +8373,7 @@ async function loadUserWallpaper() {
     document.getElementById('cat-call-btn')?.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         window._catController?.callCat();
+        _addCatLog('Cat came when called');
         const lastActEl = document.getElementById('cat-last-action');
         if (lastActEl) {
             lastActEl.textContent = '\uD83D\uDCCD calling\u2026';
@@ -8356,17 +8384,20 @@ async function loadUserWallpaper() {
     });
     document.getElementById('cat-roam-btn')?.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
-        window._catController?.toggleRoaming();
+        const nowPaused = window._catController?.toggleRoaming();
+        _addCatLog(nowPaused ? 'Cat settled in' : 'Cat started roaming');
         renderDesktopCatStatus();
     });
     document.getElementById('cat-nap-btn')?.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         window._catController?.napCat();
+        _addCatLog('Cat took a nap');
         renderDesktopCatStatus();
     });
     document.getElementById('cat-pet-btn')?.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         window._catController?.petCat();
+        _addCatLog('Cat enjoyed being petted');
     });
 
     // ---- Auth recovery: reload stats if auth resolves while window is already visible ----
@@ -8583,6 +8614,7 @@ function initPixelCat() {
     let drvRoamingPaused = false;   // when true, cat won't auto-walk between sits
     let drvCallTarget    = null;    // normalised x (0–1) to walk toward; null = no call
     let drvForcedNapEnd  = 0;       // performance.now() timestamp: force sleep until this time
+    let _prevDrvState    = null;    // tracks previous state for activity-log transition events
 
     // ---- Gift drop driver state ----
     const GIFT_MIN_INTERVAL_MS = 90 * 60 * 1000;  // 90 min minimum between gifts
@@ -9022,6 +9054,23 @@ function initPixelCat() {
             }
         }
 
+        // ---- Activity log: state-change events (driver only) ----
+        if (drvState !== _prevDrvState) {
+            const prev = _prevDrvState;
+            _prevDrvState = drvState;
+            if (prev !== null) {
+                if (drvState === 'walk' && prev !== 'wakeup' && prev !== 'jumping' && prev !== 'jumpDown') {
+                    if (Math.random() < 0.3) window._catLog?.('Cat wandered across the desktop');
+                } else if (drvState === 'sleep' && prev !== 'sleep' && drvForcedNapEnd <= now) {
+                    window._catLog?.('Cat curled up to sleep');
+                } else if (drvState === 'wakeup') {
+                    window._catLog?.('Cat woke up');
+                } else if (drvState === 'perched') {
+                    window._catLog?.('Cat perched on a window');
+                }
+            }
+        }
+
         // ---- Gift drop (daytime only, driver only) ----
         if (now - lastGiftCheckAt > GIFT_CHECK_MS) {
             lastGiftCheckAt = now;
@@ -9079,6 +9128,7 @@ function initPixelCat() {
 
     // ---- Main animation loop ----
     let lastTs = performance.now();
+    let _prevRenderState = null;  // tracks previous cat state for ambient stretch trigger
 
     function loop(now) {
         const dt = Math.min(now - lastTs, 100); // cap delta so a tab-wake doesn't teleport the cat
@@ -9090,6 +9140,20 @@ function initPixelCat() {
         // Which state & direction to render
         const catState = isDriver ? drvState : fbState;
         const catDir   = isDriver ? drvDir   : fbDir;
+
+        // Ambient: brief stretch when cat stops walking and settles
+        if (catState !== _prevRenderState) {
+            if (_prevRenderState === 'walk' && (catState === 'idle' || catState === 'sit')) {
+                if (Math.random() < 0.35 && !canvas.classList.contains('cat-bounce')) {
+                    canvas.classList.remove('cat-stretch');
+                    void canvas.offsetWidth;
+                    canvas.classList.add('cat-stretch');
+                }
+            }
+            _prevRenderState = catState;
+        }
+        // Settled visual: soft green glow when driver has roaming paused
+        canvas.classList.toggle('cat-settled', isDriver && drvRoamingPaused && catState === 'sit');
 
         // Walk animation frame toggle
         if (catState === 'walk' && now - lastFlip > WALK_FPS) {
@@ -9204,6 +9268,7 @@ function initPixelCat() {
     canvas.addEventListener('animationend', () => {
         canvas.classList.remove('cat-bounce');
         canvas.classList.remove('cat-yarn-zoom');
+        canvas.classList.remove('cat-stretch');
     });
 
     // Expose local-only animation helpers for Cat.exe window (no Firebase sync).

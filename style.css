@@ -5351,6 +5351,7 @@ body { padding: 0 !important; }
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   pointer-events: none;   /* never block clicks on things below */
+  transition: filter 0.5s ease;
 }
 #cat-hit-area {
   position: fixed;
@@ -5606,6 +5607,29 @@ body { padding: 0 !important; }
 }
 .cat-last-action.is-visible { opacity: 1; }
 
+/* --- Activity log --- */
+.cat-activity-log {
+  font: 9px 'Courier New', Courier, monospace;
+  color: #333;
+  background: #bcb8b0;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #dfdbcf;
+  border-bottom: 1px solid #dfdbcf;
+  padding: 3px 6px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 13px;
+}
+.cat-log-entry {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.45;
+  color: #333;
+}
+
 /* --- Care buttons --- */
 .cat-actions {
   display: flex;
@@ -5658,6 +5682,22 @@ body { padding: 0 !important; }
 }
 .cat-meter-flash {
   animation: catMeterFlash 0.4s ease-out;
+}
+
+/* ---- Stretch animation (ambient, all clients) ---- */
+@keyframes catStretch {
+  0%   { transform: scaleY(1)    translateY(0);    }
+  30%  { transform: scaleY(1.14) translateY(-3px); }
+  60%  { transform: scaleY(0.91) translateY(2px);  }
+  100% { transform: scaleY(1)    translateY(0);    }
+}
+#pixel-cat-canvas.cat-stretch {
+  animation: catStretch 0.55s ease-in-out;
+}
+
+/* ---- Settled visual (driver only, roaming paused) ---- */
+#pixel-cat-canvas.cat-settled {
+  filter: drop-shadow(0 0 3px rgba(120, 180, 120, 0.6));
 }
 
 /* ---- Yarn zoom animation (local-only) ---- */
