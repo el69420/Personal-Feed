@@ -7443,20 +7443,42 @@ function applyIconPositions() {
 
     document.querySelectorAll('.w95-desktop-icon').forEach(icon => {
         const appKey = icon.dataset.app;
-        let startX, startY, startLeft, startTop, didDrag, capturedId;
+        // dragStarts: map of appKey → {left, top} for every selected icon at drag start
+        let startX, startY, didDrag, capturedId, dragStarts, wasSelectedOnDown;
 
         icon.addEventListener('pointerdown', (e) => {
             if (e.button !== 0) return;
             e.stopPropagation();
-            clearIconSelection();
-            icon.classList.add('selected');
-            startX     = e.clientX;
-            startY     = e.clientY;
-            startLeft  = parseInt(icon.style.left) || (ICON_DEFAULTS[appKey]?.x ?? 16);
-            startTop   = parseInt(icon.style.top)  || (ICON_DEFAULTS[appKey]?.y ?? 16);
+
+            const isCtrl = e.ctrlKey || e.metaKey;
+            wasSelectedOnDown = icon.classList.contains('selected');
+
+            if (isCtrl) {
+                // Ctrl+click: toggle this icon in/out of the selection
+                icon.classList.toggle('selected');
+            } else if (!wasSelectedOnDown) {
+                // Clicking an unselected icon: deselect all, then select this one
+                clearIconSelection();
+                icon.classList.add('selected');
+            }
+            // If already selected (no Ctrl): keep the whole group so a drag moves them all.
+            // Deselection of others is deferred to pointerup if no drag happens.
+
+            startX = e.clientX;
+            startY = e.clientY;
             didDrag    = false;
             capturedId = e.pointerId;
             icon.setPointerCapture(e.pointerId);
+
+            // Snapshot start positions of every selected icon for group drag
+            dragStarts = {};
+            document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                const sk = si.dataset.app;
+                dragStarts[sk] = {
+                    left: parseInt(si.style.left) || (ICON_DEFAULTS[sk]?.x ?? 16),
+                    top:  parseInt(si.style.top)  || (ICON_DEFAULTS[sk]?.y ?? 16),
+                };
+            });
         });
 
         icon.addEventListener('pointermove', (e) => {
@@ -7470,32 +7492,49 @@ function applyIconPositions() {
                 const desktop = document.getElementById('w95-desktop');
                 const dw = desktop.offsetWidth;
                 const dh = desktop.offsetHeight;
-                const iconW = icon.offsetWidth  || 72;
-                const iconH = icon.offsetHeight || 68;
-                icon.style.left = Math.max(0, Math.min(dw - iconW, startLeft + dx)) + 'px';
-                icon.style.top  = Math.max(0, Math.min(dh - iconH, startTop  + dy)) + 'px';
+                // Move every selected icon by the same delta
+                document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                    const sk = si.dataset.app;
+                    const start = dragStarts[sk];
+                    if (!start) return;
+                    const iconW = si.offsetWidth  || 72;
+                    const iconH = si.offsetHeight || 68;
+                    si.style.left = Math.max(0, Math.min(dw - iconW, start.left + dx)) + 'px';
+                    si.style.top  = Math.max(0, Math.min(dh - iconH, start.top  + dy)) + 'px';
+                });
             }
         });
 
         icon.addEventListener('pointerup', (e) => {
             if (e.pointerId !== capturedId) return;
             icon.releasePointerCapture(capturedId);
+            const isCtrl = e.ctrlKey || e.metaKey;
+
             if (didDrag) {
                 const prefs = getDesktopPrefs();
                 if (prefs.autoArrange) {
                     // Auto Arrange: re-sort all icons into grid order
                     arrangeByName();
                 } else {
-                    // Snap to grid then persist
-                    const snapped = snapToGrid(parseInt(icon.style.left), parseInt(icon.style.top));
-                    icon.style.left = snapped.x + 'px';
-                    icon.style.top  = snapped.y + 'px';
+                    // Snap every selected icon to grid and persist all positions
                     const positions = getIconPositions();
-                    positions[appKey] = { x: snapped.x, y: snapped.y };
+                    document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                        const sk = si.dataset.app;
+                        const snapped = snapToGrid(parseInt(si.style.left), parseInt(si.style.top));
+                        si.style.left = snapped.x + 'px';
+                        si.style.top  = snapped.y + 'px';
+                        positions[sk] = { x: snapped.x, y: snapped.y };
+                    });
                     saveIconPositions(positions);
                 }
             } else {
-                // Click: double-click detection
+                // It was a plain click (no drag)
+                if (!isCtrl && wasSelectedOnDown) {
+                    // Clicking an already-selected icon without Ctrl narrows selection to just this one
+                    clearIconSelection();
+                    icon.classList.add('selected');
+                }
+                // Double-click detection — opens the app on second click within 500 ms
                 const now = Date.now();
                 if (clickTimes[appKey] && now - clickTimes[appKey] < 500) {
                     openApp(appKey);
