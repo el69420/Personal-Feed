@@ -9833,6 +9833,11 @@ function initPixelCat() {
         });
     });
 
+    document.getElementById('ctx-settings')?.addEventListener('click', () => {
+        hideAll();
+        w95Apps['settings']?.open();
+    });
+
     document.getElementById('ctx-properties')?.addEventListener('click', () => {
         hideAll();
         const ua = navigator.userAgent;
