@@ -8633,7 +8633,19 @@ function initPixelCat() {
         [0,1,0,0,0,0,1,0],  // row 7 – back paws tucked/dangling
     ];
 
-    const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE, wakeup: WAKEUP, idle: IDLE, jump: JUMP };
+    // Dazed: seated cat with crossed/inward eyes — shown for ~2 s after a hard fall
+    const DAZED = [
+        [0,1,0,0,0,0,1,0],  // row 0 – ear tips
+        [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
+        [1,2,2,2,2,2,2,1],  // row 2 – face
+        [1,2,2,1,1,2,2,1],  // row 3 – crossed eyes (pupils moved inward to cols 3 & 4)
+        [1,2,2,3,3,2,2,1],  // row 4 – nose
+        [1,2,2,2,2,2,2,1],  // row 5 – body
+        [1,2,2,2,2,2,2,1],  // row 6 – haunches
+        [1,2,2,1,1,2,2,1],  // row 7 – tucked paws
+    ];
+
+    const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE, wakeup: WAKEUP, idle: IDLE, jump: JUMP, dazed: DAZED };
 
     // ---- Canvas (appended to body so z-index is unambiguous) ----
     const canvas = document.createElement('canvas');
@@ -8725,6 +8737,7 @@ function initPixelCat() {
     let drvPerchLastPos  = null;    // { x, y, ts } – last perch pixel pos for shake detection
     let drvPerchLastPixel = null;  // { px, py } – saved pixel pos for fall start position
     let drvFalling        = false; // true when cat fell from a closed window (vs graceful jump-down)
+    let drvDazedEnd       = 0;    // timestamp when dazed-on-landing state ends
 
     // ---- Gift drop driver state ----
     const GIFT_MIN_INTERVAL_MS = 90 * 60 * 1000;  // 90 min minimum between gifts
@@ -8750,6 +8763,7 @@ function initPixelCat() {
     const IDLE_MAX        = 1400;
     const SHAKE_THRESHOLD = 5;    // px/ms – window speed that shakes cat off perch
     const PERCH_PROX_PX   = 120;  // px – max horizontal gap for the cat to jump to a window
+    const DAZE_DURATION   = 2000; // ms the cat sits dazed after hitting the ground from a hard fall
 
     // ---- Presence listener → driver election + both-online heart ----
     let _presInitDone   = false; // skip very first snapshot (avoid heart on page load)
@@ -9233,9 +9247,22 @@ function initPixelCat() {
                 drvX           = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD,
                                     drvJumpTargetX / (window.innerWidth - CW * S)));
                 drvPerchTarget = null;
+                const wasFalling = drvFalling;
                 drvFalling     = false;
-                drvState       = 'walk';
-                drvNextAct     = now + 3000 + Math.random() * 4000;
+                if (wasFalling) {
+                    // Hard landing: sit dazed for a couple of seconds before running off
+                    drvState    = 'dazed';
+                    drvDazedEnd = now + DAZE_DURATION;
+                } else {
+                    drvState   = 'walk';
+                    drvNextAct = now + 3000 + Math.random() * 4000;
+                }
+            }
+
+        } else if (drvState === 'dazed') {
+            if (now > drvDazedEnd) {
+                drvState   = 'walk';
+                drvNextAct = now + 3000 + Math.random() * 4000;
             }
 
         } else if (drvState === 'sit') {
@@ -9289,7 +9316,7 @@ function initPixelCat() {
         // Local-only states are hidden from remote clients:
         //   idle / perched → 'sit'   (cat is stationary)
         //   jumping / jumpDown → 'walk' (cat is in motion)
-        const LOCAL_ONLY = { idle: 'sit', perched: 'sit', jumping: 'walk', jumpDown: 'walk' };
+        const LOCAL_ONLY = { idle: 'sit', perched: 'sit', jumping: 'walk', jumpDown: 'walk', dazed: 'sit' };
         const fbWriteState = LOCAL_ONLY[drvState] || drvState;
         if (now - lastFbWrite > FB_INTERVAL) {
             lastFbWrite = now;
@@ -9435,6 +9462,7 @@ function initPixelCat() {
         let frame;
         if (now < surpriseEnd)                                        frame = 'surprise';
         else if (catState === 'wakeup')                               frame = wakeElapsed < 1000 ? 'sleep' : wakeElapsed < 2000 ? 'wakeup' : 'sit';
+        else if (catState === 'dazed')                                frame = 'dazed';
         else if (catState === 'sit' || catState === 'perched')        frame = 'sit';
         else if (catState === 'idle')                                 frame = 'idle';
         else if (catState === 'jumping' || catState === 'jumpDown')   frame = 'jump';
