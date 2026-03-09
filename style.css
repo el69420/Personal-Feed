@@ -213,7 +213,7 @@ body.dark-mode::before {
     position: fixed;
     inset: 0;
     background: linear-gradient(135deg, #002828 0%, #001a1a 50%, #001010 100%);
-    z-index: 1000;
+    z-index: 9150;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1010,7 +1010,7 @@ body.dark-mode .coll-pick-btn.selected { color: #00cccc; }
     top: 0; left: 0;
     width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.55);
-    z-index: 1000;
+    z-index: 9150;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
@@ -2658,7 +2658,7 @@ select { cursor: pointer; }
     position: fixed;
     inset: 0;
     background: linear-gradient(135deg, #002828 0%, #001a1a 50%, #001010 100%);
-    z-index: 1000;
+    z-index: 9150;
     display: none;
     align-items: center;
     justify-content: center;
@@ -5095,7 +5095,7 @@ body.dark-mode .garden-actions-bar{
    overflow-y:auto lets tall forms scroll within the window bounds. */
 #w95-win-feed .modal {
   position: absolute;
-  z-index: 10;
+  z-index: 100;
   overflow-y: auto;
 }
 
