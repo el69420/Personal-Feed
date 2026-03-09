@@ -9476,6 +9476,7 @@ function initPixelCat() {
                 py = drvJumpStartY + (drvJumpTargetY - drvJumpStartY) * ease
                      - JUMP_ARC * Math.sin(Math.PI * t); // negative = arcs upward
             }
+            localX = px / (vw - CW * S); // keep localX in sync so landing has no slide
             canvas.style.left   = Math.round(px) + 'px';
             canvas.style.top    = Math.round(py) + 'px';
             canvas.style.bottom = 'auto';
