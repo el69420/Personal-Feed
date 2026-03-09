@@ -5111,6 +5111,30 @@ body.dark-mode .garden-actions-bar{
   padding-bottom: 24px;
 }
 
+/* Feed filter bar: allow wrapping on narrow windows so buttons don't clip */
+#w95-win-feed .nav-glass,
+#w95-win-feed .filter-glass {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ============================================================
+   Scrapbook Window
+   ============================================================ */
+#w95-win-scrapbook {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#w95-win-scrapbook .w95-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding: 12px 14px;
+}
+
 /* Tighter close button to match Win95 look */
 .w95-control-close {
   margin-left: 2px;

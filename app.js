@@ -164,7 +164,7 @@ let prevVisualSig = null;
 
 let _audioCtx = null;
 let chatOpen = false;
-let currentSection = 'feed';   // 'feed' | 'boards'
+let currentSection = 'feed';
 let allBoards = {};             // boardId → board object
 let allBoardDeleteRequests = {}; // boardId → { requestedBy, requestedAt, boardTitle }
 let _boardPickerPostId = null;  // postId being saved to a board
@@ -708,16 +708,14 @@ function showSection(name) {
     document.getElementById('feedSection').classList.toggle('hidden', !isFeed);
     document.getElementById('filterButtons').classList.toggle('hidden', !isFeed);
     document.getElementById('searchWrap').classList.toggle('hidden', !isFeed);
-    document.getElementById('boardsSection').classList.toggle('hidden', name !== 'boards');
-    document.getElementById('navBoards')?.classList.toggle('active', name === 'boards');
-    if (name === 'boards') renderBoardsList();
 }
 
 // ---- BOARDS ----
 function setupBoardsListener() {
     onValue(boardsRef, snap => {
         allBoards = snap.val() || {};
-        if (currentSection === 'boards') renderBoardsList();
+        const sbWin = document.getElementById('w95-win-scrapbook');
+        if (sbWin && !sbWin.classList.contains('is-hidden')) renderBoardsList();
     });
 }
 
@@ -885,7 +883,8 @@ window.confirmBoardDeletion = async function() {
     await remove(ref(database, `board_items/${boardId}`));
     await remove(ref(database, `boards/${boardId}`));
     closeModal(modal);
-    if (currentSection === 'boards') closeBoardDetail();
+    const sbWin = document.getElementById('w95-win-scrapbook');
+    if (sbWin && !sbWin.classList.contains('is-hidden')) closeBoardDetail();
     showToast('Board deleted');
 };
 
@@ -4347,8 +4346,7 @@ document.getElementById('aboutModal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('aboutModal')) closeAbout();
 });
 
-// Boards nav + modals
-document.getElementById('navBoards')?.addEventListener('click', () => showSection('boards'));
+// Board modals
 document.getElementById('boardPickerClose')?.addEventListener('click', () => closeModal(document.getElementById('boardPickerModal')));
 document.getElementById('boardPickerModal')?.addEventListener('click', e => { if (e.target.id === 'boardPickerModal') closeModal(e.target); });
 document.getElementById('createBoardClose')?.addEventListener('click', () => closeModal(document.getElementById('createBoardModal')));
@@ -7242,6 +7240,56 @@ function renderAchievementsWindow() {
     }};
 })();
 
+// ===== Win95 Scrapbook Window =====
+(() => {
+    const win      = document.getElementById('w95-win-scrapbook');
+    const minBtn   = document.getElementById('w95-scrapbook-min');
+    const maxBtn   = document.getElementById('w95-scrapbook-max');
+    const closeBtn = document.getElementById('w95-scrapbook-close');
+    const handle   = document.getElementById('w95-scrapbook-handle');
+    if (!win || !handle) return;
+
+    let btn = null;
+
+    function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-scrapbook', 'SCRAPBOOK', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-scrapbook');
+        localStorage.setItem('w95_scrapbook_open', '1');
+        renderBoardsList();
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-scrapbook')) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_scrapbook_open', '0');
+    }
+
+    function closeWin() {
+        if (w95Mgr.isMaximised('w95-win-scrapbook')) w95Mgr.toggleMaximise(win, 'w95-win-scrapbook');
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-scrapbook')) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_scrapbook_open', '0');
+        if (btn) { btn.remove(); btn = null; }
+    }
+
+    win.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-scrapbook'));
+
+    if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
+    if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-scrapbook'); };
+    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
+
+    makeDraggable(win, handle, 'w95-win-scrapbook');
+
+    if (localStorage.getItem('w95_scrapbook_open') === '1') show();
+
+    w95Apps['scrapbook'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-scrapbook');
+    }};
+})();
+
 // ===== Desktop Icon Positions =====
 const ICON_DEFAULTS = {
     feed:         { x: 16,  y: 16  },
@@ -7254,6 +7302,7 @@ const ICON_DEFAULTS = {
     cat:          { x: 16,  y: 604 },
     myComputer:   { x: 16,  y: 688 },
     console:      { x: 104, y: 16  },
+    scrapbook:    { x: 104, y: 100 },
 };
 
 // ===== Snap-to-grid + Arrange =====
@@ -10057,6 +10106,7 @@ function initPixelCat() {
                     'Stats.exe':        { type: 'app', icon: '⚙️', size: '16 KB', date: '03/08/2024', app: 'stats' },
                     'Presence.exe':     { type: 'app', icon: '⚙️', size: '10 KB', date: '03/08/2024', app: 'presence' },
                     'Achievements.exe': { type: 'app', icon: '⚙️', size: '14 KB', date: '03/08/2024', app: 'achievements' },
+                    'Scrapbook.exe':    { type: 'app', icon: '⚙️', size: '11 KB', date: '03/08/2024', app: 'scrapbook' },
                 }},
                 'Windows': { type: 'folder', icon: '📁', children: {
                     'System32': { type: 'folder', icon: '📁', children: {
