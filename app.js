@@ -1099,6 +1099,7 @@ function setupDBListeners() {
     onValue(recycleBinRef, (snapshot) => {
         allRecycleBin = snapshot.val() || {};
         renderRecycleBin();
+        applyRecycleBinIconState();
     });
 
     onValue(postsRef, (snapshot) => {
@@ -7730,11 +7731,28 @@ document.querySelectorAll('.w95-window').forEach(win => {
 })();
 
 // ===== Recycle Bin =====
+function applyRecycleBinIconState() {
+    // Show all desktop icons first (except recycleBin itself which is never deleted)
+    document.querySelectorAll('.w95-desktop-icon[data-app]').forEach(icon => {
+        if (icon.dataset.app !== 'recycleBin') icon.classList.remove('is-hidden');
+    });
+    // Hide any icons currently in the recycle bin
+    Object.values(allRecycleBin).forEach(item => {
+        if (item.type === 'desktop-icon' && item.iconApp) {
+            const iconEl = document.querySelector(`.w95-desktop-icon[data-app="${item.iconApp}"]`);
+            if (iconEl) iconEl.classList.add('is-hidden');
+        }
+    });
+}
+
 window.restoreFromRecycleBin = async function(itemId) {
     const item = allRecycleBin[itemId];
     if (!item) return;
 
-    if (item.type === 'comment') {
+    if (item.type === 'desktop-icon') {
+        await remove(ref(database, `recycleBin/${itemId}`));
+        showToast('Icon restored');
+    } else if (item.type === 'comment') {
         const post = allPosts[item.postId];
         if (!post) {
             showToast('Cannot restore: parent post no longer exists');
@@ -7765,6 +7783,9 @@ window.deleteFromRecycleBinPermanently = async function(itemId) {
 };
 
 function getRecycleBinPreview(item) {
+    if (item.type === 'desktop-icon') {
+        return item.iconLabel || item.iconApp || 'Desktop icon';
+    }
     if (item.type === 'comment') {
         const mainComment = item.replies && item.replies[0];
         return mainComment ? (mainComment.text || '').slice(0, 80) : '(comment)';
@@ -7794,7 +7815,7 @@ function renderRecycleBin() {
         const preview = getRecycleBinPreview(item);
         const date = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '?';
         const previewEscaped = preview.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        const typeLabel = item.type === 'comment' ? 'Comment' : item.type === 'board' ? 'Board' : 'Post';
+        const typeLabel = item.type === 'comment' ? 'Comment' : item.type === 'board' ? 'Board' : item.type === 'desktop-icon' ? 'Desktop Icon' : 'Post';
         return `<div class="recycle-bin-item">
   <div class="recycle-bin-meta">${typeLabel} · Deleted ${date}</div>
   <div class="recycle-bin-preview">${previewEscaped || '(no preview)'}</div>
@@ -9886,14 +9907,25 @@ function initPixelCat() {
     document.getElementById('icon-ctx-delete')?.addEventListener('click', () => {
         hideAll();
         if (!_targetIcon) return;
-        const label = _targetIcon.querySelector('.desktop-icon-label')?.textContent || _targetIcon.dataset.app || 'this item';
+        const appId = _targetIcon.dataset.app;
+        if (appId === 'recycleBin') return; // Cannot delete the Recycle Bin
+        const label = _targetIcon.querySelector('.desktop-icon-label')?.textContent || appId || 'this item';
         openW95Dialog({
             icon: '\uD83D\uDDD1\uFE0F',
             title: 'Confirm File Delete',
             message: `Are you sure you want to delete '${label}'?`,
             buttons: [
-                { label: 'Yes', action: () => {
-                    _targetIcon.classList.add('is-hidden');
+                { label: 'Yes', action: async () => {
+                    if (appId) {
+                        await set(ref(database, `recycleBin/icon_${appId}`), {
+                            type: 'desktop-icon',
+                            iconApp: appId,
+                            iconLabel: label,
+                            deletedAt: Date.now(),
+                        });
+                    } else {
+                        _targetIcon.classList.add('is-hidden');
+                    }
                     _targetIcon = null;
                 }},
                 { label: 'No', action: null }
