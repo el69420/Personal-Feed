@@ -1238,16 +1238,21 @@ onAuthStateChanged(auth, (firebaseUser) => {
 
 // Scroll to top button — listens on the feed window body (feed is inside a W95 window)
 function getFeedScrollEl() { return document.getElementById('w95-feed-body'); }
+function isFeedOpen() {
+    const feedWin = document.getElementById('w95-win-feed');
+    return feedWin && !feedWin.classList.contains('is-hidden');
+}
+function updateScrollTopBtn() {
+    const feedBody = getFeedScrollEl();
+    const scrolled = feedBody ? feedBody.scrollTop > 300 : window.scrollY > 300;
+    document.getElementById('scrollTopBtn').classList.toggle('visible', isFeedOpen() && scrolled);
+}
 (function initFeedScrollListener() {
     const feedBody = getFeedScrollEl();
     if (feedBody) {
-        feedBody.addEventListener('scroll', () => {
-            document.getElementById('scrollTopBtn').classList.toggle('visible', feedBody.scrollTop > 300);
-        });
+        feedBody.addEventListener('scroll', updateScrollTopBtn);
     } else {
-        window.addEventListener('scroll', () => {
-            document.getElementById('scrollTopBtn').classList.toggle('visible', window.scrollY > 300);
-        });
+        window.addEventListener('scroll', updateScrollTopBtn);
     }
 })();
 
@@ -7371,6 +7376,7 @@ function applyIconPositions() {
         win.classList.add('is-hidden');
         if (w95Mgr.isActiveWin('w95-win-feed')) w95Mgr.focusWindow(null);
         localStorage.setItem('w95_feed_open', '0');
+        updateScrollTopBtn();
     }
 
     function closeFeed() {
@@ -7379,6 +7385,7 @@ function applyIconPositions() {
         if (w95Mgr.isActiveWin('w95-win-feed')) w95Mgr.focusWindow(null);
         localStorage.setItem('w95_feed_open', '0');
         if (btn) { btn.remove(); btn = null; }
+        updateScrollTopBtn();
     }
 
     // Minimize button
