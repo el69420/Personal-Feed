@@ -3888,6 +3888,16 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 .w95-ctx-item{display:flex;align-items:center;width:100%;padding:5px 20px 5px 16px;background:none;border:none;cursor:pointer;font:12px Tahoma,Verdana,Arial,sans-serif;text-align:left;white-space:nowrap;color:#000}
 .w95-ctx-item:hover,.w95-ctx-item:focus{background:#000080;color:#fff;outline:none}
 .w95-ctx-separator{margin:3px 0;border:none;border-top:1px solid #808080;border-bottom:1px solid #fff}
+/* Submenu parent item */
+.w95-ctx-has-sub{position:relative;display:flex;align-items:center;justify-content:space-between;padding:5px 8px 5px 16px;cursor:default;user-select:none;white-space:nowrap;color:#000;font:12px Tahoma,Verdana,Arial,sans-serif;width:100%;box-sizing:border-box}
+.w95-ctx-has-sub:hover,.w95-ctx-has-sub:focus-within{background:#000080;color:#fff;outline:none}
+.w95-ctx-arrow{margin-left:12px;font-size:9px;flex-shrink:0}
+/* Submenu panel — hidden until parent is hovered */
+.w95-ctx-submenu{position:absolute;left:100%;top:-2px;display:none;z-index:9101}
+.w95-ctx-has-sub:hover .w95-ctx-submenu,.w95-ctx-has-sub:focus-within .w95-ctx-submenu{display:block}
+/* Inline rename input on desktop icon labels */
+.desktop-icon-label.is-renaming{display:none}
+.icon-rename-input{font:11px Tahoma,Verdana,Arial,sans-serif;width:72px;text-align:center;background:#000080;color:#fff;border:1px dotted #fff;padding:0 2px;outline:none;word-break:break-word;resize:none;overflow:hidden;box-sizing:border-box;margin-top:0}
 /* Fake Shutdown dialog */
 .w95-shutdown-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9200;display:flex;align-items:center;justify-content:center}
 .w95-shutdown-overlay.is-hidden{display:none}

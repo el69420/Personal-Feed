@@ -9608,6 +9608,9 @@ function initPixelCat() {
         _targetIcon = null;
         _targetWin  = null;
 
+        // Don't show context menu while an icon rename is in progress
+        if (e.target.classList.contains('icon-rename-input')) return;
+
         const catEl  = e.target.closest('#cat-hit-area');
         const iconEl = e.target.closest('.w95-desktop-icon, .exe-icon');
         const winEl  = e.target.closest('.w95-window');
@@ -9640,11 +9643,6 @@ function initPixelCat() {
 
     // ===== Desktop menu actions =====
 
-    document.getElementById('ctx-wallpaper')?.addEventListener('click', () => {
-        hideAll();
-        w95Apps['wallpaper']?.open();
-    });
-
     document.getElementById('ctx-refresh')?.addEventListener('click', () => {
         hideAll();
         desktop.style.opacity = '0.5';
@@ -9665,19 +9663,17 @@ function initPixelCat() {
         updateAutoArrangeLabel();
     });
 
-    document.getElementById('ctx-personalise')?.addEventListener('click', () => {
-        hideAll();
-        w95Apps['wallpaper']?.open();
-    });
-
-    document.getElementById('ctx-new-post')?.addEventListener('click', () => {
-        hideAll();
-        w95Apps['feed']?.open();
-        // Small delay then focus the compose box if present
-        setTimeout(() => {
-            const compose = document.querySelector('#feed-input, #postInput, [data-role="compose"]');
-            compose?.focus();
-        }, 300);
+    // New submenu — stubs that acknowledge with a dialog
+    ['ctx-new-folder', 'ctx-new-shortcut', 'ctx-new-text'].forEach(id => {
+        document.getElementById(id)?.addEventListener('click', () => {
+            hideAll();
+            openW95Dialog({
+                icon: '\uD83D\uDCC4',
+                title: 'New',
+                message: 'This feature is not yet available.',
+                buttons: [{ label: 'OK', action: null }]
+            });
+        });
     });
 
     document.getElementById('ctx-properties')?.addEventListener('click', () => {
@@ -9692,27 +9688,6 @@ function initPixelCat() {
         });
     });
 
-    document.getElementById('ctx-shutdown')?.addEventListener('click', () => {
-        hideAll();
-        openW95Dialog({
-            icon: '\u26a1',
-            title: 'Shut Down Windows',
-            message: 'What do you want the computer to do?',
-            buttons: [
-                { label: 'Shut down', action: () => {
-                    openW95Dialog({
-                        icon: '\ud83d\udcbb',
-                        title: 'Shut Down',
-                        message: 'It is now safe to close this tab.',
-                        buttons: [{ label: 'OK', action: null }]
-                    });
-                }},
-                { label: 'Restart', action: () => location.reload() },
-                { label: 'Cancel', action: null }
-            ]
-        });
-    });
-
     // ===== Icon menu actions =====
 
     document.getElementById('icon-ctx-open')?.addEventListener('click', () => {
@@ -9720,6 +9695,74 @@ function initPixelCat() {
         if (!_targetIcon) return;
         const appKey = _targetIcon.dataset.app;
         if (appKey) openApp(appKey);
+    });
+
+    document.getElementById('icon-ctx-rename')?.addEventListener('click', () => {
+        hideAll();
+        if (!_targetIcon) return;
+        const labelEl = _targetIcon.querySelector('.desktop-icon-label');
+        if (!labelEl) return;
+
+        const originalText = labelEl.textContent;
+
+        // Create a small textarea that mimics the label style
+        const input = document.createElement('textarea');
+        input.className = 'icon-rename-input';
+        input.value = originalText;
+        input.rows = 2;
+        input.spellcheck = false;
+
+        // Auto-size height to content
+        function fitHeight() {
+            input.style.height = 'auto';
+            input.style.height = input.scrollHeight + 'px';
+        }
+        input.addEventListener('input', fitHeight);
+
+        // Hide label, insert input after it
+        labelEl.classList.add('is-renaming');
+        labelEl.parentNode.insertBefore(input, labelEl.nextSibling);
+
+        // Focus and select all
+        input.focus();
+        input.select();
+        fitHeight();
+
+        function commitRename() {
+            const newName = input.value.trim() || originalText;
+            labelEl.textContent = newName;
+            labelEl.classList.remove('is-renaming');
+            input.remove();
+        }
+
+        function cancelRename() {
+            labelEl.classList.remove('is-renaming');
+            input.remove();
+        }
+
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); commitRename(); }
+            if (e.key === 'Escape') { cancelRename(); }
+        });
+        input.addEventListener('blur', commitRename);
+    });
+
+    document.getElementById('icon-ctx-delete')?.addEventListener('click', () => {
+        hideAll();
+        if (!_targetIcon) return;
+        const label = _targetIcon.querySelector('.desktop-icon-label')?.textContent || _targetIcon.dataset.app || 'this item';
+        openW95Dialog({
+            icon: '\uD83D\uDDD1\uFE0F',
+            title: 'Confirm File Delete',
+            message: `Are you sure you want to delete '${label}'?`,
+            buttons: [
+                { label: 'Yes', action: () => {
+                    _targetIcon.classList.add('is-hidden');
+                    _targetIcon = null;
+                }},
+                { label: 'No', action: null }
+            ]
+        });
     });
 
     document.getElementById('icon-ctx-properties')?.addEventListener('click', () => {

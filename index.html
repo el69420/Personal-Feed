@@ -789,23 +789,36 @@
 
     <!-- Desktop right-click context menu -->
     <div id="w95-ctx-menu" class="w95-ctx-menu is-hidden" role="menu">
-        <button class="w95-ctx-item" id="ctx-wallpaper" type="button">&#127912; Change Wallpaper</button>
-        <button class="w95-ctx-item" id="ctx-refresh" type="button">&#x1F504; Refresh</button>
+        <button class="w95-ctx-item" id="ctx-refresh" type="button">Refresh</button>
         <hr class="w95-ctx-separator">
-        <button class="w95-ctx-item" id="ctx-arrange-name" type="button">Arrange by Name</button>
-        <button class="w95-ctx-item" id="ctx-auto-arrange" type="button">Auto Arrange</button>
+        <div class="w95-ctx-item w95-ctx-has-sub" id="ctx-arrange-icons-parent" tabindex="0" role="menuitem" aria-haspopup="true">
+            Arrange Icons
+            <span class="w95-ctx-arrow" aria-hidden="true">&#9658;</span>
+            <div class="w95-ctx-submenu w95-ctx-menu" id="ctx-arrange-submenu" role="menu">
+                <button class="w95-ctx-item" id="ctx-arrange-name" type="button">by Name</button>
+                <button class="w95-ctx-item" id="ctx-auto-arrange" type="button">Auto Arrange</button>
+            </div>
+        </div>
+        <div class="w95-ctx-item w95-ctx-has-sub" id="ctx-new-parent" tabindex="0" role="menuitem" aria-haspopup="true">
+            New
+            <span class="w95-ctx-arrow" aria-hidden="true">&#9658;</span>
+            <div class="w95-ctx-submenu w95-ctx-menu" id="ctx-new-submenu" role="menu">
+                <button class="w95-ctx-item" id="ctx-new-folder" type="button">&#128193; Folder</button>
+                <button class="w95-ctx-item" id="ctx-new-shortcut" type="button">Shortcut</button>
+                <hr class="w95-ctx-separator">
+                <button class="w95-ctx-item" id="ctx-new-text" type="button">&#128196; Text Document</button>
+            </div>
+        </div>
         <hr class="w95-ctx-separator">
-        <button class="w95-ctx-item" id="ctx-personalise" type="button">&#127912; Personalisation</button>
-        <button class="w95-ctx-item" id="ctx-new-post" type="button">&#10024; New Post</button>
-        <hr class="w95-ctx-separator">
-        <button class="w95-ctx-item" id="ctx-properties" type="button">&#9881;&#65039; Properties</button>
-        <hr class="w95-ctx-separator">
-        <button class="w95-ctx-item" id="ctx-shutdown" type="button">Shut Down...</button>
+        <button class="w95-ctx-item" id="ctx-properties" type="button">Properties</button>
     </div>
 
     <!-- Icon right-click context menu -->
     <div id="w95-icon-ctx-menu" class="w95-ctx-menu is-hidden" role="menu">
         <button class="w95-ctx-item" id="icon-ctx-open" type="button"><b>Open</b></button>
+        <hr class="w95-ctx-separator">
+        <button class="w95-ctx-item" id="icon-ctx-rename" type="button">Rename</button>
+        <button class="w95-ctx-item" id="icon-ctx-delete" type="button">Delete</button>
         <hr class="w95-ctx-separator">
         <button class="w95-ctx-item" id="icon-ctx-properties" type="button">Properties</button>
     </div>
