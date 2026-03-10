@@ -115,6 +115,9 @@ function applyWallpaper(id) {
     currentWallpaperId = wp.id;
 }
 
+const _linkedPostId = new URLSearchParams(location.search).get('post');
+let _linkedPostHandled = false;
+
 let currentFilter = 'all';
 let currentCollection = null;
 let currentSource = null;
@@ -2520,7 +2523,7 @@ function createPostCard(post) {
     if (post.unlockAt && post.unlockAt > Date.now() && post.author !== currentUser) {
         const unlockDate = exactTimestamp(post.unlockAt);
         return `
-            <div class="post-card fade-in capsule-card" data-post-id="${post.id}">
+            <div class="post-card fade-in capsule-card" id="post-${post.id}" data-post-id="${post.id}">
                 <div class="capsule-lock">
                     <div class="capsule-icon">🔒</div>
                     <div class="capsule-label">Locked until</div>
@@ -2615,7 +2618,7 @@ function createPostCard(post) {
     }
 
     return `
-        <div class="post-card fade-in" data-post-id="${post.id}">
+        <div class="post-card fade-in" id="post-${post.id}" data-post-id="${post.id}">
             <div class="post-header">
                 <div class="post-author-row">
                     <span class="${badgeClass}">${safeText(author)} ${emoji}</span>
@@ -2637,6 +2640,9 @@ function createPostCard(post) {
                 <div class="post-header-actions">
                     <button class="icon-btn${isFav ? ' fav-active' : ''}" onclick="openBoardPickerModal('${post.id}')" title="Save to board">
                         ${isFav ? '♥' : '♡'}
+                    </button>
+                    <button class="icon-btn copy-link-btn" onclick="copyPostLink('${post.id}',this)" title="Copy link">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                     </button>
                     ${post.author === currentUser ? `
                         <button class="icon-btn" onclick="openEditPost('${post.id}')" title="Edit">✏️</button>
@@ -2787,7 +2793,31 @@ function loadPosts() {
         window.twttr?.widgets?.load?.();
         window.instgrm?.Embeds?.process?.();
     }, 120);
+
+    // Handle ?post= URL deep-link (once, on first render that includes the target post)
+    if (_linkedPostId && !_linkedPostHandled) {
+        const el = document.getElementById(`post-${_linkedPostId}`);
+        if (el) {
+            _linkedPostHandled = true;
+            w95Apps['feed']?.open?.();
+            setTimeout(() => {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('post-linked');
+                setTimeout(() => el.classList.remove('post-linked'), 2200);
+            }, 120);
+        }
+    }
 }
+
+window.copyPostLink = function(postId, btn) {
+    const url = window.location.origin + '?post=' + postId;
+    navigator.clipboard.writeText(url).then(() => {
+        const svg = btn.innerHTML;
+        btn.textContent = '✓';
+        btn.disabled = true;
+        setTimeout(() => { btn.innerHTML = svg; btn.disabled = false; }, 1500);
+    });
+};
 
 // ---- ACTIVITY FEED ----
 function computeActivity() {
