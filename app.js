@@ -21,6 +21,15 @@ const API_BASE = ''; // Set to the deployed origin (e.g. 'https://your-api.examp
 const ANNIVERSARY_MM_DD = '01-06';
 const INSIDE_JOKE = 'you are gay';
 
+// ---- APP ENTRY POINT ----
+// initApp() is called once from DOMContentLoaded so that every DOM query and
+// event-listener registration is guaranteed to run after the full document
+// (including taskbar, windows, and boot-screen markup) has been parsed.
+// All app constants, state variables, and function declarations live inside
+// initApp() so they share one scope — the original flat-module scope is
+// preserved, just wrapped one level deeper.
+function initApp() {
+
 // ---- LINK PREVIEW CACHE ----
 // Converts a URL to a safe Firebase key (no . # $ [ ] /)
 function urlToKey(url) {
@@ -1257,12 +1266,6 @@ function setupDBListeners() {
         }
     });
 }
-
-// ---- APP ENTRY POINT ----
-// initApp() is called once from DOMContentLoaded so that every DOM query and
-// event-listener registration is guaranteed to run after the full document
-// (including taskbar, windows, and boot-screen markup) has been parsed.
-function initApp() {
 
 // ---- AUTH STATE OBSERVER ----
 // Single entry point for starting/stopping a session. All DB access is gated here.
