@@ -7961,6 +7961,7 @@ async function loadUserWallpaper() {
     function takeSnap() {
         snap = {
             wallpaper:    currentWallpaperId,
+            darkMode:     isDarkMode,
             sound:        soundEnabled,
             masterVolume: soundMasterVolume,
             uiEffects:    soundUiEffects,
@@ -8024,6 +8025,15 @@ async function loadUserWallpaper() {
                 sw.classList.add('selected');
             });
             grid.appendChild(sw);
+        });
+    }
+
+    // ---- Appearance tab ----
+    const darkModeChk = document.getElementById('settings-darkmode-chk');
+
+    if (darkModeChk) {
+        darkModeChk.addEventListener('change', () => {
+            if (darkModeChk.checked !== isDarkMode) toggleDarkMode();
         });
     }
 
@@ -8141,6 +8151,8 @@ async function loadUserWallpaper() {
         if (preview) preview.style.background = cur.css;
         renderWallpaperGrid();
 
+        if (darkModeChk)    darkModeChk.checked    = isDarkMode;
+
         if (muteChk)        muteChk.checked        = !soundEnabled;
         if (volSlider) {
             const pct = Math.round(soundMasterVolume * 100);
@@ -8188,6 +8200,8 @@ async function loadUserWallpaper() {
     // ---- Cancel / revert ----
     function revertSettings() {
         applyWallpaper(snap.wallpaper);
+
+        if (snap.darkMode !== isDarkMode) toggleDarkMode();
 
         soundEnabled = snap.sound;
         localStorage.setItem('soundEnabled', soundEnabled ? 'true' : 'false');

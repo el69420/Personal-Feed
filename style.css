@@ -5401,6 +5401,84 @@ body { padding: 0 !important; }
   font: 11px Tahoma, Verdana, Arial, sans-serif;
 }
 
+/* ===== Settings — Dark Mode overrides ===== */
+body.dark-mode .settings-tab-btn {
+  background: #2a2a2a;
+  border-top-color: #555;
+  border-left-color: #555;
+  border-right-color: #111;
+  border-bottom-color: #111;
+  color: #d0d0d0;
+}
+body.dark-mode .settings-tab-btn.is-active {
+  background: #383838;
+  border-top-color: #666;
+  border-left-color: #666;
+  border-right-color: #222;
+  border-bottom-color: #383838;
+  color: #ffffff;
+}
+body.dark-mode .settings-panel {
+  background: #303030;
+  border-top-color: #222;
+  border-left-color: #222;
+  border-right-color: #555;
+  border-bottom-color: #555;
+  color: #d0d0d0;
+}
+body.dark-mode .settings-group-label,
+body.dark-mode .settings-check-row,
+body.dark-mode .settings-about,
+body.dark-mode .settings-about-footer,
+body.dark-mode .settings-about-title {
+  color: #d0d0d0;
+}
+body.dark-mode .settings-hint {
+  color: #888;
+}
+body.dark-mode .settings-about-ver {
+  color: #aaa;
+}
+body.dark-mode .settings-about-footer em {
+  color: #888;
+}
+body.dark-mode .settings-divider {
+  border-top-color: #222;
+  border-bottom-color: #555;
+}
+body.dark-mode .settings-select,
+body.dark-mode #settings-ss-idle {
+  background: #1e1e1e;
+  color: #d0d0d0;
+  border: 1px solid #555;
+}
+body.dark-mode .settings-select option,
+body.dark-mode #settings-ss-idle option {
+  background: #1e1e1e;
+  color: #d0d0d0;
+}
+body.dark-mode .ss-picker-card {
+  background: #2a2a2a;
+  border-top-color: #555;
+  border-left-color: #555;
+  border-right-color: #111;
+  border-bottom-color: #111;
+}
+body.dark-mode .ss-picker-card:has(input:checked) {
+  background: #383838;
+  border-top-color: #111;
+  border-left-color: #111;
+  border-right-color: #555;
+  border-bottom-color: #555;
+}
+body.dark-mode .ss-picker-name {
+  color: #d0d0d0;
+}
+/* The action-buttons row border at the bottom of settings */
+body.dark-mode .w95-body.settings-body > .w95-row {
+  border-top-color: #222 !important;
+}
+
 /* ===== Recycle Bin Window ===== */
 .recycle-bin-body {
   overflow-y: auto;
