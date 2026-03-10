@@ -690,20 +690,26 @@ function login(displayName, email) {
 
     ensureAudio();
     sparkSound('startup');
-    document.getElementById('loginOverlay').style.display = 'none';
+    const loginOverlay = document.getElementById('loginOverlay');
+    if (loginOverlay) loginOverlay.style.display = 'none';
 
     const emoji = AUTHOR_EMOJI[displayName] || '[?]';
-    document.getElementById('userIndicator').textContent = `${emoji} ${displayName} · sign out`;
-    document.getElementById('userIndicator').title = `Signed in as ${email}`;
+    const userIndicator = document.getElementById('userIndicator');
+    if (userIndicator) {
+        userIndicator.textContent = `${emoji} ${displayName} · sign out`;
+        userIndicator.title = `Signed in as ${email}`;
+    }
 
     const otherBtn = document.getElementById('btnOtherUser');
-    if (displayName === 'El' || displayName === 'Tero') {
-        const other = displayName === 'El' ? 'Tero' : 'El';
-        otherBtn.textContent = `${AUTHOR_EMOJI[other]} Just ${other}`;
-        otherBtn.classList.remove('hidden');
-    } else {
-        otherBtn.classList.add('hidden');
-        if (currentFilter === 'just-other') setFilter('all');
+    if (otherBtn) {
+        if (displayName === 'El' || displayName === 'Tero') {
+            const other = displayName === 'El' ? 'Tero' : 'El';
+            otherBtn.textContent = `${AUTHOR_EMOJI[other]} Just ${other}`;
+            otherBtn.classList.remove('hidden');
+        } else {
+            otherBtn.classList.add('hidden');
+            if (currentFilter === 'just-other') setFilter('all');
+        }
     }
 
     activitySeenTs = Number(localStorage.getItem(`activitySeenTs-${displayName}`) || String(Date.now() - 86400000));
@@ -1252,6 +1258,12 @@ function setupDBListeners() {
     });
 }
 
+// ---- APP ENTRY POINT ----
+// initApp() is called once from DOMContentLoaded so that every DOM query and
+// event-listener registration is guaranteed to run after the full document
+// (including taskbar, windows, and boot-screen markup) has been parsed.
+function initApp() {
+
 // ---- AUTH STATE OBSERVER ----
 // Single entry point for starting/stopping a session. All DB access is gated here.
 onAuthStateChanged(auth, (firebaseUser) => {
@@ -1261,8 +1273,10 @@ onAuthStateChanged(auth, (firebaseUser) => {
         currentUserUid = null;
         achievementsBackfilled = false;
         localStorage.removeItem('currentUser');
-        document.getElementById('loginOverlay').style.display = 'flex';
-        document.getElementById('accessDeniedOverlay').style.display = 'none';
+        const lo = document.getElementById('loginOverlay');
+        const ad = document.getElementById('accessDeniedOverlay');
+        if (lo) lo.style.display = 'flex';
+        if (ad) ad.style.display = 'none';
         closeChat(true);
         return;
     }
@@ -1273,8 +1287,10 @@ onAuthStateChanged(auth, (firebaseUser) => {
     if (!displayName) {
         // Authenticated but not on the allowlist
         currentUser = null;
-        document.getElementById('loginOverlay').style.display = 'none';
-        document.getElementById('accessDeniedOverlay').style.display = 'flex';
+        const lo = document.getElementById('loginOverlay');
+        const ad = document.getElementById('accessDeniedOverlay');
+        if (lo) lo.style.display = 'none';
+        if (ad) ad.style.display = 'flex';
         return;
     }
 
@@ -1465,7 +1481,8 @@ createParticles();
 window.toggleDarkMode = function() {
     isDarkMode = !isDarkMode;
     document.body.classList.toggle('dark-mode');
-    document.getElementById('darkModeIcon').textContent = isDarkMode ? '☼' : '☾';
+    const darkModeIcon = document.getElementById('darkModeIcon');
+    if (darkModeIcon) darkModeIcon.textContent = isDarkMode ? '☼' : '☾';
     localStorage.setItem('darkMode', isDarkMode);
 };
 
@@ -11463,6 +11480,15 @@ function initPixelCat() {
 // ===== Boot Screen (D) — once per session =====
 (function () {
     const boot = document.getElementById('boot-screen');
+    // Safe fallback: always dismiss the boot screen, even if init partially fails.
+    function dismissBoot() {
+        if (!boot) return;
+        boot.style.transition = 'opacity 0.4s';
+        boot.style.opacity = '0';
+        setTimeout(() => boot.classList.add('is-hidden'), 420);
+        sessionStorage.setItem('bootShown', '1');
+    }
+
     if (!boot) return;
 
     if (sessionStorage.getItem('bootShown') || localStorage.getItem('bootEnabled') === 'false') {
@@ -11470,50 +11496,58 @@ function initPixelCat() {
         return;
     }
 
-    const bar   = document.getElementById('boot-progress-bar');
-    const label = document.getElementById('boot-label');
-    const log   = document.getElementById('boot-log');
+    // Guaranteed fallback: boot screen will always clear after 8 seconds, even
+    // if the tick animation throws or stalls due to a non-critical UI failure.
+    const _bootFallbackTimer = setTimeout(dismissBoot, 8000);
 
-    // Each entry: [progress%, log line, label text]
-    const STEPS = [
-        [10, 'Initializing system...',          'Starting Windows\u2026'],
-        [22, 'Loading HIMEM.SYS...',            'Starting Windows\u2026'],
-        [34, 'Loading Feed.exe',                'Loading programs\u2026'],
-        [46, 'Loading Garden.exe',              'Loading programs\u2026'],
-        [56, 'Loading Cat.exe',                 'Loading programs\u2026'],
-        [66, 'Loading Mail.exe',                'Loading programs\u2026'],
-        [76, 'Loading Jukebox.exe',             'Loading programs\u2026'],
-        [88, 'Checking for updates...',         'Almost ready\u2026'],
-        [100, 'Desktop ready.',                 'Welcome'],
-    ];
+    try {
+        const bar   = document.getElementById('boot-progress-bar');
+        const label = document.getElementById('boot-label');
+        const log   = document.getElementById('boot-log');
 
-    function addLine(text) {
-        if (!log) return;
-        const span = document.createElement('span');
-        span.className = 'boot-log-line';
-        span.textContent = text;
-        log.appendChild(span);
-        // Keep last 5 lines visible
-        while (log.children.length > 5) log.removeChild(log.firstChild);
-    }
+        // Each entry: [progress%, log line, label text]
+        const STEPS = [
+            [10, 'Initializing system...',          'Starting Windows\u2026'],
+            [22, 'Loading HIMEM.SYS...',            'Starting Windows\u2026'],
+            [34, 'Loading Feed.exe',                'Loading programs\u2026'],
+            [46, 'Loading Garden.exe',              'Loading programs\u2026'],
+            [56, 'Loading Cat.exe',                 'Loading programs\u2026'],
+            [66, 'Loading Mail.exe',                'Loading programs\u2026'],
+            [76, 'Loading Jukebox.exe',             'Loading programs\u2026'],
+            [88, 'Checking for updates...',         'Almost ready\u2026'],
+            [100, 'Desktop ready.',                 'Welcome'],
+        ];
 
-    let i = 0;
-    function tick() {
-        if (i >= STEPS.length) {
-            boot.style.transition = 'opacity 0.4s';
-            boot.style.opacity = '0';
-            setTimeout(() => boot.classList.add('is-hidden'), 420);
-            sessionStorage.setItem('bootShown', '1');
-            return;
+        function addLine(text) {
+            if (!log) return;
+            const span = document.createElement('span');
+            span.className = 'boot-log-line';
+            span.textContent = text;
+            log.appendChild(span);
+            // Keep last 5 lines visible
+            while (log.children.length > 5) log.removeChild(log.firstChild);
         }
-        const [pct, line, lbl] = STEPS[i];
-        if (bar) bar.style.width = pct + '%';
-        if (label && lbl) label.textContent = lbl;
-        addLine(line);
-        i++;
-        setTimeout(tick, i < STEPS.length ? 210 : 400);
+
+        let i = 0;
+        function tick() {
+            if (i >= STEPS.length) {
+                clearTimeout(_bootFallbackTimer);
+                dismissBoot();
+                return;
+            }
+            const [pct, line, lbl] = STEPS[i];
+            if (bar) bar.style.width = pct + '%';
+            if (label && lbl) label.textContent = lbl;
+            addLine(line);
+            i++;
+            setTimeout(tick, i < STEPS.length ? 210 : 400);
+        }
+        setTimeout(tick, 300);
+    } catch (_e) {
+        // If the animation setup fails for any reason, dismiss immediately.
+        clearTimeout(_bootFallbackTimer);
+        dismissBoot();
     }
-    setTimeout(tick, 300);
 })();
 
 // ===== Screensaver (E) — starfield + underwater =====
@@ -13013,3 +13047,7 @@ document.addEventListener('click', (e) => {
         observer.observe(w, { attributes: true, attributeOldValue: true });
     });
 })();
+
+} // end initApp
+
+window.addEventListener('DOMContentLoaded', initApp, { once: true });
