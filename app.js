@@ -108,7 +108,11 @@ const WALLPAPERS = [
 const DEFAULT_WALLPAPER_ID = 'teal';
 let currentWallpaperId = DEFAULT_WALLPAPER_ID;
 
-function applyWallpaper(id) {
+// Set to true once the app is fully initialised so wallpaper/theme changes from
+// user interaction are counted but the initial restore on load is not.
+let _desktopCustomisationReady = false;
+
+function applyWallpaper(id, _fromUser = false) {
     // Check base wallpapers first, then reward wallpapers
     const wp = WALLPAPERS.find(w => w.id === id)
         || REWARD_REGISTRY.find(r => r.type === REWARD_TYPE_WALLPAPER && r.id === id && unlockedRewards.has(r.id));
@@ -116,12 +120,25 @@ function applyWallpaper(id) {
     const desktop = document.getElementById('w95-desktop');
     if (desktop) desktop.style.background = resolved.css || resolved.swatchCss || '';
     currentWallpaperId = resolved.id;
+    if (_fromUser && _desktopCustomisationReady) {
+        unlockAchievement('first_wallpaper_change');
+        const wpc = Number(localStorage.getItem('wallpaperChangeCount') || 0) + 1;
+        localStorage.setItem('wallpaperChangeCount', String(wpc));
+        if (wpc >= 5) unlockAchievement('pixel_mood');
+        if (unlockedAchievements.size >= 10) unlockAchievement('power_user');
+    }
 }
 
 // Apply a desktop theme by id. Themes are stored as body data-theme attributes.
-function applyDesktopTheme(themeId) {
+function applyDesktopTheme(themeId, _fromUser = false) {
     document.body.setAttribute('data-theme', themeId || '');
     localStorage.setItem('activeDesktopTheme', themeId || '');
+    if (_fromUser && _desktopCustomisationReady) {
+        const wpc = Number(localStorage.getItem('wallpaperChangeCount') || 0) + 1;
+        localStorage.setItem('wallpaperChangeCount', String(wpc));
+        if (wpc >= 5) unlockAchievement('pixel_mood');
+        if (unlockedAchievements.size >= 10) unlockAchievement('power_user');
+    }
 }
 
 const _linkedPostId = new URLSearchParams(location.search).get('post');
@@ -691,6 +708,10 @@ function login(displayName, email) {
 
     activitySeenTs = Number(localStorage.getItem(`activitySeenTs-${displayName}`) || String(Date.now() - 86400000));
     updateNewCount();
+
+    // Track unique site visit days for Rainy Day achievement
+    _recordSiteVisitDay();
+
     loadPosts();
     loadUserWallpaper();
     applyIconPositions();
@@ -700,6 +721,9 @@ function login(displayName, email) {
     showSection('feed');
     initAchievements();
     initPixelCat();
+    // Allow wallpaper/theme changes to count toward customisation achievements
+    // after the initial restore has completed.
+    requestAnimationFrame(() => { _desktopCustomisationReady = true; });
     // If the garden window was already open when auth resolved (page-restore path),
     // run the visit-spark check now that currentUser is set.
     const gardenWin = document.getElementById('w95-win-garden');
@@ -1275,9 +1299,25 @@ function updateScrollTopBtn() {
     const feedBody = getFeedScrollEl();
     if (feedBody) {
         feedBody.addEventListener('scroll', updateScrollTopBtn);
+        // Archivist: fire when the user scrolls to (near) the very bottom of the feed
+        feedBody.addEventListener('scroll', () => {
+            const nearBottom = feedBody.scrollTop + feedBody.clientHeight >= feedBody.scrollHeight - 60;
+            if (nearBottom) unlockAchievement('archivist');
+        }, { passive: true });
     } else {
         window.addEventListener('scroll', updateScrollTopBtn);
     }
+    // Deep Reader: track external link clicks from the feed
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('.link-preview');
+        if (link && link.tagName === 'A' && link.href) {
+            // Only count links in posts authored by the other user
+            const postCard = link.closest('.post-card');
+            const postId   = postCard?.dataset?.postId;
+            const post     = postId ? allPosts[postId] : null;
+            if (post && post.author !== currentUser) _trackLinkOpen();
+        }
+    }, { capture: false });
 })();
 
 // ---- KEYBOARD NAVIGATION ----
@@ -1936,7 +1976,7 @@ window.addPost = async function() {
                 if (heading) postData.heading = heading;
                 if (unlockAt) postData.unlockAt = unlockAt;
                 await push(postsRef, postData);
-                afterPostCreated();
+                afterPostCreated('text');
                 showToast('Post added');
                 sparkSound('post');
             }
@@ -1963,7 +2003,7 @@ window.addPost = async function() {
             };
             if (unlockAt) postData.unlockAt = unlockAt;
             await push(postsRef, postData);
-            afterPostCreated();
+            afterPostCreated('link');
             resetAddPostModal();
             closeAddPostModal();
             showToast('Post added');
@@ -1992,7 +2032,7 @@ window.addPoll = async function() {
             timestamp: Date.now(), readBy: { [currentUser]: true },
             reactionsBy: {}, replies: []
         });
-        afterPostCreated();
+        afterPostCreated('poll');
         ['pollQuestion','pollOpt0','pollOpt1','pollOpt2','pollOpt3'].forEach(id => {
             const el = document.getElementById(id); if (el) el.value = '';
         });
@@ -2052,7 +2092,7 @@ window.addImagePost = async function() {
             timestamp: Date.now(), readBy: { [currentUser]: true },
             reactionsBy: {}, replies: []
         });
-        afterPostCreated();
+        afterPostCreated('image');
         document.getElementById('imageCaption').value = '';
         closeImageModal();
         showToast('Photo shared!');
@@ -2117,7 +2157,7 @@ window.addMovieRec = async function() {
             timestamp: Date.now(), readBy: { [currentUser]: true },
             reactionsBy: {}, replies: []
         });
-        afterPostCreated();
+        afterPostCreated('recommendation');
         ['recTitle','recService','recNote','recLetterboxd'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         document.getElementById('recRating').value = '0';
         document.querySelectorAll('#starPicker button').forEach(b => b.classList.remove('active'));
@@ -5599,6 +5639,7 @@ const w95Apps = {};
     win.classList.remove('is-hidden');
     w95Mgr.focusWindow('w95-win-garden');
     localStorage.setItem('w95_garden_open', '1');
+    if (wasHidden) _trackWindowOpen('garden');
     // Record today's garden visit (streak / day-map) and check achievements.
     // This is the correct place — not during achievement init — so that
     // simply loading the app does not count as a garden visit.
@@ -5745,7 +5786,7 @@ const w95Apps = {};
     winChat.classList.remove('is-hidden');
     w95Mgr.focusWindow('w95-win-chat');
     localStorage.setItem('w95_chat_open', '1');
-    if (wasHidden) snap(winChat, 'br');
+    if (wasHidden) { snap(winChat, 'br'); _trackWindowOpen('chat'); }
     chatOpen = true;
     lastChatSeenTs = Date.now();
     localStorage.setItem('chatSeenTs', String(lastChatSeenTs));
@@ -5780,7 +5821,7 @@ const w95Apps = {};
     winNew.classList.remove('is-hidden');
     w95Mgr.focusWindow('w95-win-new');
     localStorage.setItem('w95_new_open', '1');
-    if (wasHidden) snap(winNew, 'bl');
+    if (wasHidden) { snap(winNew, 'bl'); _trackWindowOpen('new'); }
     renderActivityPanel();
   }
 
@@ -5885,7 +5926,66 @@ function makeDraggable(winEl, handleEl, winId) {
     winEl.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
     winEl.style.top = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
   });
-  window.addEventListener('mouseup', () => { dragging = false; });
+  window.addEventListener('mouseup', () => {
+    if (dragging) {
+        dragging = false;
+        // Track window moves for Window Tinkerer achievement
+        const moves = Number(localStorage.getItem('windowMoveCount') || 0) + 1;
+        localStorage.setItem('windowMoveCount', String(moves));
+        if (moves >= 20) unlockAchievement('window_tinkerer');
+    }
+  });
+}
+
+// ===== ACHIEVEMENT TRACKING HELPERS =====
+
+// Record today as a site-visit day for Rainy Day achievement.
+// Safe to call multiple times per day — Set ensures deduplication.
+function _recordSiteVisitDay() {
+    try {
+        const key   = 'siteVisitDays';
+        const days  = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
+        const today = new Date().toISOString().slice(0, 10);
+        if (!days.has(today)) {
+            days.add(today);
+            localStorage.setItem(key, JSON.stringify([...days]));
+        }
+        const count = days.size;
+        if (count >= 5)  unlockAchievement('rainy_day');
+        if (unlockedAchievements.size >= 10) unlockAchievement('power_user');
+    } catch (_) {}
+}
+
+// Track a window open event for Bouncer + Curious Mind achievements.
+// appKey should match the w95Apps key (e.g. 'feed', 'garden', 'cat').
+const _CURIOUS_MIND_APPS = new Set(['feed','chat','garden','cat','mailbox','console','achievements','jukebox','settings']);
+function _trackWindowOpen(appKey) {
+    try {
+        // Bouncer: raw open count
+        const opens = Number(localStorage.getItem('windowOpenCount') || 0) + 1;
+        localStorage.setItem('windowOpenCount', String(opens));
+        if (opens >= 10) unlockAchievement('bouncer');
+
+        // Curious Mind: set of unique apps opened
+        const seenKey  = 'openedApps';
+        const seen     = new Set(JSON.parse(localStorage.getItem(seenKey) || '[]'));
+        if (appKey) seen.add(appKey);
+        localStorage.setItem(seenKey, JSON.stringify([...seen]));
+        const allSeen  = _CURIOUS_MIND_APPS.size > 0 && [..._CURIOUS_MIND_APPS].every(a => seen.has(a));
+        if (allSeen) unlockAchievement('curious_mind');
+
+        if (unlockedAchievements.size >= 10) unlockAchievement('power_user');
+    } catch (_) {}
+}
+
+// Track a link being opened from the feed for Deep Reader achievement.
+function _trackLinkOpen() {
+    try {
+        const count = Number(localStorage.getItem('linksOpenedCount') || 0) + 1;
+        localStorage.setItem('linksOpenedCount', String(count));
+        if (count >= 25) unlockAchievement('deep_reader');
+        if (unlockedAchievements.size >= 10) unlockAchievement('power_user');
+    } catch (_) {}
 }
 
 // ===== ACHIEVEMENTS =====
@@ -5902,8 +6002,19 @@ function localDateStr(offsetDays = 0) {
 // Unlock Night Owl or Early Bird based on the current local hour.
 function checkTimeBasedAchievements() {
     const hr = new Date().getHours();
-    if (hr >= 0 && hr < 5) unlockAchievement('night_owl');
-    else if (hr >= 5 && hr < 8) unlockAchievement('early_bird');
+    if (hr >= 0 && hr < 5) {
+        unlockAchievement('night_owl');
+        // Track 5-visit Night Owl (night_visits)
+        const nv = Number(localStorage.getItem('nightVisitCount') || 0) + 1;
+        localStorage.setItem('nightVisitCount', String(nv));
+        if (nv >= 5) unlockAchievement('night_visits');
+    } else if (hr >= 5 && hr < 8) {
+        unlockAchievement('early_bird');
+        // Track 5-visit Early Bird (morning_visits)
+        const mv = Number(localStorage.getItem('morningVisitCount') || 0) + 1;
+        localStorage.setItem('morningVisitCount', String(mv));
+        if (mv >= 5) unlockAchievement('morning_visits');
+    }
 }
 
 // Check all mythic achievements. Call after any significant action.
@@ -6036,8 +6147,16 @@ async function recordGardenVisit() {
             });
         }
         const visitCount = Object.keys(gardenVisitDays).length;
-        if (visitCount >= 7)                await unlockAchievement('checked_in');
-        if (gardenVisitStreak.current >= 7) await unlockAchievement('week_streak');
+        if (visitCount >= 3)  await unlockAchievement('digital_gardener');
+        if (visitCount >= 5)  await unlockAchievement('frog_friend');
+        if (visitCount >= 7)  await unlockAchievement('checked_in');
+        if (visitCount >= 14) await unlockAchievement('visit_14_total');
+        if (visitCount >= 30) await unlockAchievement('visit_30_total');
+        if (visitCount >= 60) await unlockAchievement('visit_60_total');
+        if (gardenVisitStreak.current >= 7)  await unlockAchievement('week_streak');
+        if (gardenVisitStreak.current >= 14) await unlockAchievement('visit_streak_14');
+        if (gardenVisitStreak.current >= 30) await unlockAchievement('visit_streak_30');
+        if (unlockedAchievements.size >= 10) await unlockAchievement('power_user');
         await checkMythics();
         renderAchievementsWindow();
     } catch (e) {
@@ -6644,6 +6763,238 @@ const ACHIEVEMENTS = [
         xp:    10,
         tier:  'bronze',
     },
+
+    // ================================================================
+    // ---- Achievement Set: First Transmission ----
+    // ================================================================
+
+    // ---- Feed / Link achievements ----
+    {
+        id:          'first_transmission',
+        title:       'First Transmission',
+        desc:        'Share your first link into the feed',
+        icon:        '[>>]',
+        xp:          15,
+        tier:        'bronze',
+        rewardIds:   ['wp_cat_monitor'],
+    },
+    {
+        id:          'link_hoarder_10',
+        title:       'Link Hoarder I',
+        desc:        'Share 10 links',
+        icon:        '[L]',
+        xp:          25,
+        tier:        'silver',
+        target:      10,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && (!p.type || p.type === 'link') && p.url).length,
+        rewardIds:   ['ss_feed_slideshow'],
+    },
+    {
+        id:          'link_hoarder_50',
+        title:       'Link Hoarder II',
+        desc:        'Share 50 links — you are the algorithm now',
+        icon:        '[LL]',
+        xp:          60,
+        tier:        'gold',
+        target:      50,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && (!p.type || p.type === 'link') && p.url).length,
+        rewardIds:   ['theme_glass'],
+    },
+    {
+        id:          'deep_reader',
+        title:       'Deep Reader',
+        desc:        'Open 25 links shared by the other person',
+        icon:        '[R]',
+        xp:          30,
+        tier:        'silver',
+        target:      25,
+        getProgress: () => Number(localStorage.getItem('linksOpenedCount') || 0),
+        rewardIds:   ['wp_infinite_desktop'],
+    },
+    {
+        id:          'archivist',
+        title:       'Archivist',
+        desc:        'Scroll all the way back to the very first post',
+        icon:        '[A]',
+        xp:          25,
+        tier:        'silver',
+        rewardIds:   ['wp_retro_clouds'],
+    },
+
+    // ---- Time-of-day achievements ----
+    {
+        id:          'night_visits',
+        title:       'Night Owl',
+        desc:        'Visit after midnight, five times — the feed looks different when the world is asleep',
+        icon:        '[🦉]',
+        xp:          40,
+        tier:        'silver',
+        target:      5,
+        hiddenUntilUnlocked: true,
+        getProgress: () => Number(localStorage.getItem('nightVisitCount') || 0),
+        rewardIds:   ['wp_midnight'],
+    },
+    {
+        id:          'morning_visits',
+        title:       'Early Bird',
+        desc:        'Catch the feed before 8 AM, five times',
+        icon:        '[🐦]',
+        xp:          40,
+        tier:        'silver',
+        target:      5,
+        hiddenUntilUnlocked: true,
+        getProgress: () => Number(localStorage.getItem('morningVisitCount') || 0),
+        rewardIds:   ['garden_butterflies'],
+    },
+
+    // ---- Cat achievements ----
+    {
+        id:          'cat_whisperer',
+        title:       'Cat Whisperer',
+        desc:        'Interact with the cat 25 times — it has started to expect you',
+        icon:        '[~^~]',
+        xp:          35,
+        tier:        'silver',
+        target:      25,
+        getProgress: () => Number(localStorage.getItem('catActionCount') || 0),
+        rewardIds:   ['snd_cute'],
+    },
+    {
+        id:          'explorer_cat',
+        title:       'Explorer Cat',
+        desc:        'Interact with the cat on 3 different days',
+        icon:        '[🗺️]',
+        xp:          30,
+        tier:        'silver',
+        target:      3,
+        getProgress: () => { try { return JSON.parse(localStorage.getItem('catInteractDays') || '[]').length; } catch(_) { return 0; } },
+        rewardIds:   ['cat_explorer'],
+    },
+    {
+        id:          'soft_paws',
+        title:       'Soft Paws',
+        desc:        'Unlock 3 cat-related achievements — the cat acknowledges your devotion',
+        icon:        '[🌸]',
+        xp:          50,
+        tier:        'gold',
+        target:      3,
+        getProgress: () => ['first_cat_action','ten_cat_actions','cat_whisperer','explorer_cat'].filter(id => unlockedAchievements.has(id)).length,
+        rewardIds:   ['cat_flower_crown'],
+    },
+
+    // ---- Console achievements ----
+    {
+        id:          'console_wizard',
+        title:       'Console Wizard',
+        desc:        'Run 10 console commands — the terminal is your friend now',
+        icon:        '[>_]',
+        xp:          30,
+        tier:        'silver',
+        target:      10,
+        getProgress: () => Number(localStorage.getItem('consoleCommandCount') || 0),
+        rewardIds:   ['cat_wizard_hat'],
+    },
+
+    // ---- Desktop / exploration achievements ----
+    {
+        id:          'window_tinkerer',
+        title:       'Window Tinkerer',
+        desc:        'Move windows around 20 times — rearranging is the art',
+        icon:        '[ww]',
+        xp:          20,
+        tier:        'bronze',
+        target:      20,
+        getProgress: () => Number(localStorage.getItem('windowMoveCount') || 0),
+        rewardIds:   ['cat_sunglasses'],
+    },
+    {
+        id:          'bouncer',
+        title:       'Bouncer',
+        desc:        'Open and close apps 10 times — in, out, in, out',
+        icon:        '[><]',
+        xp:          15,
+        tier:        'bronze',
+        target:      10,
+        getProgress: () => Number(localStorage.getItem('windowOpenCount') || 0),
+        rewardIds:   ['ss_bouncing_logo'],
+    },
+    {
+        id:          'pixel_mood',
+        title:       'Pixel Mood',
+        desc:        'Change the desktop look 5 times — the vibe must be right',
+        icon:        '[*wp]',
+        xp:          20,
+        tier:        'bronze',
+        target:      5,
+        getProgress: () => Number(localStorage.getItem('wallpaperChangeCount') || 0),
+        rewardIds:   ['theme_pixel'],
+    },
+    {
+        id:          'curious_mind',
+        title:       'Curious Mind',
+        desc:        'Open every main app at least once',
+        icon:        '[?!]',
+        xp:          50,
+        tier:        'gold',
+        rewardIds:   ['theme_crt'],
+    },
+
+    // ---- Garden / time-based achievements ----
+    {
+        id:          'digital_gardener',
+        title:       'Digital Gardener',
+        desc:        'Visit the garden on 3 different days — seeds take time',
+        icon:        '[~G]',
+        xp:          20,
+        tier:        'bronze',
+        target:      3,
+        getProgress: () => Object.keys(gardenVisitDays).length,
+        rewardIds:   ['snd_garden_pack'],
+    },
+    {
+        id:          'frog_friend',
+        title:       'Frog Friend',
+        desc:        'Visit the garden on 5 different days — the frogs have been watching',
+        icon:        '[🐸]',
+        xp:          25,
+        tier:        'silver',
+        target:      5,
+        getProgress: () => Object.keys(gardenVisitDays).length,
+        rewardIds:   ['garden_frogs'],
+    },
+    {
+        id:          'rainy_day',
+        title:       'Rainy Day',
+        desc:        'Come back to the feed on 5 different days — it is always here',
+        icon:        '[☁]',
+        xp:          30,
+        tier:        'silver',
+        target:      5,
+        getProgress: () => { try { return JSON.parse(localStorage.getItem('siteVisitDays') || '[]').length; } catch(_) { return 0; } },
+        rewardIds:   ['garden_rain'],
+    },
+    {
+        id:          'idle_dreamer',
+        title:       'Idle Dreamer',
+        desc:        'Let the screensaver take over — sometimes you just watch the stars',
+        icon:        '[zzz]',
+        xp:          20,
+        tier:        'bronze',
+        rewardIds:   ['ss_starfield'],
+    },
+
+    // ---- Meta / power achievements ----
+    {
+        id:          'power_user',
+        title:       'Power User',
+        desc:        'Unlock 10 achievements — you know your way around',
+        icon:        '[PWR]',
+        xp:          75,
+        tier:        'gold',
+        target:      10,
+        getProgress: () => unlockedAchievements.size,
+        rewardIds:   ['cmd_linkstats', 'cmd_whoami'],
+    },
 ];
 
 // ---- XP / Level helpers ----
@@ -6746,6 +7097,55 @@ const REWARD_REGISTRY = [
     { id: 'garden_fountain', type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Garden Fountain', description: 'A decorative fountain for your garden',     icon: '[G]' },
     { id: 'garden_lantern',  type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Paper Lantern',   description: 'A glowing lantern for evening garden visits', icon: '[G]' },
     { id: 'garden_bench',    type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Wooden Bench',    description: 'A cosy bench to sit and admire your garden', icon: '[G]' },
+
+    // ---- Achievement Set: First Transmission & beyond ----
+
+    // Wallpapers
+    { id: 'wp_cat_monitor',       type: REWARD_TYPE_WALLPAPER, name: 'Cat Monitor',         description: 'A CRT screen in a dark room, watched over by a glowing-eyed cat',
+      css: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3a1a 0%, #0a1a0a 55%, #050c05 100%)',
+      swatchCss: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3a1a 0%, #050c05 100%)' },
+    { id: 'wp_infinite_desktop',  type: REWARD_TYPE_WALLPAPER, name: 'Infinite Desktop',    description: 'A vanishing-point grid stretching out forever into a violet void',
+      css: 'linear-gradient(to bottom, #0d0020 0%, #1a0040 45%, #2a0060 65%, #3d0080 80%, #1a0040 100%)',
+      swatchCss: 'linear-gradient(to bottom, #0d0020 0%, #3d0080 70%, #1a0040 100%)' },
+    { id: 'wp_retro_clouds',      type: REWARD_TYPE_WALLPAPER, name: 'Retro Clouds',        description: 'Crisp pixel clouds drifting across a sky the exact blue of 1995',
+      css: 'linear-gradient(to bottom, #4a90d9 0%, #6ab0f0 40%, #88c8ff 70%, #a8deff 100%)',
+      swatchCss: 'linear-gradient(to bottom, #4a90d9 0%, #a8deff 100%)' },
+    { id: 'wp_midnight',          type: REWARD_TYPE_WALLPAPER, name: 'Midnight',             description: 'The hour between late night and early morning, captured in gradient form',
+      css: 'linear-gradient(to bottom, #000510 0%, #020b24 35%, #040e30 65%, #01081a 100%)',
+      swatchCss: 'linear-gradient(to bottom, #000510 0%, #040e30 60%, #01081a 100%)' },
+
+    // Screensavers
+    { id: 'ss_feed_slideshow',   type: REWARD_TYPE_SCREENSAVER, name: 'Feed Slideshow',   description: 'Your shared links drift past like memories on a slow carousel',
+      swatchCss: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' },
+    { id: 'ss_bouncing_logo',    type: REWARD_TYPE_SCREENSAVER, name: 'Bouncing Logo',    description: 'The classic. It almost hit the corner. You were there',
+      swatchCss: 'linear-gradient(135deg, #000 0%, #111 50%, #222 100%)' },
+
+    // Sound packs
+    { id: 'snd_cute',            type: REWARD_TYPE_SOUND_PACK, name: 'Cute & Cozy',       description: 'Soft chimes, gentle pops, and one very small meow', icon: '🌟' },
+    { id: 'snd_garden_pack',     type: REWARD_TYPE_SOUND_PACK, name: 'Garden Ambience',   description: 'Wind through leaves, distant bees, and a wood frog', icon: '🌿' },
+
+    // Cat accessories
+    { id: 'cat_sunglasses',      type: REWARD_TYPE_CAT_ACCESSORY, name: 'Cool Shades',      description: 'For when the cat needs to look like they own the place', icon: '😎', faceDecor: '😎' },
+    { id: 'cat_wizard_hat',      type: REWARD_TYPE_CAT_ACCESSORY, name: 'Wizard Hat',       description: 'It confers no magical powers. The cat disagrees',          icon: '🧙', faceDecor: '🧙' },
+    { id: 'cat_explorer',        type: REWARD_TYPE_CAT_ACCESSORY, name: 'Explorer Kit',     description: 'A tiny map and tinier compass. Adventures await',           icon: '🗺️', faceDecor: '🗺️' },
+    { id: 'cat_flower_crown',    type: REWARD_TYPE_CAT_ACCESSORY, name: 'Flower Crown',     description: 'Woven with care. The cat tolerates it with grace',          icon: '🌸', faceDecor: '🌸' },
+
+    // Desktop themes
+    { id: 'theme_glass',         type: REWARD_TYPE_DESKTOP_THEME, name: 'Frosted Glass',   description: 'Soft blur and ice-white highlights — everything feels just out of focus',
+      swatchCss: 'linear-gradient(135deg, rgba(200,220,255,0.6) 0%, rgba(180,210,240,0.4) 50%, rgba(220,235,255,0.7) 100%)' },
+    { id: 'theme_pixel',         type: REWARD_TYPE_DESKTOP_THEME, name: 'Pixel Art',        description: 'Hard edges, limited palette, maximum charm',
+      swatchCss: 'linear-gradient(135deg, #2d6a4f 0%, #1b4332 50%, #081c15 100%)' },
+    { id: 'theme_crt',           type: REWARD_TYPE_DESKTOP_THEME, name: 'CRT Mode',         description: 'Scanlines and phosphor glow. Your eyes will adjust. Probably',
+      swatchCss: 'linear-gradient(135deg, #003300 0%, #001a00 50%, #000800 100%)' },
+
+    // Garden unlocks (second set)
+    { id: 'garden_butterflies',  type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Garden Butterflies', description: 'Painted wings drift between the blooms in the morning light', icon: '[G]' },
+    { id: 'garden_rain',         type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Gentle Rain',         description: 'A soft patter on the leaves. The kind you want to stay in',   icon: '[G]' },
+    { id: 'garden_frogs',        type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Frog Friends',        description: 'They appeared overnight. They seem content. All is well',      icon: '[G]' },
+
+    // Console commands (second set — unlocked by Power User)
+    { id: 'cmd_linkstats',  type: REWARD_TYPE_CONSOLE_COMMAND, name: '/linkstats', description: 'Show your link-sharing history and top domains', icon: '[>_]' },
+    { id: 'cmd_whoami',     type: REWARD_TYPE_CONSOLE_COMMAND, name: '/whoami',    description: 'Your full profile: level, XP, stats, and hidden lore', icon: '[>_]' },
 ];
 
 // ---- Reward unlock state ----
@@ -6982,7 +7382,7 @@ async function unlockAchievement(id) {
     }
 }
 
-function afterPostCreated() {
+function afterPostCreated(newPostType) {
     unlockAchievement('first_post');
     // allPosts hasn't yet received the Firebase onValue update for the just-pushed post,
     // so add 1 to the current count to include it.
@@ -6994,6 +7394,13 @@ function afterPostCreated() {
     if (myCount >= 30)  unlockAchievement('thirty_posts');
     if (myCount >= 50)  unlockAchievement('fifty_posts');
     if (myCount >= 100) unlockAchievement('hundred_posts');
+
+    // Link-sharing achievements — count existing link posts + this new one if it's a link
+    const isNewLink = !newPostType || newPostType === 'link';
+    const myLinkCount = myPosts.filter(p => !p.type || p.type === 'link').length + (isNewLink ? 1 : 0);
+    if (myLinkCount >= 1)  unlockAchievement('first_transmission');
+    if (myLinkCount >= 10) unlockAchievement('link_hoarder_10');
+    if (myLinkCount >= 50) unlockAchievement('link_hoarder_50');
 
     // Post-length achievements — read body from form (not yet reset at this point).
     const bodyEl = document.getElementById('postBody');
@@ -7010,6 +7417,7 @@ function afterPostCreated() {
     // XP / meta — check after all other unlocks above have fired.
     if (xpToLevel(xpTotal) >= 5)        unlockAchievement('level_5');
     if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+    if (unlockedAchievements.size >= 10) unlockAchievement('power_user');
 
     // Mythic: track daily post action
     if (currentUser) {
@@ -7140,15 +7548,90 @@ async function backfillAchievements() {
     const catCount = Number(localStorage.getItem('catActionCount') || 0);
     if (catCount >= 1)  await unlockAchievement('first_cat_action');
     if (catCount >= 10) await unlockAchievement('ten_cat_actions');
+    if (catCount >= 25) await unlockAchievement('cat_whisperer');
+
+    // ---- Cat interact days ----
+    try {
+        const catDays = JSON.parse(localStorage.getItem('catInteractDays') || '[]').length;
+        if (catDays >= 3) await unlockAchievement('explorer_cat');
+    } catch (_) {}
+
+    // ---- Soft Paws ----
+    const catAchCountBf = ['first_cat_action','ten_cat_actions','cat_whisperer','explorer_cat']
+        .filter(id => unlockedAchievements.has(id)).length;
+    if (catAchCountBf >= 3) await unlockAchievement('soft_paws');
 
     // ---- Garden talk (already in localStorage as garden_talkCount) ----
     const talkCount = Number(localStorage.getItem('garden_talkCount') || 0);
     if (talkCount >= 1)  await unlockAchievement('first_garden_talk');
     if (talkCount >= 10) await unlockAchievement('ten_garden_talks');
 
+    // ---- Link posts (retroactive from allPosts) ----
+    const myLinkCountBf = Object.values(allPosts).filter(p => p.author === currentUser && (!p.type || p.type === 'link') && p.url).length;
+    if (myLinkCountBf >= 1)  await unlockAchievement('first_transmission');
+    if (myLinkCountBf >= 10) await unlockAchievement('link_hoarder_10');
+    if (myLinkCountBf >= 50) await unlockAchievement('link_hoarder_50');
+
+    // ---- Deep Reader (retroactive from readBy on link posts by the other user) ----
+    const otherUser     = currentUser === 'El' ? 'Tero' : 'El';
+    const linksReadBf   = Object.values(allPosts).filter(p =>
+        p.author === otherUser && (!p.type || p.type === 'link') && p.url && p.readBy && p.readBy[currentUser]
+    ).length;
+    // Seed localStorage if the stored value is lower than what Firebase knows
+    const storedLinksOpened = Number(localStorage.getItem('linksOpenedCount') || 0);
+    if (linksReadBf > storedLinksOpened) {
+        localStorage.setItem('linksOpenedCount', String(linksReadBf));
+    }
+    if (Math.max(linksReadBf, storedLinksOpened) >= 25) await unlockAchievement('deep_reader');
+
+    // ---- Garden visit milestones (new set) ----
+    const visitCountBf = Object.keys(gardenVisitDays).length;
+    if (visitCountBf >= 3) await unlockAchievement('digital_gardener');
+    if (visitCountBf >= 5) await unlockAchievement('frog_friend');
+
+    // ---- Site visit days (localStorage-based) ----
+    try {
+        const svDays = JSON.parse(localStorage.getItem('siteVisitDays') || '[]').length;
+        if (svDays >= 5) await unlockAchievement('rainy_day');
+    } catch (_) {}
+
+    // ---- Night/morning visit counts (localStorage-based) ----
+    const nightVis   = Number(localStorage.getItem('nightVisitCount') || 0);
+    const morningVis = Number(localStorage.getItem('morningVisitCount') || 0);
+    if (nightVis >= 5)   await unlockAchievement('night_visits');
+    if (morningVis >= 5) await unlockAchievement('morning_visits');
+
+    // ---- Console usage (localStorage-based) ----
+    const cmdUsesBf = Number(localStorage.getItem('consoleCommandCount') || 0);
+    if (cmdUsesBf >= 10) await unlockAchievement('console_wizard');
+
+    // ---- Window moves (localStorage-based) ----
+    const winMovesBf = Number(localStorage.getItem('windowMoveCount') || 0);
+    if (winMovesBf >= 20) await unlockAchievement('window_tinkerer');
+
+    // ---- Window opens (localStorage-based) ----
+    const winOpensBf = Number(localStorage.getItem('windowOpenCount') || 0);
+    if (winOpensBf >= 10) await unlockAchievement('bouncer');
+
+    // ---- Wallpaper changes (localStorage-based) ----
+    const wpChangesBf = Number(localStorage.getItem('wallpaperChangeCount') || 0);
+    if (wpChangesBf >= 5) await unlockAchievement('pixel_mood');
+
+    // ---- Screensaver (localStorage-based) ----
+    const ssBf = Number(localStorage.getItem('screensaverTriggeredCount') || 0);
+    if (ssBf >= 1) await unlockAchievement('idle_dreamer');
+
+    // ---- Curious Mind (localStorage-based) ----
+    try {
+        const seenApps = new Set(JSON.parse(localStorage.getItem('openedApps') || '[]'));
+        const allSeen  = [..._CURIOUS_MIND_APPS].every(a => seenApps.has(a));
+        if (allSeen) await unlockAchievement('curious_mind');
+    } catch (_) {}
+
     // XP / meta — checked last so all prior unlocks are counted.
     if (xpToLevel(xpTotal) >= 5)        await unlockAchievement('level_5');
     if (unlockedAchievements.size >= 25) await unlockAchievement('unlock_25');
+    if (unlockedAchievements.size >= 10) await unlockAchievement('power_user');
 
     await checkMythics();
     renderAchievementsWindow();
@@ -7188,7 +7671,25 @@ function _afterCatAction() {
     localStorage.setItem('catActionCount', String(count));
     unlockAchievement('first_cat_action');
     if (count >= 10) unlockAchievement('ten_cat_actions');
+    if (count >= 25) unlockAchievement('cat_whisperer');
+
+    // Track unique cat-interact days for Explorer Cat achievement
+    try {
+        const daysKey  = 'catInteractDays';
+        const days     = new Set(JSON.parse(localStorage.getItem(daysKey) || '[]'));
+        const today    = new Date().toISOString().slice(0, 10);
+        days.add(today);
+        localStorage.setItem(daysKey, JSON.stringify([...days]));
+        if (days.size >= 3) unlockAchievement('explorer_cat');
+    } catch (_) {}
+
+    // Soft Paws — check cat achievement count
+    const catAchCount = ['first_cat_action','ten_cat_actions','cat_whisperer','explorer_cat']
+        .filter(id => unlockedAchievements.has(id)).length;
+    if (catAchCount >= 3) unlockAchievement('soft_paws');
+
     if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+    if (unlockedAchievements.size >= 10) unlockAchievement('power_user');
 }
 
 // Called after talking to the garden plant. count is the new total.
@@ -7196,6 +7697,7 @@ function _afterGardenTalk(count) {
     unlockAchievement('first_garden_talk');
     if (count >= 10) unlockAchievement('ten_garden_talks');
     if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+    if (unlockedAchievements.size >= 10) unlockAchievement('power_user');
 }
 
 // ---- Console command state (used by slash-command gating) ----
@@ -7508,9 +8010,11 @@ function renderAchievementsWindow() {
         if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-achievements', 'ACHIEVEMENTS', () => {
             if (win.classList.contains('is-hidden')) show(); else hide();
         });
+        const _wasHiddenAch = win.classList.contains('is-hidden');
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow('w95-win-achievements');
         localStorage.setItem('w95_achievements_open', '1');
+        if (_wasHiddenAch) _trackWindowOpen('achievements');
     }
     function hide() {
         win.classList.add('is-hidden');
@@ -7567,12 +8071,14 @@ function renderAchievementsWindow() {
     let btn = null;
 
     function showMailbox() {
+        const _wasHiddenMb = win.classList.contains('is-hidden');
         if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-mailbox', 'MAILBOX', () => {
             if (win.classList.contains('is-hidden')) showMailbox(); else hideMailbox();
         });
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow('w95-win-mailbox');
         renderMailbox();
+        if (_wasHiddenMb) _trackWindowOpen('mailbox');
     }
 
     function hideMailbox() {
@@ -7628,11 +8134,13 @@ function renderAchievementsWindow() {
     let btn = null;
 
     function showJukebox() {
+        const _wasHiddenJb = win.classList.contains('is-hidden');
         if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-jukebox', 'JUKEBOX', () => {
             if (win.classList.contains('is-hidden')) showJukebox(); else hideJukebox();
         });
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow('w95-win-jukebox');
+        if (_wasHiddenJb) _trackWindowOpen('jukebox');
     }
 
     function hideJukebox() {
@@ -7849,12 +8357,14 @@ function applyIconPositions() {
     let btn = null;
 
     function showFeed() {
+        const _wasHiddenFeed = win.classList.contains('is-hidden');
         if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-feed', 'FEED', () => {
             if (win.classList.contains('is-hidden')) showFeed(); else hideFeed();
         });
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow('w95-win-feed');
         localStorage.setItem('w95_feed_open', '1');
+        if (_wasHiddenFeed) _trackWindowOpen('feed');
     }
 
     function hideFeed() {
@@ -8427,7 +8937,7 @@ async function loadUserWallpaper() {
             sw.appendChild(lbl);
             sw.addEventListener('click', () => {
                 wpSelectedId = wp.id;
-                applyWallpaper(wpSelectedId);
+                applyWallpaper(wpSelectedId, true);
                 if (preview) preview.style.background = wp.css;
                 grid.querySelectorAll('.wallpaper-swatch, .reward-item--wallpaper').forEach(s => s.classList.remove('selected'));
                 sw.classList.add('selected');
@@ -8478,7 +8988,7 @@ async function loadUserWallpaper() {
                     sw.addEventListener('click', () => {
                         markRewardSeen(rw.id);
                         wpSelectedId = rw.id;
-                        applyWallpaper(wpSelectedId);
+                        applyWallpaper(wpSelectedId, true);
                         if (preview) preview.style.background = rw.swatchCss || rw.css;
                         grid.querySelectorAll('.wallpaper-swatch, .reward-item--wallpaper').forEach(s => s.classList.remove('selected'));
                         sw.classList.add('selected');
@@ -8674,7 +9184,7 @@ async function loadUserWallpaper() {
                     markRewardSeen(th.id);
                     const newActive = activeTheme === th.id ? '' : th.id;
                     localStorage.setItem('activeDesktopTheme', newActive);
-                    applyDesktopTheme(newActive);
+                    applyDesktopTheme(newActive, true);
                     renderRewardThemes();
                 });
             }
@@ -8920,11 +9430,13 @@ async function loadUserWallpaper() {
 
     // ---- Show / hide ----
     function show(tab) {
+        const _wasHiddenSettings = win.classList.contains('is-hidden');
         takeSnap();
         populateControls();
         if (tab) switchTab(tab); else switchTab(activeTab);
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow(WIN_ID);
+        if (_wasHiddenSettings) _trackWindowOpen('settings');
     }
 
     function hide() {
@@ -9006,6 +9518,7 @@ async function loadUserWallpaper() {
     }
 
     function showCat() {
+        const _wasHiddenCat = win.classList.contains('is-hidden');
         initPixelCat(); // ensure mascot helpers (_catLocalEmote etc.) are ready
         if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-cat', 'CAT', () => {
             if (win.classList.contains('is-hidden')) showCat(); else hideCat();
@@ -9018,6 +9531,7 @@ async function loadUserWallpaper() {
         renderCatBehaviours();
         // Desktop cat notices Cat.exe being opened and walks toward it
         window._catController?.onCatOpen();
+        if (_wasHiddenCat) _trackWindowOpen('cat');
     }
 
     function hideCat() {
@@ -11269,6 +11783,10 @@ function initPixelCat() {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawFrame();
         }
+        // Track screensaver activation for Idle Dreamer achievement
+        const ssTriggers = Number(localStorage.getItem('screensaverTriggeredCount') || 0) + 1;
+        localStorage.setItem('screensaverTriggeredCount', String(ssTriggers));
+        unlockAchievement('idle_dreamer');
     }
 
     function stop() {
@@ -11598,6 +12116,8 @@ function initPixelCat() {
         letters:    { rewardId: 'cmd_letters',    desc: 'Your letter stats' },
         catstats:   { rewardId: 'cmd_catstats',   desc: 'Your cat care stats' },
         gardenlog:  { rewardId: 'cmd_gardenlog',  desc: 'Your garden talk count' },
+        linkstats:  { rewardId: 'cmd_linkstats',  desc: 'Your link-sharing history' },
+        whoami:     { rewardId: 'cmd_whoami',     desc: 'Your full profile overview' },
     };
 
     function isGatedCmdUnlocked(cmd) {
@@ -11734,6 +12254,51 @@ function initPixelCat() {
             if (talks === 0) print('  (try the "Talk to Garden" button!)');
         },
 
+        linkstats() {
+            if (!currentUser) { print('Sign in first.', 'console-line-err'); return; }
+            print('--- LINK STATS ---', 'console-line-header');
+            const myLinks = Object.values(allPosts).filter(p => p.author === currentUser && (!p.type || p.type === 'link') && p.url);
+            const domainCounts = {};
+            myLinks.forEach(p => {
+                const d = p.url.match(/https?:\/\/([^\/]+)/)?.[1]?.replace('www.', '') || 'unknown';
+                domainCounts[d] = (domainCounts[d] || 0) + 1;
+            });
+            print(`  Links shared: ${myLinks.length}`);
+            const sorted = Object.entries(domainCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            if (sorted.length > 0) {
+                printBlank();
+                print('  Top domains:', 'console-line-dim');
+                sorted.forEach(([d, n]) => print(`    ${d.padEnd(28)} ${n}`));
+            }
+            const linksRead = Number(localStorage.getItem('linksOpenedCount') || 0);
+            printBlank();
+            print(`  Links opened (theirs):  ${linksRead}`);
+        },
+
+        whoami() {
+            if (!currentUser) { print('Sign in first.', 'console-line-err'); return; }
+            print('--- PROFILE ---', 'console-line-header');
+            const lvl       = xpToLevel(xpTotal);
+            const achCount  = unlockedAchievements.size;
+            const myLinks   = Object.values(allPosts).filter(p => p.author === currentUser && (!p.type || p.type === 'link') && p.url).length;
+            const catDays   = (() => { try { return JSON.parse(localStorage.getItem('catInteractDays') || '[]').length; } catch(_) { return 0; } })();
+            const visitDays = (() => { try { return JSON.parse(localStorage.getItem('siteVisitDays') || '[]').length; } catch(_) { return 0; } })();
+            print(`  User:             ${currentUser}`);
+            print(`  Garden Level:     ${lvl}  (${xpTotal} XP)`);
+            print(`  Achievements:     ${achCount} / ${ACHIEVEMENTS.length}`);
+            printBlank();
+            print(`  Posts:            ${getMyPostCount()}`);
+            print(`  Links shared:     ${myLinks}`);
+            print(`  Cat days:         ${catDays}`);
+            print(`  Days visited:     ${visitDays}`);
+            printBlank();
+            const nightVisits   = Number(localStorage.getItem('nightVisitCount') || 0);
+            const morningVisits = Number(localStorage.getItem('morningVisitCount') || 0);
+            if (nightVisits > 0 || morningVisits > 0) {
+                print(`  Night visits:     ${nightVisits}   Morning visits: ${morningVisits}`, 'console-line-dim');
+            }
+        },
+
         // ---- Easter eggs ----
         spin()        { _eggSpin();        print('The icons are dizzy.', 'console-line-egg'); },
         dance()       { _eggDance();       print('(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ dance break!', 'console-line-egg'); },
@@ -11816,6 +12381,11 @@ function initPixelCat() {
         if (handler) {
             handler(args);
             sparkSound('cmd_success');
+            // Track console use for Console Wizard achievement
+            const cmdUses = Number(localStorage.getItem('consoleCommandCount') || 0) + 1;
+            localStorage.setItem('consoleCommandCount', String(cmdUses));
+            if (cmdUses >= 10) unlockAchievement('console_wizard');
+            if (unlockedAchievements.size >= 10) unlockAchievement('power_user');
         } else {
             print(`'${cmd}' is not recognized as a command.`, 'console-line-err');
             print("Type 'help' for a list of commands.", 'console-line-dim');
@@ -11852,12 +12422,14 @@ function initPixelCat() {
 
     // ---- Show / hide ----
     function show() {
+        const _wasHiddenConsole = win.classList.contains('is-hidden');
         if (!taskbarBtn) taskbarBtn = w95Mgr.addTaskbarBtn('w95-win-console', 'CONSOLE', () => {
             if (win.classList.contains('is-hidden')) show(); else hide();
         });
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow('w95-win-console');
         localStorage.setItem('w95_console_open', '1');
+        if (_wasHiddenConsole) _trackWindowOpen('console');
         if (output.children.length === 0) {
             print('Personal Feed Console  v1.0', 'console-line-header');
             print('Type \'help\' for available commands.', 'console-line-dim');
