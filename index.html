@@ -1113,8 +1113,19 @@
     <!-- Screensaver tab -->
     <div class="settings-panel is-hidden" id="stab-screensaver" role="tabpanel">
       <label class="settings-check-row">
-        <input type="checkbox" id="settings-screensaver-chk"> Enable screensaver (activates after 5 min idle)
+        <input type="checkbox" id="settings-screensaver-chk"> Enable screensaver
       </label>
+      <div class="settings-row" style="margin-top:6px; display:flex; align-items:center; gap:8px;">
+        <label for="settings-ss-idle" style="white-space:nowrap;">Idle time:</label>
+        <select id="settings-ss-idle" class="settings-select">
+          <option value="1">1 minute</option>
+          <option value="2">2 minutes</option>
+          <option value="5">5 minutes</option>
+          <option value="10">10 minutes</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+        </select>
+      </div>
       <div class="settings-divider" style="margin-top:8px;"></div>
       <div class="settings-group-label" style="margin-top:6px;">Style</div>
       <div class="ss-picker" id="ss-picker">

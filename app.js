@@ -7975,8 +7975,9 @@ async function loadUserWallpaper() {
             sndConsole:   sndConsole,
             motion:       localStorage.getItem('motionEnabled') !== 'false',
             boot:         localStorage.getItem('bootEnabled') !== 'false',
-            screensaver:     localStorage.getItem('screensaverEnabled') !== 'false',
-            screensaverType: localStorage.getItem('screensaverType') || 'starfield',
+            screensaver:         localStorage.getItem('screensaverEnabled') !== 'false',
+            screensaverType:     localStorage.getItem('screensaverType') || 'starfield',
+            screensaverIdleTime: localStorage.getItem('screensaverIdleTime') || '5',
         };
     }
 
@@ -8085,6 +8086,7 @@ async function loadUserWallpaper() {
     const motionChk     = document.getElementById('settings-motion-chk');
     const bootChk       = document.getElementById('settings-boot-chk');
     const screensaverChk = document.getElementById('settings-screensaver-chk');
+    const ssIdleSel      = document.getElementById('settings-ss-idle');
 
     if (motionChk) {
         motionChk.addEventListener('change', () => {
@@ -8123,6 +8125,14 @@ async function loadUserWallpaper() {
         });
     });
 
+    // Screensaver idle time
+    if (ssIdleSel) {
+        ssIdleSel.addEventListener('change', () => {
+            localStorage.setItem('screensaverIdleTime', ssIdleSel.value);
+            window._screensaverCtrl?.reset();
+        });
+    }
+
     // ---- Populate controls on open ----
     function populateControls() {
         wpSavedId    = currentWallpaperId;
@@ -8150,6 +8160,7 @@ async function loadUserWallpaper() {
         if (motionChk)      motionChk.checked      = localStorage.getItem('motionEnabled') !== 'false';
         if (bootChk)        bootChk.checked        = localStorage.getItem('bootEnabled') !== 'false';
         if (screensaverChk) screensaverChk.checked = localStorage.getItem('screensaverEnabled') !== 'false';
+        if (ssIdleSel) ssIdleSel.value = localStorage.getItem('screensaverIdleTime') || '5';
 
         const ssType = localStorage.getItem('screensaverType') || 'starfield';
         win.querySelectorAll('input[name="ss-type"]').forEach(r => { r.checked = r.value === ssType; });
@@ -8218,6 +8229,10 @@ async function loadUserWallpaper() {
 
         localStorage.setItem('screensaverType', snap.screensaverType);
         win.querySelectorAll('input[name="ss-type"]').forEach(r => { r.checked = r.value === snap.screensaverType; });
+
+        localStorage.setItem('screensaverIdleTime', snap.screensaverIdleTime);
+        if (ssIdleSel) ssIdleSel.value = snap.screensaverIdleTime;
+        window._screensaverCtrl?.reset();
     }
 
     // ---- Show / hide ----
@@ -10179,7 +10194,10 @@ function initPixelCat() {
 
 // ===== Screensaver (E) — starfield + underwater =====
 (function () {
-    const SS_MS   = 5 * 60 * 1000; // 5 minutes idle
+    function ssIdleMs() {
+        const mins = parseInt(localStorage.getItem('screensaverIdleTime') || '5', 10);
+        return mins * 60 * 1000;
+    }
     const overlay = document.getElementById('screensaver-overlay');
     const canvas  = document.getElementById('screensaver-canvas');
     if (!overlay || !canvas) return;
@@ -10457,7 +10475,7 @@ function initPixelCat() {
 
     function reset() {
         clearTimeout(timer);
-        if (!active && ssEnabled()) timer = setTimeout(start, SS_MS);
+        if (!active && ssEnabled()) timer = setTimeout(start, ssIdleMs());
     }
 
     ['pointermove', 'pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(evt => {
