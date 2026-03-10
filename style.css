@@ -4240,8 +4240,15 @@ body.dark-mode .achievement-item.is-unlocked .ach-progress-count{color:#a0c8a0;}
 }
 .ach-reward-xp{background:#c8e8c8;color:#1a5a1a;border:1px solid #3a7a3a;}
 .ach-reward-cmd{background:#c8d8ff;color:#00008b;border:1px solid #6060c8;}
+/* Generic unlocked reward badge (wallpapers, themes, cat items, etc.) */
+.ach-reward-item{background:#fde8c8;color:#6b3a00;border:1px solid #c87a30;}
+/* Locked reward teaser shown on achievements not yet unlocked */
+.ach-reward-locked{background:#eee;color:#888;border:1px solid #bbb;opacity:0.85;}
+.ach-locked-rewards{margin-top:3px;display:flex;flex-wrap:wrap;gap:3px;}
 body.dark-mode .ach-reward-xp{background:#1a3a1a;color:#7acc7a;border-color:#3a6a3a;}
 body.dark-mode .ach-reward-cmd{background:#1a1a3a;color:#8888ff;border-color:#3a3a7a;}
+body.dark-mode .ach-reward-item{background:#3a2800;color:#ffb86c;border-color:#7a5a20;}
+body.dark-mode .ach-reward-locked{background:#2a2a2a;color:#666;border-color:#444;}
 
 /* ── Silhouette cards (hidden achievements with "Show Unknown" on) ── */
 .achievement-item.is-silhouette{

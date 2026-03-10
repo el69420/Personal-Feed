@@ -6064,16 +6064,15 @@ async function checkVisitSpark() {
 //   hiddenUntilUnlocked – (optional) if true: hidden by default, shows ??? silhouette with "Show Unknown" toggle ON
 //   target              – (optional) numeric goal; enables progress bar
 //   getProgress         – (optional) function() => current count (live, not stored)
-//   rewardType          – (optional) extra reward type beyond XP: 'console_cmd'
-//   rewardId            – (optional) identifier for the reward (e.g. console command name)
+//   rewardIds           – (optional) array of reward ids from REWARD_REGISTRY to unlock
 //
 // To add a new count-based achievement:
 //   { id: 'my_ach', title: 'My Achievement', desc: 'Do X things', icon: '[X]',
 //     xp: 10, tier: 'bronze', target: 5, getProgress: () => /* live counter */ }
 //
-// To add an achievement that unlocks a console command:
-//   Add rewardType: 'console_cmd', rewardId: 'commandname'
-//   AND add the id → command mapping to ACHIEVEMENT_CMD_UNLOCKS below.
+// To add an achievement that unlocks a reward:
+//   1. Add the reward entry to REWARD_REGISTRY (above ACHIEVEMENTS).
+//   2. Add rewardIds: ['your_reward_id'] to the achievement entry here.
 const ACHIEVEMENTS = [
     // ---- Posting ----
     // To adjust XP values: change the `xp` field below. Level formula is flat 100 XP/level.
@@ -6515,8 +6514,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      10,
         getProgress: () => Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0),
-        rewardType:  'console_cmd',
-        rewardId:    'stats',
+        rewardIds:   ['cmd_stats'],
     },
 
     // ---- Reactions ----
@@ -6540,8 +6538,7 @@ const ACHIEVEMENTS = [
             const rxBy = p.reactionsBy || {};
             return acc + Object.values(rxBy).filter(users => users && users[currentUser]).length;
         }, 0),
-        rewardType:  'console_cmd',
-        rewardId:    'reactstats',
+        rewardIds:   ['cmd_reactstats'],
     },
 
     // ---- Letters ----
@@ -6562,8 +6559,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      5,
         getProgress: () => Object.values(allLetters).filter(l => l.from === currentUser).length,
-        rewardType:  'console_cmd',
-        rewardId:    'letters',
+        rewardIds:   ['cmd_letters'],
     },
 
     // ---- Cat ----
@@ -6584,8 +6580,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      10,
         getProgress: () => Number(localStorage.getItem('catActionCount') || 0),
-        rewardType:  'console_cmd',
-        rewardId:    'catstats',
+        rewardIds:   ['cmd_catstats'],
     },
 
     // ---- Garden Talk ----
@@ -6606,8 +6601,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      10,
         getProgress: () => Number(localStorage.getItem('garden_talkCount') || 0),
-        rewardType:  'console_cmd',
-        rewardId:    'gardenlog',
+        rewardIds:   ['cmd_gardenlog'],
     },
 
     // ---- Personalisation ----
@@ -6628,12 +6622,112 @@ const XP_PER_LEVEL = 100;
 function xpToLevel(xp)   { return Math.floor(xp / XP_PER_LEVEL) + 1; }
 function xpForLevel(lvl) { return (lvl - 1) * XP_PER_LEVEL; }  // XP at start of lvl
 
-// ---- Reward types registry ----
-// Maps rewardType → display helper. Other systems can extend this.
-const REWARD_TYPES = {
-    xp:          { label: (_id, ach) => `+${ach.xp} XP`            },
-    console_cmd: { label: (id)       => `Unlocks console: /${id}`   },
-};
+// ============================================================
+// REWARD REGISTRY — central catalogue of all unlockable content
+// ============================================================
+//
+// Each entry shape:
+//   id          – unique string key
+//   type        – one of the reward type constants below
+//   name        – display name shown in popups and the achievements window
+//   description – flavour text / explanation
+//   icon        – Win95-style text icon (optional)
+//
+// To add a new reward type: add a REWARD_TYPE_* constant and entries here.
+// No other part of the app needs to change for the registry to recognise it.
+//
+// To link a reward to an achievement: add its id to the achievement's
+//   rewardIds: ['reward_id_here']  array.
+// ============================================================
+
+const REWARD_TYPE_WALLPAPER       = 'wallpaper';
+const REWARD_TYPE_SCREENSAVER     = 'screensaver';
+const REWARD_TYPE_SOUND_PACK      = 'sound_pack';
+const REWARD_TYPE_CAT_ACCESSORY   = 'cat_accessory';
+const REWARD_TYPE_CAT_BEHAVIOUR   = 'cat_behaviour';
+const REWARD_TYPE_CONSOLE_COMMAND = 'console_command';
+const REWARD_TYPE_DESKTOP_THEME   = 'desktop_theme';
+const REWARD_TYPE_GARDEN_UNLOCK   = 'garden_unlock';
+
+const REWARD_REGISTRY = [
+    // ---- Console commands (unlocked by achievements) ----
+    { id: 'cmd_stats',       type: REWARD_TYPE_CONSOLE_COMMAND, name: '/stats',      description: 'Show your posting statistics',              icon: '[>_]' },
+    { id: 'cmd_reactstats',  type: REWARD_TYPE_CONSOLE_COMMAND, name: '/reactstats', description: 'Show your reaction statistics',              icon: '[>_]' },
+    { id: 'cmd_letters',     type: REWARD_TYPE_CONSOLE_COMMAND, name: '/letters',    description: 'View your sent and received letters',        icon: '[>_]' },
+    { id: 'cmd_catstats',    type: REWARD_TYPE_CONSOLE_COMMAND, name: '/catstats',   description: 'Show cat care statistics',                   icon: '[>_]' },
+    { id: 'cmd_gardenlog',   type: REWARD_TYPE_CONSOLE_COMMAND, name: '/gardenlog',  description: 'View your garden talk history',              icon: '[>_]' },
+
+    // ---- Wallpapers ----
+    { id: 'wp_sakura',       type: REWARD_TYPE_WALLPAPER,       name: 'Sakura Dream',     description: 'A soft pink cherry-blossom background',     icon: '[wp]' },
+    { id: 'wp_nightsky',     type: REWARD_TYPE_WALLPAPER,       name: 'Night Sky',        description: 'Deep indigo with a canopy of stars',         icon: '[wp]' },
+    { id: 'wp_garden',       type: REWARD_TYPE_WALLPAPER,       name: 'Garden View',      description: 'Lush green garden in full bloom',            icon: '[wp]' },
+    { id: 'wp_cozy_rain',    type: REWARD_TYPE_WALLPAPER,       name: 'Cozy Rain',        description: 'Rainy window with warm light inside',        icon: '[wp]' },
+
+    // ---- Screensavers ----
+    { id: 'ss_petals',       type: REWARD_TYPE_SCREENSAVER,     name: 'Falling Petals',   description: 'Slow cascade of flower petals',             icon: '[ss]' },
+    { id: 'ss_starfield',    type: REWARD_TYPE_SCREENSAVER,     name: 'Starfield',        description: 'Flying through a field of stars',           icon: '[ss]' },
+    { id: 'ss_bubbles',      type: REWARD_TYPE_SCREENSAVER,     name: 'Bubbles',          description: 'Gently floating iridescent bubbles',         icon: '[ss]' },
+
+    // ---- Sound packs ----
+    { id: 'snd_cozy',        type: REWARD_TYPE_SOUND_PACK,      name: 'Cozy Café',        description: 'Soft café ambience and chime sounds',       icon: '[♪]'  },
+    { id: 'snd_nature',      type: REWARD_TYPE_SOUND_PACK,      name: 'Nature Walk',      description: 'Birds, wind, and gentle rain sounds',       icon: '[♪]'  },
+    { id: 'snd_retro',       type: REWARD_TYPE_SOUND_PACK,      name: 'Retro Chiptune',   description: '8-bit notification and UI sounds',          icon: '[♪]'  },
+
+    // ---- Cat accessories ----
+    { id: 'cat_bow',         type: REWARD_TYPE_CAT_ACCESSORY,   name: 'Ribbon Bow',       description: 'A cute ribbon bow for the cat',             icon: '[^w^]' },
+    { id: 'cat_hat',         type: REWARD_TYPE_CAT_ACCESSORY,   name: 'Tiny Hat',         description: 'A very small top hat',                      icon: '[^w^]' },
+    { id: 'cat_scarf',       type: REWARD_TYPE_CAT_ACCESSORY,   name: 'Cosy Scarf',       description: 'A warm knitted scarf',                      icon: '[^w^]' },
+    { id: 'cat_glasses',     type: REWARD_TYPE_CAT_ACCESSORY,   name: 'Tiny Glasses',     description: 'Round reading glasses for a studious cat',  icon: '[^w^]' },
+
+    // ---- Cat behaviours ----
+    { id: 'catb_zoomies',    type: REWARD_TYPE_CAT_BEHAVIOUR,   name: 'Zoomies',          description: 'Cat randomly dashes around the screen',     icon: '[~w~]' },
+    { id: 'catb_knead',      type: REWARD_TYPE_CAT_BEHAVIOUR,   name: 'Kneading',         description: 'Cat kneads the screen contentedly',         icon: '[~w~]' },
+    { id: 'catb_loaf',       type: REWARD_TYPE_CAT_BEHAVIOUR,   name: 'Loaf Mode',        description: 'Cat sits in a perfect loaf shape',          icon: '[~w~]' },
+
+    // ---- Desktop themes / effects ----
+    { id: 'theme_pastel',    type: REWARD_TYPE_DESKTOP_THEME,   name: 'Pastel Mode',      description: 'Soft pastel colour palette for the whole UI', icon: '[th]' },
+    { id: 'theme_midnight',  type: REWARD_TYPE_DESKTOP_THEME,   name: 'Midnight',         description: 'Deep-blue theme with subtle star accents',  icon: '[th]' },
+    { id: 'theme_autumn',    type: REWARD_TYPE_DESKTOP_THEME,   name: 'Autumn Leaves',    description: 'Warm amber and rust tones',                 icon: '[th]' },
+
+    // ---- Garden unlocks ----
+    { id: 'garden_fountain', type: REWARD_TYPE_GARDEN_UNLOCK,   name: 'Garden Fountain',  description: 'A decorative fountain for your garden',     icon: '[G]'  },
+    { id: 'garden_lantern',  type: REWARD_TYPE_GARDEN_UNLOCK,   name: 'Paper Lantern',    description: 'A glowing lantern for evening garden visits', icon: '[G]' },
+    { id: 'garden_bench',    type: REWARD_TYPE_GARDEN_UNLOCK,   name: 'Wooden Bench',     description: 'A cosy bench to sit and admire your garden', icon: '[G]' },
+];
+
+// ---- Reward unlock state ----
+// Persisted to localStorage as a JSON array of unlocked reward ids.
+const _rewardStorageKey = 'unlockedRewards';
+let unlockedRewards = new Set(
+    JSON.parse(localStorage.getItem(_rewardStorageKey) || '[]')
+);
+
+// Returns true if the reward with the given id is currently unlocked.
+function isRewardUnlocked(rewardId) {
+    return unlockedRewards.has(rewardId);
+}
+
+// Marks a reward as unlocked. Returns true if this was a new unlock.
+// Also keeps unlockedConsoleCmds in sync for slash-command gating.
+function unlockReward(rewardId) {
+    if (unlockedRewards.has(rewardId)) return false;
+    const reward = REWARD_REGISTRY.find(r => r.id === rewardId);
+    if (!reward) return false;
+    unlockedRewards.add(rewardId);
+    localStorage.setItem(_rewardStorageKey, JSON.stringify([...unlockedRewards]));
+    if (reward.type === REWARD_TYPE_CONSOLE_COMMAND) {
+        const cmdName = reward.name.replace(/^\//, '');
+        unlockedConsoleCmds.add(cmdName);
+        localStorage.setItem(_consoleCmdsKey, JSON.stringify([...unlockedConsoleCmds]));
+    }
+    return true;
+}
+
+// Returns all unlocked rewards of a given type.
+// e.g. getUnlockedRewardsByType(REWARD_TYPE_WALLPAPER)
+function getUnlockedRewardsByType(type) {
+    return REWARD_REGISTRY.filter(r => r.type === type && unlockedRewards.has(r.id));
+}
 
 // ---- Achievement state ----
 // Map of id -> unixTimestamp (ms) for every unlocked achievement.
@@ -6669,11 +6763,14 @@ function _drainAchPopupQueue() {
     const tierColor    = TIER_COLORS[achievement.tier] || '#3a7a3a';
     const tierLabel    = TIER_LABELS[achievement.tier] || '';
 
-    // Build reward line(s)
+    // Build reward line(s) — XP first, then named rewards from the registry
     let rewardLines = [];
     if (xpGain > 0) rewardLines.push(`+${xpGain} XP`);
-    if (achievement.rewardType === 'console_cmd' && achievement.rewardId) {
-        rewardLines.push(`Console unlocked: /${achievement.rewardId}`);
+    if (Array.isArray(achievement.rewardIds)) {
+        for (const rId of achievement.rewardIds) {
+            const reward = REWARD_REGISTRY.find(r => r.id === rId);
+            if (reward) rewardLines.push(`Unlocked: ${reward.name}`);
+        }
     }
     const rewardHtml = rewardLines.length
         ? `<div class="ach-popup__reward">${rewardLines.map(r => `<span>${safeText(r)}</span>`).join('')}</div>`
@@ -6752,7 +6849,7 @@ async function initAchievements() {
         }
 
         _initXpNotifiedThresholds();
-        _seedConsoleCmds();
+        _seedUnlockedRewards();
         renderAchievementsWindow();
         await backfillAchievements();
     } catch (e) {
@@ -6792,8 +6889,14 @@ async function unlockAchievement(id) {
             showToast(`✨ Level up! Garden Level ${levelAfter}`);
         }
 
+        // Unlock any rewards linked to this achievement via the reward registry.
+        if (achievement?.rewardIds?.length) {
+            for (const rId of achievement.rewardIds) {
+                unlockReward(rId);
+            }
+        }
+
         renderAchievementsWindow();
-        _checkConsoleCmdUnlock(id);
     } catch (e) {
         console.error('unlockAchievement failed', e);
     }
@@ -7015,37 +7118,31 @@ function _afterGardenTalk(count) {
     if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
 }
 
-// ---- Console command unlocks (achievement-gated) ----
-// Maps achievement id → console command name unlocked when that achievement fires.
-const ACHIEVEMENT_CMD_UNLOCKS = {
-    'ten_replies':          'stats',
-    'twentyfive_reactions': 'reactstats',
-    'five_letters':         'letters',
-    'ten_cat_actions':      'catstats',
-    'ten_garden_talks':     'gardenlog',
-};
-
-// Set of currently unlocked console commands, persisted to localStorage.
+// ---- Console command state (used by slash-command gating) ----
+// Derived from the reward registry — any console_command reward that is unlocked
+// is also present in this set. unlockReward() keeps both in sync.
 const _consoleCmdsKey = 'unlockedConsoleCmds';
 let unlockedConsoleCmds = new Set(
     JSON.parse(localStorage.getItem(_consoleCmdsKey) || '[]')
 );
 
-function _checkConsoleCmdUnlock(achievementId) {
-    const cmd = ACHIEVEMENT_CMD_UNLOCKS[achievementId];
-    if (cmd && !unlockedConsoleCmds.has(cmd)) {
-        unlockedConsoleCmds.add(cmd);
-        localStorage.setItem(_consoleCmdsKey, JSON.stringify([...unlockedConsoleCmds]));
-        showToast(`Console command unlocked: ${cmd}`);
-    }
-}
-
-// Seed unlockedConsoleCmds from already-unlocked achievements on load.
-function _seedConsoleCmds() {
+// Seed unlockedRewards (and unlockedConsoleCmds) from already-unlocked achievements on load.
+// This ensures users who unlocked achievements before the reward registry shipped
+// don't lose their rewards on first load.
+function _seedUnlockedRewards() {
     for (const [id] of unlockedAchievements) {
-        const cmd = ACHIEVEMENT_CMD_UNLOCKS[id];
-        if (cmd) unlockedConsoleCmds.add(cmd);
+        const ach = ACHIEVEMENTS.find(a => a.id === id);
+        if (!ach?.rewardIds) continue;
+        for (const rId of ach.rewardIds) {
+            const reward = REWARD_REGISTRY.find(r => r.id === rId);
+            if (!reward) continue;
+            unlockedRewards.add(rId);
+            if (reward.type === REWARD_TYPE_CONSOLE_COMMAND) {
+                unlockedConsoleCmds.add(reward.name.replace(/^\//, ''));
+            }
+        }
     }
+    localStorage.setItem(_rewardStorageKey, JSON.stringify([...unlockedRewards]));
     localStorage.setItem(_consoleCmdsKey, JSON.stringify([...unlockedConsoleCmds]));
 }
 
@@ -7145,12 +7242,17 @@ function renderAchievementsWindow() {
             );
         }
 
-        // Reward badge
+        // Reward badges — XP first, then named rewards from the registry
         let rewardBadge = '';
         if (isUnlocked) {
             if (a.xp) rewardBadge += `<span class="ach-reward-badge ach-reward-xp">+${a.xp} XP</span>`;
-            if (a.rewardType === 'console_cmd' && a.rewardId) {
-                rewardBadge += `<span class="ach-reward-badge ach-reward-cmd">/${safeText(a.rewardId)}</span>`;
+            if (Array.isArray(a.rewardIds)) {
+                for (const rId of a.rewardIds) {
+                    const reward = REWARD_REGISTRY.find(r => r.id === rId);
+                    if (!reward) continue;
+                    const cls = reward.type === REWARD_TYPE_CONSOLE_COMMAND ? 'ach-reward-cmd' : 'ach-reward-item';
+                    rewardBadge += `<span class="ach-reward-badge ${cls}" title="${safeText(reward.description)}">${safeText(reward.name)}</span>`;
+                }
             }
         }
 
@@ -7166,13 +7268,23 @@ function renderAchievementsWindow() {
                 `</div>`;
         }
 
+        // Locked reward preview — show what the achievement would unlock (teaser)
+        let lockedRewardHtml = '';
+        if (!isUnlocked && Array.isArray(a.rewardIds) && a.rewardIds.length) {
+            const previews = a.rewardIds.map(rId => {
+                const r = REWARD_REGISTRY.find(x => x.id === rId);
+                return r ? `<span class="ach-reward-badge ach-reward-locked" title="${safeText(r.description)}">🔒 ${safeText(r.name)}</span>` : '';
+            }).join('');
+            if (previews) lockedRewardHtml = `<div class="ach-locked-rewards">${previews}</div>`;
+        }
+
         // Bottom meta row (unlock date + reward badges)
         const dateStr  = isUnlocked ? `Unlocked ${fmtDate(ts)}` : '';
         const metaHtml = (isUnlocked)
             ? `<div class="ach-meta-row"><span class="achievement-unlocked-date">${dateStr}</span>${rewardBadge}</div>`
             : (a.target
-                ? ''   // progress row already shown; no extra meta needed
-                : `<div class="achievement-unlocked-date achievement-unlocked-date--placeholder"></div>`);
+                ? lockedRewardHtml   // progress row shown; only add locked reward preview if present
+                : `<div class="achievement-unlocked-date achievement-unlocked-date--placeholder"></div>${lockedRewardHtml}`);
 
         let itemClass = 'achievement-item achievement-card';
         if (isUnlocked) itemClass += ' is-unlocked';
