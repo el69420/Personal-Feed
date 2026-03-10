@@ -8660,7 +8660,7 @@ function initPixelCat() {
         [0,1,0,0,0,0,1,0],  // row 1 – ear tips (shifted down)
         [1,3,1,0,0,1,3,1],  // row 2 – ears with pink inner
         [1,2,2,2,2,2,2,1],  // row 3 – face
-        [1,2,1,1,1,1,2,1],  // row 4 – closed eyes (solid horizontal bar)
+        [1,2,1,2,2,1,2,1],  // row 4 – closed eyes (two separate dots, gap in centre)
         [1,2,2,2,2,2,2,1],  // row 5 – body
         [1,2,2,2,2,2,2,1],  // row 6 – body
         [0,1,2,2,2,2,1,0],  // row 7 – body bottom
