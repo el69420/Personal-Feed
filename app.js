@@ -521,9 +521,11 @@ function sparkSound(type, category) {
                 { f: 196.00, t: 0.09, dur: 0.14 },   // G3
             ],
             ach: [
-                { f: 659.25, t: 0.00, dur: 0.10 },   // E5
-                { f: 783.99, t: 0.10, dur: 0.10 },   // G5
-                { f: 1046.5, t: 0.20, dur: 0.28 }    // C6 (held)
+                { f: 523.25, t: 0.00, dur: 0.08 },   // C5
+                { f: 659.25, t: 0.08, dur: 0.08 },   // E5
+                { f: 783.99, t: 0.16, dur: 0.08 },   // G5
+                { f: 1046.5, t: 0.24, dur: 0.10 },   // C6
+                { f: 1318.5, t: 0.34, dur: 0.30 },   // E6 (triumphant hold)
             ]
         };
 
@@ -6053,17 +6055,25 @@ async function checkVisitSpark() {
 
 // Achievement definitions.
 // Fields:
-//   id          – unique string key (matches Firebase key)
-//   title       – display name
-//   desc        – description
-//   icon        – Win95-style text icon shown when locked
-//   hidden      – (optional) if true and locked: show "???" / "Keep going…"
-//   target      – (optional) numeric goal; enables progress bar
-//   getProgress – (optional) function() => current count (live, not stored)
+//   id                  – unique string key (matches Firebase key)
+//   title               – display name
+//   desc                – description / flavour text shown in UI and popup
+//   icon                – Win95-style text icon
+//   xp                  – XP reward on first unlock
+//   tier                – 'bronze' | 'silver' | 'gold' | 'mythic'
+//   hiddenUntilUnlocked – (optional) if true: hidden by default, shows ??? silhouette with "Show Unknown" toggle ON
+//   target              – (optional) numeric goal; enables progress bar
+//   getProgress         – (optional) function() => current count (live, not stored)
+//   rewardType          – (optional) extra reward type beyond XP: 'console_cmd'
+//   rewardId            – (optional) identifier for the reward (e.g. console command name)
 //
 // To add a new count-based achievement:
 //   { id: 'my_ach', title: 'My Achievement', desc: 'Do X things', icon: '[X]',
-//     target: 5, getProgress: () => /* live counter expression */ }
+//     xp: 10, tier: 'bronze', target: 5, getProgress: () => /* live counter */ }
+//
+// To add an achievement that unlocks a console command:
+//   Add rewardType: 'console_cmd', rewardId: 'commandname'
+//   AND add the id → command mapping to ACHIEVEMENT_CMD_UNLOCKS below.
 const ACHIEVEMENTS = [
     // ---- Posting ----
     // To adjust XP values: change the `xp` field below. Level formula is flat 100 XP/level.
@@ -6364,85 +6374,85 @@ const ACHIEVEMENTS = [
 
     // ---- Hidden / Mythic ----
     {
-        id:     'night_owl',
-        title:  'Night Owl',
-        desc:   'Do something between midnight and 4:59 AM',
-        icon:   '[O]',
-        hidden: true,
-        tier:   'mythic',
-        xp:     30,
+        id:                  'night_owl',
+        title:               'Night Owl',
+        desc:                'Do something between midnight and 4:59 AM',
+        icon:                '[O]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  30,
     },
     {
-        id:     'early_bird',
-        title:  'Early Bird',
-        desc:   'Do something between 5:00 and 7:59 AM',
-        icon:   '[E]',
-        hidden: true,
-        tier:   'mythic',
-        xp:     30,
+        id:                  'early_bird',
+        title:               'Early Bird',
+        desc:                'Do something between 5:00 and 7:59 AM',
+        icon:                '[E]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  30,
     },
     {
-        id:     'anniversary_mode',
-        title:  'Anniversary Mode',
-        desc:   'Visit on a very special day',
-        icon:   '[<3]',
-        hidden: true,
-        tier:   'mythic',
-        xp:     100,
+        id:                  'anniversary_mode',
+        title:               'Anniversary Mode',
+        desc:                'Visit on a very special day',
+        icon:                '[<3]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  100,
     },
     {
-        id:     'inside_joke',
-        title:  'Inside Joke',
-        desc:   'Post the magic words',
-        icon:   '[?]',
-        hidden: true,
-        tier:   'mythic',
-        xp:     100,
+        id:                  'inside_joke',
+        title:               'Inside Joke',
+        desc:                'Post the magic words',
+        icon:                '[?]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  100,
     },
     {
-        id:     'all_three_today',
-        title:  'Full House',
-        desc:   'Post, water, and chat all in one day',
-        icon:   '[3]',
-        hidden: true,
-        tier:   'mythic',
-        xp:     150,
+        id:                  'all_three_today',
+        title:               'Full House',
+        desc:                'Post, water, and chat all in one day',
+        icon:                '[3]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  150,
     },
     {
-        id:     'comeback_kid',
-        title:  'Comeback Kid',
-        desc:   'Rebuild a watering streak after it broke',
-        icon:   '[>>]',
-        hidden: true,
-        tier:   'mythic',
-        xp:     150,
+        id:                  'comeback_kid',
+        title:               'Comeback Kid',
+        desc:                'Rebuild a watering streak after it broke',
+        icon:                '[>>]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  150,
     },
     {
-        id:     'same_braincell',
-        title:  'Same Braincell',
-        desc:   'Post within 10 minutes of each other',
-        icon:   '[~~]',
-        hidden: true,
-        tier:   'mythic',
-        xp:     200,
+        id:                  'same_braincell',
+        title:               'Same Braincell',
+        desc:                'Post within 10 minutes of each other',
+        icon:                '[~~]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  200,
     },
     {
-        id:     'long_distance_high_five',
-        title:  'Long Distance High Five',
-        desc:   'One posts, the other chats within an hour',
-        icon:   '^5',
-        hidden: true,
-        tier:   'mythic',
-        xp:     200,
+        id:                  'long_distance_high_five',
+        title:               'Long Distance High Five',
+        desc:                'One posts, the other chats within an hour',
+        icon:                '^5',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  200,
     },
     {
-        id:     'we_were_here',
-        title:  'We Were Here',
-        desc:   'Visit the garden on the same day 20 times',
-        icon:   '[H]',
-        hidden: true,
-        tier:   'mythic',
-        xp:     300,
+        id:                  'we_were_here',
+        title:               'We Were Here',
+        desc:                'Visit the garden on the same day 20 times',
+        icon:                '[H]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  300,
     },
 
     // ---- Per-user 3-waters-a-day ----
@@ -6469,22 +6479,22 @@ const ACHIEVEMENTS = [
 
     // ---- Shared 3-waters-a-day (mythic) ----
     {
-        id:     'both_water3_day',
-        title:  'Double Dedication',
-        desc:   'Both water the garden 3 times on the same day',
-        icon:   '[33]',
-        hidden: true,
-        tier:   'mythic',
-        xp:     100,
+        id:                  'both_water3_day',
+        title:               'Double Dedication',
+        desc:                'Both water the garden 3 times on the same day',
+        icon:                '[33]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  100,
     },
     {
-        id:     'both_water3_week',
-        title:  'Garden Devotion',
-        desc:   'Both water 3 times a day for 7 days in a row',
-        icon:   '[77]',
-        hidden: true,
-        tier:   'mythic',
-        xp:     200,
+        id:                  'both_water3_week',
+        title:               'Garden Devotion',
+        desc:                'Both water 3 times a day for 7 days in a row',
+        icon:                '[77]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  200,
     },
 
     // ---- Replies ----
@@ -6505,6 +6515,8 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      10,
         getProgress: () => Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0),
+        rewardType:  'console_cmd',
+        rewardId:    'stats',
     },
 
     // ---- Reactions ----
@@ -6528,6 +6540,8 @@ const ACHIEVEMENTS = [
             const rxBy = p.reactionsBy || {};
             return acc + Object.values(rxBy).filter(users => users && users[currentUser]).length;
         }, 0),
+        rewardType:  'console_cmd',
+        rewardId:    'reactstats',
     },
 
     // ---- Letters ----
@@ -6548,6 +6562,8 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      5,
         getProgress: () => Object.values(allLetters).filter(l => l.from === currentUser).length,
+        rewardType:  'console_cmd',
+        rewardId:    'letters',
     },
 
     // ---- Cat ----
@@ -6568,6 +6584,8 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      10,
         getProgress: () => Number(localStorage.getItem('catActionCount') || 0),
+        rewardType:  'console_cmd',
+        rewardId:    'catstats',
     },
 
     // ---- Garden Talk ----
@@ -6588,6 +6606,8 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      10,
         getProgress: () => Number(localStorage.getItem('garden_talkCount') || 0),
+        rewardType:  'console_cmd',
+        rewardId:    'gardenlog',
     },
 
     // ---- Personalisation ----
@@ -6608,14 +6628,101 @@ const XP_PER_LEVEL = 100;
 function xpToLevel(xp)   { return Math.floor(xp / XP_PER_LEVEL) + 1; }
 function xpForLevel(lvl) { return (lvl - 1) * XP_PER_LEVEL; }  // XP at start of lvl
 
+// ---- Reward types registry ----
+// Maps rewardType → display helper. Other systems can extend this.
+const REWARD_TYPES = {
+    xp:          { label: (_id, ach) => `+${ach.xp} XP`            },
+    console_cmd: { label: (id)       => `Unlocks console: /${id}`   },
+};
+
+// ---- Achievement state ----
 // Map of id -> unixTimestamp (ms) for every unlocked achievement.
 // Using a Map lets us store the unlock date without a separate data structure.
 let unlockedAchievements = new Map();
 let achievementsBackfilled = false;
 
-// In-session history of achievement toast notifications (newest first).
+// In-session history of achievement unlock notifications (newest first).
 // Each entry: { title, icon, ts } — kept in memory only (resets on page reload).
 const achievementToastHistory = [];
+
+// ---- Achievement unlock popup ----
+// Queued OS-style popups shown when achievements are unlocked.
+// Multiple unlocks are shown sequentially (one at a time, 5 s each).
+let _achPopupQueue = [];
+let _achPopupActive = false;
+
+function showAchievementPopup(achievement, xpGain) {
+    _achPopupQueue.push({ achievement, xpGain });
+    if (!_achPopupActive) _drainAchPopupQueue();
+}
+
+function _drainAchPopupQueue() {
+    if (!_achPopupQueue.length) { _achPopupActive = false; return; }
+    _achPopupActive = true;
+    const { achievement, xpGain } = _achPopupQueue.shift();
+
+    // Remove any leftover popup from a previous drain cycle.
+    document.getElementById('ach-unlock-popup')?.remove();
+
+    const TIER_COLORS  = { bronze: '#cd7f32', silver: '#909090', gold: '#b8860b', mythic: '#9b30ff' };
+    const TIER_LABELS  = { bronze: 'Bronze',  silver: 'Silver',  gold: 'Gold',   mythic: 'Mythic'  };
+    const tierColor    = TIER_COLORS[achievement.tier] || '#3a7a3a';
+    const tierLabel    = TIER_LABELS[achievement.tier] || '';
+
+    // Build reward line(s)
+    let rewardLines = [];
+    if (xpGain > 0) rewardLines.push(`+${xpGain} XP`);
+    if (achievement.rewardType === 'console_cmd' && achievement.rewardId) {
+        rewardLines.push(`Console unlocked: /${achievement.rewardId}`);
+    }
+    const rewardHtml = rewardLines.length
+        ? `<div class="ach-popup__reward">${rewardLines.map(r => `<span>${safeText(r)}</span>`).join('')}</div>`
+        : '';
+
+    const popup = document.createElement('div');
+    popup.id = 'ach-unlock-popup';
+    popup.className = 'ach-popup';
+    popup.style.setProperty('--tier-color', tierColor);
+    popup.innerHTML =
+        `<div class="ach-popup__bar">` +
+            `<span class="ach-popup__bar-icon">★</span>` +
+            `<span class="ach-popup__bar-label">Achievement Unlocked!</span>` +
+            `<button class="ach-popup__close" aria-label="Close">✕</button>` +
+        `</div>` +
+        `<div class="ach-popup__body">` +
+            `<div class="ach-popup__icon-col">` +
+                `<div class="ach-popup__icon">${safeText(achievement.icon)}</div>` +
+                `<div class="ach-popup__tier-badge">${safeText(tierLabel)}</div>` +
+            `</div>` +
+            `<div class="ach-popup__info">` +
+                `<div class="ach-popup__title">${safeText(achievement.title)}</div>` +
+                `<div class="ach-popup__desc">${safeText(achievement.desc)}</div>` +
+                rewardHtml +
+            `</div>` +
+        `</div>`;
+
+    document.body.appendChild(popup);
+    // Trigger enter animation on next frame
+    requestAnimationFrame(() => popup.classList.add('ach-popup--in'));
+
+    let dismissed = false;
+    const dismiss = () => {
+        if (dismissed) return;
+        dismissed = true;
+        popup.classList.add('ach-popup--out');
+        popup.classList.remove('ach-popup--in');
+        setTimeout(() => {
+            popup.remove();
+            // Small gap between sequential popups
+            setTimeout(_drainAchPopupQueue, 250);
+        }, 320);
+    };
+
+    popup.querySelector('.ach-popup__close').addEventListener('click', dismiss);
+    const autoTimer = setTimeout(dismiss, 5500);
+    // If user manually closes, cancel auto-dismiss
+    popup.querySelector('.ach-popup__close').addEventListener('click', () => clearTimeout(autoTimer), { once: true });
+}
 
 async function initAchievements() {
     const body = document.getElementById('w95-achievements-body');
@@ -6673,7 +6780,8 @@ async function unlockAchievement(id) {
         }
 
         if (achievement) {
-            showToast(`Achievement unlocked: ${achievement.title}${xpGain ? ` (+${xpGain} XP)` : ''}`);
+            // OS-style popup replaces the plain toast for achievement unlocks
+            showAchievementPopup(achievement, xpGain);
             achievementToastHistory.unshift({ title: achievement.title, icon: achievement.icon, ts: Date.now() });
             if (achievementToastHistory.length > 20) achievementToastHistory.pop();
             sparkSound('ach');
@@ -6681,7 +6789,7 @@ async function unlockAchievement(id) {
 
         const levelAfter = xpToLevel(xpTotal);
         if (levelAfter > levelBefore) {
-            showToast(`\u2728 Level up! Garden Level ${levelAfter}`);
+            showToast(`✨ Level up! Garden Level ${levelAfter}`);
         }
 
         renderAchievementsWindow();
@@ -6941,51 +7049,62 @@ function _seedConsoleCmds() {
     localStorage.setItem(_consoleCmdsKey, JSON.stringify([...unlockedConsoleCmds]));
 }
 
+// localStorage key for "Show Unknown Achievements" toggle state.
+const _ACH_SHOW_UNKNOWN_KEY = 'ach_show_unknown';
+
 function renderAchievementsWindow() {
     const body = document.getElementById('w95-achievements-body');
     if (!body) return;
 
-    // Format a Unix-ms timestamp as YYYY-MM-DD
+    // "Show Unknown" toggle — persisted across reloads
+    const showUnknown = localStorage.getItem(_ACH_SHOW_UNKNOWN_KEY) === '1';
+
+    // ---- Helpers ----
     function fmtDate(ts) {
         return new Date(ts).toISOString().slice(0, 10);
     }
 
-    // Text progress bar, e.g. [#####-----] for 5/10
-    function progressBar(current, target) {
-        const BAR_W  = 10;
-        const capped = Math.min(current, target);
-        const filled = Math.round(capped / target * BAR_W);
-        return '[' + '#'.repeat(filled) + '-'.repeat(BAR_W - filled) + ']';
-    }
-
-    // Relative time formatter for toast history
     function fmtRelative(ts) {
         const diff = Math.floor((Date.now() - ts) / 1000);
-        if (diff < 60)  return 'just now';
+        if (diff < 60)   return 'just now';
         if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
         return Math.floor(diff / 3600) + ' hr ago';
     }
 
-    // Garden Level / XP header
-    const lvl       = xpToLevel(xpTotal);
-    const nextFloor = xpForLevel(lvl + 1);            // XP needed to reach next level
-    const xpInLevel = xpTotal - xpForLevel(lvl);      // progress within current level
-    const BAR_W     = 20;
-    const filled    = Math.min(BAR_W, Math.round(xpInLevel / XP_PER_LEVEL * BAR_W));
-    const levelBar  = '[' + '#'.repeat(filled) + '-'.repeat(BAR_W - filled) + ']';
+    // Visual HTML progress bar (percentage-fill bar + count label)
+    function progressBarHtml(current, target, isUnlocked) {
+        const pct    = Math.min(100, Math.round(current / target * 100));
+        const cls    = isUnlocked ? 'ach-progress-bar--done' : 'ach-progress-bar--active';
+        return (
+            `<div class="ach-progress-wrap">` +
+            `<div class="ach-progress-bar ${cls}" style="width:${pct}%"></div>` +
+            `</div>` +
+            `<span class="ach-progress-count">${current}&nbsp;/&nbsp;${target}</span>`
+        );
+    }
+
+    // ---- Level / XP header ----
+    const lvl        = xpToLevel(xpTotal);
+    const nextFloor  = xpForLevel(lvl + 1);
+    const xpInLevel  = xpTotal - xpForLevel(lvl);
+    const xpPct      = Math.min(100, Math.round(xpInLevel / XP_PER_LEVEL * 100));
+    const unlockedCount = unlockedAchievements.size;
+    const totalCount    = ACHIEVEMENTS.length;
+
     const levelHtml =
         `<div class="achievement-level-header">` +
         `<div class="achievement-level-row">` +
-        `<span class="achievement-level-title">Garden Level: ${lvl}</span>` +
-        `<span class="achievement-level-xp">XP: ${xpTotal}&nbsp;/&nbsp;${nextFloor}</span>` +
+        `<span class="achievement-level-title">Level ${lvl}</span>` +
+        `<span class="achievement-level-xp">${xpTotal}&nbsp;/&nbsp;${nextFloor} XP</span>` +
         `</div>` +
-        `<div class="achievement-level-bar">${levelBar}</div>` +
+        `<div class="ach-xp-bar-wrap"><div class="ach-xp-bar-fill" style="width:${xpPct}%"></div></div>` +
+        `<div class="achievement-level-sub">${unlockedCount}&nbsp;/&nbsp;${totalCount} achievements</div>` +
         `</div>`;
 
-    // Toast history section (shown only when there are entries this session)
+    // ---- Unlock history (this session) ----
     let historyHtml = '';
     if (achievementToastHistory.length > 0) {
-        const rows = achievementToastHistory.map(h =>
+        const rows = achievementToastHistory.slice(0, 5).map(h =>
             `<div class="achievement-toast-history-row">` +
             `<span class="achievement-toast-history-icon">${safeText(h.icon)}</span>` +
             `<span class="achievement-toast-history-title">${safeText(h.title)}</span>` +
@@ -6994,86 +7113,141 @@ function renderAchievementsWindow() {
         ).join('');
         historyHtml =
             `<div class="achievement-toast-history">` +
-            `<div class="achievement-toast-history-header">Notifications this session</div>` +
+            `<div class="achievement-toast-history-header">Unlocked this session</div>` +
             rows +
             `</div>`;
     }
 
-    // Build HTML for a single achievement card
+    // ---- Toggle toolbar ----
+    const toggleHtml =
+        `<div class="ach-toolbar">` +
+        `<button class="ach-toggle-btn${showUnknown ? ' ach-toggle-btn--on' : ''}" id="ach-toggle-unknown">` +
+        `${showUnknown ? '▼' : '▶'} Show Unknown` +
+        `</button>` +
+        `</div>`;
+
+    // ---- Card renderer ----
     function renderCard(a) {
         const isUnlocked = unlockedAchievements.has(a.id);
         const ts         = unlockedAchievements.get(a.id);
+        const isHidden   = a.hiddenUntilUnlocked || a.hidden; // backward compat
 
-        // Hidden locked achievements show mystery placeholder
-        const isHiddenLocked = !isUnlocked && a.hidden;
-        const title = isHiddenLocked ? '???' : safeText(a.title);
-        const desc  = isHiddenLocked ? 'Keep going\u2026' : safeText(a.desc);
+        // Silhouette cards — shown when toggle is ON and achievement is hidden+locked
+        if (!isUnlocked && isHidden) {
+            return (
+                `<div class="achievement-item achievement-card is-locked is-silhouette tier-${a.tier}">` +
+                `<span class="achievement-icon ach-silhouette-icon">???</span>` +
+                `<div class="achievement-body">` +
+                `<div class="achievement-title ach-silhouette-text">??? Unknown Achievement</div>` +
+                `<div class="achievement-desc ach-silhouette-text">Keep exploring to discover this…</div>` +
+                `</div>` +
+                `</div>`
+            );
+        }
 
-        // Always show the bracket icon — unlocked state is conveyed via CSS class, not icon swap
-        const icon = safeText(a.icon);
+        // Reward badge
+        let rewardBadge = '';
+        if (isUnlocked) {
+            if (a.xp) rewardBadge += `<span class="ach-reward-badge ach-reward-xp">+${a.xp} XP</span>`;
+            if (a.rewardType === 'console_cmd' && a.rewardId) {
+                rewardBadge += `<span class="ach-reward-badge ach-reward-cmd">/${safeText(a.rewardId)}</span>`;
+            }
+        }
 
-        // Build stable CSS class list for external styling hooks
-        let itemClass = 'achievement-item achievement-card';
-        if (isUnlocked)          itemClass += ' is-unlocked';
-        else if (isHiddenLocked) itemClass += ' is-locked is-hidden-locked';
-        else                     itemClass += ' is-locked';
-        itemClass += ` tier-${a.tier}`;
-
-        // Progress row for count-based achievements
+        // Progress row
         let progressHtml = '';
         if (a.target) {
             const current = isUnlocked
                 ? a.target
                 : (a.getProgress ? a.getProgress() : 0);
             progressHtml =
-                `<div class="achievement-progress">` +
-                `<span class="achievement-progress-count">${current}&nbsp;/&nbsp;${a.target}</span>` +
-                `<span class="achievement-progress-bar">${progressBar(current, a.target)}</span>` +
+                `<div class="ach-progress-row">` +
+                progressBarHtml(current, a.target, isUnlocked) +
                 `</div>`;
         }
 
-        // Unlock date line (only shown when unlocked; takes up same space when locked
-        // via min-height so the card height doesn't jump on unlock)
-        const dateHtml = isUnlocked
-            ? `<div class="achievement-unlocked-date">Unlocked: ${fmtDate(ts)}</div>`
-            : `<div class="achievement-unlocked-date achievement-unlocked-date--placeholder"></div>`;
+        // Bottom meta row (unlock date + reward badges)
+        const dateStr  = isUnlocked ? `Unlocked ${fmtDate(ts)}` : '';
+        const metaHtml = (isUnlocked)
+            ? `<div class="ach-meta-row"><span class="achievement-unlocked-date">${dateStr}</span>${rewardBadge}</div>`
+            : (a.target
+                ? ''   // progress row already shown; no extra meta needed
+                : `<div class="achievement-unlocked-date achievement-unlocked-date--placeholder"></div>`);
+
+        let itemClass = 'achievement-item achievement-card';
+        if (isUnlocked) itemClass += ' is-unlocked';
+        else            itemClass += ' is-locked';
+        itemClass += ` tier-${a.tier}`;
 
         return (
             `<div class="${itemClass}">` +
-            `<span class="achievement-icon">${icon}</span>` +
+            `<span class="achievement-icon">${safeText(a.icon)}</span>` +
             `<div class="achievement-body">` +
-            `<div class="achievement-title">${title}</div>` +
-            `<div class="achievement-desc">${desc}</div>` +
+            `<div class="achievement-title">${safeText(a.title)}</div>` +
+            `<div class="achievement-desc">${safeText(a.desc)}</div>` +
             progressHtml +
-            dateHtml +
+            metaHtml +
             `</div>` +
             `</div>`
         );
     }
 
-    // Group and render achievements by tier: bronze -> silver -> gold -> mythic
+    // ---- Tier sections ----
     const TIER_ORDER = ['bronze', 'silver', 'gold', 'mythic'];
+    const TIER_LABELS = { bronze: '✦ Bronze', silver: '✦ Silver', gold: '✦ Gold', mythic: '★ Mythic' };
     let tiersHtml = '';
+
     for (const tier of TIER_ORDER) {
-        const tierAchs = ACHIEVEMENTS.filter(a => a.tier === tier);
-        if (tier === 'mythic') {
-            // Mythics are completely hidden until unlocked — no ??? placeholder
-            const unlockedMythics = tierAchs.filter(a => unlockedAchievements.has(a.id));
-            if (unlockedMythics.length === 0) continue;
-            tiersHtml += `<div class="achievement-tier-header">=== MYTHIC ===</div>`;
-            tiersHtml += unlockedMythics.map(renderCard).join('');
-        } else {
-            if (tierAchs.length === 0) continue;
-            const label = tier.toUpperCase();
-            tiersHtml += `<div class="achievement-tier-header">=== ${label} ===</div>`;
-            // Unlocked first, then locked
-            const unlockedInTier = tierAchs.filter(a =>  unlockedAchievements.has(a.id));
-            const lockedInTier   = tierAchs.filter(a => !unlockedAchievements.has(a.id));
-            tiersHtml += [...unlockedInTier, ...lockedInTier].map(renderCard).join('');
+        const tierAchs   = ACHIEVEMENTS.filter(a => a.tier === tier);
+        const unlocked   = tierAchs.filter(a =>  unlockedAchievements.has(a.id));
+        const locked     = tierAchs.filter(a => !unlockedAchievements.has(a.id));
+        const hidden     = locked.filter(a => a.hiddenUntilUnlocked || a.hidden);
+        const visible    = locked.filter(a => !(a.hiddenUntilUnlocked || a.hidden));
+
+        // Always show unlocked. Show visible-locked always. Show hidden only with toggle.
+        const toRender = [...unlocked];
+        if (visible.length) toRender.push(...visible);
+        if (showUnknown && hidden.length) toRender.push(...hidden);
+
+        // For mythic: only render unlocked (+ silhouettes if toggle is on)
+        const mythicToRender = tier === 'mythic'
+            ? [...unlocked, ...(showUnknown ? hidden : [])]
+            : toRender;
+
+        const cards = (tier === 'mythic' ? mythicToRender : toRender).map(renderCard).join('');
+
+        // For non-mythic tiers that are all locked and toggle is off, show a count line
+        const hasAnything = unlocked.length > 0 || visible.length > 0 || (showUnknown && hidden.length > 0);
+        if (!hasAnything && tier !== 'mythic') {
+            // Show the tier header + a "X hidden" hint, but only if there are locked achievements
+            if (locked.length > 0) {
+                tiersHtml +=
+                    `<div class="achievement-tier-header">${safeText(TIER_LABELS[tier])}</div>` +
+                    `<div class="ach-locked-hint">${locked.length} achievement${locked.length > 1 ? 's' : ''} locked — keep going</div>`;
+            }
+            continue;
+        }
+
+        if (!cards && tier === 'mythic') {
+            if (hidden.length > 0 && !showUnknown) {
+                tiersHtml +=
+                    `<div class="achievement-tier-header">${safeText(TIER_LABELS[tier])}</div>` +
+                    `<div class="ach-locked-hint">${hidden.length} secret achievement${hidden.length > 1 ? 's' : ''} — toggle "Show Unknown" to see silhouettes</div>`;
+            }
+            continue;
+        }
+
+        tiersHtml +=
+            `<div class="achievement-tier-header">${safeText(TIER_LABELS[tier])}</div>` +
+            cards;
+
+        // Hidden count footer when some mythics are hidden and toggle is off
+        if (tier === 'mythic' && hidden.length > 0 && !showUnknown) {
+            tiersHtml += `<div class="ach-locked-hint">${hidden.length} secret achievement${hidden.length > 1 ? 's' : ''} hidden</div>`;
         }
     }
 
-    // Chat commands section — show all XP commands grouped by unlock threshold
+    // ---- Chat commands section ----
     const XP_TIERS = [
         { xp: 50,  tier: 2 },
         { xp: 120, tier: 3 },
@@ -7081,7 +7255,7 @@ function renderAchievementsWindow() {
         { xp: 500, tier: 5 },
     ];
 
-    let commandsHtml = `<div class="achievement-tier-header">=== CHAT COMMANDS ===</div>`;
+    let commandsHtml = `<div class="achievement-tier-header">✦ Chat Commands</div>`;
 
     for (const { xp, tier } of XP_TIERS) {
         const cmds = XP_CHAT_COMMANDS.filter(c => c.requiredXP === xp);
@@ -7114,7 +7288,17 @@ function renderAchievementsWindow() {
         commandsHtml += `</div>`;
     }
 
-    body.innerHTML = levelHtml + historyHtml + tiersHtml + commandsHtml;
+    body.innerHTML = levelHtml + historyHtml + toggleHtml + tiersHtml + commandsHtml;
+
+    // Wire the toggle button (after innerHTML set)
+    const toggleBtn = body.querySelector('#ach-toggle-unknown');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const current = localStorage.getItem(_ACH_SHOW_UNKNOWN_KEY) === '1';
+            localStorage.setItem(_ACH_SHOW_UNKNOWN_KEY, current ? '0' : '1');
+            renderAchievementsWindow();
+        });
+    }
 }
 
 // Achievements window IIFE

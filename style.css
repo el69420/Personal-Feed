@@ -3937,7 +3937,7 @@ body{padding-bottom:50px}
 #w95-win-chat,#w95-win-new{display:flex;flex-direction:column;}
 
 /* ===== Achievements window ===== */
-#w95-achievements-body{max-height:340px;overflow-y:auto;padding:2px 0;}
+#w95-achievements-body{max-height:420px;overflow-y:auto;padding:2px 0;}
 
 /* ===== Mailbox window ===== */
 #w95-win-mailbox{display:flex;flex-direction:column;overflow:hidden;}
@@ -4174,6 +4174,192 @@ body.dark-mode .xp-cmd-desc           { color: #707070; }
 /* Dark mode overrides for tier accents */
 body.dark-mode .achievement-item.is-unlocked.tier-gold  {background:#2a2600;}
 body.dark-mode .achievement-item.is-unlocked.tier-mythic{background:#1a0a2a;}
+
+/* ── Achievements window: XP bar (replaces mono text bar) ───── */
+.ach-xp-bar-wrap{
+  height:6px;background:#b0b0b0;border:1px solid #808080;
+  margin:3px 0 2px;border-radius:2px;overflow:hidden;
+}
+.ach-xp-bar-fill{
+  height:100%;background:#000080;
+  transition:width 0.4s ease;
+}
+body.dark-mode .ach-xp-bar-wrap{background:#333;border-color:#555;}
+body.dark-mode .ach-xp-bar-fill{background:#5050e8;}
+.achievement-level-sub{font-size:10px;color:#666;margin-top:1px;}
+body.dark-mode .achievement-level-sub{color:#888;}
+
+/* ── Achievement toolbar (Show Unknown toggle) ───── */
+.ach-toolbar{
+  display:flex;align-items:center;gap:6px;
+  padding:3px 4px 3px;
+  background:#d4d0c8;
+  border-bottom:1px solid #808080;
+  font:11px Tahoma,Verdana,Arial,sans-serif;
+}
+body.dark-mode .ach-toolbar{background:#1e1e2e;border-bottom-color:#444;}
+.ach-toggle-btn{
+  font:11px Tahoma,Verdana,Arial,sans-serif;
+  background:#d4d0c8;
+  border:2px solid;
+  border-color:#fff #808080 #808080 #fff;
+  padding:1px 7px;
+  cursor:pointer;
+  color:#000;
+  user-select:none;
+}
+.ach-toggle-btn:active{border-color:#808080 #fff #fff #808080;}
+.ach-toggle-btn--on{background:#c8e0ff;color:#000080;font-weight:bold;}
+body.dark-mode .ach-toggle-btn{background:#2a2a3a;border-color:#555 #222 #222 #555;color:#ccc;}
+body.dark-mode .ach-toggle-btn--on{background:#1a1a4a;color:#8888ff;}
+
+/* ── HTML progress bar (replaces mono-font text bar) ───── */
+.ach-progress-row{display:flex;align-items:center;gap:5px;margin-top:3px;}
+.ach-progress-wrap{
+  flex:1;max-width:80px;height:5px;
+  background:#c0c0c0;border:1px solid #808080;
+  border-radius:2px;overflow:hidden;
+}
+.ach-progress-bar{height:100%;transition:width 0.3s ease;}
+.ach-progress-bar--active{background:#000080;}
+.ach-progress-bar--done{background:#3a7a3a;}
+.ach-progress-count{font-size:10px;color:#555;white-space:nowrap;}
+.achievement-item.is-unlocked .ach-progress-count{color:#1a4a1a;}
+body.dark-mode .ach-progress-wrap{background:#3a3a3a;border-color:#555;}
+body.dark-mode .ach-progress-bar--active{background:#5050e8;}
+body.dark-mode .ach-progress-bar--done{background:#5aaa5a;}
+body.dark-mode .ach-progress-count{color:#888;}
+body.dark-mode .achievement-item.is-unlocked .ach-progress-count{color:#a0c8a0;}
+
+/* ── Reward badges (shown on unlocked cards) ───── */
+.ach-meta-row{display:flex;align-items:center;gap:4px;margin-top:3px;flex-wrap:wrap;}
+.ach-reward-badge{
+  font-size:9px;font-weight:bold;
+  padding:1px 4px;border-radius:2px;
+  white-space:nowrap;
+}
+.ach-reward-xp{background:#c8e8c8;color:#1a5a1a;border:1px solid #3a7a3a;}
+.ach-reward-cmd{background:#c8d8ff;color:#00008b;border:1px solid #6060c8;}
+body.dark-mode .ach-reward-xp{background:#1a3a1a;color:#7acc7a;border-color:#3a6a3a;}
+body.dark-mode .ach-reward-cmd{background:#1a1a3a;color:#8888ff;border-color:#3a3a7a;}
+
+/* ── Silhouette cards (hidden achievements with "Show Unknown" on) ── */
+.achievement-item.is-silhouette{
+  opacity:0.38;
+  filter:grayscale(1);
+  font-style:italic;
+  border-left-color:#888 !important;
+  background:repeating-linear-gradient(
+    45deg,
+    transparent, transparent 2px,
+    rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px
+  ) !important;
+}
+.ach-silhouette-icon{color:#888 !important;letter-spacing:1px;}
+.ach-silhouette-text{color:#888 !important;}
+body.dark-mode .achievement-item.is-silhouette{background:repeating-linear-gradient(
+    45deg,transparent,transparent 2px,rgba(255,255,255,0.04) 2px,rgba(255,255,255,0.04) 4px
+  ) !important;}
+
+/* ── Locked-count hint lines ─────────────────────────────── */
+.ach-locked-hint{
+  font:italic 10px Tahoma,Verdana,Arial,sans-serif;
+  color:#888;
+  padding:3px 6px;
+}
+body.dark-mode .ach-locked-hint{color:#666;}
+
+/* ── Achievement Unlock Popup (OS-style, bottom-right) ──────── */
+.ach-popup{
+  position:fixed;
+  right:14px;
+  bottom:54px;   /* above Win95 taskbar */
+  width:260px;
+  background:#d4d0c8;
+  border:2px solid;
+  border-color:#fff #808080 #808080 #fff;
+  box-shadow:2px 2px 0 #000;
+  font:12px Tahoma,Verdana,Arial,sans-serif;
+  z-index:99999;
+  /* enter/exit animation */
+  transform:translateY(20px);
+  opacity:0;
+  transition:transform 0.25s ease, opacity 0.25s ease;
+  pointer-events:none;
+}
+.ach-popup--in{transform:translateY(0);opacity:1;pointer-events:auto;}
+.ach-popup--out{transform:translateY(16px);opacity:0;pointer-events:none;}
+
+/* Win95 title bar */
+.ach-popup__bar{
+  display:flex;align-items:center;gap:4px;
+  padding:3px 4px 3px 6px;
+  background:linear-gradient(to right,#000080,#1084d0);
+  color:#fff;
+  font-weight:bold;font-size:11px;
+  user-select:none;
+}
+.ach-popup__bar-icon{font-size:12px;flex-shrink:0;}
+.ach-popup__bar-label{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ach-popup__close{
+  font:bold 11px Tahoma,Verdana,Arial,sans-serif;
+  background:#d4d0c8;color:#000;
+  border:1px solid;border-color:#fff #808080 #808080 #fff;
+  padding:0 4px;line-height:1.4;cursor:pointer;flex-shrink:0;
+}
+.ach-popup__close:hover{background:#c0c0c0;}
+
+/* Body */
+.ach-popup__body{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:8px 10px 10px;
+}
+.ach-popup__icon-col{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  flex-shrink:0;min-width:36px;
+}
+.ach-popup__icon{
+  font:bold 18px Consolas,'Courier New',monospace;
+  color:var(--tier-color, #1a6a1a);
+  line-height:1.2;white-space:nowrap;
+  text-shadow:1px 1px 0 rgba(0,0,0,0.15);
+}
+.ach-popup__tier-badge{
+  font-size:9px;font-weight:bold;
+  color:var(--tier-color, #1a6a1a);
+  text-transform:uppercase;letter-spacing:0.05em;
+  white-space:nowrap;
+}
+.ach-popup__info{flex:1;min-width:0;}
+.ach-popup__title{
+  font-weight:bold;font-size:13px;
+  color:#000;margin-bottom:3px;
+}
+.ach-popup__desc{
+  font-size:11px;color:#444;
+  margin-bottom:5px;line-height:1.35;
+}
+.ach-popup__reward{
+  display:flex;flex-wrap:wrap;gap:3px;
+  margin-top:3px;
+}
+.ach-popup__reward span{
+  font-size:10px;font-weight:bold;
+  padding:1px 5px;border-radius:2px;
+  background:#c8e8c8;color:#1a5a1a;
+  border:1px solid #3a7a3a;
+}
+
+/* Dark-mode popup */
+body.dark-mode .ach-popup{
+  background:#2a2a3a;
+  border-color:#555 #222 #222 #555;
+  box-shadow:2px 2px 0 #000;
+}
+body.dark-mode .ach-popup__close{background:#2a2a3a;color:#ccc;border-color:#555 #222 #222 #555;}
+body.dark-mode .ach-popup__title{color:#e8e8e8;}
+body.dark-mode .ach-popup__desc{color:#a0a0a0;}
+body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-color:#3a6a3a;}
 
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
