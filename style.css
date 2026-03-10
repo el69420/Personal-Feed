@@ -5326,6 +5326,81 @@ body { padding: 0 !important; }
 .settings-about-footer { color: #000; }
 .settings-about-footer em { color: #666; font-style: italic; }
 
+/* ===== Screensaver Picker ===== */
+.ss-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.ss-picker-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-top-color: #ffffff;
+  border-left-color: #ffffff;
+  border-right-color: #808080;
+  border-bottom-color: #808080;
+  background: #d4d0c8;
+  user-select: none;
+  min-width: 78px;
+}
+.ss-picker-card input[type="radio"] { display: none; }
+.ss-picker-card:has(input:checked) {
+  border-top-color: #808080;
+  border-left-color: #808080;
+  border-right-color: #ffffff;
+  border-bottom-color: #ffffff;
+  background: #c0c0c0;
+}
+.ss-picker-thumb {
+  width: 72px;
+  height: 44px;
+  display: block;
+  border: 1px solid #808080;
+  box-sizing: border-box;
+}
+.ss-thumb-starfield {
+  background: #000;
+  background-image:
+    radial-gradient(circle at 15% 25%, #fff 1px,   transparent 1px),
+    radial-gradient(circle at 72% 55%, #fff 1px,   transparent 1px),
+    radial-gradient(circle at 40% 80%, #fff 1px,   transparent 1px),
+    radial-gradient(circle at 88% 12%, #fff 1.5px, transparent 1.5px),
+    radial-gradient(circle at 55% 35%, #aaa 1px,   transparent 1px),
+    radial-gradient(circle at 28% 65%, #ccc 0.5px, transparent 0.5px),
+    radial-gradient(circle at 62% 20%, #fff 0.5px, transparent 0.5px);
+}
+.ss-thumb-underwater {
+  background: linear-gradient(to bottom, #001a33, #003366 60%, #001a28);
+  position: relative;
+  overflow: hidden;
+}
+.ss-thumb-underwater::before {
+  content: '🐟';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  line-height: 1;
+}
+.ss-thumb-underwater::after {
+  content: '🫧';
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+  font-size: 13px;
+  line-height: 1;
+}
+.ss-picker-name {
+  font: 11px Tahoma, Verdana, Arial, sans-serif;
+}
+
 /* ===== Recycle Bin Window ===== */
 .recycle-bin-body {
   overflow-y: auto;

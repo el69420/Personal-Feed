@@ -1043,6 +1043,7 @@
       <button class="settings-tab-btn is-active" data-tab="appearance" type="button" role="tab" aria-selected="true">Appearance</button>
       <button class="settings-tab-btn" data-tab="sound" type="button" role="tab" aria-selected="false">Sound</button>
       <button class="settings-tab-btn" data-tab="desktop" type="button" role="tab" aria-selected="false">Desktop</button>
+      <button class="settings-tab-btn" data-tab="screensaver" type="button" role="tab" aria-selected="false">Screensaver</button>
       <button class="settings-tab-btn" data-tab="about" type="button" role="tab" aria-selected="false">About</button>
     </div>
     <!-- Appearance tab -->
@@ -1108,10 +1109,26 @@
       <label class="settings-check-row">
         <input type="checkbox" id="settings-boot-chk"> Show boot screen on startup
       </label>
-      <div class="settings-group-label" style="margin-top:10px;">Screensaver</div>
+    </div>
+    <!-- Screensaver tab -->
+    <div class="settings-panel is-hidden" id="stab-screensaver" role="tabpanel">
       <label class="settings-check-row">
         <input type="checkbox" id="settings-screensaver-chk"> Enable screensaver (activates after 5 min idle)
       </label>
+      <div class="settings-divider" style="margin-top:8px;"></div>
+      <div class="settings-group-label" style="margin-top:6px;">Style</div>
+      <div class="ss-picker" id="ss-picker">
+        <label class="ss-picker-card">
+          <input type="radio" name="ss-type" value="starfield">
+          <div class="ss-picker-thumb ss-thumb-starfield"></div>
+          <span class="ss-picker-name">Starfield</span>
+        </label>
+        <label class="ss-picker-card">
+          <input type="radio" name="ss-type" value="underwater">
+          <div class="ss-picker-thumb ss-thumb-underwater"></div>
+          <span class="ss-picker-name">Underwater</span>
+        </label>
+      </div>
     </div>
     <!-- About tab -->
     <div class="settings-panel is-hidden" id="stab-about" role="tabpanel">

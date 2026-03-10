@@ -7975,7 +7975,8 @@ async function loadUserWallpaper() {
             sndConsole:   sndConsole,
             motion:       localStorage.getItem('motionEnabled') !== 'false',
             boot:         localStorage.getItem('bootEnabled') !== 'false',
-            screensaver:  localStorage.getItem('screensaverEnabled') !== 'false',
+            screensaver:     localStorage.getItem('screensaverEnabled') !== 'false',
+            screensaverType: localStorage.getItem('screensaverType') || 'starfield',
         };
     }
 
@@ -8115,6 +8116,13 @@ async function loadUserWallpaper() {
         });
     }
 
+    // Screensaver type picker
+    win.querySelectorAll('input[name="ss-type"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.checked) localStorage.setItem('screensaverType', radio.value);
+        });
+    });
+
     // ---- Populate controls on open ----
     function populateControls() {
         wpSavedId    = currentWallpaperId;
@@ -8142,6 +8150,9 @@ async function loadUserWallpaper() {
         if (motionChk)      motionChk.checked      = localStorage.getItem('motionEnabled') !== 'false';
         if (bootChk)        bootChk.checked        = localStorage.getItem('bootEnabled') !== 'false';
         if (screensaverChk) screensaverChk.checked = localStorage.getItem('screensaverEnabled') !== 'false';
+
+        const ssType = localStorage.getItem('screensaverType') || 'starfield';
+        win.querySelectorAll('input[name="ss-type"]').forEach(r => { r.checked = r.value === ssType; });
 
         // About tab: show current user
         const userSpan = document.getElementById('settings-about-user');
@@ -8204,6 +8215,9 @@ async function loadUserWallpaper() {
 
         localStorage.setItem('screensaverEnabled', snap.screensaver ? 'true' : 'false');
         if (snap.screensaver) window._screensaverCtrl?.reset(); else window._screensaverCtrl?.disable();
+
+        localStorage.setItem('screensaverType', snap.screensaverType);
+        win.querySelectorAll('input[name="ss-type"]').forEach(r => { r.checked = r.value === snap.screensaverType; });
     }
 
     // ---- Show / hide ----
@@ -10163,9 +10177,9 @@ function initPixelCat() {
     setTimeout(tick, 300);
 })();
 
-// ===== Screensaver (E) — starfield =====
+// ===== Screensaver (E) — starfield + underwater =====
 (function () {
-    const SS_MS  = 5 * 60 * 1000; // 5 minutes idle
+    const SS_MS   = 5 * 60 * 1000; // 5 minutes idle
     const overlay = document.getElementById('screensaver-overlay');
     const canvas  = document.getElementById('screensaver-canvas');
     if (!overlay || !canvas) return;
@@ -10173,7 +10187,13 @@ function initPixelCat() {
     const ctx = canvas.getContext('2d');
     const rmq = window.matchMedia('(prefers-reduced-motion: reduce)');
     let timer = null, active = false, rafId = null;
+    let currentDrawFn = null;
 
+    function getType() {
+        return localStorage.getItem('screensaverType') || 'starfield';
+    }
+
+    // ---- Starfield ----
     const STAR_COUNT = 160;
     let stars = [];
 
@@ -10188,13 +10208,7 @@ function initPixelCat() {
         stars.forEach(s => { s.pz = s.z; });
     }
 
-    function resizeCanvas() {
-        canvas.width  = overlay.offsetWidth  || window.innerWidth;
-        canvas.height = overlay.offsetHeight || window.innerHeight;
-        initStars();
-    }
-
-    function drawFrame() {
+    function drawStarfield() {
         if (!active) return;
         const W = canvas.width, H = canvas.height;
         const cx = W / 2, cy = H / 2;
@@ -10222,7 +10236,196 @@ function initPixelCat() {
             ctx.lineTo(sx, sy);
             ctx.stroke();
         }
+    }
 
+    // ---- Underwater ----
+    const UW = { bubbles: [], fish: [], seaweed: [], frame: 0 };
+    const FISH_COLORS = ['#ff9966', '#ffcc44', '#88ddff', '#ff88cc', '#aaffbb', '#ffbbff', '#66ddaa', '#ffaa55'];
+
+    function initUnderwater() {
+        const W = canvas.width, H = canvas.height;
+        UW.frame = 0;
+
+        UW.bubbles = Array.from({ length: 35 }, () => ({
+            x: Math.random() * W,
+            y: H * 0.3 + Math.random() * H * 0.7,
+            r: 1.5 + Math.random() * 8,
+            speed: 0.35 + Math.random() * 0.7,
+            wobbleAmp: 0.6 + Math.random() * 1.8,
+            wobbleFreq: 0.018 + Math.random() * 0.028,
+            wobblePhase: Math.random() * Math.PI * 2,
+            alpha: 0.25 + Math.random() * 0.45,
+        }));
+
+        UW.fish = Array.from({ length: 7 }, (_, i) => {
+            const goRight = Math.random() < 0.5;
+            return {
+                x: goRight ? -100 : W + 100,
+                y: H * 0.12 + Math.random() * H * 0.68,
+                vx: (0.8 + Math.random() * 1.8) * (goRight ? 1 : -1),
+                size: 10 + Math.random() * 20,
+                color: FISH_COLORS[i % FISH_COLORS.length],
+                flip: !goRight,
+                tailPhase: Math.random() * Math.PI * 2,
+                bobPhase: Math.random() * Math.PI * 2,
+            };
+        });
+
+        const swCount = Math.max(6, Math.ceil(W / 55));
+        UW.seaweed = Array.from({ length: swCount }, (_, i) => ({
+            x: 10 + i * (W / swCount) + (Math.random() - 0.5) * 18,
+            height: 28 + Math.random() * 65,
+            segments: 3 + Math.floor(Math.random() * 4),
+            phase: Math.random() * Math.PI * 2,
+            speed: 0.006 + Math.random() * 0.01,
+            hue: 115 + (Math.random() - 0.5) * 30,
+        }));
+    }
+
+    function _drawFish(f) {
+        const { x, y, size, color, flip, tailPhase } = f;
+        ctx.save();
+        ctx.translate(x, y);
+        if (flip) ctx.scale(-1, 1);
+
+        // Tail fin
+        const wag = Math.sin(tailPhase) * size * 0.32;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.28, 0);
+        ctx.lineTo(-size * 0.82, -size * 0.38 + wag);
+        ctx.lineTo(-size * 0.82, size * 0.38 + wag);
+        ctx.closePath();
+        ctx.fill();
+
+        // Body
+        ctx.beginPath();
+        ctx.ellipse(0, 0, size * 0.62, size * 0.3, 0, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // Dorsal fin
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.3);
+        ctx.quadraticCurveTo(size * 0.25, -size * 0.52, size * 0.45, -size * 0.3);
+        ctx.closePath();
+        ctx.fill();
+
+        // Eye
+        ctx.beginPath();
+        ctx.arc(size * 0.32, -size * 0.04, size * 0.09, 0, Math.PI * 2);
+        ctx.fillStyle = '#111';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(size * 0.3, -size * 0.07, size * 0.035, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function _drawSeaweedStrand(sw) {
+        const H = canvas.height;
+        const segH = sw.height / sw.segments;
+        ctx.strokeStyle = `hsl(${sw.hue},55%,28%)`;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        let cx = sw.x, cy = H;
+        ctx.moveTo(cx, cy);
+        for (let i = 0; i < sw.segments; i++) {
+            const t = UW.frame * sw.speed + sw.phase;
+            const sway = Math.sin(t + i * 0.55) * 10 * ((i + 1) / sw.segments);
+            const nx = sw.x + sway;
+            const ny = H - segH * (i + 1);
+            ctx.quadraticCurveTo((cx + nx) / 2 + sway * 0.5, (cy + ny) / 2, nx, ny);
+            cx = nx; cy = ny;
+        }
+        ctx.stroke();
+    }
+
+    function drawUnderwater() {
+        if (!active) return;
+        const W = canvas.width, H = canvas.height;
+        UW.frame++;
+
+        // Background
+        const bg = ctx.createLinearGradient(0, 0, 0, H);
+        bg.addColorStop(0,   '#001628');
+        bg.addColorStop(0.5, '#002d55');
+        bg.addColorStop(1,   '#001520');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+
+        // Subtle light rays from surface
+        const t = UW.frame * 0.004;
+        ctx.save();
+        for (let i = 0; i < 6; i++) {
+            const rx = W * (0.08 + i * 0.17) + Math.sin(t + i * 1.1) * W * 0.04;
+            const alpha = Math.max(0, 0.028 + Math.sin(t * 0.6 + i) * 0.013);
+            ctx.fillStyle = `rgba(90,170,255,${alpha})`;
+            ctx.beginPath();
+            ctx.moveTo(rx - 15, 0);
+            ctx.lineTo(rx + 15, 0);
+            ctx.lineTo(rx + 90, H);
+            ctx.lineTo(rx - 90, H);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.restore();
+
+        // Seaweed
+        for (const sw of UW.seaweed) _drawSeaweedStrand(sw);
+
+        // Bubbles
+        for (const b of UW.bubbles) {
+            b.y -= b.speed;
+            b.x += Math.sin(UW.frame * b.wobbleFreq + b.wobblePhase) * b.wobbleAmp;
+            if (b.y + b.r < 0) { b.y = H + b.r + Math.random() * 40; b.x = Math.random() * W; }
+
+            ctx.strokeStyle = `rgba(140,215,255,${b.alpha})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Highlight
+            ctx.fillStyle = `rgba(210,240,255,${b.alpha * 0.35})`;
+            ctx.beginPath();
+            ctx.arc(b.x - b.r * 0.28, b.y - b.r * 0.28, b.r * 0.32, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Fish
+        for (const f of UW.fish) {
+            f.x += f.vx;
+            f.tailPhase += 0.14;
+            f.y += Math.sin(UW.frame * 0.018 + f.bobPhase) * 0.28;
+
+            const offScreen = f.flip ? f.x < -(f.size * 3) : f.x > W + f.size * 3;
+            if (offScreen) {
+                const goRight = Math.random() < 0.5;
+                f.flip = !goRight;
+                f.x = goRight ? -f.size * 3 : W + f.size * 3;
+                f.y = H * 0.12 + Math.random() * H * 0.68;
+                f.vx = (0.8 + Math.random() * 1.8) * (goRight ? 1 : -1);
+                f.color = FISH_COLORS[Math.floor(Math.random() * FISH_COLORS.length)];
+            }
+            _drawFish(f);
+        }
+    }
+
+    // ---- Core lifecycle ----
+    function resizeCanvas() {
+        canvas.width  = overlay.offsetWidth  || window.innerWidth;
+        canvas.height = overlay.offsetHeight || window.innerHeight;
+        if (getType() === 'underwater') initUnderwater(); else initStars();
+    }
+
+    function drawFrame() {
+        if (!active) return;
+        currentDrawFn();
         rafId = requestAnimationFrame(drawFrame);
     }
 
@@ -10230,9 +10433,11 @@ function initPixelCat() {
         if (active) return;
         active = true;
         resizeCanvas();
+        const type = getType();
+        currentDrawFn = type === 'underwater' ? drawUnderwater : drawStarfield;
         overlay.classList.remove('is-hidden');
         if (!rmq.matches) {
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = type === 'underwater' ? '#001628' : '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawFrame();
         }
