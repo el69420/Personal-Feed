@@ -5438,6 +5438,7 @@ const w95Apps = {};
     localStorage.setItem('garden_journal', JSON.stringify(stored));
     renderGardenJournal();
   }
+  window._appendGardenJournalEntry = appendGardenJournalEntry;
 
   // Re-render the Garden Journal section from localStorage.
   function renderGardenJournal() {
@@ -8528,7 +8529,44 @@ async function loadUserWallpaper() {
     // window at the same moment, so focus + action happen in a single interaction.
     document.getElementById('cat-feed-btn')?.addEventListener('mousedown',  (e) => { if (e.button === 0) doCatAction('feed');  });
     document.getElementById('cat-water-btn')?.addEventListener('mousedown', (e) => { if (e.button === 0) doCatAction('water'); });
-    document.getElementById('cat-yarn-btn')?.addEventListener('mousedown',  (e) => { if (e.button === 0) doCatAction('yarn');  });
+    document.getElementById('cat-yarn-btn')?.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        if (window._catController?.isSleeping()) {
+            const name = catDisplayName();
+            openW95Dialog({
+                icon: '😴',
+                title: 'Cat.exe',
+                message: `Are you sure you want to disturb ${name} while they're napping?`,
+                buttons: [
+                    {
+                        label: 'Yes',
+                        action: () => {
+                            if (Math.random() < 0.5) {
+                                // Positive: cat wakes up excited
+                                window._catController?.wakeCat();
+                                doCatAction('yarn');
+                                window._catLocalEmote?.('cheer');
+                                window._appendGardenJournalEntry?.({
+                                    date: localDateStr(),
+                                    msg:  `${name} wakes up excited for play time`,
+                                });
+                            } else {
+                                // Negative: cat is grumpy about being disturbed
+                                window._catLocalGrumpy?.();
+                                window._appendGardenJournalEntry?.({
+                                    date: localDateStr(),
+                                    msg:  `${name} was trying to get cosy, leave them be!`,
+                                });
+                            }
+                        },
+                    },
+                    { label: 'No', action: null },
+                ],
+            });
+        } else {
+            doCatAction('yarn');
+        }
+    });
 
     // ---- Desktop cat status display (updates every second) ----
     function renderDesktopCatStatus() {
@@ -8873,6 +8911,7 @@ function initPixelCat() {
             sparkle: { syms: ['✦', '✧', '⋆', '✦', '✧'], colors: ['#f9d55a', '#fff8b0', '#f9d55a', '#fffde0', '#fff8b0'] },
             cheer:   { syms: ['✿', '♪', '✿', '♪', '✿'], colors: ['#ff9eb0', '#a0e8af', '#f9d55a', '#a0e8af', '#ff9eb0'] },
             heart:   { syms: ['♡', '♡', '♡', '♡', '♡'], colors: ['#ff6b8a', '#ff8fab', '#ff6b8a', '#ffb3c6', '#ff6b8a'] },
+            grumpy:  { syms: ['！', '～', '！', '～', '！'], colors: ['#ff5555', '#ff8888', '#ff5555', '#ffaaaa', '#ff5555'] },
         };
         const cfg = configs[type] || configs.sparkle;
         cfg.syms.forEach((sym, i) => {
@@ -9636,10 +9675,17 @@ function initPixelCat() {
         canvas.classList.remove('cat-bounce');
         canvas.classList.remove('cat-yarn-zoom');
         canvas.classList.remove('cat-stretch');
+        canvas.classList.remove('cat-grumpy');
     });
 
     // Expose local-only animation helpers for Cat.exe window (no Firebase sync).
     window._catLocalEmote = triggerEmote;
+    window._catLocalGrumpy = function() {
+        triggerEmote('grumpy');
+        canvas.classList.remove('cat-grumpy');
+        void canvas.offsetWidth;
+        canvas.classList.add('cat-grumpy');
+    };
     window._catLocalYarnZoom = function () {
         canvas.classList.remove('cat-yarn-zoom');
         void canvas.offsetWidth; // force reflow to restart
@@ -9678,6 +9724,22 @@ function initPixelCat() {
                     default:       return fbState;
                 }
             }
+        },
+
+        // Returns true while the cat is in sleep state (visible from Cat.exe).
+        isSleeping() {
+            return (isDriver ? drvState : fbState) === 'sleep';
+        },
+
+        // Immediately end a forced nap and transition to wakeup (driver only).
+        wakeCat() {
+            if (!isDriver) return;
+            drvForcedNapEnd = 0;
+            if (drvState === 'sleep') {
+                drvWakeStart = performance.now();
+                drvState = 'wakeup';
+            }
+            stopSleepZzz();
         },
 
         // Walk the desktop cat to the edge of the Cat.exe window, then jump on top.

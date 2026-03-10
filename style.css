@@ -5756,6 +5756,20 @@ body { padding: 0 !important; }
   animation: catStretch 0.55s ease-in-out;
 }
 
+/* ---- Grumpy shake (disturbed while napping, negative outcome) ---- */
+@keyframes catGrumpyShake {
+  0%   { transform: translateX(0)    rotate(0deg);  }
+  15%  { transform: translateX(-5px) rotate(-3deg); }
+  30%  { transform: translateX(5px)  rotate(3deg);  }
+  45%  { transform: translateX(-4px) rotate(-2deg); }
+  60%  { transform: translateX(4px)  rotate(2deg);  }
+  75%  { transform: translateX(-2px) rotate(-1deg); }
+  100% { transform: translateX(0)    rotate(0deg);  }
+}
+#pixel-cat-canvas.cat-grumpy {
+  animation: catGrumpyShake 0.55s ease-in-out;
+}
+
 /* ---- Settled visual (driver only, roaming paused) ---- */
 #pixel-cat-canvas.cat-settled {
   filter: drop-shadow(0 0 3px rgba(120, 180, 120, 0.6));
