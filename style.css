@@ -6724,3 +6724,377 @@ body.dark-mode .w95-body.settings-body > .w95-row {
     font-weight: normal;
 }
 
+
+/* ===== Unlock System UI ===== */
+
+/* --- Reward item grid (wallpapers, screensavers, themes, sound packs) --- */
+.reward-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.reward-grid--2col { grid-template-columns: repeat(2, 1fr); }
+.reward-grid--3col { grid-template-columns: repeat(3, 1fr); }
+
+/* Base reward item (extends wallpaper-swatch pattern) */
+.reward-item {
+  position: relative;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  user-select: none;
+}
+.reward-item:hover {
+  border-color: #000080;
+}
+.reward-item.selected {
+  border-color: #000080;
+  outline: 2px dotted #000080;
+  outline-offset: 1px;
+}
+.reward-item-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font: 9px Tahoma, Verdana, Arial, sans-serif;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  text-align: center;
+  padding: 1px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* --- Wallpaper reward swatches (16:9) --- */
+.reward-item--wallpaper {
+  aspect-ratio: 16 / 9;
+}
+
+/* --- Locked reward item silhouette --- */
+.reward-item--locked {
+  background: repeating-linear-gradient(
+    45deg,
+    #c0c0c0 0px, #c0c0c0 3px,
+    #a0a0a0 3px, #a0a0a0 6px
+  ) !important;
+  cursor: default;
+  opacity: 0.7;
+}
+.reward-item--locked:hover {
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  outline: none;
+}
+.reward-item--locked .reward-item-label {
+  background: rgba(0,0,0,0.65);
+}
+.reward-lock-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%);
+  font-size: 16px;
+  opacity: 0.7;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* --- "NEW" badge on freshly unlocked items --- */
+.reward-item-new-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #ff0000;
+  color: #fff;
+  font: bold 7px Tahoma, Verdana, Arial, sans-serif;
+  padding: 1px 3px;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  z-index: 2;
+  text-transform: uppercase;
+}
+
+/* --- Section label within settings panels --- */
+.unlock-section-label {
+  font: bold 11px Tahoma, Verdana, Arial, sans-serif;
+  color: #000080;
+  margin: 8px 0 4px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #c0c0c0;
+}
+
+/* --- Screensaver picker reward card (locked variant) --- */
+.ss-picker-card--locked {
+  opacity: 0.65;
+  cursor: default;
+}
+.ss-picker-card--locked input { pointer-events: none; }
+.ss-picker-card--locked .ss-picker-name {
+  color: #808080;
+}
+
+/* --- Sound pack reward list --- */
+.sndpack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0;
+}
+.sndpack-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 11px Tahoma, Verdana, Arial, sans-serif;
+  padding: 3px 4px;
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #808080;
+  border-bottom: 1px solid #808080;
+  background: #d4d0c8;
+  cursor: pointer;
+  position: relative;
+}
+.sndpack-item:hover { background: #e8e4dc; }
+.sndpack-item.selected { background: #000080; color: #fff; }
+.sndpack-item.selected .sndpack-item-desc { color: #c8c8ff; }
+.sndpack-item--locked {
+  opacity: 0.6;
+  cursor: default;
+  background: #c8c8c8;
+}
+.sndpack-item--locked:hover { background: #c8c8c8; }
+.sndpack-item-icon { font-size: 14px; flex-shrink: 0; }
+.sndpack-item-info { flex: 1; min-width: 0; }
+.sndpack-item-name { font-weight: bold; }
+.sndpack-item-desc { font-size: 10px; color: #555; margin-top: 1px; }
+.sndpack-item-badge {
+  font: bold 8px Tahoma, Verdana, Arial, sans-serif;
+  padding: 1px 3px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.sndpack-item-badge--new { background: #ff0000; color: #fff; }
+.sndpack-item-badge--lock { background: #808080; color: #fff; }
+
+/* --- Theme picker --- */
+.theme-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0;
+}
+.theme-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 11px Tahoma, Verdana, Arial, sans-serif;
+  padding: 3px 6px 3px 4px;
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #808080;
+  border-bottom: 1px solid #808080;
+  background: #d4d0c8;
+  cursor: pointer;
+  position: relative;
+}
+.theme-item:hover { background: #e8e4dc; }
+.theme-item.selected { background: #000080; color: #fff; }
+.theme-item.selected .theme-item-desc { color: #c8c8ff; }
+.theme-item--locked { opacity: 0.6; cursor: default; background: #c8c8c8; }
+.theme-item--locked:hover { background: #c8c8c8; }
+.theme-item-swatch {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 1px solid #808080;
+}
+.theme-item-info { flex: 1; min-width: 0; }
+.theme-item-name { font-weight: bold; }
+.theme-item-desc { font-size: 10px; color: #555; margin-top: 1px; }
+.theme-item--locked .theme-item-desc { color: #808080; }
+.theme-item-badge {
+  font: bold 8px Tahoma, Verdana, Arial, sans-serif;
+  padding: 1px 3px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.theme-item-badge--new { background: #ff0000; color: #fff; }
+.theme-item-badge--lock { background: #808080; color: #fff; }
+
+/* --- Cat accessory / behaviour panels --- */
+.cat-unlock-section {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #808080;
+}
+.cat-unlock-section-label {
+  font: bold 10px Tahoma, Verdana, Arial, sans-serif;
+  color: #000080;
+  margin-bottom: 4px;
+  letter-spacing: 0.3px;
+}
+.cat-unlock-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cat-unlock-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: 10px Tahoma, Verdana, Arial, sans-serif;
+  padding: 2px 6px 2px 4px;
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #808080;
+  border-bottom: 1px solid #808080;
+  background: #d4d0c8;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+}
+.cat-unlock-item:hover { background: #e0dcd4; }
+.cat-unlock-item.active {
+  background: #000080;
+  color: #fff;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+}
+.cat-unlock-item--locked {
+  opacity: 0.55;
+  cursor: default;
+  background: #c0c0c0;
+  color: #808080;
+}
+.cat-unlock-item--locked:hover { background: #c0c0c0; }
+.cat-unlock-item-icon { font-size: 12px; }
+.cat-unlock-item-badge {
+  font: bold 7px Tahoma, Verdana, Arial, sans-serif;
+  padding: 0 2px;
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+.cat-unlock-item-badge--new { background: #ff0000; color: #fff; }
+.cat-unlock-item-badge--lock { background: #808080; color: #fff; }
+
+/* --- Console: locked command hint --- */
+.console-locked-hint {
+  color: #808080;
+  font-style: italic;
+}
+
+/* Dark mode adjustments */
+body.dark-mode .reward-item--locked {
+  background: repeating-linear-gradient(
+    45deg,
+    #3a3a3a 0px, #3a3a3a 3px,
+    #2a2a2a 3px, #2a2a2a 6px
+  ) !important;
+}
+body.dark-mode .unlock-section-label { color: #8080ff; border-color: #444; }
+body.dark-mode .sndpack-item { background: #2a2a2a; color: #ccc; border-color: #555 #333 #333 #555; }
+body.dark-mode .sndpack-item:hover { background: #333; }
+body.dark-mode .sndpack-item.selected { background: #000080; color: #fff; }
+body.dark-mode .sndpack-item--locked { background: #222; }
+body.dark-mode .sndpack-item--locked:hover { background: #222; }
+body.dark-mode .sndpack-item-desc { color: #aaa; }
+body.dark-mode .theme-item { background: #2a2a2a; color: #ccc; border-color: #555 #333 #333 #555; }
+body.dark-mode .theme-item:hover { background: #333; }
+body.dark-mode .theme-item.selected { background: #000080; color: #fff; }
+body.dark-mode .theme-item--locked { background: #222; }
+body.dark-mode .theme-item--locked:hover { background: #222; }
+body.dark-mode .theme-item-desc { color: #aaa; }
+body.dark-mode .cat-unlock-section-label { color: #8080ff; }
+body.dark-mode .cat-unlock-item { background: #2a2a2a; color: #ccc; border-color: #555 #333 #333 #555; }
+body.dark-mode .cat-unlock-item:hover { background: #333; }
+body.dark-mode .cat-unlock-item--locked { background: #1a1a1a; color: #555; }
+body.dark-mode .cat-unlock-item--locked:hover { background: #1a1a1a; }
+
+/* ===== Desktop Themes (applied via data-theme on body) ===== */
+
+/* --- Pastel Mode --- */
+body[data-theme="theme_pastel"] .w95-window,
+body[data-theme="theme_pastel"] .w95-body {
+  background-color: #fff0f5 !important;
+}
+body[data-theme="theme_pastel"] .w95-titlebar {
+  background: linear-gradient(to right, #c8a0c8, #e0a8c8) !important;
+}
+body[data-theme="theme_pastel"] .w95-btn {
+  background: #ffe0f0 !important;
+  border-color: #d8a0c0 #806080 #806080 #d8a0c0 !important;
+}
+body[data-theme="theme_pastel"] #w95-taskbar {
+  background: #f0c8d8 !important;
+  border-top-color: #e0a0b8 !important;
+}
+body[data-theme="theme_pastel"] .taskbar-btn {
+  background: #f8d8e8 !important;
+}
+
+/* --- Midnight theme --- */
+body[data-theme="theme_midnight"] .w95-window,
+body[data-theme="theme_midnight"] .w95-body {
+  background-color: #0a0a1e !important;
+  color: #c8c8ff !important;
+}
+body[data-theme="theme_midnight"] .w95-titlebar {
+  background: linear-gradient(to right, #0a0a3a, #1a1a6a) !important;
+}
+body[data-theme="theme_midnight"] .w95-btn {
+  background: #0e0e2e !important;
+  color: #9090e0 !important;
+  border-color: #3030a0 #080818 #080818 #3030a0 !important;
+}
+body[data-theme="theme_midnight"] #w95-taskbar {
+  background: #050512 !important;
+  border-top-color: #1a1a4a !important;
+}
+body[data-theme="theme_midnight"] .w95-title { color: #a0a0ff; }
+body[data-theme="theme_midnight"] input,
+body[data-theme="theme_midnight"] textarea,
+body[data-theme="theme_midnight"] select {
+  background: #0a0a28 !important;
+  color: #b0b0f0 !important;
+  border-color: #2020a0 !important;
+}
+
+/* --- Autumn Leaves theme --- */
+body[data-theme="theme_autumn"] .w95-window,
+body[data-theme="theme_autumn"] .w95-body {
+  background-color: #2a1200 !important;
+  color: #f0c080 !important;
+}
+body[data-theme="theme_autumn"] .w95-titlebar {
+  background: linear-gradient(to right, #6b2800, #a04010) !important;
+}
+body[data-theme="theme_autumn"] .w95-btn {
+  background: #3a1800 !important;
+  color: #e0a050 !important;
+  border-color: #804020 #201000 #201000 #804020 !important;
+}
+body[data-theme="theme_autumn"] #w95-taskbar {
+  background: #1a0a00 !important;
+  border-top-color: #502800 !important;
+}
+body[data-theme="theme_autumn"] .w95-title { color: #f0c080; }
+body[data-theme="theme_autumn"] input,
+body[data-theme="theme_autumn"] textarea,
+body[data-theme="theme_autumn"] select {
+  background: #1a0800 !important;
+  color: #d09060 !important;
+  border-color: #602000 !important;
+}

@@ -1056,6 +1056,10 @@
       <div class="wallpaper-section-label" style="margin-top:8px;">Wallpaper</div>
       <div id="wallpaper-preview" class="wallpaper-preview"></div>
       <div id="wallpaper-grid" class="wallpaper-grid"></div>
+      <div class="settings-divider" style="margin-top:8px;"></div>
+      <div class="unlock-section-label" style="margin-top:6px;">✨ Desktop Themes</div>
+      <div class="settings-hint" style="margin-bottom:4px;">Unlock themes by earning achievements. Click to apply (or click again to remove).</div>
+      <div id="settings-themes" class="theme-list"></div>
     </div>
     <!-- Sound tab -->
     <div class="settings-panel is-hidden" id="stab-sound" role="tabpanel">
@@ -1103,6 +1107,10 @@
       <label class="settings-check-row">
         <input type="checkbox" id="settings-snd-console"> Console command sounds
       </label>
+      <div class="settings-divider" style="margin-top:10px;"></div>
+      <div class="unlock-section-label" style="margin-top:6px;">✨ Sound Packs</div>
+      <div class="settings-hint" style="margin-bottom:4px;">Unlock sound packs by earning achievements. (Cosmetic — coming soon!)</div>
+      <div id="settings-sndpacks" class="sndpack-list"></div>
     </div>
     <!-- Desktop tab -->
     <div class="settings-panel is-hidden" id="stab-desktop" role="tabpanel">
@@ -1257,6 +1265,16 @@
     <div class="cat-name-row">
       <input id="cat-name-input" type="text" maxlength="32" placeholder="name your cat..." class="cat-name-input">
       <button id="cat-name-save" class="w95-btn cat-name-save-btn" type="button">&#10003; Save</button>
+    </div>
+    <!-- Accessories panel (populated by JS) -->
+    <div class="cat-unlock-section" id="cat-accessories-section">
+      <div class="cat-unlock-section-label">🎀 Accessories</div>
+      <div class="cat-unlock-grid" id="cat-accessories-grid"></div>
+    </div>
+    <!-- Behaviours panel (populated by JS) -->
+    <div class="cat-unlock-section" id="cat-behaviours-section">
+      <div class="cat-unlock-section-label">✨ Behaviours</div>
+      <div class="cat-unlock-grid" id="cat-behaviours-grid"></div>
     </div>
   </div>
 </div>

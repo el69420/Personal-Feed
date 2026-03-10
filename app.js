@@ -109,10 +109,19 @@ const DEFAULT_WALLPAPER_ID = 'teal';
 let currentWallpaperId = DEFAULT_WALLPAPER_ID;
 
 function applyWallpaper(id) {
-    const wp = WALLPAPERS.find(w => w.id === id) || WALLPAPERS[0];
+    // Check base wallpapers first, then reward wallpapers
+    const wp = WALLPAPERS.find(w => w.id === id)
+        || REWARD_REGISTRY.find(r => r.type === REWARD_TYPE_WALLPAPER && r.id === id && unlockedRewards.has(r.id));
+    const resolved = wp || WALLPAPERS[0];
     const desktop = document.getElementById('w95-desktop');
-    if (desktop) desktop.style.background = wp.css;
-    currentWallpaperId = wp.id;
+    if (desktop) desktop.style.background = resolved.css || resolved.swatchCss || '';
+    currentWallpaperId = resolved.id;
+}
+
+// Apply a desktop theme by id. Themes are stored as body data-theme attributes.
+function applyDesktopTheme(themeId) {
+    document.body.setAttribute('data-theme', themeId || '');
+    localStorage.setItem('activeDesktopTheme', themeId || '');
 }
 
 const _linkedPostId = new URLSearchParams(location.search).get('post');
@@ -1422,6 +1431,12 @@ window.toggleDarkMode = function() {
 
 if (localStorage.getItem('darkMode') === 'true') {
     toggleDarkMode();
+}
+
+// Apply any stored desktop theme on startup
+{
+    const _storedTheme = localStorage.getItem('activeDesktopTheme') || '';
+    if (_storedTheme) document.body.setAttribute('data-theme', _storedTheme);
 }
 
 // ---- MODALS ----
@@ -6093,6 +6108,7 @@ const ACHIEVEMENTS = [
         tier:        'bronze',
         target:      5,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+        rewardIds:   ['wp_sakura'],
     },
     {
         id:          'ten_posts',
@@ -6103,6 +6119,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      10,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+        rewardIds:   ['ss_starfield'],
     },
     {
         id:          'twenty_posts',
@@ -6113,6 +6130,7 @@ const ACHIEVEMENTS = [
         tier:        'gold',
         target:      20,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+        rewardIds:   ['theme_pastel'],
     },
     {
         id:          'thirty_posts',
@@ -6143,6 +6161,7 @@ const ACHIEVEMENTS = [
         tier:        'gold',
         target:      100,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+        rewardIds:   ['catb_zoomies'],
     },
 
     // ---- Post length ----
@@ -6155,6 +6174,7 @@ const ACHIEVEMENTS = [
         tier:        'bronze',
         target:      1,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && p.body && p.body.length >= 500).length,
+        rewardIds:   ['snd_retro'],
     },
     {
         id:          'longform_5',
@@ -6227,6 +6247,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      5,
         getProgress: () => totalWaterings,
+        rewardIds:   ['snd_nature'],
     },
     {
         id:          'watering_10',
@@ -6267,6 +6288,7 @@ const ACHIEVEMENTS = [
         tier:        'gold',
         target:      100,
         getProgress: () => totalWaterings,
+        rewardIds:   ['cat_glasses', 'theme_midnight'],
     },
     {
         id:          'water_3_days',
@@ -6277,6 +6299,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      3,
         getProgress: () => currentWateringStreak,
+        rewardIds:   ['cat_bow'],
     },
     {
         id:          'water_7_days',
@@ -6287,6 +6310,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      7,
         getProgress: () => currentWateringStreak,
+        rewardIds:   ['wp_nightsky'],
     },
     {
         id:          'water_14_days',
@@ -6297,6 +6321,7 @@ const ACHIEVEMENTS = [
         tier:        'gold',
         target:      14,
         getProgress: () => currentWateringStreak,
+        rewardIds:   ['wp_cozy_rain', 'ss_bubbles'],
     },
 
     // ---- Visiting / consistency ----
@@ -6309,6 +6334,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      7,
         getProgress: () => Object.keys(gardenVisitDays).length,
+        rewardIds:   ['wp_garden'],
     },
     {
         id:          'visit_14_total',
@@ -6329,6 +6355,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      30,
         getProgress: () => Object.keys(gardenVisitDays).length,
+        rewardIds:   ['theme_autumn'],
     },
     {
         id:          'visit_60_total',
@@ -6349,6 +6376,7 @@ const ACHIEVEMENTS = [
         tier:        'gold',
         target:      7,
         getProgress: () => gardenVisitStreak.current,
+        rewardIds:   ['catb_knead'],
     },
     {
         id:          'visit_streak_14',
@@ -6549,6 +6577,7 @@ const ACHIEVEMENTS = [
         icon:  '[L]',
         xp:    10,
         tier:  'bronze',
+        rewardIds: ['ss_petals'],
     },
     {
         id:          'five_letters',
@@ -6559,7 +6588,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      5,
         getProgress: () => Object.values(allLetters).filter(l => l.from === currentUser).length,
-        rewardIds:   ['cmd_letters'],
+        rewardIds:   ['cmd_letters', 'catb_loaf'],
     },
 
     // ---- Cat ----
@@ -6570,6 +6599,7 @@ const ACHIEVEMENTS = [
         icon:  '[~]',
         xp:    10,
         tier:  'bronze',
+        rewardIds: ['cat_hat'],
     },
     {
         id:          'ten_cat_actions',
@@ -6580,7 +6610,7 @@ const ACHIEVEMENTS = [
         tier:        'silver',
         target:      10,
         getProgress: () => Number(localStorage.getItem('catActionCount') || 0),
-        rewardIds:   ['cmd_catstats'],
+        rewardIds:   ['cmd_catstats', 'cat_scarf'],
     },
 
     // ---- Garden Talk ----
@@ -6591,6 +6621,7 @@ const ACHIEVEMENTS = [
         icon:  '[T]',
         xp:    10,
         tier:  'bronze',
+        rewardIds: ['snd_cozy'],
     },
     {
         id:          'ten_garden_talks',
@@ -6657,42 +6688,64 @@ const REWARD_REGISTRY = [
     { id: 'cmd_catstats',    type: REWARD_TYPE_CONSOLE_COMMAND, name: '/catstats',   description: 'Show cat care statistics',                   icon: '[>_]' },
     { id: 'cmd_gardenlog',   type: REWARD_TYPE_CONSOLE_COMMAND, name: '/gardenlog',  description: 'View your garden talk history',              icon: '[>_]' },
 
-    // ---- Wallpapers ----
-    { id: 'wp_sakura',       type: REWARD_TYPE_WALLPAPER,       name: 'Sakura Dream',     description: 'A soft pink cherry-blossom background',     icon: '[wp]' },
-    { id: 'wp_nightsky',     type: REWARD_TYPE_WALLPAPER,       name: 'Night Sky',        description: 'Deep indigo with a canopy of stars',         icon: '[wp]' },
-    { id: 'wp_garden',       type: REWARD_TYPE_WALLPAPER,       name: 'Garden View',      description: 'Lush green garden in full bloom',            icon: '[wp]' },
-    { id: 'wp_cozy_rain',    type: REWARD_TYPE_WALLPAPER,       name: 'Cozy Rain',        description: 'Rainy window with warm light inside',        icon: '[wp]' },
+    // ---- Wallpapers ---- (css applied to desktop; swatchCss used in the swatch preview)
+    { id: 'wp_sakura',    type: REWARD_TYPE_WALLPAPER, name: 'Sakura Dream',  description: 'A soft pink cherry-blossom background',  icon: '[wp]',
+      css: 'linear-gradient(135deg,#f9c8d4 0%,#f0a0b8 40%,#e07898 100%)',
+      swatchCss: 'linear-gradient(135deg,#f9c8d4 0%,#f0a0b8 40%,#e07898 100%)' },
+    { id: 'wp_nightsky',  type: REWARD_TYPE_WALLPAPER, name: 'Night Sky',     description: 'Deep indigo with a canopy of stars',      icon: '[wp]',
+      css: [
+        'radial-gradient(1px 1px at 10% 20%,rgba(255,255,255,0.9) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 45% 8%,rgba(255,255,255,0.8) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 70% 30%,rgba(255,255,255,0.85) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 85% 60%,rgba(255,255,255,0.7) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 20% 75%,rgba(255,255,255,0.8) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 55% 88%,rgba(255,255,255,0.75) 0%,transparent 100%)',
+        'linear-gradient(to bottom,#080018 0%,#160040 50%,#0a0028 100%)',
+      ].join(','),
+      swatchCss: 'linear-gradient(to bottom,#080018 0%,#160040 60%,#0a0028 100%)' },
+    { id: 'wp_garden',    type: REWARD_TYPE_WALLPAPER, name: 'Garden View',   description: 'Lush green garden in full bloom',         icon: '[wp]',
+      css: 'linear-gradient(to bottom,#4a9f4a 0%,#2a6b2a 35%,#1a4a1a 65%,#0d2b0d 100%)',
+      swatchCss: 'linear-gradient(to bottom,#4a9f4a 0%,#2a6b2a 40%,#1a4a1a 100%)' },
+    { id: 'wp_cozy_rain', type: REWARD_TYPE_WALLPAPER, name: 'Cozy Rain',     description: 'Rainy window with warm light inside',     icon: '[wp]',
+      css: 'linear-gradient(to bottom right,#4a5568 0%,#6b7280 40%,#374151 80%,#2d3748 100%)',
+      swatchCss: 'linear-gradient(to bottom right,#4a5568 0%,#6b7280 50%,#2d3748 100%)' },
 
-    // ---- Screensavers ----
-    { id: 'ss_petals',       type: REWARD_TYPE_SCREENSAVER,     name: 'Falling Petals',   description: 'Slow cascade of flower petals',             icon: '[ss]' },
-    { id: 'ss_starfield',    type: REWARD_TYPE_SCREENSAVER,     name: 'Starfield',        description: 'Flying through a field of stars',           icon: '[ss]' },
-    { id: 'ss_bubbles',      type: REWARD_TYPE_SCREENSAVER,     name: 'Bubbles',          description: 'Gently floating iridescent bubbles',         icon: '[ss]' },
+    // ---- Screensavers ---- (swatchCss used in the picker thumbnail)
+    { id: 'ss_petals',    type: REWARD_TYPE_SCREENSAVER, name: 'Falling Petals',  description: 'Slow cascade of flower petals',            icon: '[ss]',
+      swatchCss: 'linear-gradient(135deg,#ffb7c5 0%,#ff8fa3 50%,#c47c8e 100%)' },
+    { id: 'ss_starfield', type: REWARD_TYPE_SCREENSAVER, name: 'Starfield',       description: 'Flying through a field of stars',          icon: '[ss]',
+      swatchCss: 'radial-gradient(ellipse at 50% 50%,#1a1a4a 0%,#000018 100%)' },
+    { id: 'ss_bubbles',   type: REWARD_TYPE_SCREENSAVER, name: 'Bubbles',         description: 'Gently floating iridescent bubbles',       icon: '[ss]',
+      swatchCss: 'linear-gradient(135deg,#a8d8f0 0%,#c8e8ff 50%,#80b8e0 100%)' },
 
     // ---- Sound packs ----
-    { id: 'snd_cozy',        type: REWARD_TYPE_SOUND_PACK,      name: 'Cozy Café',        description: 'Soft café ambience and chime sounds',       icon: '[♪]'  },
-    { id: 'snd_nature',      type: REWARD_TYPE_SOUND_PACK,      name: 'Nature Walk',      description: 'Birds, wind, and gentle rain sounds',       icon: '[♪]'  },
-    { id: 'snd_retro',       type: REWARD_TYPE_SOUND_PACK,      name: 'Retro Chiptune',   description: '8-bit notification and UI sounds',          icon: '[♪]'  },
+    { id: 'snd_cozy',    type: REWARD_TYPE_SOUND_PACK, name: 'Cozy Café',      description: 'Soft café ambience and chime sounds',     icon: '☕' },
+    { id: 'snd_nature',  type: REWARD_TYPE_SOUND_PACK, name: 'Nature Walk',    description: 'Birds, wind, and gentle rain sounds',     icon: '🌿' },
+    { id: 'snd_retro',   type: REWARD_TYPE_SOUND_PACK, name: 'Retro Chiptune', description: '8-bit notification and UI sounds',        icon: '🎮' },
 
-    // ---- Cat accessories ----
-    { id: 'cat_bow',         type: REWARD_TYPE_CAT_ACCESSORY,   name: 'Ribbon Bow',       description: 'A cute ribbon bow for the cat',             icon: '[^w^]' },
-    { id: 'cat_hat',         type: REWARD_TYPE_CAT_ACCESSORY,   name: 'Tiny Hat',         description: 'A very small top hat',                      icon: '[^w^]' },
-    { id: 'cat_scarf',       type: REWARD_TYPE_CAT_ACCESSORY,   name: 'Cosy Scarf',       description: 'A warm knitted scarf',                      icon: '[^w^]' },
-    { id: 'cat_glasses',     type: REWARD_TYPE_CAT_ACCESSORY,   name: 'Tiny Glasses',     description: 'Round reading glasses for a studious cat',  icon: '[^w^]' },
+    // ---- Cat accessories ---- (faceDecor appended to cat face text when equipped)
+    { id: 'cat_bow',     type: REWARD_TYPE_CAT_ACCESSORY, name: 'Ribbon Bow',     description: 'A cute ribbon bow for the cat',            icon: '🎀', faceDecor: '🎀' },
+    { id: 'cat_hat',     type: REWARD_TYPE_CAT_ACCESSORY, name: 'Tiny Hat',       description: 'A very small top hat',                     icon: '🎩', faceDecor: '🎩' },
+    { id: 'cat_scarf',   type: REWARD_TYPE_CAT_ACCESSORY, name: 'Cosy Scarf',     description: 'A warm knitted scarf',                     icon: '🧣', faceDecor: '🧣' },
+    { id: 'cat_glasses', type: REWARD_TYPE_CAT_ACCESSORY, name: 'Tiny Glasses',   description: 'Round reading glasses for a studious cat', icon: '🕶️', faceDecor: '🕶️' },
 
     // ---- Cat behaviours ----
-    { id: 'catb_zoomies',    type: REWARD_TYPE_CAT_BEHAVIOUR,   name: 'Zoomies',          description: 'Cat randomly dashes around the screen',     icon: '[~w~]' },
-    { id: 'catb_knead',      type: REWARD_TYPE_CAT_BEHAVIOUR,   name: 'Kneading',         description: 'Cat kneads the screen contentedly',         icon: '[~w~]' },
-    { id: 'catb_loaf',       type: REWARD_TYPE_CAT_BEHAVIOUR,   name: 'Loaf Mode',        description: 'Cat sits in a perfect loaf shape',          icon: '[~w~]' },
+    { id: 'catb_zoomies', type: REWARD_TYPE_CAT_BEHAVIOUR, name: 'Zoomies',    description: 'Cat randomly dashes around the screen',    icon: '💨' },
+    { id: 'catb_knead',   type: REWARD_TYPE_CAT_BEHAVIOUR, name: 'Kneading',   description: 'Cat kneads the screen contentedly',        icon: '🐾' },
+    { id: 'catb_loaf',    type: REWARD_TYPE_CAT_BEHAVIOUR, name: 'Loaf Mode',  description: 'Cat sits in a perfect loaf shape',         icon: '🍞' },
 
-    // ---- Desktop themes / effects ----
-    { id: 'theme_pastel',    type: REWARD_TYPE_DESKTOP_THEME,   name: 'Pastel Mode',      description: 'Soft pastel colour palette for the whole UI', icon: '[th]' },
-    { id: 'theme_midnight',  type: REWARD_TYPE_DESKTOP_THEME,   name: 'Midnight',         description: 'Deep-blue theme with subtle star accents',  icon: '[th]' },
-    { id: 'theme_autumn',    type: REWARD_TYPE_DESKTOP_THEME,   name: 'Autumn Leaves',    description: 'Warm amber and rust tones',                 icon: '[th]' },
+    // ---- Desktop themes / effects ---- (swatchCss: preview swatch)
+    { id: 'theme_pastel',   type: REWARD_TYPE_DESKTOP_THEME, name: 'Pastel Mode',    description: 'Soft pastel colour palette for the whole UI', icon: '🌸',
+      swatchCss: 'linear-gradient(135deg,#ffd6e0 0%,#c7f0d8 50%,#c9d6f7 100%)' },
+    { id: 'theme_midnight', type: REWARD_TYPE_DESKTOP_THEME, name: 'Midnight',       description: 'Deep-blue theme with subtle star accents',  icon: '🌙',
+      swatchCss: 'linear-gradient(135deg,#0a0a2e 0%,#1a1a4e 50%,#0a0a2e 100%)' },
+    { id: 'theme_autumn',   type: REWARD_TYPE_DESKTOP_THEME, name: 'Autumn Leaves',  description: 'Warm amber and rust tones',                  icon: '🍂',
+      swatchCss: 'linear-gradient(135deg,#c0680a 0%,#8b3a0a 50%,#5a2000 100%)' },
 
     // ---- Garden unlocks ----
-    { id: 'garden_fountain', type: REWARD_TYPE_GARDEN_UNLOCK,   name: 'Garden Fountain',  description: 'A decorative fountain for your garden',     icon: '[G]'  },
-    { id: 'garden_lantern',  type: REWARD_TYPE_GARDEN_UNLOCK,   name: 'Paper Lantern',    description: 'A glowing lantern for evening garden visits', icon: '[G]' },
-    { id: 'garden_bench',    type: REWARD_TYPE_GARDEN_UNLOCK,   name: 'Wooden Bench',     description: 'A cosy bench to sit and admire your garden', icon: '[G]' },
+    { id: 'garden_fountain', type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Garden Fountain', description: 'A decorative fountain for your garden',     icon: '[G]' },
+    { id: 'garden_lantern',  type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Paper Lantern',   description: 'A glowing lantern for evening garden visits', icon: '[G]' },
+    { id: 'garden_bench',    type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Wooden Bench',    description: 'A cosy bench to sit and admire your garden', icon: '[G]' },
 ];
 
 // ---- Reward unlock state ----
@@ -6702,6 +6755,25 @@ let unlockedRewards = new Set(
     JSON.parse(localStorage.getItem(_rewardStorageKey) || '[]')
 );
 
+// ---- "New" badge tracking ----
+// A reward is "new" when it has been unlocked but not yet viewed in any panel.
+const _seenRewardsKey = 'seenRewards';
+let _seenRewards = new Set(
+    JSON.parse(localStorage.getItem(_seenRewardsKey) || '[]')
+);
+
+// Mark a reward as seen (clears the NEW badge). Persists to localStorage.
+function markRewardSeen(rewardId) {
+    if (_seenRewards.has(rewardId)) return;
+    _seenRewards.add(rewardId);
+    localStorage.setItem(_seenRewardsKey, JSON.stringify([..._seenRewards]));
+}
+
+// Returns true if the reward is unlocked but has not been viewed yet.
+function isRewardNew(rewardId) {
+    return unlockedRewards.has(rewardId) && !_seenRewards.has(rewardId);
+}
+
 // Returns true if the reward with the given id is currently unlocked.
 function isRewardUnlocked(rewardId) {
     return unlockedRewards.has(rewardId);
@@ -6709,6 +6781,7 @@ function isRewardUnlocked(rewardId) {
 
 // Marks a reward as unlocked. Returns true if this was a new unlock.
 // Also keeps unlockedConsoleCmds in sync for slash-command gating.
+// Dispatches a 'rewardUnlocked' CustomEvent so open windows can refresh.
 function unlockReward(rewardId) {
     if (unlockedRewards.has(rewardId)) return false;
     const reward = REWARD_REGISTRY.find(r => r.id === rewardId);
@@ -6720,6 +6793,8 @@ function unlockReward(rewardId) {
         unlockedConsoleCmds.add(cmdName);
         localStorage.setItem(_consoleCmdsKey, JSON.stringify([...unlockedConsoleCmds]));
     }
+    // Notify all open panels that a new reward arrived
+    document.dispatchEvent(new CustomEvent('rewardUnlocked', { detail: { reward } }));
     return true;
 }
 
@@ -6727,6 +6802,11 @@ function unlockReward(rewardId) {
 // e.g. getUnlockedRewardsByType(REWARD_TYPE_WALLPAPER)
 function getUnlockedRewardsByType(type) {
     return REWARD_REGISTRY.filter(r => r.type === type && unlockedRewards.has(r.id));
+}
+
+// Returns all rewards of a given type (both locked and unlocked), for building full grids.
+function getAllRewardsByType(type) {
+    return REWARD_REGISTRY.filter(r => r.type === type);
 }
 
 // ---- Achievement state ----
@@ -8332,6 +8412,8 @@ async function loadUserWallpaper() {
     function renderWallpaperGrid() {
         if (!grid) return;
         grid.innerHTML = '';
+
+        // ---- Base wallpapers (always available) ----
         WALLPAPERS.forEach(wp => {
             const sw = document.createElement('button');
             sw.className = 'wallpaper-swatch' + (wp.id === wpSelectedId ? ' selected' : '');
@@ -8347,10 +8429,256 @@ async function loadUserWallpaper() {
                 wpSelectedId = wp.id;
                 applyWallpaper(wpSelectedId);
                 if (preview) preview.style.background = wp.css;
-                grid.querySelectorAll('.wallpaper-swatch').forEach(s => s.classList.remove('selected'));
+                grid.querySelectorAll('.wallpaper-swatch, .reward-item--wallpaper').forEach(s => s.classList.remove('selected'));
                 sw.classList.add('selected');
             });
             grid.appendChild(sw);
+        });
+
+        // ---- Reward wallpapers ----
+        const rewardWallpapers = getAllRewardsByType(REWARD_TYPE_WALLPAPER);
+        if (rewardWallpapers.length > 0) {
+            const sep = document.createElement('div');
+            sep.className = 'unlock-section-label';
+            sep.style.cssText = 'grid-column:1/-1;font:bold 10px Tahoma,Verdana,Arial,sans-serif;color:#000080;padding-bottom:2px;border-bottom:1px solid #c0c0c0;margin-top:4px;';
+            sep.textContent = '🔓 Unlockable Wallpapers';
+            grid.appendChild(sep);
+
+            rewardWallpapers.forEach(rw => {
+                const unlocked = isRewardUnlocked(rw.id);
+                const isNew    = isRewardNew(rw.id);
+                const sw = document.createElement('button');
+                sw.type = 'button';
+                sw.className = 'wallpaper-swatch reward-item--wallpaper' +
+                    (rw.id === wpSelectedId ? ' selected' : '') +
+                    (unlocked ? '' : ' reward-item--locked');
+                sw.style.background = unlocked ? (rw.swatchCss || rw.css) : '';
+                sw.setAttribute('aria-label', rw.name);
+                sw.setAttribute('title', unlocked ? rw.name : `🔒 ${rw.name} — ${rw.description}`);
+                sw.disabled = !unlocked;
+
+                if (!unlocked) {
+                    const lockIco = document.createElement('span');
+                    lockIco.className = 'reward-lock-icon';
+                    lockIco.textContent = '🔒';
+                    sw.appendChild(lockIco);
+                } else if (isNew) {
+                    const badge = document.createElement('span');
+                    badge.className = 'reward-item-new-badge';
+                    badge.textContent = 'NEW';
+                    sw.appendChild(badge);
+                }
+
+                const lbl = document.createElement('span');
+                lbl.className = 'wallpaper-swatch-label';
+                lbl.textContent = unlocked ? rw.name : '???';
+                sw.appendChild(lbl);
+
+                if (unlocked) {
+                    sw.addEventListener('click', () => {
+                        markRewardSeen(rw.id);
+                        wpSelectedId = rw.id;
+                        applyWallpaper(wpSelectedId);
+                        if (preview) preview.style.background = rw.swatchCss || rw.css;
+                        grid.querySelectorAll('.wallpaper-swatch, .reward-item--wallpaper').forEach(s => s.classList.remove('selected'));
+                        sw.classList.add('selected');
+                        // Remove NEW badge now that it's been seen
+                        sw.querySelector('.reward-item-new-badge')?.remove();
+                    });
+                }
+                grid.appendChild(sw);
+            });
+        }
+    }
+
+    // ---- Render unlockable screensavers in the Screensaver tab ----
+    function renderRewardScreensavers() {
+        const picker = document.getElementById('ss-picker');
+        if (!picker) return;
+        // Remove any previously injected reward cards
+        picker.querySelectorAll('.ss-picker-card--reward').forEach(c => c.remove());
+
+        getAllRewardsByType(REWARD_TYPE_SCREENSAVER).forEach(rs => {
+            const unlocked = isRewardUnlocked(rs.id);
+            const isNew    = isRewardNew(rs.id);
+            const card = document.createElement('label');
+            card.className = 'ss-picker-card ss-picker-card--reward' +
+                (unlocked ? '' : ' ss-picker-card--locked');
+            card.title = unlocked ? rs.name : `🔒 ${rs.name} — ${rs.description}`;
+
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'ss-type';
+            radio.value = rs.id;
+            radio.disabled = !unlocked;
+            const ssType = localStorage.getItem('screensaverType') || 'starfield';
+            radio.checked = unlocked && ssType === rs.id;
+
+            const thumb = document.createElement('div');
+            thumb.className = 'ss-picker-thumb';
+            if (unlocked && rs.swatchCss) {
+                thumb.style.background = rs.swatchCss;
+            } else {
+                thumb.style.background = 'repeating-linear-gradient(45deg,#c0c0c0 0px,#c0c0c0 3px,#a0a0a0 3px,#a0a0a0 6px)';
+                const lockSpan = document.createElement('span');
+                lockSpan.style.cssText = 'font-size:18px;display:flex;align-items:center;justify-content:center;height:100%;';
+                lockSpan.textContent = '🔒';
+                thumb.appendChild(lockSpan);
+            }
+
+            const nameEl = document.createElement('span');
+            nameEl.className = 'ss-picker-name';
+            nameEl.textContent = unlocked ? rs.name : '???';
+
+            card.appendChild(radio);
+            card.appendChild(thumb);
+            card.appendChild(nameEl);
+
+            if (unlocked && isNew) {
+                const badge = document.createElement('span');
+                badge.className = 'reward-item-new-badge';
+                badge.style.cssText = 'position:absolute;top:2px;right:2px;';
+                badge.textContent = 'NEW';
+                card.style.position = 'relative';
+                card.appendChild(badge);
+            }
+
+            if (unlocked) {
+                radio.addEventListener('change', () => {
+                    if (radio.checked) {
+                        localStorage.setItem('screensaverType', rs.id);
+                        markRewardSeen(rs.id);
+                        card.querySelector('.reward-item-new-badge')?.remove();
+                    }
+                });
+            }
+            picker.appendChild(card);
+        });
+    }
+
+    // ---- Render reward sound packs in the Sound tab ----
+    function renderRewardSoundPacks() {
+        const container = document.getElementById('settings-sndpacks');
+        if (!container) return;
+        container.innerHTML = '';
+        const packs = getAllRewardsByType(REWARD_TYPE_SOUND_PACK);
+        if (packs.length === 0) return;
+
+        const activePack = localStorage.getItem('activeSoundPack') || '';
+
+        packs.forEach(sp => {
+            const unlocked = isRewardUnlocked(sp.id);
+            const isNew    = isRewardNew(sp.id);
+            const item = document.createElement('div');
+            item.className = 'sndpack-item' +
+                (unlocked ? '' : ' sndpack-item--locked') +
+                (activePack === sp.id ? ' selected' : '');
+            item.title = unlocked ? sp.description : `🔒 ${sp.name} — ${sp.description}`;
+
+            const iconEl = document.createElement('span');
+            iconEl.className = 'sndpack-item-icon';
+            iconEl.textContent = unlocked ? sp.icon : '🔒';
+
+            const infoEl = document.createElement('div');
+            infoEl.className = 'sndpack-item-info';
+            const nameEl = document.createElement('div');
+            nameEl.className = 'sndpack-item-name';
+            nameEl.textContent = unlocked ? sp.name : '??? (locked)';
+            const descEl = document.createElement('div');
+            descEl.className = 'sndpack-item-desc';
+            descEl.textContent = unlocked ? sp.description : 'Earn an achievement to unlock';
+            infoEl.appendChild(nameEl);
+            infoEl.appendChild(descEl);
+
+            item.appendChild(iconEl);
+            item.appendChild(infoEl);
+
+            if (unlocked && isNew) {
+                const badge = document.createElement('span');
+                badge.className = 'sndpack-item-badge sndpack-item-badge--new';
+                badge.textContent = 'NEW';
+                item.appendChild(badge);
+            } else if (!unlocked) {
+                const badge = document.createElement('span');
+                badge.className = 'sndpack-item-badge sndpack-item-badge--lock';
+                badge.textContent = '🔒';
+                item.appendChild(badge);
+            }
+
+            if (unlocked) {
+                item.addEventListener('click', () => {
+                    markRewardSeen(sp.id);
+                    localStorage.setItem('activeSoundPack', activePack === sp.id ? '' : sp.id);
+                    renderRewardSoundPacks(); // re-render to update selection
+                });
+            }
+            container.appendChild(item);
+        });
+    }
+
+    // ---- Render reward desktop themes in the Appearance tab ----
+    function renderRewardThemes() {
+        const container = document.getElementById('settings-themes');
+        if (!container) return;
+        container.innerHTML = '';
+        const themes = getAllRewardsByType(REWARD_TYPE_DESKTOP_THEME);
+        if (themes.length === 0) return;
+
+        const activeTheme = localStorage.getItem('activeDesktopTheme') || '';
+
+        themes.forEach(th => {
+            const unlocked = isRewardUnlocked(th.id);
+            const isNew    = isRewardNew(th.id);
+            const item = document.createElement('div');
+            item.className = 'theme-item' +
+                (unlocked ? '' : ' theme-item--locked') +
+                (activeTheme === th.id ? ' selected' : '');
+            item.title = unlocked ? th.description : `🔒 ${th.name} — ${th.description}`;
+
+            const swatchEl = document.createElement('div');
+            swatchEl.className = 'theme-item-swatch';
+            if (unlocked && th.swatchCss) {
+                swatchEl.style.background = th.swatchCss;
+            } else {
+                swatchEl.style.background = 'repeating-linear-gradient(45deg,#c0c0c0 0px,#c0c0c0 3px,#a0a0a0 3px,#a0a0a0 6px)';
+            }
+
+            const infoEl = document.createElement('div');
+            infoEl.className = 'theme-item-info';
+            const nameEl = document.createElement('div');
+            nameEl.className = 'theme-item-name';
+            nameEl.textContent = unlocked ? (th.icon + ' ' + th.name) : '??? (locked)';
+            const descEl = document.createElement('div');
+            descEl.className = 'theme-item-desc';
+            descEl.textContent = unlocked ? th.description : 'Earn an achievement to unlock';
+            infoEl.appendChild(nameEl);
+            infoEl.appendChild(descEl);
+
+            item.appendChild(swatchEl);
+            item.appendChild(infoEl);
+
+            if (unlocked && isNew) {
+                const badge = document.createElement('span');
+                badge.className = 'theme-item-badge theme-item-badge--new';
+                badge.textContent = 'NEW';
+                item.appendChild(badge);
+            } else if (!unlocked) {
+                const badge = document.createElement('span');
+                badge.className = 'theme-item-badge theme-item-badge--lock';
+                badge.textContent = '🔒';
+                item.appendChild(badge);
+            }
+
+            if (unlocked) {
+                item.addEventListener('click', () => {
+                    markRewardSeen(th.id);
+                    const newActive = activeTheme === th.id ? '' : th.id;
+                    localStorage.setItem('activeDesktopTheme', newActive);
+                    applyDesktopTheme(newActive);
+                    renderRewardThemes();
+                });
+            }
+            container.appendChild(item);
         });
     }
 
@@ -8473,9 +8801,14 @@ async function loadUserWallpaper() {
     function populateControls() {
         wpSavedId    = currentWallpaperId;
         wpSelectedId = currentWallpaperId;
-        const cur = WALLPAPERS.find(w => w.id === wpSelectedId) || WALLPAPERS[0];
-        if (preview) preview.style.background = cur.css;
+        const cur = WALLPAPERS.find(w => w.id === wpSelectedId)
+            || REWARD_REGISTRY.find(r => r.id === wpSelectedId)
+            || WALLPAPERS[0];
+        if (preview) preview.style.background = cur.css || cur.swatchCss || '';
         renderWallpaperGrid();
+        renderRewardThemes();
+        renderRewardSoundPacks();
+        renderRewardScreensavers();
 
         if (darkModeChk)    darkModeChk.checked    = isDarkMode;
 
@@ -8507,6 +8840,16 @@ async function loadUserWallpaper() {
         const userSpan = document.getElementById('settings-about-user');
         if (userSpan) userSpan.textContent = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : 'Not signed in';
     }
+
+    // ---- Auto-refresh settings when a new reward unlocks ----
+    document.addEventListener('rewardUnlocked', (e) => {
+        if (win.classList.contains('is-hidden')) return;
+        const type = e.detail?.reward?.type;
+        if (type === REWARD_TYPE_WALLPAPER)    renderWallpaperGrid();
+        if (type === REWARD_TYPE_SCREENSAVER)  renderRewardScreensavers();
+        if (type === REWARD_TYPE_SOUND_PACK)   renderRewardSoundPacks();
+        if (type === REWARD_TYPE_DESKTOP_THEME) renderRewardThemes();
+    });
 
     // ---- Apply / save ----
     async function applySettings() {
@@ -8671,6 +9014,8 @@ async function loadUserWallpaper() {
         w95Mgr.focusWindow('w95-win-cat');
         localStorage.setItem('w95_cat_open', '1');
         loadCatStats();
+        renderCatAccessories();
+        renderCatBehaviours();
         // Desktop cat notices Cat.exe being opened and walks toward it
         window._catController?.onCatOpen();
     }
@@ -8717,15 +9062,138 @@ async function loadUserWallpaper() {
         return (_catStats?.catName || '').trim() || 'the cat';
     }
 
-    function getCatFace(s) {
-        if (!s) return '=^.^=';
-        if (s.hunger < 20) return '=^;_;^=';
-        if (s.thirst < 20) return '=^-.-^=';
-        if (s.play   < 20) return '=^_.^= z';
-        if (s.hunger < 40 || s.thirst < 40 || s.play < 40) return '=^~.~^=';
-        if (Math.min(s.hunger, s.thirst, s.play) > 75) return '=^o^= \u2661';
-        return '=^-^=';
+    function getEquippedAccessory() {
+        const id = localStorage.getItem('catEquippedAccessory') || '';
+        if (!id || !isRewardUnlocked(id)) return null;
+        return REWARD_REGISTRY.find(r => r.id === id && r.type === REWARD_TYPE_CAT_ACCESSORY) || null;
     }
+
+    function getCatFace(s) {
+        const acc = getEquippedAccessory();
+        const decor = acc ? ' ' + acc.faceDecor : '';
+        if (!s) return '=^.^=' + decor;
+        if (s.hunger < 20) return '=^;_;^=' + decor;
+        if (s.thirst < 20) return '=^-.-^=' + decor;
+        if (s.play   < 20) return '=^_.^= z' + decor;
+        if (s.hunger < 40 || s.thirst < 40 || s.play < 40) return '=^~.~^=' + decor;
+        if (Math.min(s.hunger, s.thirst, s.play) > 75) return '=^o^= \u2661' + decor;
+        return '=^-^=' + decor;
+    }
+
+    // ---- Render accessories panel ----
+    function renderCatAccessories() {
+        const grid = document.getElementById('cat-accessories-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        const equipped = localStorage.getItem('catEquippedAccessory') || '';
+        getAllRewardsByType(REWARD_TYPE_CAT_ACCESSORY).forEach(acc => {
+            const unlocked = isRewardUnlocked(acc.id);
+            const isNew    = isRewardNew(acc.id);
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'cat-unlock-item' +
+                (unlocked ? '' : ' cat-unlock-item--locked') +
+                (equipped === acc.id ? ' active' : '');
+            item.title = unlocked
+                ? (equipped === acc.id ? 'Click to remove ' + acc.name : 'Click to equip ' + acc.name)
+                : '🔒 ' + acc.name + ' — ' + acc.description;
+            item.disabled = !unlocked;
+
+            const iconEl = document.createElement('span');
+            iconEl.className = 'cat-unlock-item-icon';
+            iconEl.textContent = unlocked ? acc.icon : '🔒';
+            item.appendChild(iconEl);
+
+            const nameEl = document.createElement('span');
+            nameEl.textContent = unlocked ? acc.name : '???';
+            item.appendChild(nameEl);
+
+            if (unlocked && isNew) {
+                const badge = document.createElement('span');
+                badge.className = 'cat-unlock-item-badge cat-unlock-item-badge--new';
+                badge.textContent = 'NEW';
+                item.appendChild(badge);
+            }
+
+            if (unlocked) {
+                item.addEventListener('click', () => {
+                    markRewardSeen(acc.id);
+                    const cur = localStorage.getItem('catEquippedAccessory');
+                    localStorage.setItem('catEquippedAccessory', cur === acc.id ? '' : acc.id);
+                    renderCatAccessories();
+                    // Update face display with new accessory
+                    const faceEl = document.getElementById('cat-face');
+                    if (faceEl) faceEl.textContent = getCatFace(_catStats);
+                });
+            }
+            grid.appendChild(item);
+        });
+    }
+
+    // ---- Render behaviours panel ----
+    function renderCatBehaviours() {
+        const grid = document.getElementById('cat-behaviours-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        const activeBehaviours = JSON.parse(localStorage.getItem('catActiveBehaviours') || '[]');
+        getAllRewardsByType(REWARD_TYPE_CAT_BEHAVIOUR).forEach(beh => {
+            const unlocked = isRewardUnlocked(beh.id);
+            const isNew    = isRewardNew(beh.id);
+            const isActive = activeBehaviours.includes(beh.id);
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'cat-unlock-item' +
+                (unlocked ? '' : ' cat-unlock-item--locked') +
+                (isActive ? ' active' : '');
+            item.title = unlocked
+                ? (isActive ? 'Click to disable ' + beh.name : 'Click to enable ' + beh.name)
+                : '🔒 ' + beh.name + ' — ' + beh.description;
+            item.disabled = !unlocked;
+
+            const iconEl = document.createElement('span');
+            iconEl.className = 'cat-unlock-item-icon';
+            iconEl.textContent = unlocked ? beh.icon : '🔒';
+            item.appendChild(iconEl);
+
+            const nameEl = document.createElement('span');
+            nameEl.textContent = unlocked ? beh.name : '???';
+            item.appendChild(nameEl);
+
+            if (unlocked && isNew) {
+                const badge = document.createElement('span');
+                badge.className = 'cat-unlock-item-badge cat-unlock-item-badge--new';
+                badge.textContent = 'NEW';
+                item.appendChild(badge);
+            } else if (unlocked && isActive) {
+                const badge = document.createElement('span');
+                badge.className = 'cat-unlock-item-badge';
+                badge.style.cssText = 'background:#008000;color:#fff;';
+                badge.textContent = 'ON';
+                item.appendChild(badge);
+            }
+
+            if (unlocked) {
+                item.addEventListener('click', () => {
+                    markRewardSeen(beh.id);
+                    const cur = JSON.parse(localStorage.getItem('catActiveBehaviours') || '[]');
+                    const updated = cur.includes(beh.id)
+                        ? cur.filter(b => b !== beh.id)
+                        : [...cur, beh.id];
+                    localStorage.setItem('catActiveBehaviours', JSON.stringify(updated));
+                    renderCatBehaviours();
+                });
+            }
+            grid.appendChild(item);
+        });
+    }
+
+    // Listen for new reward unlocks while cat window is open
+    document.addEventListener('rewardUnlocked', (e) => {
+        if (win.classList.contains('is-hidden')) return;
+        const type = e.detail?.reward?.type;
+        if (type === REWARD_TYPE_CAT_ACCESSORY) renderCatAccessories();
+        if (type === REWARD_TYPE_CAT_BEHAVIOUR) renderCatBehaviours();
+    });
 
     function getCatMoodBadge(s) {
         if (!s) return { text: '...', cls: '' };
@@ -11117,9 +11585,24 @@ function initPixelCat() {
 
     // ---- Command registry ----
     // Base commands always available in the console.
-    const BASE_CMDS = new Set(['help','clear','achievements','commands','stats','reactstats','letters','catstats','gardenlog',
+    // BASE_CMDS: always available. Reward-gated commands (stats etc.) live in
+    // unlockedConsoleCmds and are added via achievement rewards.
+    const BASE_CMDS = new Set(['help','clear','achievements','commands',
         'rain','spin','dance','summon-cat','grow-tree','matrix','love','party','ghost','fortune',
         'bloom','snow','comet','fireflies','constellation']);
+
+    // These commands are gated behind achievement rewards.
+    const GATED_CMDS = {
+        stats:      { rewardId: 'cmd_stats',      desc: 'Your post & reply stats' },
+        reactstats: { rewardId: 'cmd_reactstats', desc: 'Your reaction stats' },
+        letters:    { rewardId: 'cmd_letters',    desc: 'Your letter stats' },
+        catstats:   { rewardId: 'cmd_catstats',   desc: 'Your cat care stats' },
+        gardenlog:  { rewardId: 'cmd_gardenlog',  desc: 'Your garden talk count' },
+    };
+
+    function isGatedCmdUnlocked(cmd) {
+        return unlockedConsoleCmds.has(cmd);
+    }
 
     function getCmdList() {
         // Always include base; also include achievement-unlocked commands
@@ -11135,14 +11618,25 @@ function initPixelCat() {
                 ['help',        'Show this help'],
                 ['clear',       'Clear the console'],
                 ['achievements','List your unlocked achievements'],
-                ['commands',    'Show console commands unlocked via achievements'],
-                ['stats',       'Your post & reply stats'],
-                ['reactstats',  'Your reaction stats'],
-                ['letters',     'Your letter stats'],
-                ['catstats',    'Your cat care stats'],
-                ['gardenlog',   'Your garden talk count'],
+                ['commands',    'Show special commands unlocked via achievements'],
             ].forEach(([cmd, desc]) => print(`  ${cmd.padEnd(14)} ${desc}`));
             printBlank();
+
+            // Show reward-gated commands: unlocked ones in normal colour, locked as dim hints
+            const gatedEntries = Object.entries(GATED_CMDS);
+            const unlockedGated = gatedEntries.filter(([c]) => isGatedCmdUnlocked(c));
+            const lockedGated   = gatedEntries.filter(([c]) => !isGatedCmdUnlocked(c));
+            if (unlockedGated.length > 0) {
+                print('Special commands:', 'console-line-header');
+                unlockedGated.forEach(([cmd, info]) => print(`  ${cmd.padEnd(14)} ${info.desc}`));
+                printBlank();
+            }
+            if (lockedGated.length > 0) {
+                print('Locked commands:', 'console-line-header');
+                lockedGated.forEach(() => print(`  ${'???'.padEnd(14)} (earn achievements to unlock)`, 'console-line-dim'));
+                printBlank();
+            }
+
             print('Garden effects:', 'console-line-header');
             [
                 ['bloom',         'Garden bloom effect (~5s)'],
@@ -11170,20 +11664,18 @@ function initPixelCat() {
 
         commands() {
             const cmds = [...unlockedConsoleCmds];
+            const lockedCount = Object.keys(GATED_CMDS).filter(c => !isGatedCmdUnlocked(c)).length;
             if (cmds.length === 0) {
-                print('No commands unlocked yet.', 'console-line-dim');
-                print('Tip: earn achievements to unlock commands.', 'console-line-dim');
+                print('No special commands unlocked yet.', 'console-line-dim');
+                if (lockedCount > 0) print(`${lockedCount} commands locked — earn achievements to reveal them.`, 'console-line-dim');
                 return;
             }
-            print('Unlocked commands:', 'console-line-header');
-            const info = {
-                stats:      'Your post & reply stats',
-                reactstats: 'Your reaction stats',
-                letters:    'Your letter stats',
-                catstats:   'Your cat care stats',
-                gardenlog:  'Your garden talk count',
-            };
-            cmds.forEach(c => print(`  ${c.padEnd(14)} ${info[c] || ''}`));
+            print('Unlocked special commands:', 'console-line-header');
+            cmds.forEach(c => print(`  ${c.padEnd(14)} ${GATED_CMDS[c]?.desc || ''}`));
+            if (lockedCount > 0) {
+                printBlank();
+                print(`${lockedCount} more command${lockedCount > 1 ? 's' : ''} still locked — keep earning achievements!`, 'console-line-dim');
+            }
         },
 
         stats() {
@@ -11309,7 +11801,18 @@ function initPixelCat() {
         print(`C:\\> ${trimmed}`, 'console-line-prompt');
 
         const [cmd, ...args] = trimmed.split(/\s+/);
-        const handler = CMD_HANDLERS[cmd.toLowerCase()];
+        const cmdLower = cmd.toLowerCase();
+
+        // Check if this is a reward-gated command that isn't unlocked yet
+        if (GATED_CMDS[cmdLower] && !isGatedCmdUnlocked(cmdLower)) {
+            print(`'${cmd}' is locked. Earn achievements to unlock special commands.`, 'console-line-dim');
+            print("Type 'commands' to see what's available.", 'console-line-dim');
+            sparkSound('cmd_error');
+            printBlank();
+            return;
+        }
+
+        const handler = CMD_HANDLERS[cmdLower];
         if (handler) {
             handler(args);
             sparkSound('cmd_success');
@@ -11320,6 +11823,16 @@ function initPixelCat() {
         }
         printBlank();
     }
+
+    // Refresh console hints panel when a new command is unlocked
+    document.addEventListener('rewardUnlocked', (e) => {
+        if (win.classList.contains('is-hidden')) return;
+        if (e.detail?.reward?.type === REWARD_TYPE_CONSOLE_COMMAND) {
+            const cmdName = e.detail.reward.name.replace(/^\//, '');
+            print(`\u2713 Command unlocked: ${cmdName}`, 'console-line-header');
+            printBlank();
+        }
+    });
 
     // ---- Input handling ----
     input.addEventListener('keydown', (e) => {
