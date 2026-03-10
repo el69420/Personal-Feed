@@ -8660,7 +8660,7 @@ function initPixelCat() {
         [0,1,0,0,0,0,1,0],  // row 1 – ear tips (shifted down)
         [1,3,1,0,0,1,3,1],  // row 2 – ears with pink inner
         [1,2,2,2,2,2,2,1],  // row 3 – face
-        [1,2,1,2,2,1,2,1],  // row 4 – closed eyes (two separate dots, gap in centre)
+        [1,2,2,2,2,2,2,1],  // row 4 – closed eyes (smooth face, no marks = eyelids shut)
         [1,2,2,2,2,2,2,1],  // row 5 – body
         [1,2,2,2,2,2,2,1],  // row 6 – body
         [0,1,2,2,2,2,1,0],  // row 7 – body bottom
@@ -8774,6 +8774,11 @@ function initPixelCat() {
     emoteEl.id = 'cat-emotes';
     document.body.appendChild(emoteEl);
 
+    // ---- Sleep Zzz overlay (floats up from the cat's head while sleeping) ----
+    const zzzEl = document.createElement('div');
+    zzzEl.id = 'cat-zzz';
+    document.body.appendChild(zzzEl);
+
     // ---- State received from Firebase ----
     let fbX         = 0.5;
     let fbDir       = 'right';
@@ -8880,6 +8885,33 @@ function initPixelCat() {
             emoteEl.appendChild(p);
             setTimeout(() => p.remove(), 1400 + i * 110);
         });
+    }
+
+    // ---- Sleep Zzz spawner ----
+    let _zzzTimer = null;
+    let _zzzIdx   = 0;
+    function startSleepZzz() {
+        if (_zzzTimer) return;
+        _zzzIdx = 0;
+        const spawn = () => {
+            const chars = ['z', 'Z', 'z'];
+            const sizes = ['9px', '13px', '9px'];
+            const p = document.createElement('span');
+            p.className = 'cat-zzz-p';
+            p.textContent = chars[_zzzIdx % 3];
+            p.style.fontSize = sizes[_zzzIdx % 3];
+            p.style.left = (3 + (_zzzIdx % 3) * 8) + 'px';
+            zzzEl.appendChild(p);
+            setTimeout(() => p.remove(), 2600);
+            _zzzIdx++;
+        };
+        spawn();
+        _zzzTimer = setInterval(spawn, 1400);
+    }
+    function stopSleepZzz() {
+        clearInterval(_zzzTimer);
+        _zzzTimer = null;
+        // leave any in-flight particles to finish their animation naturally
     }
 
     // Listen for shared cat emote events
@@ -9460,6 +9492,8 @@ function initPixelCat() {
                     canvas.classList.add('cat-stretch');
                 }
             }
+            if (catState === 'sleep') startSleepZzz();
+            else if (_prevRenderState === 'sleep') stopSleepZzz();
             _prevRenderState = catState;
         }
         // Settled visual: soft green glow when driver has roaming paused
@@ -9506,6 +9540,10 @@ function initPixelCat() {
             emoteEl.style.top    = Math.round(py + CH * S) + 'px';
             emoteEl.style.bottom = 'auto';
             emoteEl.style.zIndex = '156';
+            zzzEl.style.left   = Math.round(px) + 'px';
+            zzzEl.style.top    = Math.round(py) + 'px';
+            zzzEl.style.bottom = 'auto';
+            zzzEl.style.zIndex = '157';
         } else if (isPerching) {
             const { px, py } = calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
             canvas.style.left   = px + 'px';
@@ -9518,6 +9556,10 @@ function initPixelCat() {
             emoteEl.style.top    = (py + CH * S) + 'px';
             emoteEl.style.bottom = 'auto';
             emoteEl.style.zIndex = (winZ + 2) + '';
+            zzzEl.style.left   = px + 'px';
+            zzzEl.style.top    = py + 'px';
+            zzzEl.style.bottom = 'auto';
+            zzzEl.style.zIndex = (winZ + 3) + '';
         } else {
             canvas.style.left   = `${Math.round(localX * (vw - CW * S))}px`;
             canvas.style.top    = 'auto';
@@ -9527,6 +9569,10 @@ function initPixelCat() {
             emoteEl.style.top    = 'auto';
             emoteEl.style.bottom = '44px';
             emoteEl.style.zIndex = '151';
+            zzzEl.style.left   = canvas.style.left;
+            zzzEl.style.top    = 'auto';
+            zzzEl.style.bottom = (44 + CH * S) + 'px';
+            zzzEl.style.zIndex = '152';
         }
 
         // Mirror canvas position to the interactive hit area overlay
