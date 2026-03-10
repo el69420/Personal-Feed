@@ -30,6 +30,64 @@ const INSIDE_JOKE = 'you are gay';
 // preserved, just wrapped one level deeper.
 function initApp() {
 
+// ===== Boot Screen — run FIRST so the fallback timer is always registered =====
+// This IIFE is intentionally placed at the very top of initApp() so that the
+// 8-second dismissal fallback fires even if any later initialisation code throws.
+(function () {
+    const boot = document.getElementById('boot-screen');
+    function dismissBoot() {
+        if (!boot) return;
+        boot.style.transition = 'opacity 0.4s';
+        boot.style.opacity = '0';
+        setTimeout(() => boot.classList.add('is-hidden'), 420);
+        sessionStorage.setItem('bootShown', '1');
+    }
+    if (!boot) return;
+    if (sessionStorage.getItem('bootShown') || localStorage.getItem('bootEnabled') === 'false') {
+        boot.classList.add('is-hidden');
+        return;
+    }
+    const _bootFallbackTimer = setTimeout(dismissBoot, 8000);
+    try {
+        const bar   = document.getElementById('boot-progress-bar');
+        const label = document.getElementById('boot-label');
+        const log   = document.getElementById('boot-log');
+        const STEPS = [
+            [10, 'Initializing system...',          'Starting Windows\u2026'],
+            [22, 'Loading HIMEM.SYS...',            'Starting Windows\u2026'],
+            [34, 'Loading Feed.exe',                'Loading programs\u2026'],
+            [46, 'Loading Garden.exe',              'Loading programs\u2026'],
+            [56, 'Loading Cat.exe',                 'Loading programs\u2026'],
+            [66, 'Loading Mail.exe',                'Loading programs\u2026'],
+            [76, 'Loading Jukebox.exe',             'Loading programs\u2026'],
+            [88, 'Checking for updates...',         'Almost ready\u2026'],
+            [100, 'Desktop ready.',                 'Welcome'],
+        ];
+        function addLine(text) {
+            if (!log) return;
+            const span = document.createElement('span');
+            span.className = 'boot-log-line';
+            span.textContent = text;
+            log.appendChild(span);
+            while (log.children.length > 5) log.removeChild(log.firstChild);
+        }
+        let i = 0;
+        function tick() {
+            if (i >= STEPS.length) { clearTimeout(_bootFallbackTimer); dismissBoot(); return; }
+            const [pct, line, lbl] = STEPS[i];
+            if (bar) bar.style.width = pct + '%';
+            if (label && lbl) label.textContent = lbl;
+            addLine(line);
+            i++;
+            setTimeout(tick, i < STEPS.length ? 210 : 400);
+        }
+        setTimeout(tick, 300);
+    } catch (_e) {
+        clearTimeout(_bootFallbackTimer);
+        dismissBoot();
+    }
+})();
+
 // ---- LINK PREVIEW CACHE ----
 // Converts a URL to a safe Firebase key (no . # $ [ ] /)
 function urlToKey(url) {
@@ -11478,79 +11536,6 @@ function initPixelCat() {
         hideAll();
         window._catController?.toggleRoaming();
     });
-})();
-
-// ===== Boot Screen (D) — once per session =====
-(function () {
-    const boot = document.getElementById('boot-screen');
-    // Safe fallback: always dismiss the boot screen, even if init partially fails.
-    function dismissBoot() {
-        if (!boot) return;
-        boot.style.transition = 'opacity 0.4s';
-        boot.style.opacity = '0';
-        setTimeout(() => boot.classList.add('is-hidden'), 420);
-        sessionStorage.setItem('bootShown', '1');
-    }
-
-    if (!boot) return;
-
-    if (sessionStorage.getItem('bootShown') || localStorage.getItem('bootEnabled') === 'false') {
-        boot.classList.add('is-hidden');
-        return;
-    }
-
-    // Guaranteed fallback: boot screen will always clear after 8 seconds, even
-    // if the tick animation throws or stalls due to a non-critical UI failure.
-    const _bootFallbackTimer = setTimeout(dismissBoot, 8000);
-
-    try {
-        const bar   = document.getElementById('boot-progress-bar');
-        const label = document.getElementById('boot-label');
-        const log   = document.getElementById('boot-log');
-
-        // Each entry: [progress%, log line, label text]
-        const STEPS = [
-            [10, 'Initializing system...',          'Starting Windows\u2026'],
-            [22, 'Loading HIMEM.SYS...',            'Starting Windows\u2026'],
-            [34, 'Loading Feed.exe',                'Loading programs\u2026'],
-            [46, 'Loading Garden.exe',              'Loading programs\u2026'],
-            [56, 'Loading Cat.exe',                 'Loading programs\u2026'],
-            [66, 'Loading Mail.exe',                'Loading programs\u2026'],
-            [76, 'Loading Jukebox.exe',             'Loading programs\u2026'],
-            [88, 'Checking for updates...',         'Almost ready\u2026'],
-            [100, 'Desktop ready.',                 'Welcome'],
-        ];
-
-        function addLine(text) {
-            if (!log) return;
-            const span = document.createElement('span');
-            span.className = 'boot-log-line';
-            span.textContent = text;
-            log.appendChild(span);
-            // Keep last 5 lines visible
-            while (log.children.length > 5) log.removeChild(log.firstChild);
-        }
-
-        let i = 0;
-        function tick() {
-            if (i >= STEPS.length) {
-                clearTimeout(_bootFallbackTimer);
-                dismissBoot();
-                return;
-            }
-            const [pct, line, lbl] = STEPS[i];
-            if (bar) bar.style.width = pct + '%';
-            if (label && lbl) label.textContent = lbl;
-            addLine(line);
-            i++;
-            setTimeout(tick, i < STEPS.length ? 210 : 400);
-        }
-        setTimeout(tick, 300);
-    } catch (_e) {
-        // If the animation setup fails for any reason, dismiss immediately.
-        clearTimeout(_bootFallbackTimer);
-        dismissBoot();
-    }
 })();
 
 // ===== Screensaver (E) — starfield + underwater =====
