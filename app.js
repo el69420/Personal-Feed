@@ -118,7 +118,7 @@ function applyLinkMeta(el, meta) {
 // then fall back to microlink.io (free, no key needed). Fires and forgets.
 async function hydrateLinkPreviews(container) {
     const previews = container.querySelectorAll('.link-preview[data-url]');
-    for (const el of previews) {
+    await Promise.all(Array.from(previews).map(async (el) => {
         const url = decodeURIComponent(el.dataset.url);
         const key = urlToKey(url);
         try {
@@ -126,7 +126,7 @@ async function hydrateLinkPreviews(container) {
             const snap = await get(child(ref(database), `linkMeta/${key}`));
             if (snap.exists()) {
                 applyLinkMeta(el, snap.val());
-                continue;
+                return;
             }
             // 2. Fetch from microlink.io (public free API, CORS-safe)
             const resp = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(6000) });
@@ -147,7 +147,7 @@ async function hydrateLinkPreviews(container) {
         } catch (_) {
             el.classList.remove('lp-loading');
         }
-    }
+    }));
 }
 
 // ===== Wallpaper definitions =====
