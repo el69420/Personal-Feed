@@ -2945,7 +2945,7 @@ function loadPosts() {
 }
 
 window.copyPostLink = function(postId, btn) {
-    const url = window.location.origin + '?post=' + postId;
+    const url = window.location.origin + window.location.pathname + '?post=' + postId;
     navigator.clipboard.writeText(url).then(() => {
         const svg = btn.innerHTML;
         btn.textContent = '✓';
