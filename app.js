@@ -2779,6 +2779,9 @@ function createPostCard(post) {
                     <button class="icon-btn copy-link-btn" onclick="copyPostLink('${post.id}',this)" title="Copy link">
                         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                     </button>
+                    <button class="icon-btn" onclick="openPostWindow('${post.id}')" title="Open in window">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M2 7h20"/><circle cx="5" cy="5" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/></svg>
+                    </button>
                     ${post.author === currentUser ? `
                         <button class="icon-btn" onclick="openEditPost('${post.id}')" title="Edit">✏️</button>
                         <button class="icon-btn delete-btn" onclick="deletePost('${post.id}')" title="Delete">
@@ -2930,17 +2933,9 @@ function loadPosts() {
     }, 120);
 
     // Handle ?post= URL deep-link (once, on first render that includes the target post)
-    if (_linkedPostId && !_linkedPostHandled) {
-        const el = document.getElementById(`post-${_linkedPostId}`);
-        if (el) {
-            _linkedPostHandled = true;
-            w95Apps['feed']?.open?.();
-            setTimeout(() => {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.classList.add('post-linked');
-                setTimeout(() => el.classList.remove('post-linked'), 2200);
-            }, 120);
-        }
+    if (_linkedPostId && !_linkedPostHandled && allPosts[_linkedPostId]) {
+        _linkedPostHandled = true;
+        setTimeout(() => openPostWindow(_linkedPostId), 120);
     }
 }
 
@@ -8691,6 +8686,78 @@ function applyIconPositions() {
         if (e.key === 'Escape') { clearIconSelection(); cancelDragSelect(); }
     });
 })();
+
+// ===== Win95 Post Detail Window =====
+(() => {
+    const win     = document.getElementById('w95-win-post');
+    const minBtn  = document.getElementById('w95-post-min');
+    const maxBtn  = document.getElementById('w95-post-max');
+    const closeBtn = document.getElementById('w95-post-close');
+    const handle  = document.getElementById('w95-post-handle');
+    const body    = document.getElementById('w95-post-body');
+    const titleEl = document.getElementById('w95-post-title');
+    if (!win) return;
+
+    let btn = null;
+
+    function showPostWin() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-post', 'POST', () => {
+            if (win.classList.contains('is-hidden')) showPostWin(); else hidePostWin();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-post');
+    }
+
+    function hidePostWin() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-post')) w95Mgr.focusWindow(null);
+    }
+
+    function closePostWin() {
+        if (w95Mgr.isMaximised('w95-win-post')) w95Mgr.toggleMaximise(win, 'w95-win-post');
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-post')) w95Mgr.focusWindow(null);
+        if (btn) { btn.remove(); btn = null; }
+    }
+
+    minBtn.addEventListener('click', (e) => { e.stopPropagation(); hidePostWin(); });
+    if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-post'); });
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closePostWin(); });
+
+    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+    handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button')) return;
+        if (w95Mgr.isMaximised('w95-win-post')) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const r = win.getBoundingClientRect();
+        winStartX = r.left; winStartY = r.top;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        win.style.left = (winStartX + e.clientX - startX) + 'px';
+        win.style.top  = (winStartY + e.clientY - startY) + 'px';
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+
+    w95Apps['post'] = {
+        open: (postId) => {
+            const post = postId ? { id: postId, ...allPosts[postId] } : null;
+            if (!post || !allPosts[postId]) return;
+            if (titleEl) titleEl.textContent = 'Post — ' + (post.author || 'Unknown');
+            body.innerHTML = createPostCard(post);
+            hydrateLinkPreviews(body);
+            if (window.twttr?.widgets) window.twttr.widgets.load(body);
+            if (window.instgrm?.Embeds) window.instgrm.Embeds.process();
+            showPostWin();
+        }
+    };
+})();
+
+window.openPostWindow = function(postId) {
+    w95Apps['post']?.open(postId);
+};
 
 // Bring any W95 window to front on mousedown and mark it active (single source of truth)
 document.querySelectorAll('.w95-window').forEach(win => {
