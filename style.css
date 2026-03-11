@@ -3151,6 +3151,7 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     font-size: 12px;
     font-weight: 900;
     font-family: 'Nunito', sans-serif;
+    cursor: pointer;
 }
 .reply-hint {
     font-size: 10px;

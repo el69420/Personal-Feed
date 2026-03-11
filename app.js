@@ -2758,7 +2758,7 @@ function createPostCard(post) {
                 <div class="post-author-row">
                     <span class="${badgeClass}">${safeText(author)} ${emoji}</span>
                     <span class="post-meta-dot">•</span>
-                    <span class="post-meta-date" title="${safeText(dateFull)}">${safeText(date)}</span>
+                    <span class="post-meta-date" title="${safeText(dateFull)}" onclick="openPostWindow('${post.id}')">${safeText(date)}</span>
                     ${collectionBadge}
                     ${sourceBadge}
                     ${isRead(post) ? '<span class="seen-dot" title="Seen"></span>' : ''}
