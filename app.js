@@ -433,6 +433,10 @@ if (u.hostname.includes('youtu.be')) {
     return u.pathname.split('/').filter(Boolean)[0] || null;
 }
 
+// YouTube Shorts: youtube.com/shorts/{id}
+const shortsMatch = u.pathname.match(/^\/shorts\/([^/?]+)/);
+if (shortsMatch) return shortsMatch[1];
+
 // normal youtube watch links
 if (u.searchParams.get('v')) {
     return u.searchParams.get('v');
@@ -2707,20 +2711,11 @@ function createPostCard(post) {
     if (!post.type || post.type === 'link') {
         const url = post.url || '';
         const domain = url.match(/https?:\/\/([^\/]+)/)?.[1]?.replace('www.', '') || 'link';
-        const tweetId = url.match(/(?:twitter|x)\.com\/.*\/status\/(\d+)/)?.[1];
         const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
         const source = post.source || detectSource(url);
         sourceBadge = `<button class="collection-badge" onclick="filterBySource('${safeText(source)}')" title="Filter by source">${safeText(getSourceLabel(source))}</button>`;
 
-        if (tweetId) {
-            contentHtml = `
-                <div class="post-content">
-                    <blockquote class="twitter-tweet" data-dnt="true" data-conversation="none">
-                        <a href="https://twitter.com/x/status/${tweetId}"></a>
-                    </blockquote>
-                </div>
-            `;
-        } else if (source === 'instagram') {
+        if (source === 'instagram') {
             contentHtml = createInstagramEmbed(url);
         } else if (source === 'youtube') {
             contentHtml = createYouTubeEmbed(post);
