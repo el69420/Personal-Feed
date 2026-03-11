@@ -1750,7 +1750,7 @@ body.dark-mode .chat-system-msg {
     flex-shrink: 0;
     letter-spacing: 0.01em;
 }
-body.dark-mode .chat-autocomplete__xp-badge { color: #666; }
+body.dark-mode .chat-autocomplete__xp-badge { color: #8ababa; }
 
 .chat-autocomplete__args {
     font-size: 10px;
@@ -1760,7 +1760,7 @@ body.dark-mode .chat-autocomplete__xp-badge { color: #666; }
     flex-shrink: 0;
     letter-spacing: 0.01em;
 }
-body.dark-mode .chat-autocomplete__args { color: #666; }
+body.dark-mode .chat-autocomplete__args { color: #8ababa; }
 
 /* ── Windows-95-style XP lock alert ─────────────────────────
    Matches the app's existing win95 aesthetic.                 */
@@ -1987,8 +1987,8 @@ body.dark-mode .chat-system-msg--usage {
     margin-right: 3px;
     color: #aaa;
 }
-body.dark-mode .chat-system-msg--whisper { color: #888; }
-body.dark-mode .chat-whisper-prefix      { color: #666; }
+body.dark-mode .chat-system-msg--whisper { color: #999; }
+body.dark-mode .chat-whisper-prefix      { color: #888; }
 
 /* ── /echo ───────────────────────────────────────────────── */
 .chat-system-msg--echo {
@@ -3678,6 +3678,7 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     margin-bottom: 4px;
     font-family: 'Nunito', sans-serif;
 }
+body.dark-mode .letter-from { color: #00cccc; }
 
 .letter-subject {
     font-size: 15px;
@@ -3890,6 +3891,7 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     margin-top: 2px;
     font-family: 'Nunito', sans-serif;
 }
+body.dark-mode .nl-status { color: #00cccc; }
 
 .w95-taskbar{position:fixed;left:0;right:0;bottom:0;height:40px;display:flex;align-items:center;gap:6px;padding:4px 6px;box-sizing:border-box;background:#c0c0c0;border-top:2px solid #fff;z-index:500}
 .w95-start-btn{font-weight:bold;min-width:76px;border-right:2px solid #404040;border-bottom:2px solid #404040;border-top:2px solid #fff;border-left:2px solid #fff;padding:3px 8px}
@@ -4153,12 +4155,12 @@ body.dark-mode .achievement-tier-header{color:#909090;}
 body.dark-mode .xp-cmd-group          { border-bottom-color: #333; }
 body.dark-mode .xp-cmd-group-header   { color: #909090; }
 body.dark-mode .xp-cmd-unlocked-badge { color: #7acc7a; }
-body.dark-mode .xp-cmd-need-label     { color: #666; }
+body.dark-mode .xp-cmd-need-label     { color: #909090; }
 body.dark-mode .xp-cmd-row--unlocked  { background: rgba(80,140,80,0.1); }
 body.dark-mode .xp-cmd-status         { color: #7acc7a; }
 body.dark-mode .xp-cmd-name           { color: #d0d0d0; }
-body.dark-mode .xp-cmd-row--locked .xp-cmd-name { color: #666; }
-body.dark-mode .xp-cmd-desc           { color: #707070; }
+body.dark-mode .xp-cmd-row--locked .xp-cmd-name { color: #888; }
+body.dark-mode .xp-cmd-desc           { color: #909090; }
 
 /* Tier border/background accents (unlocked cards only) */
 .achievement-item.is-unlocked.tier-bronze{border-left-color:#cd7f32;}
@@ -5641,13 +5643,13 @@ body.dark-mode .settings-about-title {
   color: #d0d0d0;
 }
 body.dark-mode .settings-hint {
-  color: #888;
+  color: #aaa;
 }
 body.dark-mode .settings-about-ver {
   color: #aaa;
 }
 body.dark-mode .settings-about-footer em {
-  color: #888;
+  color: #aaa;
 }
 body.dark-mode .settings-divider {
   border-top-color: #222;
@@ -7020,7 +7022,7 @@ body.dark-mode .theme-item-desc { color: #aaa; }
 body.dark-mode .cat-unlock-section-label { color: #8080ff; }
 body.dark-mode .cat-unlock-item { background: #2a2a2a; color: #ccc; border-color: #555 #333 #333 #555; }
 body.dark-mode .cat-unlock-item:hover { background: #333; }
-body.dark-mode .cat-unlock-item--locked { background: #1a1a1a; color: #555; }
+body.dark-mode .cat-unlock-item--locked { background: #1a1a1a; color: #888; }
 body.dark-mode .cat-unlock-item--locked:hover { background: #1a1a1a; }
 
 /* ===== Desktop Themes (applied via data-theme on body) ===== */
@@ -7032,6 +7034,11 @@ body[data-theme="theme_pastel"] .w95-body {
 }
 body[data-theme="theme_pastel"] .w95-titlebar {
   background: linear-gradient(to right, #c8a0c8, #e0a8c8) !important;
+  color: #2a002a !important;
+}
+body[data-theme="theme_pastel"] .window--active .w95-titlebar {
+  background: linear-gradient(to right, #b080b0, #cc88b0) !important;
+  color: #fff !important;
 }
 body[data-theme="theme_pastel"] .w95-btn {
   background: #ffe0f0 !important;
@@ -7097,4 +7104,41 @@ body[data-theme="theme_autumn"] select {
   background: #1a0800 !important;
   color: #d09060 !important;
   border-color: #602000 !important;
+}
+
+/* --- Theme CSS-variable scoping: ensures elements inside themed W95 windows
+       that use var(--text-primary), var(--card-bg) etc. get themed colours,
+       not the global light-mode values which would be unreadable. --- */
+
+/* Pastel: light-pink palette */
+body[data-theme="theme_pastel"] .w95-window {
+  --text-primary:   #2a002a;
+  --text-secondary: #804080;
+  --card-bg:        rgba(255, 238, 248, 0.97);
+  --section-bg:     rgba(255, 215, 238, 0.70);
+  --card-border:    rgba(180, 100, 150, 0.30);
+  --input-bg:       #fff5fa;
+  --input-border:   rgba(180, 100, 150, 0.40);
+}
+
+/* Midnight: dark-navy palette */
+body[data-theme="theme_midnight"] .w95-window {
+  --text-primary:   #c8c8ff;
+  --text-secondary: #8888cc;
+  --card-bg:        rgba(10, 10, 32, 0.97);
+  --section-bg:     rgba(5, 5, 20, 0.75);
+  --card-border:    rgba(60, 60, 180, 0.40);
+  --input-bg:       rgba(8, 8, 30, 0.95);
+  --input-border:   rgba(60, 60, 200, 0.50);
+}
+
+/* Autumn: warm-brown palette */
+body[data-theme="theme_autumn"] .w95-window {
+  --text-primary:   #f0c080;
+  --text-secondary: #c09050;
+  --card-bg:        rgba(44, 18, 0, 0.97);
+  --section-bg:     rgba(28, 10, 0, 0.80);
+  --card-border:    rgba(130, 60, 0, 0.40);
+  --input-bg:       rgba(22, 8, 0, 0.95);
+  --input-border:   rgba(110, 40, 0, 0.50);
 }
