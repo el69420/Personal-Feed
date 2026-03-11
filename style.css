@@ -7143,3 +7143,205 @@ body[data-theme="theme_autumn"] .w95-window {
   --input-bg:       rgba(22, 8, 0, 0.95);
   --input-border:   rgba(110, 40, 0, 0.50);
 }
+
+/* ============================================================
+   ARCHIVE BUTTON
+   ============================================================ */
+.archive-btn {
+    opacity: 0.55;
+    transition: opacity 0.15s, color 0.15s;
+}
+.archive-btn:hover {
+    opacity: 1;
+}
+.archive-btn.archive-active {
+    opacity: 1;
+    color: var(--accent, #5bbfbf);
+}
+
+/* ============================================================
+   BELL TRAY ICON — badge & animation
+   ============================================================ */
+.tray-icon-bell {
+    position: relative;
+}
+.notif-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    background: #e84040;
+    color: #fff;
+    font: bold 9px Tahoma, sans-serif;
+    min-width: 13px;
+    height: 13px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2px;
+    line-height: 1;
+    pointer-events: none;
+    border: 1px solid #c0c0c0;
+}
+.tray-icon-bell.bell-has-notif {
+    animation: bell-ring 0.5s ease;
+}
+@keyframes bell-ring {
+    0%   { transform: rotate(0deg); }
+    20%  { transform: rotate(-15deg); }
+    40%  { transform: rotate(15deg); }
+    60%  { transform: rotate(-10deg); }
+    80%  { transform: rotate(10deg); }
+    100% { transform: rotate(0deg); }
+}
+
+/* ============================================================
+   NOTIFICATION PANEL (dropdown above bell)
+   ============================================================ */
+.notif-panel {
+    position: fixed;
+    bottom: 44px; /* sits just above the taskbar */
+    right: 52px;
+    width: 280px;
+    max-height: 340px;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    box-shadow: 3px 3px 0 #000, inset 0 0 0 1px #c0c0c0;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    font-family: Tahoma, Verdana, Arial, sans-serif;
+    font-size: 12px;
+}
+.notif-panel.is-hidden { display: none; }
+.notif-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    background: linear-gradient(to right, #000080, #1084d0);
+    color: #fff;
+    font-weight: bold;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+.notif-panel-title { font-weight: bold; }
+.notif-panel-clear {
+    background: none;
+    border: none;
+    color: #cce;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+}
+.notif-panel-clear:hover { color: #fff; text-decoration: underline; }
+.notif-panel-list {
+    overflow-y: auto;
+    flex: 1;
+}
+.notif-panel-empty {
+    padding: 16px;
+    color: #808080;
+    text-align: center;
+    font-size: 11px;
+}
+.notif-panel-item {
+    padding: 7px 10px;
+    border-bottom: 1px solid #aaa;
+    cursor: pointer;
+    background: #fff;
+}
+.notif-panel-item:hover { background: #000080; color: #fff; }
+.notif-panel-item:hover .notif-item-time { color: #aad; }
+.notif-panel-item.notif-read { background: #e8e8e8; }
+.notif-panel-item.notif-read:hover { background: #000080; color: #fff; }
+.notif-item-author { font-weight: bold; font-size: 12px; }
+.notif-item-snippet { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; margin-top: 1px; }
+.notif-item-time { font-size: 10px; color: #808080; margin-top: 2px; }
+
+/* ============================================================
+   POST NOTIFICATION POPUP (flies up from bell)
+   ============================================================ */
+.post-notif-popup {
+    position: fixed;
+    bottom: 52px;
+    right: 14px;
+    width: 280px;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    box-shadow: 3px 3px 8px rgba(0,0,0,0.45), inset 0 0 0 1px #c0c0c0;
+    z-index: 10001;
+    font-family: Tahoma, Verdana, Arial, sans-serif;
+    font-size: 12px;
+    /* Start below taskbar, hidden */
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+}
+.post-notif-popup.notif-popup-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.notif-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px 4px 8px;
+    background: linear-gradient(to right, #000080, #1084d0);
+    color: #fff;
+    font-weight: bold;
+    font-size: 12px;
+}
+.notif-popup-icon { font-size: 13px; }
+.notif-popup-author { flex: 1; font-weight: bold; }
+.notif-popup-close {
+    background: none;
+    border: none;
+    color: #cce;
+    font-size: 13px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 2px;
+    font-family: inherit;
+}
+.notif-popup-close:hover { color: #fff; }
+.notif-popup-snippet {
+    padding: 7px 10px 4px;
+    color: #111;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.notif-popup-open {
+    display: block;
+    width: calc(100% - 20px);
+    margin: 4px 10px 8px;
+    padding: 4px 8px;
+    background: #c0c0c0;
+    border-top: 1px solid #fff;
+    border-left: 1px solid #fff;
+    border-right: 1px solid #808080;
+    border-bottom: 1px solid #808080;
+    font-family: Tahoma, Verdana, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: left;
+}
+.notif-popup-open:hover { background: #000080; color: #fff; border-color: #000080; }
+.notif-popup-open:active {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #fff;
+    border-bottom: 1px solid #fff;
+}

@@ -1224,13 +1224,15 @@ function setupDBListeners() {
         if (!isInitialLoad && sig !== prevDataSig) {
             sparkSound('ping', 'post');
 
-            // Desktop notification for brand-new posts
+            // Desktop notification + in-app notification popup for brand-new posts
             const newIds = Object.keys(newPosts).filter(id => !seenPostIds.has(id));
             if (newIds.length > 0) {
                 const p = newPosts[newIds[0]];
                 const author = p.author || 'Someone';
                 const label = p.note || p.url || 'A new post was shared';
                 sendNotification(`New post from ${author} 💜`, label, 'new-post');
+                // In-app notification popup (always shown, regardless of focus)
+                addInAppNotification({ postId: newIds[0], post: p });
             }
         }
 
@@ -1823,6 +1825,7 @@ window.setFilter = function(filter) {
     document.getElementById('btnFav').className        = 'filter-btn' + (filter === 'fav'          ? ' active' : '');
     document.getElementById('btnWatchLater').className = 'filter-btn' + (filter === 'watch-later'  ? ' active' : '');
     document.getElementById('btnOtherUser').className  = 'filter-btn' + (filter === 'just-other'   ? ' active' : '');
+    document.getElementById('btnArchived').className   = 'filter-btn' + (filter === 'archived'     ? ' active' : '');
 
     updateNewCount();
     loadPosts();
@@ -1960,6 +1963,132 @@ if (notificationsEnabled && notifSupported() && Notification.permission !== 'gra
     localStorage.setItem('notificationsEnabled', 'false');
 }
 setTimeout(updateNotifBtn, 0);
+
+// ---- IN-APP NOTIFICATION SYSTEM ----
+// Stores recent notifications in memory (persisted to localStorage for the session)
+let _inAppNotifs = (() => {
+    try { return JSON.parse(localStorage.getItem('inAppNotifs') || '[]'); } catch { return []; }
+})();
+let _notifPopupTimer = null;
+
+function _saveInAppNotifs() {
+    // Keep only the 30 most recent
+    _inAppNotifs = _inAppNotifs.slice(0, 30);
+    try { localStorage.setItem('inAppNotifs', JSON.stringify(_inAppNotifs)); } catch {}
+}
+
+function _getNotifSnippet(post) {
+    if (post.type === 'text') return post.heading || post.body || 'Text post';
+    if (post.type === 'poll') return post.question || 'New poll';
+    if (post.type === 'recommendation') return post.title || 'New recommendation';
+    if (post.type === 'image') return 'Shared a photo';
+    return post.note || post.url || 'New post';
+}
+
+function addInAppNotification({ postId, post }) {
+    const notif = {
+        id: postId,
+        author: post.author || 'Someone',
+        snippet: _getNotifSnippet(post),
+        timestamp: Date.now(),
+        read: false,
+    };
+    _inAppNotifs.unshift(notif);
+    _saveInAppNotifs();
+    _updateBellBadge();
+    _renderNotifPanel();
+    _showNotifPopup(notif);
+}
+
+function _updateBellBadge() {
+    const badge = document.getElementById('notifBadge');
+    const bell = document.getElementById('tray-bell');
+    if (!badge) return;
+    const unread = _inAppNotifs.filter(n => !n.read).length;
+    badge.textContent = unread > 9 ? '9+' : String(unread);
+    badge.classList.toggle('hidden', unread === 0);
+    bell?.classList.toggle('bell-has-notif', unread > 0);
+}
+
+function _markAllNotifsRead() {
+    _inAppNotifs.forEach(n => { n.read = true; });
+    _saveInAppNotifs();
+    _updateBellBadge();
+    _renderNotifPanel();
+}
+
+function _renderNotifPanel() {
+    const list = document.getElementById('notifPanelList');
+    if (!list) return;
+    if (_inAppNotifs.length === 0) {
+        list.innerHTML = '<div class="notif-panel-empty">No notifications yet.</div>';
+        return;
+    }
+    list.innerHTML = _inAppNotifs.map(n => {
+        const ago = timeAgo(n.timestamp);
+        return `<div class="notif-panel-item${n.read ? ' notif-read' : ''}" onclick="openPostFromNotif('${n.id}')">
+            <div class="notif-item-author">${safeText(n.author)}</div>
+            <div class="notif-item-snippet">${safeText(n.snippet)}</div>
+            <div class="notif-item-time">${safeText(ago)}</div>
+        </div>`;
+    }).join('');
+}
+
+function _showNotifPopup(notif) {
+    // Remove any existing popup
+    const existing = document.getElementById('post-notif-popup');
+    if (existing) existing.remove();
+    if (_notifPopupTimer) clearTimeout(_notifPopupTimer);
+
+    const popup = document.createElement('div');
+    popup.id = 'post-notif-popup';
+    popup.className = 'post-notif-popup';
+    popup.innerHTML = `
+        <div class="notif-popup-header">
+            <span class="notif-popup-icon">🔔</span>
+            <span class="notif-popup-author">${safeText(notif.author)}</span>
+            <button class="notif-popup-close" onclick="document.getElementById('post-notif-popup')?.remove()">✕</button>
+        </div>
+        <div class="notif-popup-snippet">${safeText(notif.snippet)}</div>
+        <button class="notif-popup-open" onclick="openPostFromNotif('${notif.id}');document.getElementById('post-notif-popup')?.remove()">Open post →</button>
+    `;
+    document.body.appendChild(popup);
+    // Trigger animation after paint
+    requestAnimationFrame(() => { requestAnimationFrame(() => { popup.classList.add('notif-popup-visible'); }); });
+
+    _notifPopupTimer = setTimeout(() => {
+        popup.classList.remove('notif-popup-visible');
+        setTimeout(() => popup.remove(), 350);
+    }, 6000);
+}
+
+window.openPostFromNotif = function(postId) {
+    // Mark this notification as read
+    const notif = _inAppNotifs.find(n => n.id === postId);
+    if (notif) { notif.read = true; _saveInAppNotifs(); _updateBellBadge(); _renderNotifPanel(); }
+    closeNotifPanel();
+    openPostWindow(postId);
+};
+
+function toggleNotifPanel() {
+    const panel = document.getElementById('notif-panel');
+    if (!panel) return;
+    const isOpen = !panel.classList.contains('is-hidden');
+    if (isOpen) {
+        closeNotifPanel();
+    } else {
+        panel.classList.remove('is-hidden');
+        _markAllNotifsRead();
+        _renderNotifPanel();
+    }
+}
+
+function closeNotifPanel() {
+    document.getElementById('notif-panel')?.classList.add('is-hidden');
+}
+
+// Initial bell state (will be properly set up in STATIC HTML EVENT WIRING section below)
+setTimeout(() => { _updateBellBadge(); _renderNotifPanel(); }, 0);
 
 // ---- DATA ----
 // (onValue listeners are registered in setupDBListeners(), called after auth)
@@ -2269,6 +2398,29 @@ window.markSeen = async function(id) {
 
 window.deletePost = function(id) {
     openDeleteModal({ type: 'post', postId: id });
+};
+
+window.archivePost = async function(id) {
+    const post = allPosts[id];
+    if (!post) return;
+    const archivedBy = { ...(post.archivedBy || {}), [currentUser]: true };
+    // Optimistically update local state so loadPosts() reflects it immediately
+    allPosts[id] = { ...allPosts[id], archivedBy };
+    loadPosts();
+    await update(ref(database, `posts/${id}`), { archivedBy });
+    showToast('Post archived [_]');
+};
+
+window.unarchivePost = async function(id) {
+    const post = allPosts[id];
+    if (!post) return;
+    const archivedBy = { ...(post.archivedBy || {}) };
+    delete archivedBy[currentUser];
+    // Optimistically update local state
+    allPosts[id] = { ...allPosts[id], archivedBy };
+    loadPosts();
+    await update(ref(database, `posts/${id}`), { archivedBy });
+    showToast('Post unarchived ✓');
 };
 
 // ---- REACTIONS ----
@@ -2678,6 +2830,7 @@ function createPostCard(post) {
     const badgeClass = AUTHOR_BADGE[author] || 'badge-el';
     const emoji = AUTHOR_EMOJI[author] || '[?]';
     const isFav = !!(post.favoritedBy && post.favoritedBy[currentUser]);
+    const isArchived = !!(post.archivedBy && post.archivedBy[currentUser]);
 
     // Support both new (array) and legacy (string) collection formats
     const collArr = post.collections?.length ? post.collections
@@ -2777,6 +2930,9 @@ function createPostCard(post) {
                     <button class="icon-btn" onclick="openPostWindow('${post.id}')" title="Open in window">
                         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M2 7h20"/><circle cx="5" cy="5" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/></svg>
                     </button>
+                    <button class="icon-btn archive-btn${isArchived ? ' archive-active' : ''}" onclick="${isArchived ? `unarchivePost('${post.id}')` : `archivePost('${post.id}')`}" title="${isArchived ? 'Unarchive post' : 'Archive post'}">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                    </button>
                     ${post.author === currentUser ? `
                         <button class="icon-btn" onclick="openEditPost('${post.id}')" title="Edit">✏️</button>
                         <button class="icon-btn delete-btn" onclick="deletePost('${post.id}')" title="Delete">
@@ -2839,6 +2995,11 @@ function loadPosts() {
         .map(([id, data]) => ({ id, ...data }))
         .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
+    // Always hide archived posts from normal views; only show them in the 'archived' filter
+    if (currentFilter !== 'archived') {
+        posts = posts.filter(p => !p.archivedBy?.[currentUser]);
+    }
+
     if (currentCollection) posts = posts.filter(p => {
         const colls = p.collections?.length ? p.collections : p.collection ? [p.collection] : [];
         return colls.includes(currentCollection);
@@ -2854,6 +3015,9 @@ function loadPosts() {
     }
     else if (currentFilter === 'just-other') {
         posts = posts.filter(p => p.author !== currentUser);
+    }
+    else if (currentFilter === 'archived') {
+        posts = posts.filter(p => !!(p.archivedBy?.[currentUser]));
     }
 
     if (searchQuery) {
@@ -2901,6 +3065,9 @@ function loadPosts() {
             const other = currentUser === 'El' ? 'Tero' : currentUser === 'Tero' ? 'El' : 'El or Tero';
             h3.textContent = `No Posts from ${other}`;
             p.textContent  = `${other} hasn't shared anything yet.`;
+        } else if (currentFilter === 'archived') {
+            h3.textContent = 'Archive is Empty';
+            p.textContent  = 'Archive posts to tuck them away from the main feed.';
         } else {
             h3.textContent = 'No Posts Yet';
             p.textContent  = 'Start adding posts.';
@@ -4392,6 +4559,7 @@ document.getElementById('btnSeen')?.addEventListener('click', () => setFilter('s
 document.getElementById('btnFav')?.addEventListener('click', () => setFilter('fav'));
 document.getElementById('btnWatchLater')?.addEventListener('click', () => setFilter('watch-later'));
 document.getElementById('btnOtherUser')?.addEventListener('click', () => setFilter('just-other'));
+document.getElementById('btnArchived')?.addEventListener('click', () => setFilter('archived'));
 document.getElementById('btnMarkAll')?.addEventListener('click', () => markAllSeen());
 
 // Search
@@ -12835,6 +13003,27 @@ function initPixelCat() {
         window.addEventListener('online',  syncNetworkIcon);
         window.addEventListener('offline', syncNetworkIcon);
     }
+
+    // ---- Bell / notifications icon ----
+    const trayBell = document.getElementById('tray-bell');
+    if (trayBell) {
+        trayBell.addEventListener('click', toggleNotifPanel);
+        trayBell.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleNotifPanel(); } });
+    }
+    document.getElementById('notifClearBtn')?.addEventListener('click', () => {
+        _inAppNotifs = [];
+        _saveInAppNotifs();
+        _updateBellBadge();
+        _renderNotifPanel();
+    });
+    // Close panel when clicking outside
+    document.addEventListener('click', (e) => {
+        const panel = document.getElementById('notif-panel');
+        const bell  = document.getElementById('tray-bell');
+        if (!panel?.classList.contains('is-hidden') && !panel?.contains(e.target) && !bell?.contains(e.target)) {
+            closeNotifPanel();
+        }
+    }, true);
 })();
 
 // ===== Win95 Stats.exe Window =====

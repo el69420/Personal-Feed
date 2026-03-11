@@ -191,6 +191,7 @@
                 <button id="btnFav" class="filter-btn">&#x2665; Saved</button>
                 <button id="btnWatchLater" class="filter-btn">[&gt;] Watch Later</button>
                 <button id="btnOtherUser" class="filter-btn">&lt;3 Just Tero</button>
+                <button id="btnArchived" class="filter-btn">[_] Archived</button>
             </div>
             <button id="btnMarkAll" class="mark-all-btn hidden">Mark All Seen</button>
         </div>
@@ -741,6 +742,18 @@
             <span class="tray-icon" id="tray-network" title="Network: connected" aria-label="Network status">&#128225;</span>
             <span class="tray-icon" id="tray-sound" title="Sound: on" aria-label="Sound toggle">&#128266;</span>
             <span class="tray-icon" id="tray-motion" title="Motion: on" aria-label="Motion toggle">&#10024;</span>
+            <span class="tray-divider" aria-hidden="true"></span>
+            <span class="tray-icon tray-icon-bell" id="tray-bell" title="Notifications" aria-label="Notifications" role="button" tabindex="0">&#128276;<span class="notif-badge hidden" id="notifBadge">0</span></span>
+        </div>
+        <!-- Notification panel (opens above bell) -->
+        <div id="notif-panel" class="notif-panel is-hidden" role="dialog" aria-label="Notifications">
+            <div class="notif-panel-header">
+                <span class="notif-panel-title">Notifications</span>
+                <button class="notif-panel-clear" id="notifClearBtn" type="button">Clear all</button>
+            </div>
+            <div class="notif-panel-list" id="notifPanelList">
+                <div class="notif-panel-empty">No notifications yet.</div>
+            </div>
         </div>
         <!-- System Clock -->
         <div id="systemClock" class="w95-clock" title="Click to open Date &amp; Time" role="button" tabindex="0" aria-label="System clock">00:00</div>
