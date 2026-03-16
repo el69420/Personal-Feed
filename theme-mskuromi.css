@@ -117,7 +117,8 @@ body.dark-mode::before { display: none; }
 .type-picker-btn, .type-toggle-btn, .watch-later-btn,
 .icon-btn, .delete-btn, .edit-pill, .modal-x,
 .google-signin-btn, .notif-perm-allow, .about-close-btn,
-#aboutBtn, .coll-pick-btn, .mark-all-btn, .clear-filters-btn {
+#aboutBtn, .coll-pick-btn, .mark-all-btn, .clear-filters-btn,
+.yt-watch-btn, .spotify-card-link, .rich-card-link, .rc-open-btn {
     transition: none !important;
 }
 
@@ -1819,3 +1820,87 @@ body.dark-mode .mailbox-tab.active {
     border-bottom-color: #808080 !important;
     box-shadow: inset 1px 1px 0 #202020 !important;
 }
+
+/* ============================================================
+   RICH MEDIA CARDS — Win95 overrides
+   ============================================================ */
+
+/* YouTube Watch button: Win95 raised button */
+.yt-watch-btn {
+    background: #C0C0C0 !important;
+    color: #000000 !important;
+    border: 2px solid !important;
+    border-color: #FFFFFF #808080 #808080 #FFFFFF !important;
+    box-shadow: inset 1px 1px 0 #DFDFDF, inset -1px -1px 0 #404040 !important;
+}
+.yt-watch-btn:hover {
+    background: #D0D0D0 !important;
+    opacity: 1 !important;
+}
+.yt-watch-btn:active {
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+}
+
+/* YouTube title colour: Win95 standard link blue */
+.yt-title { color: #000080 !important; }
+.yt-title:hover { color: #000080 !important; }
+
+/* Spotify / rich card: Win95 sunken inset panel */
+.spotify-card,
+.rich-card {
+    border: 2px solid !important;
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+    background: #C0C0C0 !important;
+}
+.spotify-card-link:hover,
+.rich-card-link:hover {
+    background: #D0D0D0 !important;
+}
+
+/* rc-art: sunken square */
+.rc-art {
+    background: #FFFFFF !important;
+    border: 2px solid !important;
+    border-color: #808080 #FFFFFF #FFFFFF #808080 !important;
+    box-shadow: inset 1px 1px 0 #404040 !important;
+}
+
+/* rc-title: standard black text */
+.rc-title { color: #000000 !important; }
+
+/* Platform colour accents: tone them down to Win95 dark */
+.rcp-spotify, .rcp-reddit { color: #000080 !important; }
+.rcp-tiktok,  .rcp-x      { color: #404040 !important; }
+
+/* Open in Spotify: plain blue link */
+.rcp-spotify-btn {
+    color: #000080 !important;
+    text-decoration: underline !important;
+}
+.rcp-spotify-btn:hover { opacity: 1 !important; color: #0000CC !important; }
+
+/* Kill shimmer animation in W95 mode */
+.yt-embed-card.lp-loading .yt-title,
+.spotify-card.lp-loading .rc-title,
+.rich-card.lp-loading .rc-title {
+    animation: none !important;
+    background: #C0C0C0 !important;
+    color: #808080 !important;
+}
+
+body.dark-mode .yt-watch-btn {
+    background: #808080 !important;
+    color: #FFFFFF !important;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0 !important;
+    box-shadow: inset 1px 1px 0 #A0A0A0, inset -1px -1px 0 #202020 !important;
+}
+body.dark-mode .spotify-card,
+body.dark-mode .rich-card {
+    background: #808080 !important;
+    border-color: #C0C0C0 #404040 #404040 #C0C0C0 !important;
+}
+body.dark-mode .rc-title { color: #FFFFFF !important; }
+body.dark-mode .yt-title { color: #ADD8E6 !important; }
+body.dark-mode .rcp-spotify-btn { color: #ADD8E6 !important; }
