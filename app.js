@@ -114,39 +114,91 @@ function applyLinkMeta(el, meta) {
     }
 }
 
+// Shared: check Firebase cache then fall back to microlink.io
+async function fetchLinkMeta(url) {
+    const key = urlToKey(url);
+    try {
+        const snap = await get(child(ref(database), `linkMeta/${key}`));
+        if (snap.exists()) return snap.val();
+        const resp = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(6000) });
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        if (data.status === 'success') {
+            const meta = {
+                title:       data.data.title       || null,
+                description: data.data.description || null,
+                image:       data.data.image?.url  || null,
+            };
+            set(ref(database, `linkMeta/${key}`), meta).catch(() => {});
+            return meta;
+        }
+        return null;
+    } catch { return null; }
+}
+
 // For each .link-preview[data-url] in container: check Firebase cache,
 // then fall back to microlink.io (free, no key needed). Fires and forgets.
 async function hydrateLinkPreviews(container) {
     const previews = container.querySelectorAll('.link-preview[data-url]');
     await Promise.all(Array.from(previews).map(async (el) => {
         const url = decodeURIComponent(el.dataset.url);
-        const key = urlToKey(url);
+        const meta = await fetchLinkMeta(url);
+        if (meta) applyLinkMeta(el, meta);
+        else el.classList.remove('lp-loading');
+    }));
+}
+
+// Hydrate rich media cards (Spotify, TikTok, X, Reddit)
+async function hydrateRichCards(container) {
+    const cards = container.querySelectorAll('.rich-card[data-url], .spotify-card[data-url]');
+    await Promise.all(Array.from(cards).map(async (el) => {
+        const url = decodeURIComponent(el.dataset.url);
+        const meta = await fetchLinkMeta(url);
+        el.classList.remove('lp-loading');
+        if (!meta) return;
+        const titleEl = el.querySelector('.rc-title');
+        const descEl  = el.querySelector('.rc-desc');
+        const imgEl   = el.querySelector('.rc-art img');
+        if (titleEl && meta.title) titleEl.textContent = meta.title;
+        if (descEl  && meta.description) { descEl.textContent = meta.description; descEl.style.display = ''; }
+        if (imgEl   && meta.image) {
+            imgEl.src = meta.image;
+            imgEl.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+            const artEl = imgEl.closest('.rc-art');
+            if (artEl) artEl.classList.add('rc-art--loaded');
+        }
+    }));
+}
+
+// Hydrate YouTube cards with title + channel name from oEmbed
+async function hydrateYouTubeMeta(container) {
+    const cards = container.querySelectorAll('.yt-embed-card[data-url]');
+    await Promise.all(Array.from(cards).map(async (el) => {
+        const url = decodeURIComponent(el.dataset.url);
+        const key = 'yt_' + urlToKey(url);
+        let meta = null;
         try {
-            // 1. Check Firebase cache
             const snap = await get(child(ref(database), `linkMeta/${key}`));
             if (snap.exists()) {
-                applyLinkMeta(el, snap.val());
-                return;
-            }
-            // 2. Fetch from microlink.io (public free API, CORS-safe)
-            const resp = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(6000) });
-            if (!resp.ok) throw new Error('microlink error');
-            const data = await resp.json();
-            if (data.status === 'success') {
-                const meta = {
-                    title:       data.data.title       || null,
-                    description: data.data.description || null,
-                    image:       data.data.image?.url  || null,
-                };
-                // Cache in Firebase for next render
-                set(ref(database, `linkMeta/${key}`), meta).catch(() => {});
-                applyLinkMeta(el, meta);
+                meta = snap.val();
             } else {
-                el.classList.remove('lp-loading');
+                const resp = await fetch(
+                    `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
+                    { signal: AbortSignal.timeout(5000) }
+                );
+                if (resp.ok) {
+                    const data = await resp.json();
+                    meta = { title: data.title || null, channel: data.author_name || null };
+                    set(ref(database, `linkMeta/${key}`), meta).catch(() => {});
+                }
             }
-        } catch (_) {
-            el.classList.remove('lp-loading');
-        }
+        } catch {}
+        el.classList.remove('lp-loading');
+        if (!meta) return;
+        const titleEl   = el.querySelector('.yt-title');
+        const channelEl = el.querySelector('.yt-channel');
+        if (titleEl   && meta.title)   titleEl.textContent = meta.title;
+        if (channelEl && meta.channel) { channelEl.textContent = meta.channel; channelEl.style.display = ''; }
     }));
 }
 
@@ -2713,22 +2765,31 @@ function getSourceLabel(source) {
 
 function createYouTubeEmbed(post) {
     const id = getYouTubeId(post.url);
-    const hq = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+    const hq  = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
     const max = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
     const isWL = !!(post.watchLaterBy?.[currentUser]);
     return `
-        <a href="${safeText(post.url)}" target="_blank" class="yt-embed">
-            <img src="${max}" alt="YouTube thumbnail" onerror="this.src='${hq}'">
-            <div class="yt-play-overlay">
-                <svg width="64" height="44" viewBox="0 0 64 44" fill="none">
-                    <rect width="64" height="44" rx="10" fill="#FF0000" opacity="0.92"/>
-                    <polygon points="25,12 25,32 46,22" fill="white"/>
-                </svg>
+        <div class="yt-embed-card lp-loading" data-url="${encodeURIComponent(post.url)}">
+            <a href="${safeText(post.url)}" target="_blank" class="yt-embed">
+                <img src="${max}" alt="YouTube thumbnail" onerror="this.src='${hq}'">
+                <div class="yt-play-overlay">
+                    <svg width="64" height="44" viewBox="0 0 64 44" fill="none">
+                        <rect width="64" height="44" rx="10" fill="#FF0000" opacity="0.92"/>
+                        <polygon points="25,12 25,32 46,22" fill="white"/>
+                    </svg>
+                </div>
+            </a>
+            <div class="yt-meta">
+                <a href="${safeText(post.url)}" target="_blank" class="yt-title">Loading…</a>
+                <span class="yt-channel" style="display:none"></span>
             </div>
-        </a>
-        <button class="watch-later-btn${isWL ? ' active' : ''}" onclick="toggleWatchLater('${safeText(post.id)}')" data-tooltip="${isWL ? 'Click to remove' : 'Save to Watch Later'}">
-            🕐 ${isWL ? 'In Watch Later' : 'Watch Later'}
-        </button>
+            <div class="yt-actions">
+                <a href="${safeText(post.url)}" target="_blank" class="yt-watch-btn">▶ Watch</a>
+                <button class="watch-later-btn${isWL ? ' active' : ''}" onclick="toggleWatchLater('${safeText(post.id)}')" data-tooltip="${isWL ? 'Click to remove' : 'Save to Watch Later'}">
+                    🕐 ${isWL ? 'In Watch Later' : 'Watch Later'}
+                </button>
+            </div>
+        </div>
     `;
 }
 
@@ -2740,6 +2801,63 @@ function createInstagramEmbed(url) {
             </blockquote>
             <div class="ig-note">
                 If the caption doesn't show, Instagram is blocking it for that post.
+            </div>
+        </div>
+    `;
+}
+
+// ---- RICH MEDIA CARD RENDERERS ----
+
+const RICH_CARD_META = {
+    spotify: { icon: '♪', label: 'Spotify', colorClass: 'rcp-spotify' },
+    tiktok:  { icon: '▶', label: 'TikTok',  colorClass: 'rcp-tiktok'  },
+    x:       { icon: '✕', label: 'X',       colorClass: 'rcp-x'       },
+    reddit:  { icon: '▲', label: 'Reddit',  colorClass: 'rcp-reddit'  },
+};
+
+function createSpotifyCard(url) {
+    return `
+        <div class="post-content">
+            <div class="spotify-card lp-loading" data-url="${encodeURIComponent(url)}">
+                <a href="${safeText(url)}" target="_blank" class="spotify-card-link">
+                    <div class="rc-art">
+                        <img src="" alt="Cover art" style="display:none">
+                        <div class="rc-art-placeholder">♪</div>
+                    </div>
+                    <div class="rc-body">
+                        <div class="rc-platform rcp-spotify">♪ Spotify</div>
+                        <div class="rc-title">Loading…</div>
+                        <div class="rc-desc" style="display:none"></div>
+                    </div>
+                    <svg class="link-arrow" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                </a>
+                <a href="${safeText(url)}" target="_blank" rel="noopener" class="rc-open-btn rcp-spotify-btn">Open in Spotify ↗</a>
+            </div>
+        </div>
+    `;
+}
+
+function createRichLinkCard(url, source) {
+    const m = RICH_CARD_META[source] || { icon: '🔗', label: source, colorClass: 'rcp-other' };
+    return `
+        <div class="post-content">
+            <div class="rich-card lp-loading" data-url="${encodeURIComponent(url)}">
+                <a href="${safeText(url)}" target="_blank" class="rich-card-link">
+                    <div class="rc-art">
+                        <img src="" alt="" style="display:none">
+                        <div class="rc-art-placeholder">${safeText(m.icon)}</div>
+                    </div>
+                    <div class="rc-body">
+                        <div class="rc-platform ${safeText(m.colorClass)}">${safeText(m.icon)} ${safeText(m.label)}</div>
+                        <div class="rc-title">Loading…</div>
+                        <div class="rc-desc" style="display:none"></div>
+                    </div>
+                    <svg class="link-arrow" width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                </a>
             </div>
         </div>
     `;
@@ -2877,6 +2995,10 @@ function createPostCard(post) {
             contentHtml = createInstagramEmbed(url);
         } else if (source === 'youtube') {
             contentHtml = createYouTubeEmbed(post);
+        } else if (source === 'spotify') {
+            contentHtml = createSpotifyCard(url);
+        } else if (source === 'tiktok' || source === 'x' || source === 'reddit') {
+            contentHtml = createRichLinkCard(url, source);
         } else {
             contentHtml = `
                 <div class="post-content">
@@ -3085,6 +3207,8 @@ function loadPosts() {
     const savedScroll = _feedBodyEl ? _feedBodyEl.scrollTop : window.scrollY;
     container.innerHTML = posts.map(createPostCard).join('');
     hydrateLinkPreviews(container);
+    hydrateRichCards(container);
+    hydrateYouTubeMeta(container);
     if (_feedBodyEl) _feedBodyEl.scrollTo({ top: savedScroll, behavior: 'instant' });
     else window.scrollTo({ top: savedScroll, behavior: 'instant' });
     // Re-apply keyboard-navigation focus after re-render
@@ -8916,6 +9040,8 @@ function applyIconPositions() {
             if (titleEl) titleEl.textContent = 'Post — ' + (post.author || 'Unknown');
             body.innerHTML = createPostCard(post);
             hydrateLinkPreviews(body);
+            hydrateRichCards(body);
+            hydrateYouTubeMeta(body);
             if (window.twttr?.widgets) window.twttr.widgets.load(body);
             if (window.instgrm?.Embeds) window.instgrm.Embeds.process();
             showPostWin();
