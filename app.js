@@ -4861,8 +4861,90 @@ const w95Mgr = (() => {
 
   function isMaximised(winId) { return !!_maxState[winId]?.isMax; }
 
-  return { addTaskbarBtn, setPressed, focusWindow, isActiveWin, toggleMaximise, isMaximised };
+  // Used by w95Layout on page load to re-seed in-memory max state from localStorage
+  function restoreMaxState(winId, prevRect) {
+    if (!_maxState[winId]) _maxState[winId] = { isMax: false, prevRect: null };
+    _maxState[winId].isMax = true;
+    _maxState[winId].prevRect = prevRect || null;
+  }
+
+  return { addTaskbarBtn, setPressed, focusWindow, isActiveWin, toggleMaximise, isMaximised, restoreMaxState };
 })();
+
+// ===== Window layout persistence (size / position / max state) =====
+const w95Layout = (() => {
+  const TASKBAR_H = 40;
+  const MIN_VIS   = 60; // px of window that must remain on-screen
+
+  function _key(winId)  { return 'w95_layout_' + winId; }
+  function _load(winId) {
+    try { return JSON.parse(localStorage.getItem(_key(winId))); } catch (e) { return null; }
+  }
+  function _store(winId, data) {
+    try { localStorage.setItem(_key(winId), JSON.stringify(data)); } catch (e) {}
+  }
+
+  /** Persist current size/position.  No-op when window is maximised. */
+  function save(winEl, winId) {
+    if (w95Mgr.isMaximised(winId)) return;
+    const r = winEl.getBoundingClientRect();
+    const existing = _load(winId) || {};
+    _store(winId, { ...existing, left: r.left, top: r.top, w: r.width, h: r.height });
+  }
+
+  /** Persist maximise state; call with the pre-maximise rect when maximising. */
+  function saveMaxState(winId, isMax, prevRect) {
+    const existing = _load(winId) || {};
+    _store(winId, { ...existing, isMax, prevRect: prevRect || existing.prevRect || null });
+  }
+
+  /** Apply saved layout to window element.  Returns the stored data (or null). */
+  function restore(winEl, winId) {
+    const data = _load(winId);
+    if (!data) return null;
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight - TASKBAR_H;
+    if (data.w) winEl.style.width  = Math.max(200, data.w) + 'px';
+    if (data.h) winEl.style.height = Math.max(80,  data.h) + 'px';
+    const w    = data.w || winEl.offsetWidth  || 280;
+    const h    = data.h || winEl.offsetHeight || 200;
+    const left = Math.max(MIN_VIS - w, Math.min(vw - MIN_VIS, data.left ?? 20));
+    const top  = Math.max(0,           Math.min(vh - MIN_VIS, data.top  ?? 20));
+    winEl.style.left = left + 'px';
+    winEl.style.top  = top  + 'px';
+    return data;
+  }
+
+  /** Push a visible, non-maximised window back inside the viewport. */
+  function clamp(winEl) {
+    if (winEl.classList.contains('is-maximised') || winEl.classList.contains('is-hidden')) return;
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight - TASKBAR_H;
+    const r  = winEl.getBoundingClientRect();
+    const left = Math.max(MIN_VIS - r.width,  Math.min(vw - MIN_VIS, r.left));
+    const top  = Math.max(0,                  Math.min(vh - MIN_VIS, r.top));
+    if (Math.round(left) !== Math.round(r.left)) winEl.style.left = left + 'px';
+    if (Math.round(top)  !== Math.round(r.top))  winEl.style.top  = top  + 'px';
+  }
+
+  return { save, saveMaxState, restore, clamp };
+})();
+
+// Wrap toggleMaximise so maximise/restore state is persisted to localStorage.
+{
+  const _orig = w95Mgr.toggleMaximise;
+  w95Mgr.toggleMaximise = function (win, winId) {
+    const wasMax = w95Mgr.isMaximised(winId);
+    // Capture pre-maximise rect before the original handler runs
+    let prevRect = null;
+    if (!wasMax) {
+      const r = win.getBoundingClientRect();
+      prevRect = { left: r.left, top: r.top, w: r.width, h: r.height };
+    }
+    _orig(win, winId);
+    w95Layout.saveMaxState(winId, w95Mgr.isMaximised(winId), prevRect);
+  };
+}
 
 // Registry so desktop icons can open windows via a shared open() callback
 const w95Apps = {};
@@ -5945,7 +6027,7 @@ const w95Apps = {};
     win.style.top = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
   });
 
-  window.addEventListener('mouseup', () => { dragging = false; });
+  window.addEventListener('mouseup', () => { if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-garden'); } });
 })();
 
 (() => {
@@ -6170,6 +6252,7 @@ function makeDraggable(winEl, handleEl, winId) {
   window.addEventListener('mouseup', () => {
     if (dragging) {
         dragging = false;
+        w95Layout.save(winEl, winId);
         // Track window moves for Window Tinkerer achievement
         const moves = Number(localStorage.getItem('windowMoveCount') || 0) + 1;
         localStorage.setItem('windowMoveCount', String(moves));
@@ -8297,7 +8380,7 @@ function renderAchievementsWindow() {
         win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
         win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
     });
-    window.addEventListener('mouseup', () => { dragging = false; });
+    window.addEventListener('mouseup', () => { if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-achievements'); } });
 })();
 
 // ===== Win95 Mailbox Window =====
@@ -8356,7 +8439,7 @@ function renderAchievementsWindow() {
         win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
         win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
     });
-    window.addEventListener('mouseup', () => { dragging = false; });
+    window.addEventListener('mouseup', () => { if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-mailbox'); } });
 
     w95Apps['mailbox'] = { open: () => {
         if (win.classList.contains('is-hidden')) showMailbox(); else w95Mgr.focusWindow('w95-win-mailbox');
@@ -8418,7 +8501,7 @@ function renderAchievementsWindow() {
         win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
         win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
     });
-    window.addEventListener('mouseup', () => { dragging = false; });
+    window.addEventListener('mouseup', () => { if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-jukebox'); } });
 
     w95Apps['jukebox'] = { open: () => {
         if (win.classList.contains('is-hidden')) showJukebox(); else w95Mgr.focusWindow('w95-win-jukebox');
@@ -8652,7 +8735,7 @@ function applyIconPositions() {
         win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
         win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
     });
-    window.addEventListener('mouseup', () => { dragging = false; });
+    window.addEventListener('mouseup', () => { if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-feed'); } });
 
     // Restore open state — default closed (desktop is shown first)
     if (localStorage.getItem('w95_feed_open') === '1') showFeed();
@@ -8957,6 +9040,46 @@ document.querySelectorAll('.w95-window').forEach(win => {
     });
     document.querySelectorAll('.w95-window').forEach(w => {
         obs.observe(w, { attributes: true, attributeOldValue: true });
+    });
+})();
+
+// ===== Window layout restore + resize persistence =====
+(function () {
+    // 1. Restore saved size/position for every window on page load.
+    //    Windows that were saved as maximised get their in-memory prevRect seeded
+    //    so that maximise→restore returns to the right position.
+    document.querySelectorAll('.w95-window').forEach(winEl => {
+        const winId = winEl.id;
+        if (!winId) return;
+        const data = w95Layout.restore(winEl, winId);
+        if (data && data.isMax) {
+            w95Mgr.restoreMaxState(winId, data.prevRect || null);
+            winEl.classList.add('is-maximised');
+        }
+    });
+
+    // 2. ResizeObserver: debounce-save when the user drags the resize handle.
+    if (typeof ResizeObserver !== 'undefined') {
+        const _resizeTimers = {};
+        const ro = new ResizeObserver(entries => {
+            entries.forEach(entry => {
+                const winEl = entry.target;
+                const winId = winEl.id;
+                if (!winId || w95Mgr.isMaximised(winId)) return;
+                clearTimeout(_resizeTimers[winId]);
+                _resizeTimers[winId] = setTimeout(() => w95Layout.save(winEl, winId), 300);
+            });
+        });
+        document.querySelectorAll('.w95-window').forEach(winEl => ro.observe(winEl));
+    }
+
+    // 3. On viewport resize, push any off-screen windows back into view.
+    let _vpResizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(_vpResizeTimer);
+        _vpResizeTimer = setTimeout(() => {
+            document.querySelectorAll('.w95-window:not(.is-hidden)').forEach(w95Layout.clamp);
+        }, 150);
     });
 })();
 
