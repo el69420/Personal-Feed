@@ -7277,22 +7277,22 @@ const REWARD_REGISTRY = [
 
     // ---- Wallpapers ---- (css applied to desktop; swatchCss used in the swatch preview)
     { id: 'wp_sakura',    type: REWARD_TYPE_WALLPAPER, name: 'Sakura Dream',  description: 'A soft pink cherry-blossom background',  icon: '[wp]',
-      css: 'linear-gradient(135deg,#f9c8d4 0%,#f0a0b8 40%,#e07898 100%)',
-      swatchCss: 'linear-gradient(135deg,#f9c8d4 0%,#f0a0b8 40%,#e07898 100%)' },
-    { id: 'wp_nightsky',  type: REWARD_TYPE_WALLPAPER, name: 'Night Sky',     description: 'Deep indigo with a canopy of stars',      icon: '[wp]',
+      css: 'linear-gradient(135deg,#fff0f4 0%,#ffd6e6 30%,#ffb3d0 60%,#ff85b3 100%)',
+      swatchCss: 'linear-gradient(135deg,#fff0f4 0%,#ffd6e6 35%,#ff85b3 100%)' },
+    { id: 'wp_nightsky',  type: REWARD_TYPE_WALLPAPER, name: 'Night Sky',     description: 'A deep navy sky thick with stars, like looking up from a dark countryside field', icon: '[wp]',
       css: [
-        'radial-gradient(1px 1px at 10% 20%,rgba(255,255,255,0.9) 0%,transparent 100%)',
-        'radial-gradient(1px 1px at 45% 8%,rgba(255,255,255,0.8) 0%,transparent 100%)',
-        'radial-gradient(1px 1px at 70% 30%,rgba(255,255,255,0.85) 0%,transparent 100%)',
-        'radial-gradient(1px 1px at 85% 60%,rgba(255,255,255,0.7) 0%,transparent 100%)',
-        'radial-gradient(1px 1px at 20% 75%,rgba(255,255,255,0.8) 0%,transparent 100%)',
-        'radial-gradient(1px 1px at 55% 88%,rgba(255,255,255,0.75) 0%,transparent 100%)',
-        'linear-gradient(to bottom,#080018 0%,#160040 50%,#0a0028 100%)',
+        'radial-gradient(1px 1px at 12% 18%,rgba(200,220,255,0.9) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 48% 6%,rgba(200,220,255,0.8) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 73% 28%,rgba(200,220,255,0.85) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 88% 58%,rgba(220,235,255,0.7) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 22% 73%,rgba(200,220,255,0.8) 0%,transparent 100%)',
+        'radial-gradient(1px 1px at 57% 86%,rgba(200,220,255,0.75) 0%,transparent 100%)',
+        'linear-gradient(to bottom,#000820 0%,#001840 50%,#000c2a 100%)',
       ].join(','),
-      swatchCss: 'linear-gradient(to bottom,#080018 0%,#160040 60%,#0a0028 100%)' },
+      swatchCss: 'linear-gradient(to bottom,#000820 0%,#001840 60%,#000c2a 100%)' },
     { id: 'wp_garden',    type: REWARD_TYPE_WALLPAPER, name: 'Garden View',   description: 'Lush green garden in full bloom',         icon: '[wp]',
-      css: 'linear-gradient(to bottom,#4a9f4a 0%,#2a6b2a 35%,#1a4a1a 65%,#0d2b0d 100%)',
-      swatchCss: 'linear-gradient(to bottom,#4a9f4a 0%,#2a6b2a 40%,#1a4a1a 100%)' },
+      css: 'linear-gradient(to bottom,#c8e6a0 0%,#8ec84a 25%,#4a9f2a 55%,#1e6010 100%)',
+      swatchCss: 'linear-gradient(to bottom,#c8e6a0 0%,#8ec84a 30%,#1e6010 100%)' },
     { id: 'wp_cozy_rain', type: REWARD_TYPE_WALLPAPER, name: 'Cozy Rain',     description: 'Rainy window with warm light inside',     icon: '[wp]',
       css: 'linear-gradient(to bottom right,#4a5568 0%,#6b7280 40%,#374151 80%,#2d3748 100%)',
       swatchCss: 'linear-gradient(to bottom right,#4a5568 0%,#6b7280 50%,#2d3748 100%)' },
@@ -7302,8 +7302,8 @@ const REWARD_REGISTRY = [
       swatchCss: 'linear-gradient(135deg,#ffb7c5 0%,#ff8fa3 50%,#c47c8e 100%)' },
     { id: 'ss_starfield', type: REWARD_TYPE_SCREENSAVER, name: 'Starfield',       description: 'Flying through a field of stars',          icon: '[ss]',
       swatchCss: 'radial-gradient(ellipse at 50% 50%,#1a1a4a 0%,#000018 100%)' },
-    { id: 'ss_bubbles',   type: REWARD_TYPE_SCREENSAVER, name: 'Bubbles',         description: 'Gently floating iridescent bubbles',       icon: '[ss]',
-      swatchCss: 'linear-gradient(135deg,#a8d8f0 0%,#c8e8ff 50%,#80b8e0 100%)' },
+    { id: 'ss_bubbles',   type: REWARD_TYPE_SCREENSAVER, name: 'Underwater World', description: 'Drift through a deep-sea scene with fish, swaying seaweed, and rising bubbles', icon: '[ss]',
+      swatchCss: 'linear-gradient(to bottom,#001628 0%,#002d55 50%,#001520 100%)' },
 
     // ---- Sound packs ----
     { id: 'snd_cozy',    type: REWARD_TYPE_SOUND_PACK, name: 'Cozy Café',      description: 'Soft café ambience and chime sounds',     icon: '☕' },
@@ -7338,11 +7338,11 @@ const REWARD_REGISTRY = [
 
     // Wallpapers
     { id: 'wp_cat_monitor',       type: REWARD_TYPE_WALLPAPER, name: 'Cat Monitor',         description: 'A CRT screen in a dark room, watched over by a glowing-eyed cat',
-      css: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3a1a 0%, #0a1a0a 55%, #050c05 100%)',
-      swatchCss: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3a1a 0%, #050c05 100%)' },
+      css: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3300 0%, #0a1800 50%, #030800 100%)',
+      swatchCss: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3300 0%, #030800 100%)' },
     { id: 'wp_infinite_desktop',  type: REWARD_TYPE_WALLPAPER, name: 'Infinite Desktop',    description: 'A vanishing-point grid stretching out forever into a violet void',
-      css: 'linear-gradient(to bottom, #0d0020 0%, #1a0040 45%, #2a0060 65%, #3d0080 80%, #1a0040 100%)',
-      swatchCss: 'linear-gradient(to bottom, #0d0020 0%, #3d0080 70%, #1a0040 100%)' },
+      css: 'linear-gradient(to bottom, #080015 0%, #0a0835 40%, #050a50 60%, #020840 80%, #020510 100%)',
+      swatchCss: 'linear-gradient(to bottom, #080015 0%, #050a50 60%, #020510 100%)' },
     { id: 'wp_retro_clouds',      type: REWARD_TYPE_WALLPAPER, name: 'Retro Clouds',        description: 'Crisp pixel clouds drifting across a sky the exact blue of 1995',
       css: 'linear-gradient(to bottom, #4a90d9 0%, #6ab0f0 40%, #88c8ff 70%, #a8deff 100%)',
       swatchCss: 'linear-gradient(to bottom, #4a90d9 0%, #a8deff 100%)' },
@@ -12038,11 +12038,219 @@ function initPixelCat() {
         }
     }
 
+    // ---- Falling Petals ----
+    const PETAL_COUNT = 55;
+    let petals = [], petalFrame = 0;
+
+    function initPetals() {
+        const W = canvas.width, H = canvas.height;
+        petalFrame = 0;
+        petals = Array.from({ length: PETAL_COUNT }, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            size: 5 + Math.random() * 9,
+            speed: 0.4 + Math.random() * 1.2,
+            drift: (Math.random() - 0.5) * 0.6,
+            rot: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.04,
+            swayAmp: 0.6 + Math.random() * 1.8,
+            swayFreq: 0.012 + Math.random() * 0.022,
+            swayPhase: Math.random() * Math.PI * 2,
+            alpha: 0.55 + Math.random() * 0.45,
+            hue: 330 + (Math.random() - 0.5) * 30,
+            sat: 55 + Math.random() * 30,
+            lit: 70 + Math.random() * 20,
+        }));
+    }
+
+    function _drawPetal(p) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = `hsl(${p.hue},${p.sat}%,${p.lit}%)`;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, p.size, p.size * 0.48, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Subtle vein
+        ctx.strokeStyle = `hsla(${p.hue},${p.sat - 10}%,${p.lit - 20}%,0.4)`;
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(-p.size * 0.8, 0);
+        ctx.lineTo(p.size * 0.8, 0);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawPetals() {
+        if (!active) return;
+        const W = canvas.width, H = canvas.height;
+        petalFrame++;
+        const bg = ctx.createLinearGradient(0, 0, 0, H);
+        bg.addColorStop(0,   '#120818');
+        bg.addColorStop(0.5, '#1e0a22');
+        bg.addColorStop(1,   '#120818');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+        for (const p of petals) {
+            p.y += p.speed;
+            p.x += p.drift + Math.sin(petalFrame * p.swayFreq + p.swayPhase) * p.swayAmp;
+            p.rot += p.rotSpeed;
+            if (p.y - p.size > H) { p.y = -p.size * 2; p.x = Math.random() * W; }
+            if (p.x < -p.size * 2) p.x = W + p.size;
+            if (p.x > W + p.size * 2) p.x = -p.size;
+            _drawPetal(p);
+        }
+    }
+
+    // ---- Bouncing Logo ----
+    const BL = { x: 0, y: 0, vx: 2.2, vy: 1.6 };
+    const BL_COLORS = ['#ff5555', '#55ff55', '#5599ff', '#ffff55', '#ff55ff', '#55ffff', '#ff9944'];
+    let blColorIdx = 0;
+
+    function initBouncingLogo() {
+        const W = canvas.width, H = canvas.height;
+        ctx.font = 'bold 28px monospace';
+        const tw = ctx.measureText('Personal Feed').width;
+        BL.w = tw + 4;
+        BL.h = 34;
+        BL.x = Math.max(0, Math.random() * (W - BL.w));
+        BL.y = Math.max(0, Math.random() * (H - BL.h));
+        BL.vx = (Math.random() < 0.5 ? 1 : -1) * (1.8 + Math.random() * 1.2);
+        BL.vy = (Math.random() < 0.5 ? 1 : -1) * (1.4 + Math.random() * 1.0);
+        blColorIdx = 0;
+    }
+
+    function drawBouncingLogo() {
+        if (!active) return;
+        const W = canvas.width, H = canvas.height;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, W, H);
+
+        BL.x += BL.vx;
+        BL.y += BL.vy;
+
+        let corner = false;
+        if (BL.x <= 0)          { BL.vx =  Math.abs(BL.vx); BL.x = 0;          corner = true; }
+        if (BL.x + BL.w >= W)  { BL.vx = -Math.abs(BL.vx); BL.x = W - BL.w;   corner = true; }
+        if (BL.y <= 0)          { BL.vy =  Math.abs(BL.vy); BL.y = 0;          corner = true; }
+        if (BL.y + BL.h >= H)  { BL.vy = -Math.abs(BL.vy); BL.y = H - BL.h;   corner = true; }
+
+        if (corner) blColorIdx = (blColorIdx + 1) % BL_COLORS.length;
+
+        ctx.font = 'bold 28px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = BL_COLORS[blColorIdx];
+        ctx.fillText('Personal Feed', BL.x, BL.y);
+    }
+
+    // ---- Feed Slideshow ----
+    const FS = { cards: [], frame: 0, spacing: 0 };
+    const FS_PALETTES = [
+        { bg: '#1a1a2e', border: '#e94560', text: '#eee' },
+        { bg: '#16213e', border: '#0f3460', text: '#dce' },
+        { bg: '#0f3460', border: '#533483', text: '#eef' },
+        { bg: '#1a2a1a', border: '#4caf50', text: '#dfd' },
+        { bg: '#2a1a1a', border: '#e57373', text: '#fee' },
+    ];
+
+    function _makeFeedCards() {
+        // Collect real feed items from the DOM if available, otherwise use placeholders
+        const items = [];
+        document.querySelectorAll('.feed-item .post-text, .feed-card .post-text, .timeline-item .text').forEach(el => {
+            const t = (el.textContent || '').trim().slice(0, 72);
+            if (t.length > 8) items.push(t);
+        });
+        if (items.length < 3) {
+            items.push(
+                'Sharing something wonderful today…',
+                'A link worth revisiting',
+                'This made me think of you',
+                'Found this and had to share',
+                'Worth a slow read',
+                'Something interesting from the feed',
+            );
+        }
+        return items;
+    }
+
+    function initFeedSlideshow() {
+        const W = canvas.width, H = canvas.height;
+        FS.frame = 0;
+        const items = _makeFeedCards();
+        const cardH = 90, cardW = 260, rows = Math.ceil(H / (cardH + 24)) + 1;
+        FS.cards = [];
+        FS.spacing = cardW + 40;
+        const cols = Math.ceil(W / FS.spacing) + 3;
+        for (let row = 0; row < rows; row++) {
+            const pal = FS_PALETTES[row % FS_PALETTES.length];
+            const rowSpeed = 0.35 + (row % 3) * 0.15;
+            const dir = row % 2 === 0 ? 1 : -1;
+            for (let col = 0; col < cols; col++) {
+                FS.cards.push({
+                    x: col * FS.spacing + (row % 2 === 0 ? 0 : FS.spacing * 0.5),
+                    y: row * (cardH + 28) + 20,
+                    w: cardW, h: cardH,
+                    speed: rowSpeed * dir,
+                    text: items[(row * cols + col) % items.length],
+                    pal,
+                });
+            }
+        }
+    }
+
+    function drawFeedSlideshow() {
+        if (!active) return;
+        const W = canvas.width;
+        FS.frame++;
+        ctx.fillStyle = '#0d0d1a';
+        ctx.fillRect(0, 0, W, canvas.height);
+
+        for (const c of FS.cards) {
+            c.x += c.speed;
+            const totalW = FS.spacing * Math.ceil(W / FS.spacing + 3);
+            if (c.speed > 0 && c.x > W + c.w + 20)  c.x -= totalW;
+            if (c.speed < 0 && c.x < -c.w - 20)      c.x += totalW;
+
+            // Card shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.fillRect(c.x + 4, c.y + 4, c.w, c.h);
+            // Card background
+            ctx.fillStyle = c.pal.bg;
+            ctx.fillRect(c.x, c.y, c.w, c.h);
+            // Accent bar
+            ctx.fillStyle = c.pal.border;
+            ctx.fillRect(c.x, c.y, 4, c.h);
+            // Card text
+            ctx.fillStyle = c.pal.text;
+            ctx.font = '13px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            const words = c.text.split(' ');
+            let line = '', lineY = c.y + 12;
+            for (const word of words) {
+                const test = line ? line + ' ' + word : word;
+                if (ctx.measureText(test).width > c.w - 24 && line) {
+                    ctx.fillText(line, c.x + 14, lineY);
+                    line = word; lineY += 18;
+                    if (lineY > c.y + c.h - 10) break;
+                } else { line = test; }
+            }
+            if (line && lineY <= c.y + c.h - 10) ctx.fillText(line, c.x + 14, lineY);
+        }
+    }
+
     // ---- Core lifecycle ----
     function resizeCanvas() {
         canvas.width  = overlay.offsetWidth  || window.innerWidth;
         canvas.height = overlay.offsetHeight || window.innerHeight;
-        if (getType() === 'underwater') initUnderwater(); else initStars();
+        const type = getType();
+        if (type === 'ss_bubbles' || type === 'underwater') initUnderwater();
+        else if (type === 'ss_petals') initPetals();
+        else if (type === 'ss_bouncing_logo') initBouncingLogo();
+        else if (type === 'ss_feed_slideshow') initFeedSlideshow();
+        else initStars();
     }
 
     function drawFrame() {
@@ -12056,10 +12264,16 @@ function initPixelCat() {
         active = true;
         resizeCanvas();
         const type = getType();
-        currentDrawFn = type === 'underwater' ? drawUnderwater : drawStarfield;
+        if (type === 'ss_bubbles' || type === 'underwater') currentDrawFn = drawUnderwater;
+        else if (type === 'ss_petals') currentDrawFn = drawPetals;
+        else if (type === 'ss_bouncing_logo') currentDrawFn = drawBouncingLogo;
+        else if (type === 'ss_feed_slideshow') currentDrawFn = drawFeedSlideshow;
+        else currentDrawFn = drawStarfield;
         overlay.classList.remove('is-hidden');
         if (!rmq.matches) {
-            ctx.fillStyle = type === 'underwater' ? '#001628' : '#000';
+            ctx.fillStyle = (type === 'ss_bubbles' || type === 'underwater') ? '#001628'
+                          : type === 'ss_petals' ? '#120818'
+                          : '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawFrame();
         }
