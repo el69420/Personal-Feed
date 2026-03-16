@@ -7063,6 +7063,15 @@ body[data-theme="theme_pastel"] #w95-taskbar {
 }
 body[data-theme="theme_pastel"] .taskbar-btn {
   background: #f8d8e8 !important;
+  color: #2a002a !important;
+}
+body[data-theme="theme_pastel"] .w95-title { color: #2a002a; }
+body[data-theme="theme_pastel"] input,
+body[data-theme="theme_pastel"] textarea,
+body[data-theme="theme_pastel"] select {
+  background: #fff5fa !important;
+  color: #2a002a !important;
+  border-color: #d0a0c0 !important;
 }
 
 /* --- Midnight theme --- */
@@ -7084,6 +7093,14 @@ body[data-theme="theme_midnight"] #w95-taskbar {
   border-top-color: #1a1a4a !important;
 }
 body[data-theme="theme_midnight"] .w95-title { color: #a0a0ff; }
+body[data-theme="theme_midnight"] .window--active .w95-titlebar {
+  background: linear-gradient(to right, #1a1a6a, #3030b0) !important;
+  color: #e8e8ff !important;
+}
+body[data-theme="theme_midnight"] .taskbar-btn {
+  background: #0c0c20 !important;
+  color: #8080d0 !important;
+}
 body[data-theme="theme_midnight"] input,
 body[data-theme="theme_midnight"] textarea,
 body[data-theme="theme_midnight"] select {
@@ -7109,6 +7126,14 @@ body[data-theme="theme_autumn"] .w95-btn {
 body[data-theme="theme_autumn"] #w95-taskbar {
   background: #1a0a00 !important;
   border-top-color: #502800 !important;
+}
+body[data-theme="theme_autumn"] .window--active .w95-titlebar {
+  background: linear-gradient(to right, #a04010, #cc5520) !important;
+  color: #fff8e8 !important;
+}
+body[data-theme="theme_autumn"] .taskbar-btn {
+  background: #221000 !important;
+  color: #c08040 !important;
 }
 body[data-theme="theme_autumn"] .w95-title { color: #f0c080; }
 body[data-theme="theme_autumn"] input,
@@ -7154,6 +7179,160 @@ body[data-theme="theme_autumn"] .w95-window {
   --card-border:    rgba(130, 60, 0, 0.40);
   --input-bg:       rgba(22, 8, 0, 0.95);
   --input-border:   rgba(110, 40, 0, 0.50);
+}
+
+/* --- Frosted Glass theme --- */
+body[data-theme="theme_glass"] .w95-window,
+body[data-theme="theme_glass"] .w95-body {
+  background-color: rgba(228, 240, 255, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  color: #1a2a4a !important;
+}
+body[data-theme="theme_glass"] .w95-titlebar {
+  background: linear-gradient(to right, rgba(160, 200, 255, 0.75), rgba(200, 225, 255, 0.65)) !important;
+  color: #1a2a4a !important;
+}
+body[data-theme="theme_glass"] .window--active .w95-titlebar {
+  background: linear-gradient(to right, rgba(80, 140, 240, 0.85), rgba(120, 180, 255, 0.75)) !important;
+  color: #ffffff !important;
+}
+body[data-theme="theme_glass"] .w95-title { color: #1a2a4a; }
+body[data-theme="theme_glass"] .w95-btn {
+  background: rgba(210, 230, 255, 0.75) !important;
+  color: #1a2a4a !important;
+  border-color: rgba(180, 210, 255, 0.9) rgba(100, 150, 220, 0.6) rgba(100, 150, 220, 0.6) rgba(180, 210, 255, 0.9) !important;
+}
+body[data-theme="theme_glass"] #w95-taskbar {
+  background: rgba(190, 215, 255, 0.80) !important;
+  border-top-color: rgba(210, 232, 255, 0.70) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+body[data-theme="theme_glass"] .taskbar-btn {
+  background: rgba(220, 236, 255, 0.70) !important;
+  color: #1a2a4a !important;
+}
+body[data-theme="theme_glass"] input,
+body[data-theme="theme_glass"] textarea,
+body[data-theme="theme_glass"] select {
+  background: rgba(240, 248, 255, 0.85) !important;
+  color: #1a2040 !important;
+  border-color: rgba(140, 185, 240, 0.65) !important;
+}
+/* Frosted Glass: CSS variable palette */
+body[data-theme="theme_glass"] .w95-window {
+  --text-primary:   #1a2a4a;
+  --text-secondary: #3a60a0;
+  --card-bg:        rgba(228, 242, 255, 0.90);
+  --section-bg:     rgba(210, 228, 255, 0.65);
+  --card-border:    rgba(130, 175, 240, 0.35);
+  --input-bg:       rgba(240, 248, 255, 0.88);
+  --input-border:   rgba(130, 185, 240, 0.50);
+}
+
+/* --- Pixel Art theme --- */
+body[data-theme="theme_pixel"] .w95-window,
+body[data-theme="theme_pixel"] .w95-body {
+  background-color: #1a3300 !important;
+  color: #a8ff80 !important;
+  image-rendering: pixelated;
+}
+body[data-theme="theme_pixel"] .w95-titlebar {
+  background: #2d6a4f !important;
+  color: #a8ff80 !important;
+}
+body[data-theme="theme_pixel"] .window--active .w95-titlebar {
+  background: #52b788 !important;
+  color: #001a00 !important;
+}
+body[data-theme="theme_pixel"] .w95-title { color: #74c69d; }
+body[data-theme="theme_pixel"] .w95-btn {
+  background: #1b4332 !important;
+  color: #74c69d !important;
+  border-color: #52b788 #081c15 #081c15 #52b788 !important;
+  box-shadow: none !important;
+}
+body[data-theme="theme_pixel"] #w95-taskbar {
+  background: #081c15 !important;
+  border-top-color: #1b4332 !important;
+}
+body[data-theme="theme_pixel"] .taskbar-btn {
+  background: #102a20 !important;
+  color: #52b788 !important;
+}
+body[data-theme="theme_pixel"] input,
+body[data-theme="theme_pixel"] textarea,
+body[data-theme="theme_pixel"] select {
+  background: #0d1f12 !important;
+  color: #74c69d !important;
+  border-color: #2d6a4f !important;
+}
+/* Pixel Art: CSS variable palette */
+body[data-theme="theme_pixel"] .w95-window {
+  --text-primary:   #a8ff80;
+  --text-secondary: #52b788;
+  --card-bg:        rgba(26, 51, 0, 0.97);
+  --section-bg:     rgba(13, 31, 10, 0.80);
+  --card-border:    rgba(82, 183, 136, 0.38);
+  --input-bg:       rgba(8, 28, 18, 0.95);
+  --input-border:   rgba(45, 106, 79, 0.60);
+}
+
+/* --- CRT Mode theme --- */
+body[data-theme="theme_crt"] .w95-window,
+body[data-theme="theme_crt"] .w95-body {
+  background-color: #001200 !important;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  ) !important;
+  color: #00ff41 !important;
+}
+body[data-theme="theme_crt"] .w95-titlebar {
+  background: linear-gradient(to right, #003300, #004d00) !important;
+  color: #00ff41 !important;
+}
+body[data-theme="theme_crt"] .window--active .w95-titlebar {
+  background: linear-gradient(to right, #005500, #008000) !important;
+  color: #00ff88 !important;
+}
+body[data-theme="theme_crt"] .w95-title {
+  color: #00ff41;
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.7);
+}
+body[data-theme="theme_crt"] .w95-btn {
+  background: #001a00 !important;
+  color: #00cc33 !important;
+  border-color: #00aa00 #000800 #000800 #00aa00 !important;
+}
+body[data-theme="theme_crt"] #w95-taskbar {
+  background: #000800 !important;
+  border-top-color: #002200 !important;
+}
+body[data-theme="theme_crt"] .taskbar-btn {
+  background: #001000 !important;
+  color: #00aa2a !important;
+}
+body[data-theme="theme_crt"] input,
+body[data-theme="theme_crt"] textarea,
+body[data-theme="theme_crt"] select {
+  background: #000d00 !important;
+  color: #00cc33 !important;
+  border-color: #004400 !important;
+}
+/* CRT Mode: CSS variable palette */
+body[data-theme="theme_crt"] .w95-window {
+  --text-primary:   #00ff41;
+  --text-secondary: #00aa2a;
+  --card-bg:        rgba(0, 12, 0, 0.97);
+  --section-bg:     rgba(0, 20, 0, 0.80);
+  --card-border:    rgba(0, 160, 40, 0.35);
+  --input-bg:       rgba(0, 8, 0, 0.95);
+  --input-border:   rgba(0, 100, 0, 0.55);
 }
 
 /* ============================================================
