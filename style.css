@@ -5820,6 +5820,18 @@ body.dark-mode .w95-body.settings-body > .w95-row {
   100% { transform: translate(14px, -36px) scale(1.2); opacity: 0; }
 }
 
+/* ---- Cat accessory overlay (shows equipped accessory on the desktop cat) ---- */
+#cat-accessory-overlay {
+  position: fixed;
+  pointer-events: none;
+  z-index: 153;
+  width: 40px;   /* same as CW * S = 8 * 5 */
+  text-align: center;
+  font-size: 11px;
+  line-height: 1;
+  user-select: none;
+}
+
 /* ---- Cat gifts on the desktop floor ---- */
 .cat-gift {
   position: fixed;

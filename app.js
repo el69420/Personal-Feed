@@ -9946,6 +9946,7 @@ async function loadUserWallpaper() {
                     // Update face display with new accessory
                     const faceEl = document.getElementById('cat-face');
                     if (faceEl) faceEl.textContent = getCatFace(_catStats);
+                    if (window._catUpdateAccessoryOverlay) window._catUpdateAccessoryOverlay();
                 });
             }
             grid.appendChild(item);
@@ -10477,6 +10478,18 @@ function initPixelCat() {
     const zzzEl = document.createElement('div');
     zzzEl.id = 'cat-zzz';
     document.body.appendChild(zzzEl);
+
+    // ---- Accessory overlay (shows equipped accessory icon on the desktop cat) ----
+    const accEl = document.createElement('div');
+    accEl.id = 'cat-accessory-overlay';
+    document.body.appendChild(accEl);
+
+    function updateCatAccessoryOverlay() {
+        const acc = getEquippedAccessory();
+        accEl.textContent = acc ? acc.faceDecor : '';
+    }
+    updateCatAccessoryOverlay();
+    window._catUpdateAccessoryOverlay = updateCatAccessoryOverlay;
 
     // ---- State received from Firebase ----
     let fbX         = 0.5;
@@ -11244,6 +11257,10 @@ function initPixelCat() {
             zzzEl.style.top    = Math.round(py) + 'px';
             zzzEl.style.bottom = 'auto';
             zzzEl.style.zIndex = '157';
+            accEl.style.left   = Math.round(px) + 'px';
+            accEl.style.top    = Math.round(py + S) + 'px';
+            accEl.style.bottom = 'auto';
+            accEl.style.zIndex = '158';
         } else if (isPerching) {
             const { px, py } = calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
             canvas.style.left   = px + 'px';
@@ -11260,6 +11277,10 @@ function initPixelCat() {
             zzzEl.style.top    = py + 'px';
             zzzEl.style.bottom = 'auto';
             zzzEl.style.zIndex = (winZ + 3) + '';
+            accEl.style.left   = px + 'px';
+            accEl.style.top    = (py + S) + 'px';
+            accEl.style.bottom = 'auto';
+            accEl.style.zIndex = (winZ + 4) + '';
         } else {
             canvas.style.left   = `${Math.round(localX * (vw - CW * S))}px`;
             canvas.style.top    = 'auto';
@@ -11273,6 +11294,10 @@ function initPixelCat() {
             zzzEl.style.top    = 'auto';
             zzzEl.style.bottom = (44 + CH * S) + 'px';
             zzzEl.style.zIndex = '152';
+            accEl.style.left   = canvas.style.left;
+            accEl.style.top    = 'auto';
+            accEl.style.bottom = (44 + CH * S - S) + 'px';
+            accEl.style.zIndex = '153';
         }
 
         // Mirror canvas position to the interactive hit area overlay
