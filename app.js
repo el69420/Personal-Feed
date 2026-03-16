@@ -10485,7 +10485,10 @@ function initPixelCat() {
     document.body.appendChild(accEl);
 
     function updateCatAccessoryOverlay() {
-        const acc = getEquippedAccessory();
+        const id = localStorage.getItem('catEquippedAccessory') || '';
+        const acc = id && isRewardUnlocked(id)
+            ? REWARD_REGISTRY.find(r => r.id === id && r.type === REWARD_TYPE_CAT_ACCESSORY) || null
+            : null;
         accEl.textContent = acc ? acc.faceDecor : '';
     }
     updateCatAccessoryOverlay();
