@@ -1229,10 +1229,13 @@ function setupDBListeners() {
             if (newIds.length > 0) {
                 const p = newPosts[newIds[0]];
                 const author = p.author || 'Someone';
-                const label = p.note || p.url || 'A new post was shared';
-                sendNotification(`New post from ${author} 💜`, label, 'new-post');
-                // In-app notification popup (always shown, regardless of focus)
-                addInAppNotification({ postId: newIds[0], post: p });
+                // Only notify if the post is from the other user (not your own post)
+                if (author !== currentUser) {
+                    const label = p.note || p.url || 'A new post was shared';
+                    sendNotification(`New post from ${author} 💜`, label, 'new-post');
+                    // In-app notification popup (always shown, regardless of focus)
+                    addInAppNotification({ postId: newIds[0], post: p });
+                }
             }
         }
 
@@ -2077,6 +2080,8 @@ function toggleNotifPanel() {
     if (isOpen) {
         closeNotifPanel();
     } else {
+        // Ensure notification panel appears above all open windows
+        panel.style.zIndex = (w95TopZ + 1);
         panel.classList.remove('is-hidden');
         _markAllNotifsRead();
         _renderNotifPanel();
