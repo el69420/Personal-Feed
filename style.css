@@ -6708,6 +6708,9 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
     height: auto; /* override .console-body height:100% */
     overflow: hidden;
     padding: 0;
+    /* Pin terminal colours — beats any desktop theme's !important on .w95-body */
+    background: #000 !important;
+    color: #c0ffc0 !important;
 }
 .console-body {
     display: flex;
@@ -6719,6 +6722,12 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
     font-size: 12px;
     padding: 4px;
     box-sizing: border-box;
+}
+/* Keep console input as a plain terminal field regardless of active theme */
+#w95-win-console input {
+    background: transparent !important;
+    color: #c0ffc0 !important;
+    border-color: transparent !important;
 }
 #console-output {
     flex: 1;
