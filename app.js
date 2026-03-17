@@ -9635,6 +9635,7 @@ function openFolderWindow(folderItem) {
                 message: `Delete '${child.name}'?`,
                 buttons: [
                     { label: 'Yes', action: () => {
+                        addToLocalTrash(child);
                         folderItem.children = folderItem.children.filter(c => c.id !== ctxTargetId);
                         saveFolder(); renderGrid();
                     }},
@@ -10201,6 +10202,24 @@ function applyRecycleBinIconState() {
 }
 
 window.restoreFromRecycleBin = async function(itemId) {
+    if (itemId.startsWith('local_')) {
+        const trash = getLocalTrash();
+        const entry = trash[itemId];
+        if (!entry?.customItem) return;
+        const ci = entry.customItem;
+        // Add back to desktopCustomItems and recreate the icon
+        const existing = window._desktopCustom?.getItems() || [];
+        if (!existing.find(i => i.id === ci.id)) {
+            existing.push(ci);
+            window._desktopCustom?.saveItems(existing);
+            window._desktopCustom?.createIcon(ci);
+        }
+        delete trash[itemId];
+        saveLocalTrash(trash);
+        renderRecycleBin();
+        showToast('Restored to desktop');
+        return;
+    }
     const item = allRecycleBin[itemId];
     if (!item) return;
 
@@ -10233,11 +10252,33 @@ window.restoreFromRecycleBin = async function(itemId) {
 };
 
 window.deleteFromRecycleBinPermanently = async function(itemId) {
+    if (itemId.startsWith('local_')) {
+        const trash = getLocalTrash();
+        delete trash[itemId];
+        saveLocalTrash(trash);
+        renderRecycleBin();
+        showToast('Permanently deleted');
+        return;
+    }
     await remove(ref(database, `recycleBin/${itemId}`));
     showToast('Permanently deleted');
 };
 
+// Local-storage trash for custom desktop items (text files, folders)
+function getLocalTrash() {
+    try { return JSON.parse(localStorage.getItem('desktopTrashItems') || '{}'); } catch { return {}; }
+}
+function saveLocalTrash(t) { localStorage.setItem('desktopTrashItems', JSON.stringify(t)); }
+function addToLocalTrash(customItem) {
+    const trash = getLocalTrash();
+    trash['local_' + customItem.id] = { type: 'local-custom', customItem, deletedAt: Date.now() };
+    saveLocalTrash(trash);
+}
+
 function getRecycleBinPreview(item) {
+    if (item.type === 'local-custom') {
+        return item.customItem?.name || '(file)';
+    }
     if (item.type === 'desktop-icon') {
         return item.iconLabel || item.iconApp || 'Desktop icon';
     }
@@ -10261,7 +10302,8 @@ function getRecycleBinPreview(item) {
 function renderRecycleBin() {
     const list = document.getElementById('recycle-bin-list');
     if (!list) return;
-    const items = Object.entries(allRecycleBin).sort((a, b) => (b[1].deletedAt || 0) - (a[1].deletedAt || 0));
+    const allItems = { ...allRecycleBin, ...getLocalTrash() };
+    const items = Object.entries(allItems).sort((a, b) => (b[1].deletedAt || 0) - (a[1].deletedAt || 0));
     if (items.length === 0) {
         list.innerHTML = '<div class="recycle-bin-empty">Recycle Bin is empty.</div>';
         return;
@@ -10270,7 +10312,9 @@ function renderRecycleBin() {
         const preview = getRecycleBinPreview(item);
         const date = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '?';
         const previewEscaped = preview.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        const typeLabel = item.type === 'comment' ? 'Comment' : item.type === 'board' ? 'Board' : item.type === 'desktop-icon' ? 'Desktop Icon' : 'Post';
+        const typeLabel = item.type === 'local-custom'
+            ? (item.customItem?.type === 'folder' ? 'Folder' : 'Text File')
+            : item.type === 'comment' ? 'Comment' : item.type === 'board' ? 'Board' : item.type === 'desktop-icon' ? 'Desktop Icon' : 'Post';
         return `<div class="recycle-bin-item">
   <div class="recycle-bin-meta">${typeLabel} · Deleted ${date}</div>
   <div class="recycle-bin-preview">${previewEscaped || '(no preview)'}</div>
@@ -13023,10 +13067,13 @@ function initPixelCat() {
             message: `Are you sure you want to delete '${label}'?`,
             buttons: [
                 { label: 'Yes', action: async () => {
-                    if (appId?.startsWith('custom_') && window._desktopCustom) {
-                        // Custom item: remove from localStorage and DOM
-                        const remaining = window._desktopCustom.getItems().filter(i => i.id !== appId);
-                        window._desktopCustom.saveItems(remaining);
+                    const _customItems = window._desktopCustom?.getItems() || [];
+                    if (appId && window._desktopCustom && _customItems.find(i => i.id === appId)) {
+                        // Custom item: move to local trash, remove from desktop
+                        const items = _customItems;
+                        const found = items.find(i => i.id === appId);
+                        if (found) addToLocalTrash(found);
+                        window._desktopCustom.saveItems(items.filter(i => i.id !== appId));
                         delete w95Apps[appId];
                         _targetIcon.remove();
                     } else if (appId) {
