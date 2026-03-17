@@ -8109,6 +8109,9 @@ function getAllRewardsByType(type) {
 // Using a Map lets us store the unlock date without a separate data structure.
 let unlockedAchievements = new Map();
 let achievementsBackfilled = false;
+// When true, renderAchievementsWindow() is a no-op — used during bulk unlocks
+// (e.g. backfillAchievements) so we only pay the render cost once at the end.
+let _batchingAchievements = false;
 
 // In-session history of achievement unlock notifications (newest first).
 // Each entry: { title, icon, ts } — kept in memory only (resets on page reload).
@@ -8354,6 +8357,7 @@ async function backfillAchievements() {
     if (achievementsBackfilled) return;
     achievementsBackfilled = true;
     if (!currentUser) return;
+    _batchingAchievements = true;
 
     // Count existing posts by the current user from the already-loaded allPosts.
     const myPosts = Object.values(allPosts).filter(p => p.author === currentUser);
@@ -8546,6 +8550,7 @@ async function backfillAchievements() {
     if (unlockedAchievements.size >= 25) await unlockAchievement('unlock_25');
     if (unlockedAchievements.size >= 10) await unlockAchievement('power_user');
 
+    _batchingAchievements = false;
     await checkMythics();
     renderAchievementsWindow();
 }
@@ -8651,6 +8656,7 @@ function _seedUnlockedRewards() {
 const _ACH_SHOW_UNKNOWN_KEY = 'ach_show_unknown';
 
 function renderAchievementsWindow() {
+    if (_batchingAchievements) return;
     const body = document.getElementById('w95-achievements-body');
     if (!body) return;
 
@@ -8933,7 +8939,10 @@ function renderAchievementsWindow() {
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow('w95-win-achievements');
         localStorage.setItem('w95_achievements_open', '1');
-        if (_wasHiddenAch) _trackWindowOpen('achievements');
+        if (_wasHiddenAch) {
+            renderAchievementsWindow();
+            _trackWindowOpen('achievements');
+        }
     }
     function hide() {
         win.classList.add('is-hidden');
