@@ -559,7 +559,7 @@ function _playAmbienceChord() {
         gain.connect(_masterGain);
         const now    = _audioCtx.currentTime;
         const offset = i * 0.14;
-        const peak   = 0.011 + Math.random() * 0.005;
+        const peak   = 0.006 + Math.random() * 0.003;
         gain.gain.setValueAtTime(0, now + offset);
         gain.gain.linearRampToValueAtTime(peak, now + offset + 0.45);
         gain.gain.linearRampToValueAtTime(peak * 0.6, now + offset + 1.6);
