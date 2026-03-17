@@ -539,6 +539,53 @@ function ensureAudio() {
     if (_audioCtx.state === 'suspended') _audioCtx.resume();
 }
 
+// ===== Ambience sound =====
+let _ambienceTimer = null;
+let _ambienceActive = false;
+
+function _playAmbienceChord() {
+    if (!_audioCtx || !soundEnabled || !soundAmbience) return;
+    // Soft 3-note chord arpeggiated upward, randomly transposed for variety
+    const BASE = [523.25, 659.25, 783.99]; // C5, E5, G5
+    const semis = [-5, -2, 0, 2, 5][Math.floor(Math.random() * 5)];
+    const factor = Math.pow(2, semis / 12);
+    BASE.forEach((freq, i) => {
+        const osc  = _audioCtx.createOscillator();
+        const gain = _audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq * factor;
+        gain.gain.value = 0;
+        osc.connect(gain);
+        gain.connect(_masterGain);
+        const now    = _audioCtx.currentTime;
+        const offset = i * 0.14;
+        const peak   = 0.011 + Math.random() * 0.005;
+        gain.gain.setValueAtTime(0, now + offset);
+        gain.gain.linearRampToValueAtTime(peak, now + offset + 0.45);
+        gain.gain.linearRampToValueAtTime(peak * 0.6, now + offset + 1.6);
+        gain.gain.linearRampToValueAtTime(0, now + offset + 2.4);
+        osc.start(now + offset);
+        osc.stop(now + offset + 2.5);
+    });
+}
+
+function startAmbience() {
+    if (_ambienceActive) return;
+    _ambienceActive = true;
+    ensureAudio();
+    function tick() {
+        if (!_ambienceActive) return;
+        _playAmbienceChord();
+        _ambienceTimer = setTimeout(tick, 4500 + Math.random() * 3000);
+    }
+    _ambienceTimer = setTimeout(tick, 1500);
+}
+
+function stopAmbience() {
+    _ambienceActive = false;
+    if (_ambienceTimer !== null) { clearTimeout(_ambienceTimer); _ambienceTimer = null; }
+}
+
 // Maps a sound type to its feature category when no explicit category is passed.
 const _SOUND_CATEGORIES = {
     window_open: 'ui', window_close: 'ui', window_min: 'ui', window_max: 'ui', window_restore: 'ui',
@@ -5271,6 +5318,87 @@ function openW95Dialog({ icon = '', title = 'Windows', message = '', buttons = [
     return { close };
 }
 
+// ===== Win95-style prompt dialog (single text input) =====
+function openW95Prompt({ icon = '', title = 'New', message = '', defaultValue = '', onOK } = {}) {
+    const overlay = document.createElement('div');
+    overlay.className = 'w95-dialog-overlay';
+    overlay.innerHTML = `
+        <div class="w95-dialog" role="dialog" aria-modal="true">
+            <div class="w95-titlebar window--active">
+                <div class="w95-title">${title}</div>
+                <div class="w95-controls">
+                    <button class="w95-control w95-control-close w95-dialog-x" type="button" aria-label="Close">X</button>
+                </div>
+            </div>
+            <div class="w95-dialog-body">
+                ${icon ? `<div class="w95-dialog-icon">${icon}</div>` : ''}
+                <div style="flex:1">
+                    <div class="w95-dialog-message"></div>
+                    <input type="text" class="w95-prompt-input" style="width:100%;margin-top:6px;box-sizing:border-box;" autocomplete="off">
+                </div>
+            </div>
+            <div class="w95-dialog-btns">
+                <button class="w95-btn w95-dialog-btn" type="button">OK</button>
+                <button class="w95-btn w95-dialog-btn" type="button">Cancel</button>
+            </div>
+        </div>`;
+    overlay.querySelector('.w95-dialog-message').textContent = message;
+    const inp = overlay.querySelector('.w95-prompt-input');
+    inp.value = defaultValue;
+    document.body.appendChild(overlay);
+    function close() { overlay.remove(); document.removeEventListener('keydown', onKey); }
+    function confirm() { const v = inp.value.trim() || defaultValue; close(); onOK?.(v); }
+    const [okBtn, cancelBtn] = overlay.querySelectorAll('.w95-dialog-btn');
+    okBtn.addEventListener('click', confirm);
+    cancelBtn.addEventListener('click', close);
+    overlay.querySelector('.w95-dialog-x').addEventListener('click', close);
+    overlay.addEventListener('pointerdown', e => { if (e.target === overlay) close(); });
+    function onKey(e) { if (e.key === 'Escape') close(); else if (e.key === 'Enter') confirm(); }
+    document.addEventListener('keydown', onKey);
+    setTimeout(() => { inp.focus(); inp.select(); }, 0);
+}
+
+// ===== Win95-style Notepad dialog (editable text file) =====
+function openW95Notepad(item) {
+    const overlay = document.createElement('div');
+    overlay.className = 'w95-dialog-overlay';
+    const safeTitle = item.name.replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+    overlay.innerHTML = `
+        <div class="w95-dialog" role="dialog" aria-modal="true" style="width:440px;max-width:95vw;">
+            <div class="w95-titlebar window--active">
+                <div class="w95-title">📝 ${safeTitle}</div>
+                <div class="w95-controls">
+                    <button class="w95-control w95-control-close w95-dialog-x" type="button" aria-label="Close">X</button>
+                </div>
+            </div>
+            <div class="w95-dialog-body" style="flex-direction:column;align-items:stretch;padding:8px;">
+                <textarea class="w95-notepad-area" style="width:100%;height:220px;resize:vertical;font-family:monospace;font-size:13px;padding:6px;box-sizing:border-box;"></textarea>
+            </div>
+            <div class="w95-dialog-btns">
+                <button class="w95-btn w95-dialog-btn" type="button">Save</button>
+                <button class="w95-btn w95-dialog-btn" type="button">Close</button>
+            </div>
+        </div>`;
+    const textarea = overlay.querySelector('textarea');
+    textarea.value = item.content || '';
+    document.body.appendChild(overlay);
+    function close() { overlay.remove(); document.removeEventListener('keydown', onKey); }
+    const [saveBtn, closeBtn2] = overlay.querySelectorAll('.w95-dialog-btn');
+    saveBtn.addEventListener('click', () => {
+        item.content = textarea.value;
+        const items = window._desktopCustom?.getItems() || [];
+        const found = items.find(i => i.id === item.id);
+        if (found) { found.content = item.content; window._desktopCustom?.saveItems(items); }
+        close();
+    });
+    closeBtn2.addEventListener('click', close);
+    overlay.querySelector('.w95-dialog-x').addEventListener('click', close);
+    overlay.addEventListener('pointerdown', e => { if (e.target === overlay) close(); });
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', onKey);
+    setTimeout(() => textarea.focus(), 0);
+}
+
 // ===== Win95 window z-index management (bring-to-front) =====
 let w95TopZ = 2000;
 
@@ -9364,7 +9492,7 @@ function applyIconPositions() {
     const DRAG_THRESHOLD = 4; // px — below this, treat as a click not a drag
     const clickTimes = {};
 
-    document.querySelectorAll('.w95-desktop-icon').forEach(icon => {
+    function setupDesktopIcon(icon) {
         const appKey = icon.dataset.app;
         // dragStarts: map of appKey → {left, top} for every selected icon at drag start
         let startX, startY, didDrag, capturedId, dragStarts, wasSelectedOnDown;
@@ -9478,7 +9606,43 @@ function applyIconPositions() {
         icon.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openApp(appKey); }
         });
-    });
+    }
+
+    document.querySelectorAll('.w95-desktop-icon').forEach(setupDesktopIcon);
+
+    // ===== Custom Desktop Items (New Folder / New Text Document) =====
+    function getCustomItems() {
+        try { return JSON.parse(localStorage.getItem('desktopCustomItems') || '[]'); } catch { return []; }
+    }
+    function saveCustomItems(items) {
+        localStorage.setItem('desktopCustomItems', JSON.stringify(items));
+    }
+    function createCustomDesktopIcon(item) {
+        const desktop = document.getElementById('w95-desktop');
+        if (!desktop) return;
+        const safeName = item.name.replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+        const el = document.createElement('div');
+        el.className = 'w95-desktop-icon';
+        el.dataset.app = item.id;
+        el.tabIndex = 0;
+        el.innerHTML = `<div class="desktop-icon-img">${item.type === 'folder' ? '📁' : '📝'}</div><div class="desktop-icon-label">${safeName}</div>`;
+        desktop.appendChild(el);
+        applyIconPositions();
+        w95Apps[item.id] = {
+            open: () => {
+                if (item.type === 'folder') {
+                    openW95Dialog({ icon: '📁', title: item.name, message: '(This folder is empty)', buttons: [{ label: 'OK', action: null }] });
+                } else {
+                    openW95Notepad(item);
+                }
+            }
+        };
+        setupDesktopIcon(el);
+    }
+    // Load any previously saved custom items
+    getCustomItems().forEach(item => createCustomDesktopIcon(item));
+    // Expose for context menu + rename/delete handlers
+    window._desktopCustom = { getItems: getCustomItems, saveItems: saveCustomItems, createIcon: createCustomDesktopIcon };
 
     // ---- Desktop drag-select (rubber-band selection) ----
     const desktop = document.getElementById('w95-desktop');
@@ -10254,6 +10418,7 @@ async function loadUserWallpaper() {
     const volPct     = document.getElementById('settings-vol-pct');
     const sndUiChk   = document.getElementById('settings-snd-ui');
     const sndStrtChk = document.getElementById('settings-snd-startup');
+    const sndAmbiChk = document.getElementById('settings-snd-ambience');
     const sndChatChk = document.getElementById('settings-snd-chat');
     const sndPostChk = document.getElementById('settings-snd-post');
     const sndMailChk = document.getElementById('settings-snd-mail');
@@ -10272,6 +10437,7 @@ async function loadUserWallpaper() {
                 traySound.title       = soundEnabled ? 'Sound: on (click to mute)' : 'Sound: muted (click to unmute)';
                 traySound.classList.toggle('tray-muted', !soundEnabled);
             }
+            if (soundEnabled && soundAmbience) startAmbience(); else stopAmbience();
         });
     }
 
@@ -10295,6 +10461,7 @@ async function loadUserWallpaper() {
 
     _mkSndToggle(sndUiChk,   () => soundUiEffects, v => { soundUiEffects = v; }, 'soundUiEffects');
     _mkSndToggle(sndStrtChk, () => soundStartup,   v => { soundStartup   = v; }, 'soundStartup');
+    _mkSndToggle(sndAmbiChk, () => soundAmbience,  v => { soundAmbience  = v; if (v && soundEnabled) startAmbience(); else stopAmbience(); }, 'soundAmbience');
     _mkSndToggle(sndChatChk, () => sndChat,        v => { sndChat    = v; }, 'snd_chat');
     _mkSndToggle(sndPostChk, () => sndPost,        v => { sndPost    = v; }, 'snd_post');
     _mkSndToggle(sndMailChk, () => sndMail,        v => { sndMail    = v; }, 'snd_mail');
@@ -10377,6 +10544,7 @@ async function loadUserWallpaper() {
         }
         if (sndUiChk)   sndUiChk.checked   = soundUiEffects;
         if (sndStrtChk) sndStrtChk.checked = soundStartup;
+        if (sndAmbiChk) sndAmbiChk.checked = soundAmbience;
         if (sndChatChk) sndChatChk.checked = sndChat;
         if (sndPostChk) sndPostChk.checked = sndPost;
         if (sndMailChk) sndMailChk.checked = sndMail;
@@ -10445,6 +10613,7 @@ async function loadUserWallpaper() {
         soundUiEffects = snap.uiEffects;  localStorage.setItem('soundUiEffects', soundUiEffects ? 'true' : 'false');
         soundStartup   = snap.startup;    localStorage.setItem('soundStartup',   soundStartup   ? 'true' : 'false');
         soundAmbience  = snap.ambience;   localStorage.setItem('soundAmbience',  soundAmbience  ? 'true' : 'false');
+        if (soundEnabled && soundAmbience) startAmbience(); else stopAmbience();
         sndChat    = snap.sndChat;    localStorage.setItem('snd_chat',    sndChat    ? 'true' : 'false');
         sndPost    = snap.sndPost;    localStorage.setItem('snd_post',    sndPost    ? 'true' : 'false');
         sndMail    = snap.sndMail;    localStorage.setItem('snd_mail',    sndMail    ? 'true' : 'false');
@@ -12388,16 +12557,47 @@ function initPixelCat() {
         updateAutoArrangeLabel();
     });
 
-    // New submenu — stubs that acknowledge with a dialog
-    ['ctx-new-folder', 'ctx-new-shortcut', 'ctx-new-text'].forEach(id => {
-        document.getElementById(id)?.addEventListener('click', () => {
-            hideAll();
-            openW95Dialog({
-                icon: '\uD83D\uDCC4',
-                title: 'New',
-                message: 'This feature is not yet available.',
-                buttons: [{ label: 'OK', action: null }]
-            });
+    document.getElementById('ctx-new-folder')?.addEventListener('click', () => {
+        hideAll();
+        openW95Prompt({
+            icon: '📁',
+            title: 'New Folder',
+            message: 'Enter a name for the new folder:',
+            defaultValue: 'New Folder',
+            onOK: name => {
+                const item = { id: 'custom_' + Date.now(), type: 'folder', name };
+                const items = window._desktopCustom.getItems();
+                items.push(item);
+                window._desktopCustom.saveItems(items);
+                window._desktopCustom.createIcon(item);
+            }
+        });
+    });
+
+    document.getElementById('ctx-new-shortcut')?.addEventListener('click', () => {
+        hideAll();
+        openW95Dialog({
+            icon: '📄',
+            title: 'New Shortcut',
+            message: 'This feature is not yet available.',
+            buttons: [{ label: 'OK', action: null }]
+        });
+    });
+
+    document.getElementById('ctx-new-text')?.addEventListener('click', () => {
+        hideAll();
+        openW95Prompt({
+            icon: '📝',
+            title: 'New Text Document',
+            message: 'Enter a name for the new text document:',
+            defaultValue: 'New Text Document.txt',
+            onOK: name => {
+                const item = { id: 'custom_' + Date.now(), type: 'textfile', name, content: '' };
+                const items = window._desktopCustom.getItems();
+                items.push(item);
+                window._desktopCustom.saveItems(items);
+                window._desktopCustom.createIcon(item);
+            }
         });
     });
 
@@ -12463,6 +12663,13 @@ function initPixelCat() {
             labelEl.textContent = newName;
             labelEl.classList.remove('is-renaming');
             input.remove();
+            // Persist rename for custom desktop items
+            const appId = _targetIcon?.dataset?.app;
+            if (appId?.startsWith('custom_') && window._desktopCustom) {
+                const items = window._desktopCustom.getItems();
+                const found = items.find(i => i.id === appId);
+                if (found) { found.name = newName; window._desktopCustom.saveItems(items); }
+            }
         }
 
         function cancelRename() {
@@ -12489,7 +12696,13 @@ function initPixelCat() {
             message: `Are you sure you want to delete '${label}'?`,
             buttons: [
                 { label: 'Yes', action: async () => {
-                    if (appId) {
+                    if (appId?.startsWith('custom_') && window._desktopCustom) {
+                        // Custom item: remove from localStorage and DOM
+                        const remaining = window._desktopCustom.getItems().filter(i => i.id !== appId);
+                        window._desktopCustom.saveItems(remaining);
+                        delete w95Apps[appId];
+                        _targetIcon.remove();
+                    } else if (appId) {
                         await set(ref(database, `recycleBin/icon_${appId}`), {
                             type: 'desktop-icon',
                             iconApp: appId,
@@ -14299,6 +14512,9 @@ document.addEventListener('click', (e) => {
         observer.observe(w, { attributes: true, attributeOldValue: true });
     });
 })();
+
+    // Start ambience if enabled on load
+    if (soundEnabled && soundAmbience) startAmbience();
 
 } // end initApp
 
