@@ -4145,7 +4145,18 @@ body.dark-mode .nl-status { color: #00cccc; }
 .w95-btn{font:12px Tahoma,Verdana,Arial,sans-serif;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;padding:4px 10px;cursor:pointer;user-select:none}
 .w95-btn:active,.w95-btn.is-pressed,.w95-btn.is-active{border-top:2px solid #404040;border-left:2px solid #404040;border-right:2px solid #fff;border-bottom:2px solid #fff;padding:5px 9px 3px 11px}
 .w95-btn.is-active{font-weight:bold}
-.w95-window{position:fixed;left:20px;top:20px;width:280px;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;z-index:2000;display:flex;flex-direction:column;container-type:inline-size;resize:both;overflow:hidden;min-width:200px;min-height:80px}
+.w95-window{position:fixed;left:20px;top:20px;width:280px;background:#c0c0c0;border-top:2px solid #fff;border-left:2px solid #fff;border-right:2px solid #404040;border-bottom:2px solid #404040;z-index:2000;display:flex;flex-direction:column;container-type:inline-size;overflow:visible;min-width:200px;min-height:80px}
+/* Custom resize handles – replaces native CSS resize:both */
+.w95-resize-handle{position:absolute;z-index:10}
+.w95-resize-handle.n {top:-4px;left:8px;right:8px;height:8px;cursor:n-resize}
+.w95-resize-handle.s {bottom:-4px;left:8px;right:8px;height:8px;cursor:s-resize}
+.w95-resize-handle.w {left:-4px;top:8px;bottom:8px;width:8px;cursor:w-resize}
+.w95-resize-handle.e {right:-4px;top:8px;bottom:8px;width:8px;cursor:e-resize}
+.w95-resize-handle.nw{top:-4px;left:-4px;width:12px;height:12px;cursor:nw-resize}
+.w95-resize-handle.ne{top:-4px;right:-4px;width:12px;height:12px;cursor:ne-resize}
+.w95-resize-handle.sw{bottom:-4px;left:-4px;width:12px;height:12px;cursor:sw-resize}
+.w95-resize-handle.se{bottom:-4px;right:-4px;width:12px;height:12px;cursor:se-resize}
+.w95-window.is-maximised .w95-resize-handle{display:none}
 .w95-titlebar{display:flex;align-items:center;justify-content:space-between;padding:4px;background:#808080;color:#d4d0c8;font:12px Tahoma,Verdana,Arial,sans-serif;cursor:move;user-select:none}
 .window--active .w95-titlebar{background:#000080;color:#fff}
 .w95-title{font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
@@ -5576,7 +5587,6 @@ body.dark-mode .garden-actions-bar{
   top: 0 !important;
   width: 100% !important;
   height: calc(100vh - 40px) !important;
-  resize: none;
 }
 .w95-window.is-maximised .w95-titlebar {
   cursor: default;

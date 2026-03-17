@@ -6772,6 +6772,64 @@ function makeDraggable(winEl, handleEl, winId) {
   });
 }
 
+// ===== CUSTOM WINDOW RESIZE =====
+// Adds 8 resize handles (4 edges + 4 corners) to a window element.
+// Replaces the native CSS resize:both, which conflicted with scroll bars.
+function makeResizable(winEl, winId) {
+  ['n','ne','e','se','s','sw','w','nw'].forEach(dir => {
+    const h = document.createElement('div');
+    h.className = 'w95-resize-handle ' + dir;
+    h.dataset.dir = dir;
+    winEl.appendChild(h);
+  });
+}
+
+// Single global resize state – shared across all windows.
+let _winResizeState = null;
+
+document.addEventListener('mousedown', (e) => {
+  const handle = e.target.closest('.w95-resize-handle');
+  if (!handle) return;
+  const winEl = handle.closest('.w95-window');
+  if (!winEl) return;
+  const winId = winEl.id;
+  if (w95Mgr.isMaximised(winId)) return;
+  const r = winEl.getBoundingClientRect();
+  _winResizeState = {
+    winEl, winId,
+    dir: handle.dataset.dir,
+    startX: e.clientX, startY: e.clientY,
+    startW: r.width, startH: r.height,
+    startL: r.left, startT: r.top
+  };
+  e.preventDefault();
+  e.stopPropagation();
+}, true);
+
+window.addEventListener('mousemove', (e) => {
+  if (!_winResizeState) return;
+  const { winEl, dir, startX, startY, startW, startH, startL, startT } = _winResizeState;
+  const dx = e.clientX - startX;
+  const dy = e.clientY - startY;
+  const MIN_W = 200, MIN_H = 80;
+  let newW = startW, newH = startH, newL = startL, newT = startT;
+  if (dir.includes('e')) newW = Math.max(MIN_W, startW + dx);
+  if (dir.includes('s')) newH = Math.max(MIN_H, startH + dy);
+  if (dir.includes('w')) { newW = Math.max(MIN_W, startW - dx); newL = startL + startW - newW; }
+  if (dir.includes('n')) { newH = Math.max(MIN_H, startH - dy); newT = startT + startH - newH; }
+  winEl.style.width  = newW + 'px';
+  winEl.style.height = newH + 'px';
+  winEl.style.left   = newL + 'px';
+  winEl.style.top    = newT + 'px';
+});
+
+window.addEventListener('mouseup', () => {
+  if (_winResizeState) {
+    w95Layout.save(_winResizeState.winEl, _winResizeState.winId);
+    _winResizeState = null;
+  }
+});
+
 // ===== ACHIEVEMENT TRACKING HELPERS =====
 
 // Record today as a site-visit day for Rainy Day achievement.
@@ -9585,7 +9643,12 @@ document.querySelectorAll('.w95-window').forEach(win => {
         }
     });
 
-    // 2. ResizeObserver: debounce-save when the user drags the resize handle.
+    // 2. Add custom resize handles to every window.
+    document.querySelectorAll('.w95-window').forEach(winEl => {
+        if (winEl.id) makeResizable(winEl, winEl.id);
+    });
+
+    // 3. ResizeObserver: debounce-save when the user drags a resize handle.
     if (typeof ResizeObserver !== 'undefined') {
         const _resizeTimers = {};
         const ro = new ResizeObserver(entries => {
@@ -9600,7 +9663,7 @@ document.querySelectorAll('.w95-window').forEach(win => {
         document.querySelectorAll('.w95-window').forEach(winEl => ro.observe(winEl));
     }
 
-    // 3. On viewport resize, push any off-screen windows back into view.
+    // 4. On viewport resize, push any off-screen windows back into view.
     let _vpResizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(_vpResizeTimer);
