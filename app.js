@@ -9473,6 +9473,9 @@ function openAppPickerDialog(onPick) {
 
 // Opens a draggable folder window for a custom folder item
 function openFolderWindow(folderItem) {
+    // Always read fresh children from localStorage so drops persisted since last open are visible
+    const _fresh = (window._desktopCustom?.getItems() || []).find(i => i.id === folderItem.id);
+    if (_fresh) folderItem.children = _fresh.children || [];
     if (!folderItem.children) folderItem.children = [];
     function esc(s) { return String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
 
@@ -9501,8 +9504,6 @@ function openFolderWindow(folderItem) {
             </div>
         </div>
         <div class="explorer-toolbar">
-            <button class="w95-btn" id="${winId}-btn-text" type="button" style="font-size:11px;padding:1px 6px;">📝 New Text</button>
-            <button class="w95-btn" id="${winId}-btn-shortcut" type="button" style="font-size:11px;padding:1px 6px;">🔗 New Shortcut</button>
             <div class="explorer-addr">${esc(folderItem.name)}</div>
         </div>
         <div class="explorer-body">
@@ -9641,27 +9642,6 @@ function openFolderWindow(folderItem) {
                 ]
             });
         }
-    });
-
-    // Toolbar buttons
-    document.getElementById(`${winId}-btn-text`)?.addEventListener('click', () => {
-        openW95Prompt({
-            icon: '📝',
-            title: 'New Text Document',
-            message: 'Enter a name for the new text document:',
-            defaultValue: 'New Text Document.txt',
-            onOK: name => {
-                folderItem.children.push({ id: 'child_' + Date.now(), type: 'textfile', name, content: '' });
-                saveFolder(); renderGrid();
-            }
-        });
-    });
-
-    document.getElementById(`${winId}-btn-shortcut`)?.addEventListener('click', () => {
-        openAppPickerDialog(app => {
-            folderItem.children.push({ id: 'child_' + Date.now(), type: 'shortcut', name: app.name, app: app.app, icon: app.icon });
-            saveFolder(); renderGrid();
-        });
     });
 
     renderGrid();
