@@ -15,6 +15,7 @@ const boardDeleteRequestsRef = ref(database, 'board_delete_requests');
 const lettersRef    = ref(database, 'letters');
 const linkMetaRef   = ref(database, 'linkMeta');
 const recycleBinRef = ref(database, 'recycleBin');
+const categoriesRef = ref(database, 'categories');
 
 const API_BASE = ''; // Set to the deployed origin (e.g. 'https://your-api.example.com') for GitHub Pages use
 
@@ -1471,6 +1472,17 @@ function setupDBListeners() {
         allRecycleBin = snapshot.val() || {};
         renderRecycleBin();
         applyRecycleBinIconState();
+    });
+
+    onValue(categoriesRef, (snapshot) => {
+        const custom = snapshot.val() || {};
+        // Merge custom categories into lookup objects (custom categories come after built-ins)
+        Object.entries(custom).forEach(([key, val]) => {
+            COLLECTION_EMOJIS[key] = val.emoji || '[+]';
+            COLLECTION_LABELS[key]  = val.label || key;
+        });
+        renderCustomCollectionButtons();
+        renderCustomCollectionsGrid();
     });
 
     onValue(postsRef, (snapshot) => {
@@ -3032,6 +3044,75 @@ window.handleReplyKey = function(e, postId, replyToId, isInline) {
 function getCollectionEmoji(collection) {
     return COLLECTION_EMOJIS[collection] || '';
 }
+
+const BUILTIN_COLLECTIONS = ['funny', 'cute', 'news', 'inspiration', 'music', 'idiot-drivers', 'wishlist', 'other'];
+
+function renderCustomCollectionButtons() {
+    const picker = document.getElementById('collectionPicker');
+    if (!picker) return;
+    // Remove previously injected custom buttons
+    picker.querySelectorAll('.coll-pick-btn-custom').forEach(b => b.remove());
+    const addBtn = picker.querySelector('.coll-pick-add-btn');
+    // Insert custom buttons before the add button
+    Object.keys(COLLECTION_EMOJIS).filter(k => !BUILTIN_COLLECTIONS.includes(k)).forEach(key => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'coll-pick-btn coll-pick-btn-custom';
+        btn.dataset.val = key;
+        btn.textContent = `${COLLECTION_EMOJIS[key]} ${COLLECTION_LABELS[key]}`;
+        if (addBtn) picker.insertBefore(btn, addBtn);
+        else picker.appendChild(btn);
+    });
+}
+
+function renderCustomCollectionsGrid() {
+    const grid = document.getElementById('collectionsGrid');
+    if (!grid) return;
+    grid.querySelectorAll('.collection-item-custom').forEach(el => el.remove());
+    const addItem = grid.querySelector('.collection-add-item');
+    Object.keys(COLLECTION_EMOJIS).filter(k => !BUILTIN_COLLECTIONS.includes(k)).forEach(key => {
+        const item = document.createElement('div');
+        item.className = 'collection-item collection-item-custom';
+        item.dataset.collection = key;
+        item.innerHTML = `<div class="text-2xl mb-1">${safeText(COLLECTION_EMOJIS[key])}</div><div class="text-xs font-semibold collection-item-label">${safeText(COLLECTION_LABELS[key])}</div>`;
+        if (addItem) grid.insertBefore(item, addItem);
+        else grid.appendChild(item);
+    });
+}
+
+window.openAddCategoryModal = function() {
+    const modal = document.getElementById('addCategoryModal');
+    if (modal) {
+        document.getElementById('newCatEmoji').value = '';
+        document.getElementById('newCatName').value = '';
+        document.getElementById('addCatError').textContent = '';
+        openModal(modal);
+        setTimeout(() => document.getElementById('newCatEmoji').focus(), 50);
+    }
+};
+
+window.closeAddCategoryModal = function() {
+    closeModal(document.getElementById('addCategoryModal'));
+};
+
+window.saveNewCategory = async function() {
+    const emoji = document.getElementById('newCatEmoji').value.trim();
+    const name  = document.getElementById('newCatName').value.trim();
+    const err   = document.getElementById('addCatError');
+    if (!emoji) { err.textContent = 'Please enter a symbol or emoji.'; return; }
+    if (!name)  { err.textContent = 'Please enter a name.'; return; }
+    // Create a key from the name (lowercase, hyphens)
+    const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!key) { err.textContent = 'Invalid name.'; return; }
+    if (BUILTIN_COLLECTIONS.includes(key)) { err.textContent = 'That name is already a built-in category.'; return; }
+    try {
+        await set(ref(database, `categories/${key}`), { emoji, label: name });
+        closeAddCategoryModal();
+        showToast(`Category "${name}" added!`);
+    } catch (e) {
+        err.textContent = 'Failed to save. Try again.';
+    }
+};
 
 function getSourceLabel(source) {
     const s = source || 'other';
@@ -5048,6 +5129,14 @@ document.getElementById('collectionsModal')?.addEventListener('click', e => {
     if (e.target.id === 'collectionsModal') { closeCollectionsModal(); return; }
     const item = e.target.closest('[data-collection]');
     if (item && item.closest('#collectionsModal')) filterByCollection(item.dataset.collection || null);
+});
+
+// Add Category modal
+document.getElementById('addCategoryModal')?.addEventListener('click', e => {
+    if (e.target.id === 'addCategoryModal') closeAddCategoryModal();
+});
+document.getElementById('newCatName')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveNewCategory();
 });
 
 // Sources modal

@@ -1282,6 +1282,22 @@ body.dark-mode .coll-pick-btn.selected { color: #00cccc; }
     box-shadow: 0 6px 18px rgba(0, 128, 128, 0.18);
 }
 
+.collection-add-item {
+    border-style: dashed;
+    opacity: 0.7;
+}
+.collection-add-item:hover {
+    opacity: 1;
+}
+
+.coll-pick-add-btn {
+    border-style: dashed !important;
+    opacity: 0.75;
+}
+.coll-pick-add-btn:hover {
+    opacity: 1;
+}
+
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {

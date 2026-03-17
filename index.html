@@ -391,6 +391,7 @@
                         <button type="button" class="coll-pick-btn" data-val="idiot-drivers">&gt;:( Drivers</button>
                         <button type="button" class="coll-pick-btn" data-val="wishlist">[w] Wishlist</button>
                         <button type="button" class="coll-pick-btn" data-val="other">[+] Other</button>
+                        <button type="button" class="coll-pick-btn coll-pick-add-btn" onclick="openAddCategoryModal()">+ New Category</button>
                     </div>
                 </div>
                 <div class="form-field">
@@ -472,7 +473,7 @@
             <button class="modal-x" id="collectionsModalClose" title="Close">✕</button>
             <h2 class="text-xl font-bold mb-1 modal-heading">Collections</h2>
             <p class="text-sm mb-4 modal-subtext">Filter posts by collection</p>
-            <div class="collections-grid">
+            <div id="collectionsGrid" class="collections-grid">
                 <div class="collection-item" data-collection="">
                     <div class="text-2xl mb-1">*~*</div>
                     <div class="text-xs font-semibold collection-item-label">All</div>
@@ -509,7 +510,30 @@
                     <div class="text-2xl mb-1">[+]</div>
                     <div class="text-xs font-semibold collection-item-label">Other</div>
                 </div>
+                <div class="collection-item collection-add-item" onclick="openAddCategoryModal()">
+                    <div class="text-2xl mb-1">+</div>
+                    <div class="text-xs font-semibold collection-item-label">Add New</div>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div id="addCategoryModal" class="modal">
+        <div class="modal-content modal-sm">
+            <button class="modal-x" onclick="closeAddCategoryModal()" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-1 modal-heading">[+] New Category</h2>
+            <p class="text-sm mb-4 modal-subtext">Create a custom collection category</p>
+            <div class="form-field">
+                <label class="form-label">Symbol / Emoji</label>
+                <input type="text" id="newCatEmoji" class="form-input" placeholder="e.g. :D or 🎮" maxlength="10">
+            </div>
+            <div class="form-field mt-3">
+                <label class="form-label">Name</label>
+                <input type="text" id="newCatName" class="form-input" placeholder="e.g. Gaming" maxlength="30">
+            </div>
+            <p id="addCatError" class="text-xs mt-2" style="color:var(--accent-red,#e05);min-height:1.2em;"></p>
+            <button class="btn-primary w-full mt-3" onclick="saveNewCategory()">Save Category</button>
         </div>
     </div>
 
