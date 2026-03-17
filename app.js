@@ -1241,6 +1241,8 @@ async function pollNowListening() {
     ]);
     if (elData   !== null) renderNLCard('El',   elData);
     if (teroData !== null) renderNLCard('Tero', teroData);
+    // Let the cat window know if anyone is currently listening to music
+    window._anyoneNowPlaying = !!(elData?.nowPlaying || teroData?.nowPlaying);
 }
 
 let _nlInterval = null;
@@ -5894,9 +5896,16 @@ const w95Apps = {};
 
   function spawnCritter() {
     if (_critterEl) return;   // at most 1 critter at a time
-    // 0.5 % chance per spawn attempt: spawn mythical instead of regular
-    if (Math.random() < 0.005) { spawnMythicalCritter(); return; }
-    const critter = CRITTER_POOL[Math.floor(Math.random() * CRITTER_POOL.length)];
+    // Stormy weather: regular critters shelter indoors — reschedule and bail
+    if (_currentWeather === 'stormy') { scheduleNextCritter(); return; }
+    // Sunny days give mythical visitors a slightly better chance
+    const mythicalChance = _currentWeather === 'sunny' ? 0.01 : 0.005;
+    if (Math.random() < mythicalChance) { spawnMythicalCritter(); return; }
+    // Foggy weather: only snails venture out (they like the damp)
+    const pool = _currentWeather === 'foggy'
+      ? CRITTER_POOL.filter(c => c.label === 'snail')
+      : CRITTER_POOL;
+    const critter = pool[Math.floor(Math.random() * pool.length)];
     const el = document.createElement('div');
     el.className     = 'garden-critter';
     el.textContent   = critter.emoji;
@@ -5916,8 +5925,9 @@ const w95Apps = {};
     });
     tilesRowEl.appendChild(el);
     _critterEl = el;
-    // Auto-despawn after 12s
-    _critterDespawn = setTimeout(despawnCritter, 12000);
+    // Windy weather sends critters away faster; otherwise auto-despawn after 12s
+    const despawnMs = _currentWeather === 'windy' ? 7000 : 12000;
+    _critterDespawn = setTimeout(despawnCritter, despawnMs);
     // Schedule the next spawn attempt
     scheduleNextCritter();
   }
@@ -5929,7 +5939,12 @@ const w95Apps = {};
 
   function scheduleNextCritter() {
     if (_critterSchedule) { clearTimeout(_critterSchedule); _critterSchedule = null; }
-    const delay = 60000 + Math.random() * 60000;  // 60–120 s
+    // Weather-aware spawn timing: sunny = busier garden, stormy/rainy = quieter
+    let minMs = 60000, rangeMs = 60000;
+    if (_currentWeather === 'sunny')                                   { minMs =  30000; rangeMs = 30000; }
+    else if (_currentWeather === 'rainy' || _currentWeather === 'foggy') { minMs =  90000; rangeMs = 90000; }
+    else if (_currentWeather === 'stormy')                              { minMs = 150000; rangeMs = 90000; }
+    const delay = minMs + Math.random() * rangeMs;
     _critterSchedule = setTimeout(spawnCritter, delay);
   }
 
@@ -8111,6 +8126,12 @@ function _afterLetter() {
     const total = Object.values(allLetters).filter(l => l.from === currentUser).length;
     if (total >= 5) unlockAchievement('five_letters');
     if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+    // Desktop cat reacts to you sending a letter
+    window._catLocalEmote?.('heart');
+    // Track that a letter was sent today (available for cross-system checks)
+    const _lToday = localDateStr();
+    dailyActions[_lToday] = dailyActions[_lToday] || {};
+    dailyActions[_lToday].didLetter = true;
 }
 
 // Called after any cat action (feed / water / yarn).
@@ -10152,7 +10173,7 @@ async function loadUserWallpaper() {
         if (s.thirst < 20) return '=^-.-^=' + decor;
         if (s.play   < 20) return '=^_.^= z' + decor;
         if (s.hunger < 40 || s.thirst < 40 || s.play < 40) return '=^~.~^=' + decor;
-        if (Math.min(s.hunger, s.thirst, s.play) > 75) return '=^o^= \u2661' + decor;
+        if (Math.min(s.hunger, s.thirst, s.play) > 75) return (window._anyoneNowPlaying ? '=^o^= \u266a' : '=^o^= \u2661') + decor;
         return '=^-^=' + decor;
     }
 
