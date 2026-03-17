@@ -5646,6 +5646,19 @@ body { padding: 0 !important; }
   border-right: 2px solid #000080;
   border-bottom: 2px solid #000080;
 }
+body.dark-mode .wallpaper-section-label { color: #d0d0d0; }
+body.dark-mode .wallpaper-preview {
+  border-top-color: #1a1a1a;
+  border-left-color: #1a1a1a;
+  border-right-color: #606060;
+  border-bottom-color: #606060;
+}
+body.dark-mode .wallpaper-swatch {
+  border-top-color: #1a1a1a;
+  border-left-color: #1a1a1a;
+  border-right-color: #606060;
+  border-bottom-color: #606060;
+}
 
 .wallpaper-swatch.selected {
   border-top: 2px solid #000080;
@@ -5964,6 +5977,11 @@ body.dark-mode .w95-body.settings-body > .w95-row {
 .recycle-bin-del-btn {
   color: #990000;
 }
+body.dark-mode .recycle-bin-empty  { color: #909090; }
+body.dark-mode .recycle-bin-item   { background: #2a2a2a; border-color: #555555; }
+body.dark-mode .recycle-bin-preview{ color: #d0d0d0; }
+body.dark-mode .recycle-bin-meta   { color: #909090; }
+body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
 
 /* ============================================================
    Pixel Cat
@@ -7259,6 +7277,123 @@ body.dark-mode .cat-unlock-item:hover { background: #333; }
 body.dark-mode .cat-unlock-item--locked { background: #1a1a1a; color: #888; }
 body.dark-mode .cat-unlock-item--locked:hover { background: #1a1a1a; }
 
+/* ===== W95 Window Chrome — Dark Mode =====
+   Darkens the Win95 chrome (window frames, titlebar, taskbar, menus, etc.)
+   when dark mode is active but no desktop theme overrides these elements.
+   Desktop themes use !important so they always take precedence over these rules.
+   ============================================================ */
+body.dark-mode .w95-window {
+  background: #383838;
+  border-top-color: #606060;
+  border-left-color: #606060;
+  border-right-color: #1a1a1a;
+  border-bottom-color: #1a1a1a;
+  color: #e0e0e0;
+}
+body.dark-mode .w95-titlebar {
+  background: #505050;
+  color: #c8c8c8;
+}
+body.dark-mode .window--active .w95-titlebar {
+  background: #000080;
+  color: #ffffff;
+}
+body.dark-mode .w95-btn {
+  background: #444444;
+  color: #e0e0e0;
+  border-top-color: #666666;
+  border-left-color: #666666;
+  border-right-color: #1a1a1a;
+  border-bottom-color: #1a1a1a;
+}
+body.dark-mode .w95-btn:active,
+body.dark-mode .w95-btn.is-pressed,
+body.dark-mode .w95-btn.is-active {
+  border-top-color: #1a1a1a;
+  border-left-color: #1a1a1a;
+  border-right-color: #666666;
+  border-bottom-color: #666666;
+}
+body.dark-mode .w95-control {
+  background: #444444;
+  color: #e0e0e0;
+  border-top-color: #666666;
+  border-left-color: #666666;
+  border-right-color: #1a1a1a;
+  border-bottom-color: #1a1a1a;
+}
+body.dark-mode .w95-control:active {
+  border-top-color: #1a1a1a;
+  border-left-color: #1a1a1a;
+  border-right-color: #666666;
+  border-bottom-color: #666666;
+}
+body.dark-mode .w95-taskbar {
+  background: #2a2a2a;
+  border-top-color: #555555;
+}
+body.dark-mode .w95-start-menu {
+  background: #383838;
+  border-top-color: #666666;
+  border-left-color: #666666;
+  border-right-color: #1a1a1a;
+  border-bottom-color: #1a1a1a;
+}
+body.dark-mode .w95-start-item { color: #e0e0e0; }
+body.dark-mode .w95-start-separator {
+  border-top-color: #1a1a1a;
+  border-bottom-color: #606060;
+}
+body.dark-mode .w95-ctx-menu {
+  background: #383838;
+  border-top-color: #666666;
+  border-left-color: #666666;
+  border-right-color: #1a1a1a;
+  border-bottom-color: #1a1a1a;
+}
+body.dark-mode .w95-ctx-item,
+body.dark-mode .w95-ctx-has-sub { color: #e0e0e0; }
+body.dark-mode .w95-ctx-separator {
+  border-top-color: #1a1a1a;
+  border-bottom-color: #606060;
+}
+body.dark-mode .w95-shutdown-dialog {
+  background: #383838;
+  border-top-color: #666666;
+  border-left-color: #666666;
+  border-right-color: #1a1a1a;
+  border-bottom-color: #1a1a1a;
+  color: #e0e0e0;
+}
+body.dark-mode .w95-shutdown-select {
+  background: #1e1e1e;
+  color: #e0e0e0;
+  border-color: #555555;
+}
+body.dark-mode .w95-shutdown-btns { border-top-color: #555555; }
+body.dark-mode .w95-tray {
+  background: #2a2a2a;
+  border-top-color: #1a1a1a;
+  border-left-color: #1a1a1a;
+  border-right-color: #555555;
+  border-bottom-color: #555555;
+}
+body.dark-mode .w95-clock {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  border-top-color: #1a1a1a;
+  border-left-color: #1a1a1a;
+  border-right-color: #555555;
+  border-bottom-color: #555555;
+}
+body.dark-mode .desktop-icon-img {
+  background: #444444;
+  border-color: #666666 #1a1a1a #1a1a1a #666666;
+  box-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #1a1a1a;
+}
+/* Ensure the w95-body text is readable in dark mode when no theme sets it */
+body.dark-mode .w95-body { color: #e0e0e0; }
+
 /* ===== Desktop Themes (applied via data-theme on body) ===== */
 
 /* --- Pastel Mode --- */
@@ -7282,7 +7417,7 @@ body[data-theme="theme_pastel"] #w95-taskbar {
   background: #f0c8d8 !important;
   border-top-color: #e0a0b8 !important;
 }
-body[data-theme="theme_pastel"] .taskbar-btn {
+body[data-theme="theme_pastel"] #w95-taskbar .w95-btn {
   background: #f8d8e8 !important;
   color: #2a002a !important;
 }
@@ -7318,7 +7453,7 @@ body[data-theme="theme_midnight"] .window--active .w95-titlebar {
   background: linear-gradient(to right, #1a1a6a, #3030b0) !important;
   color: #e8e8ff !important;
 }
-body[data-theme="theme_midnight"] .taskbar-btn {
+body[data-theme="theme_midnight"] #w95-taskbar .w95-btn {
   background: #0c0c20 !important;
   color: #8080d0 !important;
 }
@@ -7352,7 +7487,7 @@ body[data-theme="theme_autumn"] .window--active .w95-titlebar {
   background: linear-gradient(to right, #a04010, #cc5520) !important;
   color: #fff8e8 !important;
 }
-body[data-theme="theme_autumn"] .taskbar-btn {
+body[data-theme="theme_autumn"] #w95-taskbar .w95-btn {
   background: #221000 !important;
   color: #c08040 !important;
 }
@@ -7430,7 +7565,7 @@ body[data-theme="theme_glass"] #w95-taskbar {
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
 }
-body[data-theme="theme_glass"] .taskbar-btn {
+body[data-theme="theme_glass"] #w95-taskbar .w95-btn {
   background: rgba(220, 236, 255, 0.70) !important;
   color: #1a2a4a !important;
 }
@@ -7478,7 +7613,7 @@ body[data-theme="theme_pixel"] #w95-taskbar {
   background: #081c15 !important;
   border-top-color: #1b4332 !important;
 }
-body[data-theme="theme_pixel"] .taskbar-btn {
+body[data-theme="theme_pixel"] #w95-taskbar .w95-btn {
   background: #102a20 !important;
   color: #52b788 !important;
 }
@@ -7534,7 +7669,7 @@ body[data-theme="theme_crt"] #w95-taskbar {
   background: #000800 !important;
   border-top-color: #002200 !important;
 }
-body[data-theme="theme_crt"] .taskbar-btn {
+body[data-theme="theme_crt"] #w95-taskbar .w95-btn {
   background: #001000 !important;
   color: #00aa2a !important;
 }
