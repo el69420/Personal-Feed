@@ -1043,9 +1043,6 @@ function login(displayName, email) {
     activitySeenTs = Number(localStorage.getItem(`activitySeenTs-${displayName}`) || String(Date.now() - 86400000));
     updateNewCount();
 
-    // Track unique site visit days for Rainy Day achievement
-    _recordSiteVisitDay();
-
     loadPosts();
     loadUserWallpaper();
     applyIconPositions();
@@ -7999,6 +7996,10 @@ async function initAchievements() {
         _initXpNotifiedThresholds();
         _seedUnlockedRewards();
         renderAchievementsWindow();
+        // Record today's visit after unlockedAchievements is populated so the
+        // duplicate-unlock guard works correctly and the popup only shows on
+        // the actual first unlock.
+        _recordSiteVisitDay();
         await backfillAchievements();
     } catch (e) {
         console.error('initAchievements failed', e);
