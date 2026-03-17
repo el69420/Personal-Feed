@@ -7912,7 +7912,7 @@ const REWARD_REGISTRY = [
     // ---- Cat accessories ---- (faceDecor appended to cat face text when equipped)
     { id: 'cat_bow',     type: REWARD_TYPE_CAT_ACCESSORY, name: 'Ribbon Bow',     description: 'A cute ribbon bow for the cat',            icon: '🎀', faceDecor: '🎀' },
     { id: 'cat_hat',     type: REWARD_TYPE_CAT_ACCESSORY, name: 'Tiny Hat',       description: 'A very small top hat',                     icon: '🎩', faceDecor: '🎩' },
-    { id: 'cat_scarf',   type: REWARD_TYPE_CAT_ACCESSORY, name: 'Cosy Scarf',     description: 'A warm knitted scarf',                     icon: '🧣', faceDecor: '🧣' },
+    { id: 'cat_scarf',   type: REWARD_TYPE_CAT_ACCESSORY, name: 'Cosy Scarf',     description: 'A warm knitted scarf',                     icon: '🧣', faceDecor: '🧣', placement: 'neck' },
     { id: 'cat_glasses', type: REWARD_TYPE_CAT_ACCESSORY, name: 'Tiny Glasses',   description: 'Round reading glasses for a studious cat', icon: '🕶️', faceDecor: '🕶️' },
 
     // ---- Cat behaviours ----
@@ -7960,7 +7960,7 @@ const REWARD_REGISTRY = [
     { id: 'snd_garden_pack',     type: REWARD_TYPE_SOUND_PACK, name: 'Garden Ambience',   description: 'Wind through leaves, distant bees, and a wood frog', icon: '🌿' },
 
     // Cat accessories
-    { id: 'cat_sunglasses',      type: REWARD_TYPE_CAT_ACCESSORY, name: 'Cool Shades',      description: 'For when the cat needs to look like they own the place', icon: '😎', faceDecor: '😎' },
+    { id: 'cat_sunglasses',      type: REWARD_TYPE_CAT_ACCESSORY, name: 'Cool Shades',      description: 'For when the cat needs to look like they own the place', icon: '😎', faceDecor: '🕶️', placement: 'eye' },
     { id: 'cat_wizard_hat',      type: REWARD_TYPE_CAT_ACCESSORY, name: 'Wizard Hat',       description: 'It confers no magical powers. The cat disagrees',          icon: '🧙', faceDecor: '🧙' },
     { id: 'cat_explorer',        type: REWARD_TYPE_CAT_ACCESSORY, name: 'Explorer Kit',     description: 'A tiny map and tinier compass. Adventures await',           icon: '🗺️', faceDecor: '🗺️' },
     { id: 'cat_flower_crown',    type: REWARD_TYPE_CAT_ACCESSORY, name: 'Flower Crown',     description: 'Woven with care. The cat tolerates it with grace',          icon: '🌸', faceDecor: '🌸' },
@@ -10547,14 +10547,18 @@ async function loadUserWallpaper() {
 
     function getCatFace(s) {
         const acc = getEquippedAccessory();
-        const decor = acc ? ' ' + acc.faceDecor : '';
-        if (!s) return '=^.^=' + decor;
-        if (s.hunger < 20) return '=^;_;^=' + decor;
-        if (s.thirst < 20) return '=^-.-^=' + decor;
-        if (s.play   < 20) return '=^_.^= z' + decor;
-        if (s.hunger < 40 || s.thirst < 40 || s.play < 40) return '=^~.~^=' + decor;
-        if (Math.min(s.hunger, s.thirst, s.play) > 75) return (window._anyoneNowPlaying ? '=^o^= \u266a' : '=^o^= \u2661') + decor;
-        return '=^-^=' + decor;
+        let face;
+        if (!s) face = '=^.^=';
+        else if (s.hunger < 20) face = '=^;_;^=';
+        else if (s.thirst < 20) face = '=^-.-^=';
+        else if (s.play   < 20) face = '=^_.^= z';
+        else if (s.hunger < 40 || s.thirst < 40 || s.play < 40) face = '=^~.~^=';
+        else if (Math.min(s.hunger, s.thirst, s.play) > 75) face = window._anyoneNowPlaying ? '=^o^= \u266a' : '=^o^= \u2661';
+        else face = '=^-^=';
+        if (!acc) return face;
+        if (acc.placement === 'eye')  return face.replace(/\^[^^]*\^/, '^8^');
+        if (acc.placement === 'neck') return face + '\n' + acc.faceDecor;
+        return face + ' ' + acc.faceDecor;
     }
 
     // ---- Render accessories panel ----
@@ -11146,12 +11150,21 @@ function initPixelCat() {
     accEl.id = 'cat-accessory-overlay';
     document.body.appendChild(accEl);
 
+    // Vertical offset (in CSS px) from the cat sprite's top edge to the accessory overlay.
+    // Updated whenever the equipped accessory changes; read every render frame.
+    let _catAccOverlayTopOffset = S;
+
     function updateCatAccessoryOverlay() {
         const id = localStorage.getItem('catEquippedAccessory') || '';
         const acc = id && isRewardUnlocked(id)
             ? REWARD_REGISTRY.find(r => r.id === id && r.type === REWARD_TYPE_CAT_ACCESSORY) || null
             : null;
         accEl.textContent = acc ? acc.faceDecor : '';
+        // Position overlay at the anatomically correct row of the cat sprite.
+        // Sprite rows: 0-1 ears, 2 face, 3 eyes, 4 nose, 5+ body/neck.
+        if (acc && acc.placement === 'eye')  _catAccOverlayTopOffset = S * 3;
+        else if (acc && acc.placement === 'neck') _catAccOverlayTopOffset = S * 4;
+        else _catAccOverlayTopOffset = S;
     }
     updateCatAccessoryOverlay();
     window._catUpdateAccessoryOverlay = updateCatAccessoryOverlay;
@@ -11927,7 +11940,7 @@ function initPixelCat() {
             zzzEl.style.bottom = 'auto';
             zzzEl.style.zIndex = '157';
             accEl.style.left   = Math.round(px) + 'px';
-            accEl.style.top    = Math.round(py + S) + 'px';
+            accEl.style.top    = Math.round(py + _catAccOverlayTopOffset) + 'px';
             accEl.style.bottom = 'auto';
             accEl.style.zIndex = '158';
         } else if (isPerching) {
@@ -11947,7 +11960,7 @@ function initPixelCat() {
             zzzEl.style.bottom = 'auto';
             zzzEl.style.zIndex = (winZ + 3) + '';
             accEl.style.left   = px + 'px';
-            accEl.style.top    = (py + S) + 'px';
+            accEl.style.top    = (py + _catAccOverlayTopOffset) + 'px';
             accEl.style.bottom = 'auto';
             accEl.style.zIndex = (winZ + 4) + '';
         } else {
@@ -11965,7 +11978,7 @@ function initPixelCat() {
             zzzEl.style.zIndex = '152';
             accEl.style.left   = canvas.style.left;
             accEl.style.top    = 'auto';
-            accEl.style.bottom = (44 + CH * S - S) + 'px';
+            accEl.style.bottom = (44 + CH * S - _catAccOverlayTopOffset) + 'px';
             accEl.style.zIndex = '153';
         }
 
