@@ -5305,8 +5305,14 @@ const w95Layout = (() => {
     if (!data) return null;
     const vw = document.documentElement.clientWidth;
     const vh = document.documentElement.clientHeight - TASKBAR_H;
-    if (data.w) winEl.style.width  = Math.max(200, data.w) + 'px';
-    if (data.h) winEl.style.height = Math.max(80,  data.h) + 'px';
+    if (data.w) {
+      const cssMinW = parseFloat(getComputedStyle(winEl).minWidth) || 200;
+      winEl.style.width  = Math.max(cssMinW, Math.min(vw, data.w)) + 'px';
+    }
+    if (data.h) {
+      const cssMinH = parseFloat(getComputedStyle(winEl).minHeight) || 80;
+      winEl.style.height = Math.max(cssMinH, Math.min(vh, data.h)) + 'px';
+    }
     const w    = data.w || winEl.offsetWidth  || 280;
     const h    = data.h || winEl.offsetHeight || 200;
     const left = Math.max(MIN_VIS - w, Math.min(vw - MIN_VIS, data.left ?? 20));
@@ -6434,11 +6440,12 @@ const w95Apps = {};
 
   window.addEventListener('mousemove', (e) => {
     if (!dragging) return;
+    const MIN_VIS = 60;
     const taskbarH = 40;
-    const maxX = document.documentElement.clientWidth - win.offsetWidth;
-    const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
-    win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
-    win.style.top = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight - taskbarH;
+    win.style.left = Math.max(MIN_VIS - win.offsetWidth, Math.min(vw - MIN_VIS, winStartX + (e.clientX - startX))) + 'px';
+    win.style.top  = Math.max(0, Math.min(vh - MIN_VIS, winStartY + (e.clientY - startY))) + 'px';
   });
 
   window.addEventListener('mouseup', () => { if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-garden'); } });
@@ -6657,11 +6664,12 @@ function makeDraggable(winEl, handleEl, winId) {
   });
   window.addEventListener('mousemove', (e) => {
     if (!dragging) return;
+    const MIN_VIS = 60;
     const taskbarH = 40;
-    const maxX = document.documentElement.clientWidth - winEl.offsetWidth;
-    const maxY = document.documentElement.clientHeight - winEl.offsetHeight - taskbarH;
-    winEl.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
-    winEl.style.top = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight - taskbarH;
+    winEl.style.left = Math.max(MIN_VIS - winEl.offsetWidth, Math.min(vw - MIN_VIS, winStartX + (e.clientX - startX))) + 'px';
+    winEl.style.top  = Math.max(0, Math.min(vh - MIN_VIS, winStartY + (e.clientY - startY))) + 'px';
   });
   window.addEventListener('mouseup', () => {
     if (dragging) {
