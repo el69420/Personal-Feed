@@ -10823,6 +10823,13 @@ async function loadUserWallpaper() {
                 clearTimeout(_lastActionTimer);
                 _lastActionTimer = setTimeout(() => lastActEl.classList.remove('is-visible'), 4000);
             }
+        } else if (callResult === 'no_room') {
+            if (lastActEl) {
+                lastActEl.textContent = `No room to sit \u2014 move the window down!`;
+                lastActEl.classList.add('is-visible');
+                clearTimeout(_lastActionTimer);
+                _lastActionTimer = setTimeout(() => lastActEl.classList.remove('is-visible'), 4000);
+            }
         } else {
             _addCatLog('Cat came when called');
             if (lastActEl) {
@@ -12012,6 +12019,8 @@ function initPixelCat() {
                                  (drvState === 'perched' || drvState === 'sleep');
             if (alreadyThere) return 'already_here';
             const rect   = catWin.getBoundingClientRect();
+            const catH   = CH * S;
+            if (rect.top < catH) return 'no_room';
             const vw     = window.innerWidth;
             const catW   = CW * S;
             // Approach the nearer edge so the cat walks up beside the window, not through it
