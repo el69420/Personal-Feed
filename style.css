@@ -6563,6 +6563,39 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
     margin-bottom: 1px;
 }
 
+/* ---- Dark mode overrides for sys-props dialog ---- */
+body.dark-mode .w95-dialog {
+    background: #383838;
+    color: #e0e0e0;
+    border-top-color: #606060;
+    border-left-color: #606060;
+    border-right-color: #1a1a1a;
+    border-bottom-color: #1a1a1a;
+}
+body.dark-mode .sys-props-tabs {
+    background: #383838;
+    border-bottom-color: #404040;
+}
+body.dark-mode .sys-props-tab {
+    background: #383838;
+    border-color: #606060;
+    color: #e0e0e0;
+}
+body.dark-mode .sys-props-tab--active {
+    border-bottom-color: #383838;
+}
+body.dark-mode .sys-props-updates-scroll {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #404040;
+}
+body.dark-mode .sys-props-update-date {
+    color: #aaaaff;
+}
+body.dark-mode .sys-props-hr {
+    border-top-color: #606060;
+}
+
 /* ---- C) Window open animation ---- */
 @keyframes w95WinOpen {
     from { opacity: 0; transform: scale(0.92); }

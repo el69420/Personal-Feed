@@ -5354,7 +5354,7 @@ const UPDATE_HISTORY = [
         ]
     },
     {
-        date: '10-03-26',
+        date: '17-02-26',
         label: 'Initial Launch',
         items: [
             'The achievements system was rebuilt from scratch with a proper progression model — you earn XP from actions across the site and level up to unlock new features rather than just passively tracking stats.',
