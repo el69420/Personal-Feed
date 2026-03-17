@@ -8212,6 +8212,18 @@ async function initAchievements() {
         if (xpSnap.exists()) {
             // Normal path: xpTotal was already stored.
             xpTotal = xpSnap.val() || 0;
+
+            // Repair: recalculate from all unlocked achievements in case new
+            // achievements (or updated XP values) were added after the stored
+            // total was last written. Only ever adjusts upward.
+            const computedXp = [...unlockedAchievements.keys()].reduce((sum, id) => {
+                const ach = ACHIEVEMENTS.find(a => a.id === id);
+                return sum + (ach?.xp || 0);
+            }, 0);
+            if (computedXp > xpTotal) {
+                xpTotal = computedXp;
+                await set(ref(database, 'userStats/' + currentUser + '/xpTotal'), xpTotal);
+            }
         } else {
             // First load after XP feature ships: bootstrap from already-unlocked achievements
             // so existing users don't start at 0. Runs exactly once, then xpTotal is set.
