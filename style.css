@@ -6633,6 +6633,16 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
     font: 11px Tahoma, Verdana, sans-serif;
     font-style: italic;
 }
+/* Drop-target highlights for drag-to-folder */
+.w95-desktop-icon.drop-target .desktop-icon-img {
+    outline: 2px dotted #000080;
+    background: rgba(0,0,128,0.15);
+}
+.explorer-grid.drop-target {
+    background: rgba(0,0,128,0.06);
+    outline: 2px dashed #000080;
+    outline-offset: -4px;
+}
 
 /* ===== System Tray — margin-left:auto pushes it (and the clock) to the right ===== */
 .w95-tray {

@@ -9521,7 +9521,15 @@ function openFolderWindow(folderItem) {
     document.body.appendChild(itemCtxMenu);
     document.body.appendChild(win);
 
-    function cleanup() { itemCtxMenu.remove(); win.remove(); }
+    // Register so drag-to-folder can find the live item + re-render function
+    if (!window._openFolderWindows) window._openFolderWindows = {};
+    window._openFolderWindows[folderItem.id] = { item: folderItem, render: () => renderGrid() };
+
+    function cleanup() {
+        delete window._openFolderWindows?.[folderItem.id];
+        itemCtxMenu.remove();
+        win.remove();
+    }
     win.querySelector('.w95-control-close').addEventListener('click', cleanup);
 
     // Bring to front on click
@@ -9753,7 +9761,7 @@ function openFolderWindow(folderItem) {
     function setupDesktopIcon(icon) {
         const appKey = icon.dataset.app;
         // dragStarts: map of appKey → {left, top} for every selected icon at drag start
-        let startX, startY, didDrag, capturedId, dragStarts, wasSelectedOnDown;
+        let startX, startY, didDrag, capturedId, dragStarts, wasSelectedOnDown, dropTarget;
 
         icon.addEventListener('pointerdown', (e) => {
             if (e.button !== 0) return;
@@ -9811,6 +9819,34 @@ function openFolderWindow(folderItem) {
                     si.style.left = Math.max(0, Math.min(dw - iconW, start.left + dx)) + 'px';
                     si.style.top  = Math.max(0, Math.min(dh - iconH, start.top  + dy)) + 'px';
                 });
+                // Detect folder drop target under dragged icon's center
+                const rect = icon.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                let newTarget = null;
+                // Check folder desktop icons (not any of the selected ones being dragged)
+                document.querySelectorAll('.w95-desktop-icon[data-folder="1"]').forEach(fi => {
+                    if (fi.classList.contains('selected')) return;
+                    const fr = fi.getBoundingClientRect();
+                    if (cx >= fr.left && cx <= fr.right && cy >= fr.top && cy <= fr.bottom) {
+                        newTarget = { el: fi, folderId: fi.dataset.app };
+                    }
+                });
+                // Check open folder window grids
+                if (!newTarget) {
+                    document.querySelectorAll('[id^="fwin-"] .explorer-grid').forEach(grid => {
+                        const gr = grid.getBoundingClientRect();
+                        if (cx >= gr.left && cx <= gr.right && cy >= gr.top && cy <= gr.bottom) {
+                            newTarget = { el: grid, folderId: grid.closest('[id^="fwin-"]').id.replace('fwin-', '') };
+                        }
+                    });
+                }
+                // Update highlight
+                if (dropTarget?.el !== newTarget?.el) {
+                    dropTarget?.el.classList.remove('drop-target');
+                    newTarget?.el.classList.add('drop-target');
+                    dropTarget = newTarget;
+                }
             }
         });
 
@@ -9820,21 +9856,69 @@ function openFolderWindow(folderItem) {
             const isCtrl = e.ctrlKey || e.metaKey;
 
             if (didDrag) {
-                const prefs = getDesktopPrefs();
-                if (prefs.autoArrange) {
-                    // Auto Arrange: re-sort all icons into grid order
-                    arrangeByName();
+                // Clear drop-target highlight
+                if (dropTarget) dropTarget.el.classList.remove('drop-target');
+                if (dropTarget) {
+                    // === Drop icons into folder ===
+                    const tid = dropTarget.folderId;
+                    dropTarget = null;
+                    const customItems = window._desktopCustom?.getItems() || [];
+                    const targetFolder = customItems.find(i => i.id === tid);
+                    if (targetFolder) {
+                        if (!targetFolder.children) targetFolder.children = [];
+                        const positions = getIconPositions();
+                        const toRemove = [];
+                        document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                            const sk = si.dataset.app;
+                            if (sk === tid) return; // don't drop a folder into itself
+                            const srcItem = customItems.find(i => i.id === sk);
+                            if (srcItem) {
+                                // Custom item: move it into folder
+                                targetFolder.children.push({
+                                    id: 'child_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+                                    type: srcItem.type, name: srcItem.name,
+                                    ...(srcItem.content !== undefined && { content: srcItem.content }),
+                                    ...(srcItem.children  !== undefined && { children: srcItem.children }),
+                                    ...(srcItem.app       !== undefined && { app: srcItem.app, icon: srcItem.icon }),
+                                });
+                                toRemove.push(sk);
+                                si.remove();
+                                delete w95Apps[sk];
+                                delete positions[sk];
+                            } else {
+                                // Built-in app icon: add a shortcut (icon stays on desktop)
+                                const meta = SHORTCUTABLE_APPS.find(a => a.app === sk);
+                                if (meta) {
+                                    targetFolder.children.push({
+                                        id: 'child_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+                                        type: 'shortcut', name: meta.name, app: meta.app, icon: meta.icon,
+                                    });
+                                }
+                            }
+                        });
+                        // Persist
+                        window._desktopCustom?.saveItems(customItems.filter(i => !toRemove.includes(i.id)));
+                        saveIconPositions(positions);
+                        // Re-render the folder window if it's open
+                        const openWin = window._openFolderWindows?.[tid];
+                        if (openWin) { openWin.item.children = targetFolder.children; openWin.render(); }
+                    }
                 } else {
-                    // Snap every selected icon to grid and persist all positions
-                    const positions = getIconPositions();
-                    document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
-                        const sk = si.dataset.app;
-                        const snapped = snapToGrid(parseInt(si.style.left), parseInt(si.style.top));
-                        si.style.left = snapped.x + 'px';
-                        si.style.top  = snapped.y + 'px';
-                        positions[sk] = { x: snapped.x, y: snapped.y };
-                    });
-                    saveIconPositions(positions);
+                    // Normal drag: snap and save positions
+                    const prefs = getDesktopPrefs();
+                    if (prefs.autoArrange) {
+                        arrangeByName();
+                    } else {
+                        const positions = getIconPositions();
+                        document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                            const sk = si.dataset.app;
+                            const snapped = snapToGrid(parseInt(si.style.left), parseInt(si.style.top));
+                            si.style.left = snapped.x + 'px';
+                            si.style.top  = snapped.y + 'px';
+                            positions[sk] = { x: snapped.x, y: snapped.y };
+                        });
+                        saveIconPositions(positions);
+                    }
                 }
             } else {
                 // It was a plain click (no drag)
@@ -9854,10 +9938,14 @@ function openFolderWindow(folderItem) {
             }
             didDrag    = false;
             capturedId = undefined;
+            dropTarget = null;
         });
 
         icon.addEventListener('pointercancel', (e) => {
-            if (e.pointerId === capturedId) { capturedId = undefined; didDrag = false; }
+            if (e.pointerId === capturedId) {
+                if (dropTarget) { dropTarget.el.classList.remove('drop-target'); dropTarget = null; }
+                capturedId = undefined; didDrag = false;
+            }
         });
 
         // Keyboard: Enter/Space to open
@@ -9884,6 +9972,7 @@ function openFolderWindow(folderItem) {
         el.dataset.app = item.id;
         el.tabIndex = 0;
         el.innerHTML = `<div class="desktop-icon-img">${item.type === 'folder' ? '📁' : '📝'}</div><div class="desktop-icon-label">${safeName}</div>`;
+        if (item.type === 'folder') el.dataset.folder = '1';
         desktop.appendChild(el);
         applyIconPositions();
         w95Apps[item.id] = {
