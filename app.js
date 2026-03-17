@@ -11332,9 +11332,13 @@ function initPixelCat() {
 
     // ---- Perch helpers (local-only, no Firebase involvement) ----
     function getPerchableWindows() {
+        const catH = CH * S;
         return Array.from(document.querySelectorAll('[id^="w95-win-"]'))
-            .filter(el => !el.classList.contains('is-hidden') &&
-                          !el.classList.contains('is-maximised'));
+            .filter(el => {
+                if (el.classList.contains('is-hidden') || el.classList.contains('is-maximised')) return false;
+                const rect = el.getBoundingClientRect();
+                return rect.top >= catH;  // only perch if there's room above for the cat to sit
+            });
     }
     function calcPerchPos(winEl, side) {
         const rect = winEl.getBoundingClientRect();
