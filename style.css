@@ -6470,6 +6470,96 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
 }
 .w95-dialog-btn { min-width: 72px; }
 
+/* ---- System Properties dialog ---- */
+.sys-props-dialog {
+    width: 380px;
+    max-width: calc(100vw - 32px);
+}
+.sys-props-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 6px 8px 0;
+    border-bottom: 2px solid #808080;
+    background: #c0c0c0;
+}
+.sys-props-tab {
+    font-family: inherit;
+    font-size: 11px;
+    padding: 3px 12px;
+    background: #c0c0c0;
+    border: 1px solid #808080;
+    border-bottom: none;
+    cursor: pointer;
+    position: relative;
+    bottom: -2px;
+    color: #000;
+}
+.sys-props-tab--active {
+    background: #c0c0c0;
+    border-color: #808080;
+    border-bottom: 2px solid #c0c0c0;
+    font-weight: bold;
+    z-index: 1;
+}
+.sys-props-body {
+    padding: 12px 16px;
+    min-height: 180px;
+}
+.sys-props-panel--hidden { display: none; }
+.sys-props-general {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+.sys-props-logo {
+    font-size: 40px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.sys-props-info {
+    font-size: 11px;
+    line-height: 1.7;
+}
+.sys-props-product {
+    font-size: 13px;
+    font-weight: bold;
+}
+.sys-props-version {
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+.sys-props-hr {
+    border: none;
+    border-top: 1px solid #808080;
+    margin: 6px 0;
+}
+.sys-props-registered {
+    margin-top: 4px;
+}
+.sys-props-updates-scroll {
+    max-height: 220px;
+    overflow-y: auto;
+    font-size: 11px;
+    border: 1px inset #808080;
+    background: #fff;
+    padding: 6px 8px;
+}
+.sys-props-update-group {
+    margin-bottom: 10px;
+}
+.sys-props-update-group:last-child { margin-bottom: 0; }
+.sys-props-update-date {
+    font-weight: bold;
+    margin-bottom: 2px;
+    color: #000080;
+}
+.sys-props-update-list {
+    margin: 0 0 0 16px;
+    padding: 0;
+    list-style: disc;
+    line-height: 1.6;
+}
+
 /* ---- C) Window open animation ---- */
 @keyframes w95WinOpen {
     from { opacity: 0; transform: scale(0.92); }

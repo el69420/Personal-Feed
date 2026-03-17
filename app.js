@@ -5267,6 +5267,166 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
     if (postId) startCommentTyping(postId);
 });
 
+// ===== System Properties dialog with Update History =====
+const UPDATE_HISTORY = [
+    {
+        date: '2026-03-17',
+        label: 'Desktop & File System',
+        items: [
+            'Drag-and-drop icons into the Recycle Bin',
+            'Deleting custom items sends them to the Recycle Bin',
+            'Drag-and-drop to move icons into folders',
+            'Folders support: items, app shortcuts, and text files',
+            'New Folder, New Text Document, and Ambience Sounds added',
+            'Cat is knocked off a window when you drag it too high',
+        ]
+    },
+    {
+        date: '2026-03-17',
+        label: 'Themes & Readability',
+        items: [
+            'Pastel dark mode: all settings text visible on background',
+            'Complete theme chrome: menus, tray, icons, and dark variants',
+            'Dark mode readability fixed across all windows and icons',
+        ]
+    },
+    {
+        date: '2026-03-17',
+        label: 'Achievements & XP',
+        items: [
+            'Fixed XP total not reflecting all unlocked achievements',
+            'Fixed XP and level tracking with proper async sequencing',
+            'Achievements window opens at correct height',
+            'Faster achievement renders during batch unlocks',
+        ]
+    },
+    {
+        date: '2026-03-17',
+        label: 'UI & Window Fixes',
+        items: [
+            'Edge and corner resize handles on all windows',
+            'Fixed window resize-scroll conflict',
+            'Cat accessories appear in anatomically correct positions',
+            'Users can add custom feed categories',
+            'Fixed window drag and width when window exceeds viewport',
+            'Garden window always shows all 8 tile columns',
+            'Achievements and command unlocks appear in notifications panel',
+        ]
+    },
+    {
+        date: '2026-03-16',
+        label: 'Link Previews & Themes',
+        items: [
+            'Rich platform-specific link preview cards (YouTube, Spotify, GitHub…)',
+            'Resizable windows with per-window layout persistence',
+            'All six desktop themes completed and unified',
+            'Fixed notification panel z-index',
+            'Cat accessories displayed on the desktop cat',
+        ]
+    },
+    {
+        date: '2026-03-11',
+        label: 'Posts & Notifications',
+        items: [
+            'Post archive feature and bell notification popups',
+            'Open feed posts in dedicated Windows 95 windows',
+            'Clicking a post timestamp opens the post detail window',
+            'Parallelised URL preview loading for faster feeds',
+            'Improved YouTube Shorts and X post previews',
+        ]
+    },
+    {
+        date: '2026-03-10',
+        label: 'Achievements System',
+        items: [
+            'Full achievement progression and unlock system',
+            'Unlock system wired into OS UI',
+            'Unified unlockable content reward registry',
+            '20 "First Transmission" achievements with rewards',
+        ]
+    },
+];
+
+function openSystemPropertiesDialog() {
+    const ua = navigator.userAgent;
+    const cpu = ua.includes('Win') ? 'x86' : ua.includes('Mac') ? 'ARM/x86' : 'x86';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'w95-dialog-overlay';
+
+    const historyHtml = UPDATE_HISTORY.map((group, i) => `
+        <div class="sys-props-update-group">
+            <div class="sys-props-update-date">${group.date} — ${group.label}</div>
+            <ul class="sys-props-update-list">
+                ${group.items.map(item => `<li>${item}</li>`).join('')}
+            </ul>
+        </div>
+    `).join('');
+
+    overlay.innerHTML = `
+        <div class="w95-dialog sys-props-dialog" role="dialog" aria-modal="true">
+            <div class="w95-titlebar window--active">
+                <div class="w95-title">System Properties</div>
+                <div class="w95-controls">
+                    <button class="w95-control w95-control-close sys-props-close" type="button" aria-label="Close">X</button>
+                </div>
+            </div>
+            <div class="sys-props-tabs">
+                <button class="sys-props-tab sys-props-tab--active" data-tab="general">General</button>
+                <button class="sys-props-tab" data-tab="updates">Update History</button>
+            </div>
+            <div class="sys-props-body">
+                <div class="sys-props-panel" data-panel="general">
+                    <div class="sys-props-general">
+                        <div class="sys-props-logo">💻</div>
+                        <div class="sys-props-info">
+                            <div class="sys-props-product">Personal Feed</div>
+                            <div class="sys-props-version">Version 1.0</div>
+                            <hr class="sys-props-hr">
+                            <div><b>Operating System:</b> Windows 95</div>
+                            <div><b>Processor:</b> ${cpu}, ~66 MHz</div>
+                            <div><b>Memory:</b> 16.0 MB RAM</div>
+                            <hr class="sys-props-hr">
+                            <div class="sys-props-registered">Registered to: You ♥</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sys-props-panel sys-props-panel--hidden" data-panel="updates">
+                    <div class="sys-props-updates-scroll">
+                        ${historyHtml}
+                    </div>
+                </div>
+            </div>
+            <div class="w95-dialog-btns">
+                <button class="w95-btn w95-dialog-btn sys-props-close" type="button">OK</button>
+            </div>
+        </div>`;
+
+    document.body.appendChild(overlay);
+
+    function close() {
+        overlay.remove();
+        document.removeEventListener('keydown', onKey);
+    }
+
+    overlay.querySelectorAll('.sys-props-close').forEach(btn => btn.addEventListener('click', close));
+    overlay.addEventListener('pointerdown', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelectorAll('.sys-props-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            overlay.querySelectorAll('.sys-props-tab').forEach(t => t.classList.remove('sys-props-tab--active'));
+            overlay.querySelectorAll('.sys-props-panel').forEach(p => p.classList.add('sys-props-panel--hidden'));
+            tab.classList.add('sys-props-tab--active');
+            overlay.querySelector(`[data-panel="${tab.dataset.tab}"]`).classList.remove('sys-props-panel--hidden');
+        });
+    });
+
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', onKey);
+
+    setTimeout(() => overlay.querySelector('.sys-props-close')?.focus(), 0);
+}
+
 // ===== Reusable Win95-style dialog =====
 // openW95Dialog({ icon, title, message, buttons: [{label, action}] })
 // Returns { close } — Esc also closes; last button with null action = cancel.
@@ -13018,14 +13178,7 @@ function initPixelCat() {
 
     document.getElementById('ctx-properties')?.addEventListener('click', () => {
         hideAll();
-        const ua = navigator.userAgent;
-        const cpu = ua.includes('Win') ? 'x86' : ua.includes('Mac') ? 'ARM/x86' : 'x86';
-        openW95Dialog({
-            icon: '\uD83D\uDCBB',
-            title: 'System Properties',
-            message: `Personal Feed v1.0\n\nOperating System: Windows 95\nProcessor: ${cpu}, ~66 MHz\nMemory: 16.0 MB RAM\n\nRegistered to: You \u2665`,
-            buttons: [{ label: 'OK', action: null }]
-        });
+        openSystemPropertiesDialog();
     });
 
     // ===== Icon menu actions =====
