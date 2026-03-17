@@ -8283,25 +8283,25 @@ async function unlockAchievement(id) {
     }
 }
 
-function afterPostCreated(newPostType) {
-    unlockAchievement('first_post');
+async function afterPostCreated(newPostType) {
+    await unlockAchievement('first_post');
     // allPosts hasn't yet received the Firebase onValue update for the just-pushed post,
     // so add 1 to the current count to include it.
     const myPosts = Object.values(allPosts).filter(p => p.author === currentUser);
     const myCount = myPosts.length + 1;
-    if (myCount >= 5)   unlockAchievement('five_posts');
-    if (myCount >= 10)  unlockAchievement('ten_posts');
-    if (myCount >= 20)  unlockAchievement('twenty_posts');
-    if (myCount >= 30)  unlockAchievement('thirty_posts');
-    if (myCount >= 50)  unlockAchievement('fifty_posts');
-    if (myCount >= 100) unlockAchievement('hundred_posts');
+    if (myCount >= 5)   await unlockAchievement('five_posts');
+    if (myCount >= 10)  await unlockAchievement('ten_posts');
+    if (myCount >= 20)  await unlockAchievement('twenty_posts');
+    if (myCount >= 30)  await unlockAchievement('thirty_posts');
+    if (myCount >= 50)  await unlockAchievement('fifty_posts');
+    if (myCount >= 100) await unlockAchievement('hundred_posts');
 
     // Link-sharing achievements — count existing link posts + this new one if it's a link
     const isNewLink = !newPostType || newPostType === 'link';
     const myLinkCount = myPosts.filter(p => !p.type || p.type === 'link').length + (isNewLink ? 1 : 0);
-    if (myLinkCount >= 1)  unlockAchievement('first_transmission');
-    if (myLinkCount >= 10) unlockAchievement('link_hoarder_10');
-    if (myLinkCount >= 50) unlockAchievement('link_hoarder_50');
+    if (myLinkCount >= 1)  await unlockAchievement('first_transmission');
+    if (myLinkCount >= 10) await unlockAchievement('link_hoarder_10');
+    if (myLinkCount >= 50) await unlockAchievement('link_hoarder_50');
 
     // Post-length achievements — read body from form (not yet reset at this point).
     const bodyEl = document.getElementById('postBody');
@@ -8309,16 +8309,16 @@ function afterPostCreated(newPostType) {
     if (newBodyLen > 0) {
         const longform    = myPosts.filter(p => p.body && p.body.length >= 500).length + (newBodyLen >= 500 ? 1 : 0);
         const minimalist  = myPosts.filter(p => p.body && p.body.length > 0 && p.body.length < 30).length + (newBodyLen < 30 ? 1 : 0);
-        if (longform >= 1)   unlockAchievement('longform_1');
-        if (longform >= 5)   unlockAchievement('longform_5');
-        if (minimalist >= 5)  unlockAchievement('minimalist_5');
-        if (minimalist >= 20) unlockAchievement('minimalist_20');
+        if (longform >= 1)   await unlockAchievement('longform_1');
+        if (longform >= 5)   await unlockAchievement('longform_5');
+        if (minimalist >= 5)  await unlockAchievement('minimalist_5');
+        if (minimalist >= 20) await unlockAchievement('minimalist_20');
     }
 
     // XP / meta — check after all other unlocks above have fired.
-    if (xpToLevel(xpTotal) >= 5)        unlockAchievement('level_5');
-    if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
-    if (unlockedAchievements.size >= 10) unlockAchievement('power_user');
+    if (xpToLevel(xpTotal) >= 5)        await unlockAchievement('level_5');
+    if (unlockedAchievements.size >= 25) await unlockAchievement('unlock_25');
+    if (unlockedAchievements.size >= 10) await unlockAchievement('power_user');
 
     // Mythic: track daily post action
     if (currentUser) {
@@ -8540,11 +8540,11 @@ async function backfillAchievements() {
 
 // ---- Achievement trigger helpers ----
 // Called after the user sends a reply. Counts all of their replies across all posts.
-function _afterReply() {
-    unlockAchievement('first_reply');
+async function _afterReply() {
+    await unlockAchievement('first_reply');
     const total = Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0) + 1; // +1 for the just-pushed reply (allPosts not yet updated)
-    if (total >= 10) unlockAchievement('ten_replies');
-    if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
+    if (total >= 10) await unlockAchievement('ten_replies');
+    if (unlockedAchievements.size >= 25) await unlockAchievement('unlock_25');
 }
 
 // Called after the user ADDS a reaction (not removes).
