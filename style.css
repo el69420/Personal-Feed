@@ -6537,27 +6537,30 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
     margin-top: 4px;
 }
 .sys-props-updates-scroll {
-    max-height: 220px;
+    max-height: 240px;
     overflow-y: auto;
     font-size: 11px;
     border: 1px inset #808080;
     background: #fff;
-    padding: 6px 8px;
+    padding: 5px 8px;
 }
 .sys-props-update-group {
-    margin-bottom: 10px;
+    margin-bottom: 7px;
 }
 .sys-props-update-group:last-child { margin-bottom: 0; }
 .sys-props-update-date {
     font-weight: bold;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
     color: #000080;
 }
 .sys-props-update-list {
-    margin: 0 0 0 16px;
+    margin: 0 0 0 14px;
     padding: 0;
     list-style: disc;
-    line-height: 1.6;
+    line-height: 1.35;
+}
+.sys-props-update-list li {
+    margin-bottom: 1px;
 }
 
 /* ---- C) Window open animation ---- */

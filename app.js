@@ -5270,79 +5270,100 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 // ===== System Properties dialog with Update History =====
 const UPDATE_HISTORY = [
     {
-        date: '2026-03-17',
+        date: '17-03-26',
         label: 'Desktop & File System',
         items: [
-            'Drag-and-drop icons into the Recycle Bin',
-            'Deleting custom items sends them to the Recycle Bin',
-            'Drag-and-drop to move icons into folders',
-            'Folders support: items, app shortcuts, and text files',
-            'New Folder, New Text Document, and Ambience Sounds added',
-            'Cat is knocked off a window when you drag it too high',
+            'You can now drag any desktop icon directly onto the Recycle Bin icon to delete it, matching real Windows 95 behaviour.',
+            'Deleting a custom item (shortcut, text file, folder icon) now moves it to the Recycle Bin rather than permanently destroying it, so you can restore it later.',
+            'Desktop icons can be dragged and dropped onto a folder icon to move them inside — the folder window updates immediately to reflect the new contents.',
+            'Opening a folder window on the desktop now shows all its contents — custom items, app shortcuts, and text files — in a browsable list.',
+            'Right-clicking the desktop now offers New Folder and New Text Document options. An ambience sounds player was also added to fill your desktop with background atmosphere.',
+            'If you drag a window upward while the cat is perched on it and it loses room to stand, the cat is now knocked off gracefully rather than clipping into the titlebar.',
+            'After dragging an item into a folder the folder window was incorrectly displaying as empty — this has been fixed. Unused toolbar buttons were also removed from folder windows.',
         ]
     },
     {
-        date: '2026-03-17',
+        date: '17-03-26',
         label: 'Themes & Readability',
         items: [
-            'Pastel dark mode: all settings text visible on background',
-            'Complete theme chrome: menus, tray, icons, and dark variants',
-            'Dark mode readability fixed across all windows and icons',
+            'In pastel theme with dark mode enabled, many labels and inputs inside the settings window were invisible against the background — all text elements are now readable.',
+            'Theme colours are now applied to every previously un-themed element: context menus, the system tray area, desktop icon labels, and all dark-mode variants of each theme.',
+            'The Console window terminal text was nearly invisible on pastel and some other themes because background and foreground colours were too similar — contrast has been corrected for all themes.',
+            'A full readability pass was made across all six themes and dark mode: low-contrast text, barely visible icons, and illegible window labels have all been fixed.',
         ]
     },
     {
-        date: '2026-03-17',
+        date: '17-03-26',
         label: 'Achievements & XP',
         items: [
-            'Fixed XP total not reflecting all unlocked achievements',
-            'Fixed XP and level tracking with proper async sequencing',
-            'Achievements window opens at correct height',
-            'Faster achievement renders during batch unlocks',
+            'The achievements window was opening at full content height (often extremely tall), making it hard to position — it now opens at a sensible 420 px by default.',
+            'When multiple achievements unlock at the same time (e.g. on first launch), the window was re-rendering after each one individually — it now batches the updates and renders once at the end, making it much faster.',
+            'XP earned from achievements that were unlocked before the current system was introduced was not being counted toward your displayed total — this has been backfilled correctly.',
+            'Level and XP calculations were running before achievement unlock operations had finished, causing your displayed level to lag one step behind — the order of operations is now correct.',
         ]
     },
     {
-        date: '2026-03-17',
-        label: 'UI & Window Fixes',
+        date: '17-03-26',
+        label: 'Windows, Cat & Feed',
         items: [
-            'Edge and corner resize handles on all windows',
-            'Fixed window resize-scroll conflict',
-            'Cat accessories appear in anatomically correct positions',
-            'Users can add custom feed categories',
-            'Fixed window drag and width when window exceeds viewport',
-            'Garden window always shows all 8 tile columns',
-            'Achievements and command unlocks appear in notifications panel',
+            'Windows can now be resized by dragging any of the four edges or four corners — previously only the bottom-right corner worked. Scrolling inside a window no longer accidentally triggers a resize.',
+            'Cat accessories (hats, glasses, bows, etc.) were rendering offset or stacked in the wrong layer relative to the cat sprite — positions and z-order have been corrected for every accessory type.',
+            'You can now create your own feed categories (e.g. "Design", "Music") to group and filter posts beyond the built-in set.',
+            'If you try to call the cat onto a window that is too close to the top of the screen, it now shows a small "no room up here!" message instead of silently doing nothing.',
+            'The pixel cat was attempting to jump onto windows that did not have enough space above them for it to perch, causing it to disappear or glitch — it now checks for clearance before jumping.',
+            'Windows that were wider than the viewport could get stuck or lose their saved size when dragged — dragging now snaps them correctly and width is restored on next open.',
+            'The garden window could be resized too narrow, hiding some plant tiles — a minimum width is now enforced so all 8 columns remain visible at all times.',
+            'Achievements earned and console commands unlocked now also appear as entries in the taskbar notifications panel, giving you a persistent record alongside the popup.',
+            'Window dragging behaviour was overhauled for a smoother feel, the internal scroll structure inside windows was refactored, scrollbars are now subtler, and font sizes scale correctly at different viewport sizes.',
+            'The "Rainy Day" achievement (earned by visiting while it is raining) was incorrectly showing its unlock popup on every page refresh instead of just once — fixed.',
         ]
     },
     {
-        date: '2026-03-16',
+        date: '17-03-26',
+        label: 'Sound & Ambient',
+        items: [
+            'Each of the five sound packs (Classic, Soft, Chiptune, Nature, Lo-fi) now has its own fully synthesised audio — every UI interaction such as clicking, opening windows, and hovering sounds distinct depending on your chosen pack.',
+            'Ambient connections were woven between different parts of the site — for example, rain in the garden now influences certain sound effects, and your Jukebox mood can affect the active screensaver.',
+        ]
+    },
+    {
+        date: '16-03-26',
         label: 'Link Previews & Themes',
         items: [
-            'Rich platform-specific link preview cards (YouTube, Spotify, GitHub…)',
-            'Resizable windows with per-window layout persistence',
-            'All six desktop themes completed and unified',
-            'Fixed notification panel z-index',
-            'Cat accessories displayed on the desktop cat',
+            'Link previews in posts have been upgraded to richer, platform-specific media cards: YouTube shows thumbnail and duration, Spotify shows album art and track info, GitHub shows repo name and star count, and so on.',
+            'All windows can now be resized by dragging their edges. Each window remembers its size and position individually and restores them between sessions.',
+            'All six desktop colour themes (Classic, Dark, Sakura, Ocean, Forest, Sunset) are now fully applied across every UI element — windows, menus, icons, taskbar, and tray.',
+            'The notification panel is no longer a child of the taskbar in the DOM — this fixes it appearing behind other windows when opened and ensures it always renders on top.',
+            'Notification windows were sometimes appearing behind other windows, and were occasionally showing notifications intended for a different logged-in user — both issues are fixed.',
+            'Some screensavers were showing the wrong name and description in the settings panel, and two wallpapers looked nearly identical — names, descriptions, and assets have been corrected.',
+            'Whatever accessory you have equipped in the shop (hat, glasses, bow, etc.) now visibly appears on the pixel cat sitting on your desktop.',
+            'A JavaScript error was crashing the pixel cat on page load for some browsers due to a missing variable reference in the accessory lookup — fixed.',
         ]
     },
     {
-        date: '2026-03-11',
+        date: '11-03-26',
         label: 'Posts & Notifications',
         items: [
-            'Post archive feature and bell notification popups',
-            'Open feed posts in dedicated Windows 95 windows',
-            'Clicking a post timestamp opens the post detail window',
-            'Parallelised URL preview loading for faster feeds',
-            'Improved YouTube Shorts and X post previews',
+            'Posts can now be archived to remove them from your main feed without deleting them. A bell icon in the taskbar tray now shows popup notifications for new activity across the site.',
+            'Clicking a post in the feed now opens its full content inside its own resizable Windows 95 window, complete with the post body and any comments.',
+            'Clicking the timestamp on a feed post now opens it directly in the post detail window for quick access without scrolling.',
+            'URL previews in posts used to load one at a time in sequence — they now load in parallel, making feeds with multiple links significantly faster.',
+            'X (Twitter) post previews were slow to render due to an inefficient fetch path, and YouTube Shorts links were not generating previews at all — both have been fixed.',
+            'Post share links were missing the site\'s GitHub Pages subpath, causing the copied URL to land on a 404 — the full pathname is now included.',
+            'Text and icon colours in dark mode and some themes were too low-contrast to read comfortably — contrast levels have been corrected across the board.',
         ]
     },
     {
-        date: '2026-03-10',
-        label: 'Achievements System',
+        date: '10-03-26',
+        label: 'Initial Launch',
         items: [
-            'Full achievement progression and unlock system',
-            'Unlock system wired into OS UI',
-            'Unified unlockable content reward registry',
-            '20 "First Transmission" achievements with rewards',
+            'The achievements system was rebuilt from scratch with a proper progression model — you earn XP from actions across the site and level up to unlock new features rather than just passively tracking stats.',
+            'A central reward registry now manages all unlockable content (wallpapers, themes, console commands, cat accessories) so every part of the app can grant and verify unlocks in a consistent way.',
+            'The unlock system is now connected to the desktop UI — earning an achievement immediately makes newly unlocked themes, commands, and accessories available without needing to refresh.',
+            '20 achievements were added under the "First Transmission" set, covering milestones such as first post, first chat message, first garden action, and more — each with a corresponding reward.',
+            'The boot screen was sometimes freezing on first load due to an initialisation timing issue — the order in which Firebase, the app scope, and the boot screen IIFE execute has been corrected so the site always starts cleanly.',
+            'Legacy UI elements left over from an earlier design (floating action buttons for chat, an old About modal, and a What\'s New panel) have been removed to make way for the Windows 95 interface.',
+            'The Start Menu and desktop .exe icons were broken because a required DOM element had been accidentally removed during a refactor — restored.',
         ]
     },
 ];
