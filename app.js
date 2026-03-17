@@ -9491,10 +9491,14 @@ const ICON_DEFAULTS = {
 };
 
 // ===== Snap-to-grid + Arrange =====
-const GRID_SIZE = 80; // px — grid cell size for icon snapping
+const GRID_SIZE   = 80; // px — grid cell size for icon snapping
+const GRID_OFFSET =  8; // px — same offset used by arrangeByName so manual drags align
 
 function snapToGrid(x, y) {
-    return { x: Math.round(x / GRID_SIZE) * GRID_SIZE, y: Math.round(y / GRID_SIZE) * GRID_SIZE };
+    return {
+        x: Math.round((x - GRID_OFFSET) / GRID_SIZE) * GRID_SIZE + GRID_OFFSET,
+        y: Math.round((y - GRID_OFFSET) / GRID_SIZE) * GRID_SIZE + GRID_OFFSET,
+    };
 }
 
 function getDesktopPrefs() {
@@ -9954,8 +9958,8 @@ function openFolderWindow(folderItem) {
             document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
                 const sk = si.dataset.app;
                 dragStarts[sk] = {
-                    left: parseInt(si.style.left) || (ICON_DEFAULTS[sk]?.x ?? 16),
-                    top:  parseInt(si.style.top)  || (ICON_DEFAULTS[sk]?.y ?? 16),
+                    left: si.style.left ? parseInt(si.style.left) : (ICON_DEFAULTS[sk]?.x ?? GRID_OFFSET),
+                    top:  si.style.top  ? parseInt(si.style.top)  : (ICON_DEFAULTS[sk]?.y ?? GRID_OFFSET),
                 };
             });
         });
@@ -10047,11 +10051,12 @@ function openFolderWindow(folderItem) {
                             delete w95Apps[sk];
                             delete positions[sk];
                         } else {
-                            // Built-in icon: send to Firebase recycle bin
+                            // Built-in icon: send to Firebase recycle bin and hide immediately
                             const label = si.querySelector('.desktop-icon-label')?.textContent || sk;
                             set(ref(database, `recycleBin/icon_${sk}`), {
                                 type: 'desktop-icon', iconApp: sk, iconLabel: label, deletedAt: Date.now(),
                             });
+                            si.classList.add('is-hidden');
                         }
                     });
                     if (toRemove.length) {
@@ -10103,6 +10108,17 @@ function openFolderWindow(folderItem) {
                         // Re-render the folder window if it's open
                         const openWin = window._openFolderWindows?.[tid];
                         if (openWin) { openWin.item.children = targetFolder.children; openWin.render(); }
+                    } else {
+                        // Target folder no longer exists — treat as normal drag (snap + save)
+                        const positions = getIconPositions();
+                        document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                            const sk = si.dataset.app;
+                            const snapped = snapToGrid(parseInt(si.style.left), parseInt(si.style.top));
+                            si.style.left = snapped.x + 'px';
+                            si.style.top  = snapped.y + 'px';
+                            positions[sk] = { x: snapped.x, y: snapped.y };
+                        });
+                        saveIconPositions(positions);
                     }
                 } else {
                     // Normal drag: snap and save positions
