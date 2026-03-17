@@ -7648,6 +7648,24 @@ body[data-theme="theme_crt"] .w95-window {
 .notif-item-snippet { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; margin-top: 1px; }
 .notif-item-time { font-size: 10px; color: #808080; margin-top: 2px; }
 
+/* Achievement / command notification items */
+.notif-panel-item.notif-achievement { background: #fffff0; cursor: default; }
+.notif-panel-item.notif-achievement:hover { background: #000080; color: #fff; }
+.notif-panel-item.notif-command { background: #f0f8ff; cursor: default; }
+.notif-panel-item.notif-command:hover { background: #000080; color: #fff; }
+
+/* Aged achievement/command notifications (older than 6 hours) */
+.notif-panel-item.notif-aged { opacity: 0.45; filter: grayscale(60%); }
+.notif-panel-item.notif-aged:hover { opacity: 1; filter: none; }
+
+/* Tier badges in notification panel */
+.notif-ach-icon { font-style: normal; }
+.notif-tier-badge { font-size: 9px; text-transform: uppercase; padding: 1px 4px; border-radius: 2px; font-weight: bold; letter-spacing: 0.5px; }
+.notif-tier-bronze { background: #cd7f32; color: #fff; }
+.notif-tier-silver { background: #a8a9ad; color: #fff; }
+.notif-tier-gold   { background: #ffd700; color: #333; }
+.notif-tier-mythic { background: #9b59b6; color: #fff; }
+
 /* ============================================================
    POST NOTIFICATION POPUP (flies up from bell)
    ============================================================ */

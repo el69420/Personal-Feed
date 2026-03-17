@@ -2247,6 +2247,7 @@ function _getNotifSnippet(post) {
 function addInAppNotification({ postId, post }) {
     const notif = {
         id: postId,
+        type: 'post',
         author: post.author || 'Someone',
         snippet: _getNotifSnippet(post),
         timestamp: Date.now(),
@@ -2257,6 +2258,51 @@ function addInAppNotification({ postId, post }) {
     _updateBellBadge();
     _renderNotifPanel();
     _showNotifPopup(notif);
+}
+
+function addAchievementNotification(achievement, xpGain) {
+    const notif = {
+        id: 'ach_' + achievement.id + '_' + Date.now(),
+        type: 'achievement',
+        title: achievement.title,
+        icon: achievement.icon,
+        xp: xpGain,
+        tier: achievement.tier || 'bronze',
+        timestamp: Date.now(),
+        read: false,
+    };
+    _inAppNotifs.unshift(notif);
+    _saveInAppNotifs();
+    _updateBellBadge();
+    _renderNotifPanel();
+}
+
+function addCommandUnlockNotification(cmds) {
+    const notif = {
+        id: 'cmd_' + Date.now(),
+        type: 'command',
+        commands: cmds.map(c => ({ name: c.name, description: c.description })),
+        timestamp: Date.now(),
+        read: false,
+    };
+    _inAppNotifs.unshift(notif);
+    _saveInAppNotifs();
+    _updateBellBadge();
+    _renderNotifPanel();
+}
+
+function addRewardCommandNotification(reward) {
+    const notif = {
+        id: 'rwdcmd_' + reward.id + '_' + Date.now(),
+        type: 'command',
+        commands: [{ name: reward.name.replace(/^\//, ''), description: reward.description || 'Console command unlocked' }],
+        timestamp: Date.now(),
+        read: false,
+    };
+    _inAppNotifs.unshift(notif);
+    _saveInAppNotifs();
+    _updateBellBadge();
+    _renderNotifPanel();
 }
 
 function _updateBellBadge() {
@@ -2283,9 +2329,34 @@ function _renderNotifPanel() {
         list.innerHTML = '<div class="notif-panel-empty">No notifications yet.</div>';
         return;
     }
+    const SIX_HOURS = 6 * 60 * 60 * 1000;
+    const now = Date.now();
     list.innerHTML = _inAppNotifs.map(n => {
         const ago = timeAgo(n.timestamp);
-        return `<div class="notif-panel-item${n.read ? ' notif-read' : ''}" onclick="openPostFromNotif('${n.id}')">
+        const isAged = (n.type === 'achievement' || n.type === 'command') && (now - n.timestamp) > SIX_HOURS;
+        const agedClass = isAged ? ' notif-aged' : '';
+        const readClass = n.read ? ' notif-read' : '';
+
+        if (n.type === 'achievement') {
+            const tierClass = `notif-tier-${n.tier || 'bronze'}`;
+            return `<div class="notif-panel-item notif-achievement${readClass}${agedClass}">
+                <div class="notif-item-author"><span class="notif-ach-icon">${safeText(n.icon)}</span> ${safeText(n.title)}</div>
+                <div class="notif-item-snippet">Achievement unlocked${n.xp ? ` · +${n.xp} XP` : ''} <span class="notif-tier-badge ${tierClass}">${n.tier || 'bronze'}</span></div>
+                <div class="notif-item-time">${safeText(ago)}</div>
+            </div>`;
+        }
+
+        if (n.type === 'command') {
+            const cmdList = (n.commands || []).map(c => `/${c.name}`).join(', ');
+            const firstDesc = n.commands?.[0]?.description || '';
+            return `<div class="notif-panel-item notif-command${readClass}${agedClass}">
+                <div class="notif-item-author">🔓 Command${(n.commands?.length || 0) > 1 ? 's' : ''} Unlocked</div>
+                <div class="notif-item-snippet"><strong>${safeText(cmdList)}</strong>${firstDesc ? ` — ${safeText(firstDesc)}` : ''}</div>
+                <div class="notif-item-time">${safeText(ago)}</div>
+            </div>`;
+        }
+
+        return `<div class="notif-panel-item${readClass}" onclick="openPostFromNotif('${n.id}')">
             <div class="notif-item-author">${safeText(n.author)}</div>
             <div class="notif-item-snippet">${safeText(n.snippet)}</div>
             <div class="notif-item-time">${safeText(ago)}</div>
@@ -3886,6 +3957,8 @@ function showXpCommandUnlockNotification(cmds) {
     };
     box.querySelector('.xp-unlock-notification__close').addEventListener('click', close);
     setTimeout(close, 8000);
+    // Add to notification panel
+    addCommandUnlockNotification(cmds);
 }
 
 // Pushes a recognised slash command to Firebase as a system entry.
@@ -7857,6 +7930,8 @@ function unlockReward(rewardId) {
         const cmdName = reward.name.replace(/^\//, '');
         unlockedConsoleCmds.add(cmdName);
         localStorage.setItem(_consoleCmdsKey, JSON.stringify([...unlockedConsoleCmds]));
+        // Add console command unlock to notification panel
+        addRewardCommandNotification(reward);
     }
     // Notify all open panels that a new reward arrived
     document.dispatchEvent(new CustomEvent('rewardUnlocked', { detail: { reward } }));
@@ -8031,6 +8106,8 @@ async function unlockAchievement(id) {
             achievementToastHistory.unshift({ title: achievement.title, icon: achievement.icon, ts: Date.now() });
             if (achievementToastHistory.length > 20) achievementToastHistory.pop();
             sparkSound('ach');
+            // Add to notification panel
+            addAchievementNotification(achievement, xpGain);
         }
 
         const levelAfter = xpToLevel(xpTotal);
