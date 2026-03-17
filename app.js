@@ -569,23 +569,223 @@ function _soundCategoryAllowed(category) {
     }
 }
 
+// ---- Sound pack synthesis profiles ----
+// Each pack overrides oscType, gainLevel, attackTime, and note patterns.
+// Packs that omit a pattern key fall back to the default patterns below.
+const _SOUND_PACK_PROFILES = {
+    // ☕ Cozy Café — sine waves, warm mid-range, gentle bell chimes, slow attack
+    snd_cozy: {
+        oscType: 'sine', gainLevel: 0.06, attackTime: 0.022,
+        patterns: {
+            post:           [ {f:523.25,t:0.00,dur:0.20}, {f:783.99,t:0.17,dur:0.20}, {f:1046.5,t:0.34,dur:0.20}, {f:1318.5,t:0.51,dur:0.36} ],
+            reply:          [ {f:659.25,t:0.00,dur:0.16}, {f:523.25,t:0.16,dur:0.22} ],
+            react:          [ {f:1046.5,t:0.00,dur:0.26} ],
+            chat:           [ {f:698.46,t:0.00,dur:0.16}, {f:880.00,t:0.16,dur:0.24} ],
+            ping:           [ {f:523.25,t:0.00,dur:0.30} ],
+            window_open:    [ {f:659.25,t:0.00,dur:0.12}, {f:783.99,t:0.10,dur:0.18} ],
+            window_close:   [ {f:783.99,t:0.00,dur:0.12}, {f:523.25,t:0.11,dur:0.18} ],
+            window_min:     [ {f:659.25,t:0.00,dur:0.10}, {f:523.25,t:0.09,dur:0.14} ],
+            window_max:     [ {f:523.25,t:0.00,dur:0.10}, {f:659.25,t:0.09,dur:0.10}, {f:783.99,t:0.18,dur:0.16} ],
+            window_restore: [ {f:783.99,t:0.00,dur:0.10}, {f:659.25,t:0.09,dur:0.10}, {f:523.25,t:0.18,dur:0.16} ],
+            startup:        [ {f:392.00,t:0.00,dur:0.20}, {f:523.25,t:0.18,dur:0.20}, {f:659.25,t:0.36,dur:0.20}, {f:783.99,t:0.54,dur:0.22}, {f:1046.5,t:0.74,dur:0.52} ],
+            shutdown:       [ {f:1046.5,t:0.00,dur:0.20}, {f:783.99,t:0.19,dur:0.19}, {f:659.25,t:0.36,dur:0.19}, {f:523.25,t:0.53,dur:0.19}, {f:392.00,t:0.70,dur:0.40} ],
+            cat:            [ {f:880.00,t:0.00,dur:0.10}, {f:1046.5,t:0.09,dur:0.18} ],
+            water:          [ {f:523.25,t:0.00,dur:0.12}, {f:659.25,t:0.11,dur:0.12}, {f:783.99,t:0.22,dur:0.12}, {f:1046.5,t:0.33,dur:0.20} ],
+            letter:         [ {f:659.25,t:0.00,dur:0.14}, {f:783.99,t:0.13,dur:0.14}, {f:1046.5,t:0.26,dur:0.24} ],
+            cmd_success:    [ {f:659.25,t:0.00,dur:0.12}, {f:783.99,t:0.11,dur:0.16} ],
+            cmd_error:      [ {f:311.13,t:0.00,dur:0.16}, {f:261.63,t:0.15,dur:0.22} ],
+            ach:            [ {f:659.25,t:0.00,dur:0.12}, {f:783.99,t:0.12,dur:0.12}, {f:1046.5,t:0.24,dur:0.12}, {f:1318.5,t:0.36,dur:0.14}, {f:1567.98,t:0.50,dur:0.46} ],
+        }
+    },
+    // 🌿 Nature Walk — sine waves, bird-chirp frequencies, quick staccato notes
+    snd_nature: {
+        oscType: 'sine', gainLevel: 0.065, attackTime: 0.006,
+        patterns: {
+            post:           [ {f:1200,t:0.00,dur:0.07}, {f:1500,t:0.06,dur:0.07}, {f:1800,t:0.12,dur:0.07}, {f:1400,t:0.19,dur:0.12} ],
+            reply:          [ {f:1500,t:0.00,dur:0.06}, {f:1000,t:0.07,dur:0.10} ],
+            react:          [ {f:1800,t:0.00,dur:0.10} ],
+            chat:           [ {f:1200,t:0.00,dur:0.07}, {f:1600,t:0.08,dur:0.11} ],
+            ping:           [ {f:1300,t:0.00,dur:0.14} ],
+            window_open:    [ {f:1000,t:0.00,dur:0.08}, {f:1300,t:0.07,dur:0.12} ],
+            window_close:   [ {f:1300,t:0.00,dur:0.08}, {f:800,t:0.08,dur:0.12} ],
+            window_min:     [ {f:1100,t:0.00,dur:0.07}, {f:900,t:0.06,dur:0.10} ],
+            window_max:     [ {f:900,t:0.00,dur:0.07}, {f:1100,t:0.06,dur:0.07}, {f:1400,t:0.12,dur:0.12} ],
+            window_restore: [ {f:1400,t:0.00,dur:0.07}, {f:1100,t:0.06,dur:0.07}, {f:900,t:0.12,dur:0.10} ],
+            startup:        [ {f:800,t:0.00,dur:0.14}, {f:1000,t:0.12,dur:0.14}, {f:1200,t:0.24,dur:0.14}, {f:1500,t:0.36,dur:0.16}, {f:1800,t:0.50,dur:0.38} ],
+            shutdown:       [ {f:1800,t:0.00,dur:0.14}, {f:1500,t:0.13,dur:0.13}, {f:1200,t:0.25,dur:0.13}, {f:1000,t:0.37,dur:0.13}, {f:800,t:0.49,dur:0.32} ],
+            cat:            [ {f:1600,t:0.00,dur:0.06}, {f:2000,t:0.05,dur:0.10} ],
+            water:          [ {f:700,t:0.00,dur:0.09}, {f:900,t:0.08,dur:0.09}, {f:1100,t:0.16,dur:0.09}, {f:800,t:0.25,dur:0.14} ],
+            letter:         [ {f:1200,t:0.00,dur:0.10}, {f:1500,t:0.09,dur:0.10}, {f:1200,t:0.19,dur:0.16} ],
+            cmd_success:    [ {f:1200,t:0.00,dur:0.08}, {f:1600,t:0.08,dur:0.12} ],
+            cmd_error:      [ {f:600,t:0.00,dur:0.11}, {f:480,t:0.10,dur:0.16} ],
+            ach:            [ {f:800,t:0.00,dur:0.09}, {f:1000,t:0.09,dur:0.09}, {f:1200,t:0.18,dur:0.09}, {f:1500,t:0.27,dur:0.11}, {f:1800,t:0.38,dur:0.36} ],
+        }
+    },
+    // 🎮 Retro Chiptune — punchy square waves, staccato, bright pitches
+    snd_retro: {
+        oscType: 'square', gainLevel: 0.10, attackTime: 0.002,
+        patterns: {
+            post:           [ {f:523.25,t:0.00,dur:0.07}, {f:659.25,t:0.06,dur:0.07}, {f:783.99,t:0.12,dur:0.07}, {f:1046.5,t:0.18,dur:0.13} ],
+            reply:          [ {f:880.00,t:0.00,dur:0.06}, {f:659.25,t:0.07,dur:0.07} ],
+            react:          [ {f:1046.5,t:0.00,dur:0.09} ],
+            chat:           [ {f:440.00,t:0.00,dur:0.06}, {f:880.00,t:0.07,dur:0.08} ],
+            ping:           [ {f:750.00,t:0.00,dur:0.14} ],
+            window_open:    [ {f:523.25,t:0.00,dur:0.04}, {f:659.25,t:0.03,dur:0.06} ],
+            window_close:   [ {f:659.25,t:0.00,dur:0.04}, {f:392.00,t:0.03,dur:0.06} ],
+            window_min:     [ {f:523.25,t:0.00,dur:0.04}, {f:392.00,t:0.03,dur:0.05} ],
+            window_max:     [ {f:392.00,t:0.00,dur:0.04}, {f:523.25,t:0.03,dur:0.04}, {f:659.25,t:0.06,dur:0.06} ],
+            window_restore: [ {f:659.25,t:0.00,dur:0.04}, {f:523.25,t:0.03,dur:0.04}, {f:392.00,t:0.06,dur:0.05} ],
+            startup:        [ {f:392.00,t:0.00,dur:0.09}, {f:523.25,t:0.08,dur:0.09}, {f:659.25,t:0.16,dur:0.09}, {f:783.99,t:0.24,dur:0.10}, {f:1046.5,t:0.33,dur:0.22} ],
+            shutdown:       [ {f:1046.5,t:0.00,dur:0.09}, {f:783.99,t:0.08,dur:0.08}, {f:659.25,t:0.15,dur:0.08}, {f:523.25,t:0.22,dur:0.08}, {f:392.00,t:0.29,dur:0.18} ],
+            cat:            [ {f:880.00,t:0.00,dur:0.04}, {f:1108.7,t:0.03,dur:0.06} ],
+            water:          [ {f:392.00,t:0.00,dur:0.05}, {f:523.25,t:0.04,dur:0.05}, {f:659.25,t:0.08,dur:0.05}, {f:783.99,t:0.12,dur:0.08} ],
+            letter:         [ {f:523.25,t:0.00,dur:0.05}, {f:659.25,t:0.04,dur:0.05}, {f:783.99,t:0.08,dur:0.09} ],
+            cmd_success:    [ {f:523.25,t:0.00,dur:0.04}, {f:659.25,t:0.03,dur:0.06} ],
+            cmd_error:      [ {f:220.00,t:0.00,dur:0.07}, {f:196.00,t:0.06,dur:0.10} ],
+            ach:            [ {f:523.25,t:0.00,dur:0.05}, {f:659.25,t:0.05,dur:0.05}, {f:783.99,t:0.10,dur:0.05}, {f:1046.5,t:0.15,dur:0.06}, {f:1318.5,t:0.21,dur:0.20} ],
+        }
+    },
+    // 🌟 Cute & Cozy — high-pitched sine tones; cat interaction plays a tiny meow
+    snd_cute: {
+        oscType: 'sine', gainLevel: 0.065, attackTime: 0.010,
+        patterns: {
+            post:           [ {f:1046.5,t:0.00,dur:0.11}, {f:1318.5,t:0.10,dur:0.11}, {f:1567.98,t:0.20,dur:0.11}, {f:2093.0,t:0.30,dur:0.26} ],
+            reply:          [ {f:1318.5,t:0.00,dur:0.09}, {f:1046.5,t:0.10,dur:0.14} ],
+            react:          [ {f:2093.0,t:0.00,dur:0.16} ],
+            chat:           [ {f:880.00,t:0.00,dur:0.09}, {f:1318.5,t:0.10,dur:0.14} ],
+            ping:           [ {f:1046.5,t:0.00,dur:0.20} ],
+            window_open:    [ {f:1046.5,t:0.00,dur:0.08}, {f:1318.5,t:0.07,dur:0.12} ],
+            window_close:   [ {f:1318.5,t:0.00,dur:0.08}, {f:880.00,t:0.08,dur:0.12} ],
+            window_min:     [ {f:1046.5,t:0.00,dur:0.07}, {f:880.00,t:0.06,dur:0.10} ],
+            window_max:     [ {f:880.00,t:0.00,dur:0.07}, {f:1046.5,t:0.06,dur:0.07}, {f:1318.5,t:0.12,dur:0.12} ],
+            window_restore: [ {f:1318.5,t:0.00,dur:0.07}, {f:1046.5,t:0.06,dur:0.07}, {f:880.00,t:0.12,dur:0.10} ],
+            startup:        [ {f:659.25,t:0.00,dur:0.14}, {f:783.99,t:0.13,dur:0.14}, {f:1046.5,t:0.26,dur:0.14}, {f:1318.5,t:0.39,dur:0.16}, {f:2093.0,t:0.54,dur:0.46} ],
+            shutdown:       [ {f:2093.0,t:0.00,dur:0.14}, {f:1318.5,t:0.13,dur:0.13}, {f:1046.5,t:0.25,dur:0.13}, {f:783.99,t:0.37,dur:0.13}, {f:659.25,t:0.49,dur:0.36} ],
+            cat:            null,  // replaced by synthetic meow — see sparkSound
+            water:          [ {f:1046.5,t:0.00,dur:0.09}, {f:1318.5,t:0.08,dur:0.09}, {f:1567.98,t:0.16,dur:0.09}, {f:1046.5,t:0.25,dur:0.16} ],
+            letter:         [ {f:1046.5,t:0.00,dur:0.11}, {f:1318.5,t:0.10,dur:0.11}, {f:1567.98,t:0.20,dur:0.20} ],
+            cmd_success:    [ {f:1046.5,t:0.00,dur:0.08}, {f:1318.5,t:0.08,dur:0.12} ],
+            cmd_error:      [ {f:440.00,t:0.00,dur:0.11}, {f:392.00,t:0.10,dur:0.16} ],
+            ach:            [ {f:1046.5,t:0.00,dur:0.09}, {f:1318.5,t:0.09,dur:0.09}, {f:1567.98,t:0.18,dur:0.09}, {f:2093.0,t:0.27,dur:0.11}, {f:2637.0,t:0.38,dur:0.40} ],
+        }
+    },
+    // 🌿 Garden Ambience — triangle waves, earthy low tones; water sound ends with a wood frog ribbit
+    snd_garden_pack: {
+        oscType: 'triangle', gainLevel: 0.07, attackTime: 0.018,
+        patterns: {
+            post:           [ {f:261.63,t:0.00,dur:0.16}, {f:329.63,t:0.14,dur:0.16}, {f:392.00,t:0.28,dur:0.16}, {f:523.25,t:0.42,dur:0.32} ],
+            reply:          [ {f:329.63,t:0.00,dur:0.14}, {f:261.63,t:0.14,dur:0.18} ],
+            react:          [ {f:523.25,t:0.00,dur:0.22} ],
+            chat:           [ {f:261.63,t:0.00,dur:0.12}, {f:392.00,t:0.13,dur:0.18} ],
+            ping:           [ {f:329.63,t:0.00,dur:0.28} ],
+            window_open:    [ {f:329.63,t:0.00,dur:0.10}, {f:392.00,t:0.09,dur:0.14} ],
+            window_close:   [ {f:392.00,t:0.00,dur:0.10}, {f:261.63,t:0.10,dur:0.14} ],
+            window_min:     [ {f:329.63,t:0.00,dur:0.09}, {f:261.63,t:0.08,dur:0.12} ],
+            window_max:     [ {f:261.63,t:0.00,dur:0.09}, {f:329.63,t:0.08,dur:0.09}, {f:392.00,t:0.16,dur:0.14} ],
+            window_restore: [ {f:392.00,t:0.00,dur:0.09}, {f:329.63,t:0.08,dur:0.09}, {f:261.63,t:0.16,dur:0.12} ],
+            startup:        [ {f:196.00,t:0.00,dur:0.18}, {f:261.63,t:0.16,dur:0.18}, {f:329.63,t:0.32,dur:0.18}, {f:392.00,t:0.48,dur:0.20}, {f:523.25,t:0.66,dur:0.50} ],
+            shutdown:       [ {f:523.25,t:0.00,dur:0.18}, {f:392.00,t:0.17,dur:0.17}, {f:329.63,t:0.32,dur:0.17}, {f:261.63,t:0.47,dur:0.17}, {f:196.00,t:0.62,dur:0.36} ],
+            cat:            [ {f:300,t:0.00,dur:0.10}, {f:360,t:0.09,dur:0.14} ],
+            water:          null,  // replaced by rain-drop tones + wood frog ribbit — see sparkSound
+            letter:         [ {f:392.00,t:0.00,dur:0.13}, {f:523.25,t:0.12,dur:0.13}, {f:659.25,t:0.24,dur:0.20} ],
+            cmd_success:    [ {f:392.00,t:0.00,dur:0.10}, {f:523.25,t:0.09,dur:0.14} ],
+            cmd_error:      [ {f:130.81,t:0.00,dur:0.14}, {f:110.00,t:0.13,dur:0.20} ],
+            ach:            [ {f:261.63,t:0.00,dur:0.11}, {f:329.63,t:0.11,dur:0.11}, {f:392.00,t:0.22,dur:0.11}, {f:523.25,t:0.33,dur:0.13}, {f:659.25,t:0.46,dur:0.42} ],
+        }
+    },
+};
+
+// Synthesise a small cat meow using a sine frequency sweep (used by snd_cute).
+function _playSyntheticMeow(ctx, dest, t0, vol) {
+    try {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        // Frequency sweep: 580 Hz → 1050 Hz → 700 Hz  (the "mew" shape)
+        osc.frequency.setValueAtTime(580, t0);
+        osc.frequency.linearRampToValueAtTime(1050, t0 + 0.07);
+        osc.frequency.linearRampToValueAtTime(700,  t0 + 0.34);
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.linearRampToValueAtTime(vol,   t0 + 0.015);
+        gain.gain.setValueAtTime(vol,            t0 + 0.26);
+        gain.gain.linearRampToValueAtTime(0.0001, t0 + 0.38);
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start(t0);
+        osc.stop(t0 + 0.40);
+    } catch(e) {}
+}
+
+// Synthesise a wood-frog ribbit (two short descending sawtooth bursts) — used by snd_garden_pack water sound.
+function _playWoodFrogRibbit(ctx, dest, t0, vol) {
+    try {
+        [0, 0.16].forEach(offset => {
+            const osc  = ctx.createOscillator();
+            const g    = ctx.createGain();
+            osc.type   = 'sawtooth';
+            const s    = t0 + offset;
+            osc.frequency.setValueAtTime(360, s);
+            osc.frequency.linearRampToValueAtTime(220, s + 0.09);
+            g.gain.setValueAtTime(0.0001, s);
+            g.gain.linearRampToValueAtTime(vol * 0.55, s + 0.006);
+            g.gain.setValueAtTime(vol * 0.55, s + 0.07);
+            g.gain.linearRampToValueAtTime(0.0001, s + 0.11);
+            osc.connect(g);
+            g.connect(dest);
+            osc.start(s);
+            osc.stop(s + 0.13);
+        });
+    } catch(e) {}
+}
+
 function sparkSound(type, category) {
     try {
         if (!soundEnabled) return;
         const cat = category || _SOUND_CATEGORIES[type] || null;
         if (cat && !_soundCategoryAllowed(cat)) return;
         ensureAudio();
-        const ctx = _audioCtx;
-        const t0 = ctx.currentTime;
+        const ctx  = _audioCtx;
+        const dest = _masterGain || ctx.destination;
+        const t0   = ctx.currentTime;
 
-        // Windows 95-style: square waves, sharp envelopes, named notes
+        // Resolve active sound pack
+        const activePack   = localStorage.getItem('activeSoundPack') || '';
+        const packProfile  = _SOUND_PACK_PROFILES[activePack] || null;
+        const oscType      = packProfile?.oscType    ?? 'square';
+        const gainLevel    = packProfile?.gainLevel  ?? 0.08;
+        const attackTime   = packProfile?.attackTime ?? 0.006;
+
+        // Special per-pack synthesis effects that replace normal note playback
+        if (activePack === 'snd_cute' && type === 'cat') {
+            _playSyntheticMeow(ctx, dest, t0, gainLevel);
+            return;
+        }
+        if (activePack === 'snd_garden_pack' && type === 'water') {
+            // Rain-drop tones followed by a wood frog ribbit
+            [ {f:329.63,t:0.00,dur:0.10}, {f:392.00,t:0.09,dur:0.10},
+              {f:523.25,t:0.18,dur:0.10}, {f:659.25,t:0.27,dur:0.15} ].forEach(({f, t, dur}) => {
+                const osc = ctx.createOscillator(); const g = ctx.createGain();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(f, t0 + t);
+                osc.connect(g); g.connect(dest);
+                const s = t0 + t, e = s + dur;
+                g.gain.setValueAtTime(0.0001, s);
+                g.gain.linearRampToValueAtTime(gainLevel, s + attackTime);
+                g.gain.setValueAtTime(gainLevel, e - 0.018);
+                g.gain.linearRampToValueAtTime(0.0001, e);
+                osc.start(s); osc.stop(e);
+            });
+            _playWoodFrogRibbit(ctx, dest, t0 + 0.52, gainLevel);
+            return;
+        }
+
+        // Windows 95-style default patterns (square waves, sharp envelopes)
         // post  → "The Microsoft Sound" abbreviated (4-note ascending chime)
         // reply → "Exclamation"  (descending two-note blip)
         // react → "Asterisk"     (single high ding)
         // chat  → "Notify"       (ascending two-tone)
         // ping  → "Default Beep" (classic square blip at 750 Hz)
-        // ach   → achievement unlock 3-note fanfare
-        const patterns = {
+        // ach   → achievement unlock fanfare
+        const defaultPatterns = {
             post: [
                 { f: 523.25, t: 0.00, dur: 0.12 },   // C5
                 { f: 659.25, t: 0.10, dur: 0.12 },   // E5
@@ -678,23 +878,28 @@ function sparkSound(type, category) {
             ]
         };
 
-        const notes = patterns[type] || patterns.ping;
+        // Pack pattern (null means "use special synthesis above"); fall back to default
+        const packNotes = packProfile?.patterns?.[type];
+        const notes = (packNotes !== undefined && packNotes !== null)
+            ? packNotes
+            : (defaultPatterns[type] || defaultPatterns.ping);
+
         notes.forEach(({ f, t, dur }) => {
             const osc  = ctx.createOscillator();
             const gain = ctx.createGain();
 
-            osc.type = 'square';
+            osc.type = oscType;
             osc.frequency.setValueAtTime(f, t0 + t);
 
             osc.connect(gain);
-            gain.connect(_masterGain || ctx.destination);
+            gain.connect(dest);
 
             const s = t0 + t;
             const e = s + dur;
 
             gain.gain.setValueAtTime(0.0001, s);
-            gain.gain.linearRampToValueAtTime(0.08, s + 0.006);  // sharp attack
-            gain.gain.setValueAtTime(0.08, e - 0.018);
+            gain.gain.linearRampToValueAtTime(gainLevel, s + attackTime);
+            gain.gain.setValueAtTime(gainLevel, e - 0.018);
             gain.gain.linearRampToValueAtTime(0.0001, e);         // sharp cutoff
 
             osc.start(s);
