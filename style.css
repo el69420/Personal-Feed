@@ -6633,10 +6633,14 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
     font: 11px Tahoma, Verdana, sans-serif;
     font-style: italic;
 }
-/* Drop-target highlights for drag-to-folder */
+/* Drop-target highlights for drag-to-folder and drag-to-recycle-bin */
 .w95-desktop-icon.drop-target .desktop-icon-img {
     outline: 2px dotted #000080;
     background: rgba(0,0,128,0.15);
+}
+.w95-desktop-icon[data-app="recycleBin"].drop-target .desktop-icon-img {
+    outline: 2px dotted #800000;
+    background: rgba(128,0,0,0.15);
 }
 .explorer-grid.drop-target {
     background: rgba(0,0,128,0.06);

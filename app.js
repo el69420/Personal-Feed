@@ -9822,6 +9822,16 @@ function openFolderWindow(folderItem) {
                         }
                     });
                 }
+                // Check recycle bin icon
+                if (!newTarget) {
+                    const rbEl = document.querySelector('.w95-desktop-icon[data-app="recycleBin"]');
+                    if (rbEl && !rbEl.classList.contains('selected')) {
+                        const rr = rbEl.getBoundingClientRect();
+                        if (cx >= rr.left && cx <= rr.right && cy >= rr.top && cy <= rr.bottom) {
+                            newTarget = { el: rbEl, type: 'recycleBin' };
+                        }
+                    }
+                }
                 // Update highlight
                 if (dropTarget?.el !== newTarget?.el) {
                     dropTarget?.el.classList.remove('drop-target');
@@ -9839,7 +9849,36 @@ function openFolderWindow(folderItem) {
             if (didDrag) {
                 // Clear drop-target highlight
                 if (dropTarget) dropTarget.el.classList.remove('drop-target');
-                if (dropTarget) {
+                if (dropTarget?.type === 'recycleBin') {
+                    // === Drop icons into recycle bin ===
+                    dropTarget = null;
+                    const customItems = window._desktopCustom?.getItems() || [];
+                    const positions = getIconPositions();
+                    const toRemove = [];
+                    document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                        const sk = si.dataset.app;
+                        if (sk === 'recycleBin') return;
+                        const srcItem = customItems.find(i => i.id === sk);
+                        if (srcItem) {
+                            addToLocalTrash(srcItem);
+                            toRemove.push(sk);
+                            si.remove();
+                            delete w95Apps[sk];
+                            delete positions[sk];
+                        } else {
+                            // Built-in icon: send to Firebase recycle bin
+                            const label = si.querySelector('.desktop-icon-label')?.textContent || sk;
+                            set(ref(database, `recycleBin/icon_${sk}`), {
+                                type: 'desktop-icon', iconApp: sk, iconLabel: label, deletedAt: Date.now(),
+                            });
+                        }
+                    });
+                    if (toRemove.length) {
+                        window._desktopCustom?.saveItems(customItems.filter(i => !toRemove.includes(i.id)));
+                        saveIconPositions(positions);
+                        renderRecycleBin();
+                    }
+                } else if (dropTarget) {
                     // === Drop icons into folder ===
                     const tid = dropTarget.folderId;
                     dropTarget = null;
