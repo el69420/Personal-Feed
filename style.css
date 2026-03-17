@@ -7701,6 +7701,341 @@ body[data-theme="theme_crt"] .w95-window {
 }
 
 /* ============================================================
+   EXTENDED THEME CHROME
+   Secondary chrome elements (start menu, context menus, window
+   controls, shutdown dialog, system tray, clock, desktop icons,
+   desktop selection box) for all 6 desktop themes.
+   Also: full dark-mode variants for the two light themes
+   (Pastel, Frosted Glass) so toggling dark mode on/off always
+   produces a readable result regardless of active theme.
+   ============================================================ */
+
+/* ── Window Control Buttons (.w95-control) ── */
+body[data-theme="theme_pastel"] .w95-control {
+  background: #ffe0f0 !important;
+  border-color: #d8a0c0 #806080 #806080 #d8a0c0 !important;
+  color: #2a002a !important;
+}
+body[data-theme="theme_midnight"] .w95-control {
+  background: #0e0e2e !important;
+  border-color: #3030a0 #080818 #080818 #3030a0 !important;
+  color: #9090e0 !important;
+}
+body[data-theme="theme_autumn"] .w95-control {
+  background: #3a1800 !important;
+  border-color: #804020 #201000 #201000 #804020 !important;
+  color: #e0a050 !important;
+}
+body[data-theme="theme_glass"] .w95-control {
+  background: rgba(210, 230, 255, 0.75) !important;
+  border-color: rgba(180, 210, 255, 0.9) rgba(100, 150, 220, 0.6) rgba(100, 150, 220, 0.6) rgba(180, 210, 255, 0.9) !important;
+  color: #1a2a4a !important;
+}
+body[data-theme="theme_pixel"] .w95-control {
+  background: #1b4332 !important;
+  border-color: #52b788 #081c15 #081c15 #52b788 !important;
+  color: #74c69d !important;
+}
+body[data-theme="theme_crt"] .w95-control {
+  background: #001a00 !important;
+  border-color: #00aa00 #000800 #000800 #00aa00 !important;
+  color: #00cc33 !important;
+}
+
+/* ── Start Menu background + item text ── */
+body[data-theme="theme_pastel"] .w95-start-menu {
+  background: #f0c8d8 !important;
+  border-color: #e8b8d0 #906070 #906070 #e8b8d0 !important;
+}
+body[data-theme="theme_pastel"] .w95-start-item        { color: #2a002a !important; }
+body[data-theme="theme_pastel"] .w95-start-separator   { border-top-color: #c09080 !important; border-bottom-color: #f0d0e0 !important; }
+
+body[data-theme="theme_midnight"] .w95-start-menu {
+  background: #050512 !important;
+  border-color: #1a1a4a #020208 #020208 #1a1a4a !important;
+}
+body[data-theme="theme_midnight"] .w95-start-item      { color: #8080d0 !important; }
+body[data-theme="theme_midnight"] .w95-start-separator { border-top-color: #020208 !important; border-bottom-color: #1a1a4a !important; }
+
+body[data-theme="theme_autumn"] .w95-start-menu {
+  background: #1a0a00 !important;
+  border-color: #502800 #0a0400 #0a0400 #502800 !important;
+}
+body[data-theme="theme_autumn"] .w95-start-item        { color: #c08040 !important; }
+body[data-theme="theme_autumn"] .w95-start-separator   { border-top-color: #0a0400 !important; border-bottom-color: #502800 !important; }
+
+body[data-theme="theme_glass"] .w95-start-menu {
+  background: rgba(190, 215, 255, 0.92) !important;
+  border-color: rgba(220, 238, 255, 0.95) rgba(100, 150, 220, 0.7) rgba(100, 150, 220, 0.7) rgba(220, 238, 255, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+body[data-theme="theme_glass"] .w95-start-item         { color: #1a2a4a !important; }
+body[data-theme="theme_glass"] .w95-start-separator    { border-top-color: rgba(100, 150, 220, 0.5) !important; border-bottom-color: rgba(220, 238, 255, 0.8) !important; }
+
+body[data-theme="theme_pixel"] .w95-start-menu {
+  background: #081c15 !important;
+  border-color: #1b4332 #020a08 #020a08 #1b4332 !important;
+}
+body[data-theme="theme_pixel"] .w95-start-item         { color: #52b788 !important; }
+body[data-theme="theme_pixel"] .w95-start-separator    { border-top-color: #020a08 !important; border-bottom-color: #1b4332 !important; }
+
+body[data-theme="theme_crt"] .w95-start-menu {
+  background: #000800 !important;
+  border-color: #002200 #000200 #000200 #002200 !important;
+}
+body[data-theme="theme_crt"] .w95-start-item           { color: #00aa2a !important; }
+body[data-theme="theme_crt"] .w95-start-separator      { border-top-color: #000200 !important; border-bottom-color: #002200 !important; }
+
+/* ── Context Menu background + item text ── */
+body[data-theme="theme_pastel"] .w95-ctx-menu {
+  background: #f0c8d8 !important;
+  border-color: #e8b8d0 #906070 #906070 #e8b8d0 !important;
+}
+body[data-theme="theme_pastel"] .w95-ctx-item,
+body[data-theme="theme_pastel"] .w95-ctx-has-sub       { color: #2a002a !important; }
+body[data-theme="theme_pastel"] .w95-ctx-separator     { border-top-color: #c09080 !important; border-bottom-color: #f0d0e0 !important; }
+
+body[data-theme="theme_midnight"] .w95-ctx-menu {
+  background: #050512 !important;
+  border-color: #1a1a4a #020208 #020208 #1a1a4a !important;
+}
+body[data-theme="theme_midnight"] .w95-ctx-item,
+body[data-theme="theme_midnight"] .w95-ctx-has-sub     { color: #8080d0 !important; }
+body[data-theme="theme_midnight"] .w95-ctx-separator   { border-top-color: #020208 !important; border-bottom-color: #1a1a4a !important; }
+
+body[data-theme="theme_autumn"] .w95-ctx-menu {
+  background: #1a0a00 !important;
+  border-color: #502800 #0a0400 #0a0400 #502800 !important;
+}
+body[data-theme="theme_autumn"] .w95-ctx-item,
+body[data-theme="theme_autumn"] .w95-ctx-has-sub       { color: #c08040 !important; }
+body[data-theme="theme_autumn"] .w95-ctx-separator     { border-top-color: #0a0400 !important; border-bottom-color: #502800 !important; }
+
+body[data-theme="theme_glass"] .w95-ctx-menu {
+  background: rgba(190, 215, 255, 0.92) !important;
+  border-color: rgba(220, 238, 255, 0.95) rgba(100, 150, 220, 0.7) rgba(100, 150, 220, 0.7) rgba(220, 238, 255, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+body[data-theme="theme_glass"] .w95-ctx-item,
+body[data-theme="theme_glass"] .w95-ctx-has-sub        { color: #1a2a4a !important; }
+body[data-theme="theme_glass"] .w95-ctx-separator      { border-top-color: rgba(100, 150, 220, 0.5) !important; border-bottom-color: rgba(220, 238, 255, 0.8) !important; }
+
+body[data-theme="theme_pixel"] .w95-ctx-menu {
+  background: #081c15 !important;
+  border-color: #1b4332 #020a08 #020a08 #1b4332 !important;
+}
+body[data-theme="theme_pixel"] .w95-ctx-item,
+body[data-theme="theme_pixel"] .w95-ctx-has-sub        { color: #52b788 !important; }
+body[data-theme="theme_pixel"] .w95-ctx-separator      { border-top-color: #020a08 !important; border-bottom-color: #1b4332 !important; }
+
+body[data-theme="theme_crt"] .w95-ctx-menu {
+  background: #000800 !important;
+  border-color: #002200 #000200 #000200 #002200 !important;
+}
+body[data-theme="theme_crt"] .w95-ctx-item,
+body[data-theme="theme_crt"] .w95-ctx-has-sub          { color: #00aa2a !important; }
+body[data-theme="theme_crt"] .w95-ctx-separator        { border-top-color: #000200 !important; border-bottom-color: #002200 !important; }
+
+/* ── Shutdown Dialog ── */
+body[data-theme="theme_pastel"] .w95-shutdown-dialog {
+  background: #f8e0ee !important; border-color: #f0d0e8 #b090a0 #b090a0 #f0d0e8 !important; color: #2a002a !important;
+}
+body[data-theme="theme_pastel"] .w95-shutdown-select   { background: #fff5fa !important; color: #2a002a !important; border-color: #d0a0c0 !important; }
+body[data-theme="theme_pastel"] .w95-shutdown-btns     { border-top-color: #d0a0c0 !important; }
+
+body[data-theme="theme_midnight"] .w95-shutdown-dialog {
+  background: #080818 !important; border-color: #1a1a4a #020208 #020208 #1a1a4a !important; color: #c8c8ff !important;
+}
+body[data-theme="theme_midnight"] .w95-shutdown-select { background: #0a0a28 !important; color: #b0b0f0 !important; border-color: #2020a0 !important; }
+body[data-theme="theme_midnight"] .w95-shutdown-btns   { border-top-color: #1a1a4a !important; }
+
+body[data-theme="theme_autumn"] .w95-shutdown-dialog {
+  background: #2a1200 !important; border-color: #502800 #0a0400 #0a0400 #502800 !important; color: #f0c080 !important;
+}
+body[data-theme="theme_autumn"] .w95-shutdown-select   { background: #1a0800 !important; color: #d09060 !important; border-color: #602000 !important; }
+body[data-theme="theme_autumn"] .w95-shutdown-btns     { border-top-color: #502800 !important; }
+
+body[data-theme="theme_glass"] .w95-shutdown-dialog {
+  background: rgba(228, 240, 255, 0.95) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
+  border-color: rgba(210, 232, 255, 0.95) rgba(100, 150, 220, 0.6) rgba(100, 150, 220, 0.6) rgba(210, 232, 255, 0.95) !important; color: #1a2a4a !important;
+}
+body[data-theme="theme_glass"] .w95-shutdown-select    { background: rgba(240, 248, 255, 0.9) !important; color: #1a2040 !important; border-color: rgba(140, 185, 240, 0.65) !important; }
+body[data-theme="theme_glass"] .w95-shutdown-btns      { border-top-color: rgba(140, 185, 240, 0.5) !important; }
+
+body[data-theme="theme_pixel"] .w95-shutdown-dialog {
+  background: #1a3300 !important; border-color: #2d6a4f #020a08 #020a08 #2d6a4f !important; color: #a8ff80 !important;
+}
+body[data-theme="theme_pixel"] .w95-shutdown-select    { background: #0d1f12 !important; color: #74c69d !important; border-color: #2d6a4f !important; }
+body[data-theme="theme_pixel"] .w95-shutdown-btns      { border-top-color: #1b4332 !important; }
+
+body[data-theme="theme_crt"] .w95-shutdown-dialog {
+  background: #001200 !important; border-color: #004400 #000200 #000200 #004400 !important; color: #00ff41 !important;
+}
+body[data-theme="theme_crt"] .w95-shutdown-select      { background: #000d00 !important; color: #00cc33 !important; border-color: #004400 !important; }
+body[data-theme="theme_crt"] .w95-shutdown-btns        { border-top-color: #002200 !important; }
+
+/* ── System Tray + Clock ── */
+body[data-theme="theme_pastel"] .w95-tray              { background: #f0c8d8 !important; border-color: #c09080 #f0d0e0 #f0d0e0 #c09080 !important; }
+body[data-theme="theme_pastel"] .w95-clock             { background: #f0c8d8 !important; color: #2a002a !important; border-color: #c09080 #f0d0e0 #f0d0e0 #c09080 !important; }
+
+body[data-theme="theme_midnight"] .w95-tray            { background: #050512 !important; border-color: #020208 #1a1a4a #1a1a4a #020208 !important; }
+body[data-theme="theme_midnight"] .w95-clock           { background: #050512 !important; color: #8080d0 !important; border-color: #020208 #1a1a4a #1a1a4a #020208 !important; }
+
+body[data-theme="theme_autumn"] .w95-tray              { background: #1a0a00 !important; border-color: #0a0400 #502800 #502800 #0a0400 !important; }
+body[data-theme="theme_autumn"] .w95-clock             { background: #1a0a00 !important; color: #c08040 !important; border-color: #0a0400 #502800 #502800 #0a0400 !important; }
+
+body[data-theme="theme_glass"] .w95-tray {
+  background: rgba(190, 215, 255, 0.80) !important;
+  border-color: rgba(100, 150, 220, 0.5) rgba(220, 238, 255, 0.8) rgba(220, 238, 255, 0.8) rgba(100, 150, 220, 0.5) !important;
+  backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
+}
+body[data-theme="theme_glass"] .w95-clock {
+  background: rgba(190, 215, 255, 0.80) !important; color: #1a2a4a !important;
+  border-color: rgba(100, 150, 220, 0.5) rgba(220, 238, 255, 0.8) rgba(220, 238, 255, 0.8) rgba(100, 150, 220, 0.5) !important;
+}
+
+body[data-theme="theme_pixel"] .w95-tray              { background: #081c15 !important; border-color: #020a08 #1b4332 #1b4332 #020a08 !important; }
+body[data-theme="theme_pixel"] .w95-clock             { background: #081c15 !important; color: #52b788 !important; border-color: #020a08 #1b4332 #1b4332 #020a08 !important; }
+
+body[data-theme="theme_crt"] .w95-tray                { background: #000800 !important; border-color: #000200 #002200 #002200 #000200 !important; }
+body[data-theme="theme_crt"] .w95-clock               { background: #000800 !important; color: #00aa2a !important; border-color: #000200 #002200 #002200 #000200 !important; text-shadow: 0 0 4px rgba(0, 200, 40, 0.6) !important; }
+
+/* ── Desktop Icon Image background ── */
+body[data-theme="theme_pastel"]  .desktop-icon-img    { background: #f8d8ee !important; border-color: #f0c8e4 #c090a8 #c090a8 #f0c8e4 !important; }
+body[data-theme="theme_midnight"] .desktop-icon-img   { background: #0e0e2e !important; border-color: #3030a0 #080818 #080818 #3030a0 !important; }
+body[data-theme="theme_autumn"]  .desktop-icon-img    { background: #3a1800 !important; border-color: #804020 #201000 #201000 #804020 !important; }
+body[data-theme="theme_glass"]   .desktop-icon-img    { background: rgba(210, 230, 255, 0.75) !important; border-color: rgba(180, 210, 255, 0.9) rgba(100, 150, 220, 0.6) rgba(100, 150, 220, 0.6) rgba(180, 210, 255, 0.9) !important; }
+body[data-theme="theme_pixel"]   .desktop-icon-img    { background: #1b4332 !important; border-color: #52b788 #081c15 #081c15 #52b788 !important; }
+body[data-theme="theme_crt"]     .desktop-icon-img    { background: #001a00 !important; border-color: #00aa00 #000800 #000800 #00aa00 !important; }
+
+/* ── Desktop Selection Box (dark mode + per theme) ── */
+body.dark-mode #desktop-selection-box                  { border-color: #8888ff; background: rgba(80, 80, 220, 0.15); }
+body[data-theme="theme_pastel"]  #desktop-selection-box { border-color: #c080c0; background: rgba(180, 100, 160, 0.15); }
+body[data-theme="theme_midnight"] #desktop-selection-box { border-color: #4040cc; background: rgba(40, 40, 160, 0.20); }
+body[data-theme="theme_autumn"]  #desktop-selection-box { border-color: #a06020; background: rgba(120, 60, 0, 0.20); }
+body[data-theme="theme_glass"]   #desktop-selection-box { border-color: rgba(80, 140, 240, 0.9); background: rgba(80, 140, 240, 0.15); }
+body[data-theme="theme_pixel"]   #desktop-selection-box { border-color: #52b788; background: rgba(40, 100, 60, 0.20); }
+body[data-theme="theme_crt"]     #desktop-selection-box { border-color: #00cc33; background: rgba(0, 150, 40, 0.15); }
+
+/* ============================================================
+   PASTEL + DARK MODE
+   Pastel is a light theme; dark mode needs a separate deep-pink
+   palette so windows/chrome remain on-brand but readable.
+   ============================================================ */
+body.dark-mode[data-theme="theme_pastel"] .w95-window,
+body.dark-mode[data-theme="theme_pastel"] .w95-body {
+  background-color: #2a0818 !important; color: #ffb8d8 !important;
+}
+body.dark-mode[data-theme="theme_pastel"] .w95-titlebar         { background: linear-gradient(to right, #5c2050, #7a2860) !important; color: #ffb8d8 !important; }
+body.dark-mode[data-theme="theme_pastel"] .window--active .w95-titlebar { background: linear-gradient(to right, #7a2860, #9c3878) !important; color: #fff !important; }
+body.dark-mode[data-theme="theme_pastel"] .w95-title            { color: #ffb8d8 !important; }
+body.dark-mode[data-theme="theme_pastel"] .w95-btn {
+  background: #3a1028 !important; color: #ffb8d8 !important; border-color: #6a2848 #1a0818 #1a0818 #6a2848 !important;
+}
+body.dark-mode[data-theme="theme_pastel"] .w95-control {
+  background: #3a1028 !important; color: #ffb8d8 !important; border-color: #6a2848 #1a0818 #1a0818 #6a2848 !important;
+}
+body.dark-mode[data-theme="theme_pastel"] #w95-taskbar          { background: #1a0010 !important; border-top-color: #4a1838 !important; }
+body.dark-mode[data-theme="theme_pastel"] #w95-taskbar .w95-btn { background: #220818 !important; color: #ffb8d8 !important; }
+body.dark-mode[data-theme="theme_pastel"] .w95-start-menu,
+body.dark-mode[data-theme="theme_pastel"] .w95-ctx-menu {
+  background: #1a0010 !important; border-color: #4a1838 #0a0008 #0a0008 #4a1838 !important;
+}
+body.dark-mode[data-theme="theme_pastel"] .w95-start-item,
+body.dark-mode[data-theme="theme_pastel"] .w95-ctx-item,
+body.dark-mode[data-theme="theme_pastel"] .w95-ctx-has-sub      { color: #ffb8d8 !important; }
+body.dark-mode[data-theme="theme_pastel"] .w95-start-separator,
+body.dark-mode[data-theme="theme_pastel"] .w95-ctx-separator    { border-top-color: #0a0008 !important; border-bottom-color: #4a1838 !important; }
+body.dark-mode[data-theme="theme_pastel"] .w95-tray             { background: #1a0010 !important; border-color: #0a0008 #4a1838 #4a1838 #0a0008 !important; }
+body.dark-mode[data-theme="theme_pastel"] .w95-clock            { background: #1a0010 !important; color: #ffb8d8 !important; border-color: #0a0008 #4a1838 #4a1838 #0a0008 !important; }
+body.dark-mode[data-theme="theme_pastel"] .w95-shutdown-dialog  { background: #2a0818 !important; color: #ffb8d8 !important; border-color: #4a1838 #0a0008 #0a0008 #4a1838 !important; }
+body.dark-mode[data-theme="theme_pastel"] .w95-shutdown-select  { background: #1a0010 !important; color: #ffb8d8 !important; border-color: #4a1838 !important; }
+body.dark-mode[data-theme="theme_pastel"] .w95-shutdown-btns    { border-top-color: #4a1838 !important; }
+body.dark-mode[data-theme="theme_pastel"] .desktop-icon-img {
+  background: #3a1028 !important; border-color: #6a2848 #1a0818 #1a0818 #6a2848 !important;
+}
+body.dark-mode[data-theme="theme_pastel"] input,
+body.dark-mode[data-theme="theme_pastel"] textarea,
+body.dark-mode[data-theme="theme_pastel"] select {
+  background: #1a0010 !important; color: #ffb8d8 !important; border-color: #4a1838 !important;
+}
+body.dark-mode[data-theme="theme_pastel"] #desktop-selection-box { border-color: #ff80c0; background: rgba(200, 60, 120, 0.20); }
+/* Pastel dark: CSS variable palette */
+body.dark-mode[data-theme="theme_pastel"] .w95-window {
+  --text-primary:   #ffb8d8;
+  --text-secondary: #cc88aa;
+  --card-bg:        rgba(40, 8, 24, 0.97);
+  --section-bg:     rgba(25, 4, 14, 0.80);
+  --card-border:    rgba(120, 50, 80, 0.40);
+  --input-bg:       rgba(18, 0, 10, 0.95);
+  --input-border:   rgba(90, 30, 60, 0.55);
+}
+
+/* ============================================================
+   FROSTED GLASS + DARK MODE
+   Glass is translucent light; dark mode switches to dark-glass:
+   deep navy with frosted blur preserved.
+   ============================================================ */
+body.dark-mode[data-theme="theme_glass"] .w95-window,
+body.dark-mode[data-theme="theme_glass"] .w95-body {
+  background-color: rgba(10, 20, 45, 0.88) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; color: #c0d8f8 !important;
+}
+body.dark-mode[data-theme="theme_glass"] .w95-titlebar          { background: linear-gradient(to right, rgba(20, 50, 110, 0.88), rgba(30, 70, 150, 0.80)) !important; color: #a0c0f0 !important; }
+body.dark-mode[data-theme="theme_glass"] .window--active .w95-titlebar { background: linear-gradient(to right, rgba(40, 100, 210, 0.92), rgba(60, 135, 255, 0.88)) !important; color: #ffffff !important; }
+body.dark-mode[data-theme="theme_glass"] .w95-title             { color: #a0c0f0 !important; }
+body.dark-mode[data-theme="theme_glass"] .w95-btn {
+  background: rgba(20, 50, 110, 0.78) !important; color: #a0c0f0 !important; border-color: rgba(60, 110, 200, 0.85) rgba(10, 25, 65, 0.85) rgba(10, 25, 65, 0.85) rgba(60, 110, 200, 0.85) !important;
+}
+body.dark-mode[data-theme="theme_glass"] .w95-control {
+  background: rgba(20, 50, 110, 0.78) !important; color: #a0c0f0 !important; border-color: rgba(60, 110, 200, 0.85) rgba(10, 25, 65, 0.85) rgba(10, 25, 65, 0.85) rgba(60, 110, 200, 0.85) !important;
+}
+body.dark-mode[data-theme="theme_glass"] #w95-taskbar {
+  background: rgba(8, 18, 45, 0.92) !important; border-top-color: rgba(40, 85, 175, 0.60) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
+}
+body.dark-mode[data-theme="theme_glass"] #w95-taskbar .w95-btn  { background: rgba(15, 38, 90, 0.85) !important; color: #a0c0f0 !important; }
+body.dark-mode[data-theme="theme_glass"] .w95-start-menu,
+body.dark-mode[data-theme="theme_glass"] .w95-ctx-menu {
+  background: rgba(8, 18, 45, 0.97) !important; border-color: rgba(60, 110, 200, 0.70) rgba(10, 25, 65, 0.70) rgba(10, 25, 65, 0.70) rgba(60, 110, 200, 0.70) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
+}
+body.dark-mode[data-theme="theme_glass"] .w95-start-item,
+body.dark-mode[data-theme="theme_glass"] .w95-ctx-item,
+body.dark-mode[data-theme="theme_glass"] .w95-ctx-has-sub       { color: #a0c0f0 !important; }
+body.dark-mode[data-theme="theme_glass"] .w95-start-separator,
+body.dark-mode[data-theme="theme_glass"] .w95-ctx-separator     { border-top-color: rgba(10, 25, 65, 0.80) !important; border-bottom-color: rgba(60, 110, 200, 0.60) !important; }
+body.dark-mode[data-theme="theme_glass"] .w95-tray {
+  background: rgba(8, 18, 45, 0.92) !important; border-color: rgba(10, 25, 65, 0.85) rgba(60, 110, 200, 0.70) rgba(60, 110, 200, 0.70) rgba(10, 25, 65, 0.85) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
+}
+body.dark-mode[data-theme="theme_glass"] .w95-clock {
+  background: rgba(8, 18, 45, 0.92) !important; color: #a0c0f0 !important; border-color: rgba(10, 25, 65, 0.85) rgba(60, 110, 200, 0.70) rgba(60, 110, 200, 0.70) rgba(10, 25, 65, 0.85) !important;
+}
+body.dark-mode[data-theme="theme_glass"] .w95-shutdown-dialog {
+  background: rgba(10, 22, 55, 0.97) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; color: #c0d8f8 !important; border-color: rgba(60, 110, 200, 0.70) rgba(10, 25, 65, 0.70) rgba(10, 25, 65, 0.70) rgba(60, 110, 200, 0.70) !important;
+}
+body.dark-mode[data-theme="theme_glass"] .w95-shutdown-select   { background: rgba(5, 12, 35, 0.97) !important; color: #a0c0f0 !important; border-color: rgba(60, 110, 200, 0.60) !important; }
+body.dark-mode[data-theme="theme_glass"] .w95-shutdown-btns     { border-top-color: rgba(60, 110, 200, 0.50) !important; }
+body.dark-mode[data-theme="theme_glass"] .desktop-icon-img {
+  background: rgba(20, 50, 115, 0.78) !important; border-color: rgba(60, 110, 200, 0.85) rgba(10, 25, 65, 0.85) rgba(10, 25, 65, 0.85) rgba(60, 110, 200, 0.85) !important;
+}
+body.dark-mode[data-theme="theme_glass"] input,
+body.dark-mode[data-theme="theme_glass"] textarea,
+body.dark-mode[data-theme="theme_glass"] select {
+  background: rgba(5, 15, 42, 0.92) !important; color: #a0c0f0 !important; border-color: rgba(60, 110, 200, 0.62) !important;
+}
+body.dark-mode[data-theme="theme_glass"] #desktop-selection-box { border-color: rgba(80, 155, 255, 0.95); background: rgba(40, 95, 210, 0.22); }
+/* Glass dark: CSS variable palette */
+body.dark-mode[data-theme="theme_glass"] .w95-window {
+  --text-primary:   #c0d8f8;
+  --text-secondary: #7aa0d0;
+  --card-bg:        rgba(10, 22, 55, 0.95);
+  --section-bg:     rgba(5, 12, 32, 0.82);
+  --card-border:    rgba(60, 110, 200, 0.42);
+  --input-bg:       rgba(4, 10, 30, 0.95);
+  --input-border:   rgba(50, 95, 180, 0.55);
+}
+
+/* ============================================================
    ARCHIVE BUTTON
    ============================================================ */
 .archive-btn {
