@@ -11786,6 +11786,7 @@ function initPixelCat() {
 
             // Detect rapid window movement (shake) — cat loses balance and falls off
             let shakenOff = false;
+            let knockedOffByHeight = false;
             if (!gone && drvPerchTarget) {
                 const { px: curPx, py: curPy } = calcPerchPos(drvPerchTarget.winEl, drvPerchTarget.side);
                 drvPerchLastPixel = { px: curPx, py: curPy }; // save for fall start position
@@ -11800,11 +11801,16 @@ function initPixelCat() {
                     }
                 }
                 drvPerchLastPos = { x: curPx, y: curPy, ts: now };
+                // Detect window dragged too high — no room above title bar for cat to sit
+                const rect = drvPerchTarget.winEl.getBoundingClientRect();
+                if (rect.top < CH * S) {
+                    knockedOffByHeight = true;
+                }
             } else {
                 drvPerchLastPos = null;
             }
 
-            if (gone || shakenOff || now > drvPerchEnd) {
+            if (gone || shakenOff || knockedOffByHeight || now > drvPerchEnd) {
                 const windowClosed = drvPerchTarget?.winEl.classList.contains('is-hidden');
                 drvPerchLastPos = null;
                 // Compute jump-down arc back to the ground
@@ -11824,10 +11830,10 @@ function initPixelCat() {
                 drvJumpTargetY = groundY;
                 drvJumpTime    = now;
                 drvDir     = landX > spx ? 'right' : 'left';
-                drvFalling = !!(windowClosed || shakenOff); // true = uncontrolled fall → dazed landing
+                drvFalling = !!(windowClosed || shakenOff || knockedOffByHeight); // true = uncontrolled fall → dazed landing
                 drvState   = 'jumpDown';
                 drvPerchLastPixel = null;
-                if (gone || shakenOff) drvPerchTarget = null;
+                if (gone || shakenOff || knockedOffByHeight) drvPerchTarget = null;
             }
 
         } else if (drvState === 'jumpDown') {
