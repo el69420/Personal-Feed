@@ -4578,7 +4578,7 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ===== Our Garden ===== */
-#w95-win-garden{width:720px;display:flex;flex-direction:column;}
+#w95-win-garden{width:720px;min-width:664px;display:flex;flex-direction:column;}
 .garden-top{display:flex;align-items:flex-start;gap:12px;}
 .garden-info{width:120px;flex-shrink:0;}
 .garden-info .garden-plant-row{flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:4px;}
