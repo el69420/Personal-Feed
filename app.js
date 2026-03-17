@@ -5359,7 +5359,7 @@ function openW95Prompt({ icon = '', title = 'New', message = '', defaultValue = 
 }
 
 // ===== Win95-style Notepad dialog (editable text file) =====
-function openW95Notepad(item) {
+function openW95Notepad(item, { onSave } = {}) {
     const overlay = document.createElement('div');
     overlay.className = 'w95-dialog-overlay';
     const safeTitle = item.name.replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
@@ -5386,9 +5386,13 @@ function openW95Notepad(item) {
     const [saveBtn, closeBtn2] = overlay.querySelectorAll('.w95-dialog-btn');
     saveBtn.addEventListener('click', () => {
         item.content = textarea.value;
-        const items = window._desktopCustom?.getItems() || [];
-        const found = items.find(i => i.id === item.id);
-        if (found) { found.content = item.content; window._desktopCustom?.saveItems(items); }
+        if (onSave) {
+            onSave(item.content);
+        } else {
+            const items = window._desktopCustom?.getItems() || [];
+            const found = items.find(i => i.id === item.id);
+            if (found) { found.content = item.content; window._desktopCustom?.saveItems(items); }
+        }
         close();
     });
     closeBtn2.addEventListener('click', close);
@@ -9401,6 +9405,260 @@ function applyIconPositions() {
     });
 }
 
+// ===== Folder Window System =====
+
+// Apps that can be added as shortcuts inside custom folders
+const SHORTCUTABLE_APPS = [
+    { app: 'feed',         icon: '📰', name: 'Feed.exe' },
+    { app: 'chat',         icon: '💬', name: 'Chat.exe' },
+    { app: 'mailbox',      icon: '📬', name: 'Mailbox.exe' },
+    { app: 'garden',       icon: '🌿', name: 'Garden.exe' },
+    { app: 'cat',          icon: '🐱', name: 'Cat.exe' },
+    { app: 'jukebox',      icon: '🎵', name: 'Jukebox.exe' },
+    { app: 'console',      icon: '💻', name: 'Console.exe' },
+    { app: 'scrapbook',    icon: '📋', name: 'Scrapbook.exe' },
+    { app: 'stats',        icon: '📊', name: 'Stats.exe' },
+    { app: 'achievements', icon: '🏆', name: 'Achievements.exe' },
+    { app: 'myComputer',   icon: '🖥️', name: 'My Computer' },
+];
+
+// Shows a picker dialog for selecting an app to create a shortcut to
+function openAppPickerDialog(onPick) {
+    function esc(s) { return String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
+    const overlay = document.createElement('div');
+    overlay.className = 'w95-dialog-overlay';
+    const appItems = SHORTCUTABLE_APPS.map(a =>
+        `<div class="explorer-item" data-app-key="${a.app}" tabindex="0">
+            <span class="explorer-item-icon">${a.icon}</span>
+            <span class="explorer-item-name">${esc(a.name)}</span>
+        </div>`
+    ).join('');
+    overlay.innerHTML = `
+        <div class="w95-dialog" role="dialog" aria-modal="true" style="width:380px;max-width:95vw;">
+            <div class="w95-titlebar window--active">
+                <div class="w95-title">Create Shortcut</div>
+                <div class="w95-controls">
+                    <button class="w95-control w95-control-close w95-dialog-x" type="button" aria-label="Close">X</button>
+                </div>
+            </div>
+            <div class="w95-dialog-body" style="flex-direction:column;align-items:stretch;padding:8px;">
+                <div style="margin:0 0 6px;font:11px Tahoma,sans-serif;">Double-click an app to create a shortcut to it:</div>
+                <div class="explorer-grid" style="max-height:200px;overflow-y:auto;border:2px inset #808080;background:#fff;">${appItems}</div>
+            </div>
+            <div class="w95-dialog-btns">
+                <button class="w95-btn w95-dialog-btn" type="button">Cancel</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    function close() { overlay.remove(); document.removeEventListener('keydown', onKey); }
+    overlay.querySelector('.w95-dialog-x').addEventListener('click', close);
+    overlay.querySelector('.w95-dialog-btn').addEventListener('click', close);
+    overlay.addEventListener('pointerdown', e => { if (e.target === overlay) close(); });
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', onKey);
+    const clickTimes = {};
+    overlay.querySelectorAll('.explorer-item').forEach(el => {
+        el.addEventListener('click', () => {
+            const now = Date.now();
+            const key = el.dataset.appKey;
+            overlay.querySelectorAll('.explorer-item').forEach(i => i.classList.remove('selected'));
+            el.classList.add('selected');
+            if (clickTimes[key] && now - clickTimes[key] < 500) {
+                const app = SHORTCUTABLE_APPS.find(a => a.app === key);
+                if (app) { close(); onPick(app); }
+            } else { clickTimes[key] = now; }
+        });
+    });
+}
+
+// Opens a draggable folder window for a custom folder item
+function openFolderWindow(folderItem) {
+    if (!folderItem.children) folderItem.children = [];
+    function esc(s) { return String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
+
+    function saveFolder() {
+        const items = window._desktopCustom?.getItems() || [];
+        const found = items.find(i => i.id === folderItem.id);
+        if (found) { found.children = folderItem.children; window._desktopCustom?.saveItems(items); }
+    }
+
+    // Remove any pre-existing window for this folder so double-open just re-focuses
+    const winId = 'fwin-' + folderItem.id;
+    const existing = document.getElementById(winId);
+    if (existing) { existing.style.zIndex = ++w95TopZ; return; }
+
+    const win = document.createElement('div');
+    win.id = winId;
+    win.className = 'w95-window';
+    win.style.cssText = 'position:fixed;width:480px;max-width:95vw;height:360px;display:flex;flex-direction:column;left:140px;top:90px;';
+    win.style.zIndex = ++w95TopZ;
+
+    win.innerHTML = `
+        <div class="w95-titlebar window--active" id="${winId}-handle">
+            <div class="w95-title">📁 ${esc(folderItem.name)}</div>
+            <div class="w95-controls">
+                <button class="w95-control w95-control-close" type="button" aria-label="Close">X</button>
+            </div>
+        </div>
+        <div class="explorer-toolbar">
+            <button class="w95-btn" id="${winId}-btn-text" type="button" style="font-size:11px;padding:1px 6px;">📝 New Text</button>
+            <button class="w95-btn" id="${winId}-btn-shortcut" type="button" style="font-size:11px;padding:1px 6px;">🔗 New Shortcut</button>
+            <div class="explorer-addr">${esc(folderItem.name)}</div>
+        </div>
+        <div class="explorer-body">
+            <div class="explorer-grid" id="${winId}-grid"></div>
+        </div>`;
+
+    // Item right-click context menu (lives in document.body for z-index)
+    const itemCtxMenu = document.createElement('div');
+    itemCtxMenu.className = 'w95-ctx-menu is-hidden';
+    itemCtxMenu.style.cssText = 'position:fixed;z-index:99999;';
+    itemCtxMenu.innerHTML = `
+        <button class="w95-ctx-item" data-action="open" type="button"><b>Open</b></button>
+        <hr class="w95-ctx-separator">
+        <button class="w95-ctx-item" data-action="rename" type="button">Rename</button>
+        <button class="w95-ctx-item" data-action="delete" type="button">Delete</button>`;
+    document.body.appendChild(itemCtxMenu);
+    document.body.appendChild(win);
+
+    function cleanup() { itemCtxMenu.remove(); win.remove(); }
+    win.querySelector('.w95-control-close').addEventListener('click', cleanup);
+
+    // Bring to front on click
+    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; });
+
+    // Drag
+    const handle = document.getElementById(`${winId}-handle`);
+    let dragging = false, dStartX = 0, dStartY = 0, dWinX = 0, dWinY = 0;
+    handle.addEventListener('mousedown', e => {
+        if (e.target.closest('button')) return;
+        dragging = true;
+        dStartX = e.clientX; dStartY = e.clientY;
+        const r = win.getBoundingClientRect();
+        dWinX = r.left; dWinY = r.top;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        const taskH = 40, vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+        win.style.left = Math.max(0, Math.min(vw - 80, dWinX + e.clientX - dStartX)) + 'px';
+        win.style.top  = Math.max(0, Math.min(vh - taskH - 30, dWinY + e.clientY - dStartY)) + 'px';
+    });
+    window.addEventListener('mouseup', () => { dragging = false; });
+
+    // Hide item context menu on outside click
+    let ctxTargetId = null;
+    document.addEventListener('pointerdown', e => {
+        if (!itemCtxMenu.contains(e.target)) itemCtxMenu.classList.add('is-hidden');
+    }, { capture: true });
+
+    function renderGrid() {
+        const grid = document.getElementById(`${winId}-grid`);
+        if (!grid) return;
+        if (!folderItem.children.length) {
+            grid.innerHTML = '<div class="explorer-empty">(This folder is empty — use the buttons above to add items)</div>';
+            return;
+        }
+        const clickTimes = {};
+        grid.innerHTML = folderItem.children.map(child => {
+            const icon = child.type === 'textfile' ? '📝' : (child.icon || '⚙️');
+            return `<div class="explorer-item" data-child-id="${child.id}" tabindex="0">
+                <span class="explorer-item-icon">${icon}</span>
+                <span class="explorer-item-name">${esc(child.name)}</span>
+            </div>`;
+        }).join('');
+        grid.querySelectorAll('.explorer-item').forEach(el => {
+            const childId = el.dataset.childId;
+            el.addEventListener('click', () => {
+                const now = Date.now();
+                grid.querySelectorAll('.explorer-item').forEach(i => i.classList.remove('selected'));
+                el.classList.add('selected');
+                if (clickTimes[childId] && now - clickTimes[childId] < 500) {
+                    openChild(childId); clickTimes[childId] = 0;
+                } else { clickTimes[childId] = now; }
+            });
+            el.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openChild(childId); }
+            });
+            el.addEventListener('contextmenu', e => {
+                e.preventDefault(); e.stopPropagation();
+                itemCtxMenu.classList.add('is-hidden');
+                ctxTargetId = childId;
+                grid.querySelectorAll('.explorer-item').forEach(i => i.classList.remove('selected'));
+                el.classList.add('selected');
+                itemCtxMenu.style.left = e.clientX + 'px';
+                itemCtxMenu.style.top  = e.clientY + 'px';
+                itemCtxMenu.classList.remove('is-hidden');
+            });
+        });
+    }
+
+    function openChild(childId) {
+        const child = folderItem.children.find(c => c.id === childId);
+        if (!child) return;
+        if (child.type === 'textfile') {
+            openW95Notepad(child, { onSave: content => { child.content = content; saveFolder(); } });
+        } else if (child.type === 'shortcut') {
+            w95Apps[child.app]?.open();
+        }
+    }
+
+    // Item context menu actions
+    itemCtxMenu.addEventListener('click', e => {
+        const action = e.target.closest('[data-action]')?.dataset.action;
+        itemCtxMenu.classList.add('is-hidden');
+        const child = folderItem.children.find(c => c.id === ctxTargetId);
+        if (!child) return;
+        if (action === 'open') {
+            openChild(ctxTargetId);
+        } else if (action === 'rename') {
+            openW95Prompt({
+                icon: child.type === 'textfile' ? '📝' : '⚙️',
+                title: 'Rename',
+                message: 'Enter a new name:',
+                defaultValue: child.name,
+                onOK: name => { child.name = name; saveFolder(); renderGrid(); }
+            });
+        } else if (action === 'delete') {
+            openW95Dialog({
+                icon: '🗑️',
+                title: 'Confirm Delete',
+                message: `Delete '${child.name}'?`,
+                buttons: [
+                    { label: 'Yes', action: () => {
+                        folderItem.children = folderItem.children.filter(c => c.id !== ctxTargetId);
+                        saveFolder(); renderGrid();
+                    }},
+                    { label: 'No', action: null }
+                ]
+            });
+        }
+    });
+
+    // Toolbar buttons
+    document.getElementById(`${winId}-btn-text`)?.addEventListener('click', () => {
+        openW95Prompt({
+            icon: '📝',
+            title: 'New Text Document',
+            message: 'Enter a name for the new text document:',
+            defaultValue: 'New Text Document.txt',
+            onOK: name => {
+                folderItem.children.push({ id: 'child_' + Date.now(), type: 'textfile', name, content: '' });
+                saveFolder(); renderGrid();
+            }
+        });
+    });
+
+    document.getElementById(`${winId}-btn-shortcut`)?.addEventListener('click', () => {
+        openAppPickerDialog(app => {
+            folderItem.children.push({ id: 'child_' + Date.now(), type: 'shortcut', name: app.name, app: app.app, icon: app.icon });
+            saveFolder(); renderGrid();
+        });
+    });
+
+    renderGrid();
+}
+
 // ===== Win95 Feed Window + Desktop Icon Management =====
 (() => {
     const win      = document.getElementById('w95-win-feed');
@@ -9631,7 +9889,7 @@ function applyIconPositions() {
         w95Apps[item.id] = {
             open: () => {
                 if (item.type === 'folder') {
-                    openW95Dialog({ icon: '📁', title: item.name, message: '(This folder is empty)', buttons: [{ label: 'OK', action: null }] });
+                    openFolderWindow(item);
                 } else {
                     openW95Notepad(item);
                 }
