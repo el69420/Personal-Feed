@@ -9562,88 +9562,222 @@ body[data-theme="theme_crt"] .chat-new-msg-btn { background: #005500 !important;
    Wishlist Window
    ============================================================ */
 
+/* ============================================================
+   Wishlist.exe — Windows 95 Theme
+   ============================================================ */
+
 #w95-win-wishlist .w95-body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  padding: 12px 14px;
+  padding: 8px 10px;
+  background: #c0c0c0;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
 }
 
+/* Scoped board overrides for wishlist */
+#w95-win-wishlist .boards-header {
+  margin-bottom: 8px;
+}
+
+#w95-win-wishlist .boards-title {
+  font-size: 13px;
+  font-weight: bold;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  color: #000;
+}
+
+#w95-win-wishlist .board-card {
+  background: #c0c0c0;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  border-radius: 0;
+  padding: 5px 9px;
+  cursor: pointer;
+  transition: none;
+  margin-bottom: 3px;
+  box-shadow: none;
+}
+
+#w95-win-wishlist .board-card:hover {
+  transform: none;
+  box-shadow: none;
+  background: #000080;
+}
+
+#w95-win-wishlist .board-card:hover .board-card-title,
+#w95-win-wishlist .board-card:hover .board-card-meta {
+  color: #fff;
+  opacity: 1;
+}
+
+#w95-win-wishlist .board-card-title {
+  font-size: 12px;
+  font-weight: bold;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  color: #000;
+  margin-bottom: 1px;
+}
+
+#w95-win-wishlist .board-card-meta {
+  font-size: 11px;
+  font-weight: normal;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  color: #444;
+  opacity: 1;
+}
+
+#w95-win-wishlist .board-back-btn {
+  background: #c0c0c0;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  border-radius: 0;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: normal;
+  color: #000;
+  padding: 3px 10px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  display: inline-block;
+  transition: none;
+}
+
+#w95-win-wishlist .board-back-btn:active {
+  border-top: 2px solid #404040;
+  border-left: 2px solid #404040;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  padding: 4px 9px 2px 11px;
+}
+
+#w95-win-wishlist .board-delete-btn,
+#w95-win-wishlist .boards-action-btn,
+#w95-win-wishlist .btn-primary {
+  background: #c0c0c0;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  border-radius: 0;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: normal;
+  color: #000;
+  padding: 3px 10px;
+  cursor: pointer;
+  opacity: 1;
+  transition: none;
+  transform: none;
+  box-shadow: none;
+}
+
+#w95-win-wishlist .board-delete-btn:hover,
+#w95-win-wishlist .boards-action-btn:hover,
+#w95-win-wishlist .btn-primary:hover {
+  background: #c0c0c0;
+  box-shadow: none;
+  transform: none;
+}
+
+#w95-win-wishlist .board-delete-btn:active,
+#w95-win-wishlist .boards-action-btn:active,
+#w95-win-wishlist .btn-primary:active {
+  border-top: 2px solid #404040;
+  border-left: 2px solid #404040;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  padding: 4px 9px 2px 11px;
+}
+
+/* Owner section headings */
 .wishlist-owner-section {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .wishlist-owner-heading {
-  font-size: 12px;
-  font-weight: 900;
-  color: var(--text-secondary);
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-family: 'Nunito', sans-serif;
-  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000;
+  opacity: 1;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
+/* Items grid */
 .wishlist-items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-  padding-bottom: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+  padding-bottom: 8px;
 }
 
+/* Item cards — W95 raised bevel */
 .wishlist-item-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
+  background: #c0c0c0;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  border-radius: 0;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: none;
   position: relative;
   display: flex;
   flex-direction: column;
 }
 
 .wishlist-item-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 128, 128, 0.15);
+  transform: none;
+  box-shadow: none;
 }
 
 .wishlist-item-card img.wishlist-item-img {
   width: 100%;
-  height: 110px;
+  height: 100px;
   object-fit: cover;
   display: block;
+  border-bottom: 1px solid #808080;
 }
 
 .wishlist-item-img-placeholder {
   width: 100%;
-  height: 110px;
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  background: var(--card-border);
-  color: var(--text-secondary);
-  opacity: 0.5;
+  font-size: 24px;
+  background: #808080;
+  color: #c0c0c0;
+  opacity: 1;
+  border-bottom: 1px solid #404040;
 }
 
 .wishlist-item-body {
-  padding: 8px 10px 10px;
+  padding: 5px 7px 6px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   flex: 1;
+  background: #c0c0c0;
 }
 
 .wishlist-item-title {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--text-primary);
-  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -9652,161 +9786,190 @@ body[data-theme="theme_crt"] .chat-new-msg-btn { background: #005500 !important;
 }
 
 .wishlist-item-store {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  opacity: 0.65;
-  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  font-weight: normal;
+  color: #444;
+  opacity: 1;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  text-transform: uppercase;
 }
 
 .wishlist-item-price {
-  font-size: 12px;
-  font-weight: 900;
-  color: #009898;
-  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000080;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
 }
 
 .wishlist-item-note {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-family: 'Nunito', sans-serif;
-  opacity: 0.8;
+  font-size: 10px;
+  font-weight: normal;
+  color: #444;
+  opacity: 1;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+/* Delete button — W95 small button */
 .wishlist-item-delete {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(0, 0, 0, 0.45);
-  border: none;
-  color: #fff;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  top: 2px;
+  right: 2px;
+  background: #c0c0c0;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  color: #000;
+  width: 18px;
+  height: 18px;
+  border-radius: 0;
   font-size: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.1s;
   line-height: 1;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
 }
 
 .wishlist-item-card:hover .wishlist-item-delete {
   opacity: 1;
 }
 
-.wishlist-item-footer {
-  border-top: 1px solid var(--card-border);
-  padding: 4px 8px;
-  display: flex;
-  align-items: center;
+.wishlist-item-delete:active {
+  border-top: 2px solid #404040;
+  border-left: 2px solid #404040;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
 }
 
+/* Item footer — W95 inset separator */
+.wishlist-item-footer {
+  border-top: 2px solid #808080;
+  padding: 3px 6px;
+  display: flex;
+  align-items: center;
+  background: #c0c0c0;
+}
+
+/* Comment button */
 .wishlist-item-comment-btn {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 11px;
-  color: var(--text-secondary);
-  opacity: 0.65;
-  padding: 2px 4px;
-  border-radius: 8px;
-  transition: opacity 0.15s, background 0.15s;
+  font-size: 10px;
+  color: #000;
+  opacity: 1;
+  padding: 1px 3px;
+  border-radius: 0;
+  transition: none;
   display: flex;
   align-items: center;
   gap: 3px;
-  font-family: 'Nunito', sans-serif;
-  font-weight: 700;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-weight: normal;
 }
 
 .wishlist-item-comment-btn:hover {
   opacity: 1;
-  background: var(--card-border);
+  background: #000080;
+  color: #fff;
 }
 
 .wl-cmt-count {
   font-size: 10px;
-  font-weight: 900;
+  font-weight: bold;
 }
 
-/* Wishlist item detail modal */
+/* ---- Wishlist item detail / comments modal — W95 dialog ---- */
 .wl-detail-modal-content {
-  max-width: 480px;
+  max-width: 460px;
   padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: #c0c0c0;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  border-radius: 0;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
 }
 
 .wl-detail-img-wrap {
   width: 100%;
-  max-height: 260px;
+  max-height: 220px;
   overflow: hidden;
-  background: var(--card-border);
+  background: #808080;
   flex-shrink: 0;
+  border-bottom: 2px solid #404040;
 }
 
 .wl-detail-img {
   width: 100%;
-  height: 260px;
+  height: 220px;
   object-fit: cover;
   display: block;
 }
 
 .wl-detail-meta {
-  padding: 18px 24px 10px;
+  padding: 10px 14px 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  background: #c0c0c0;
 }
 
 .wl-detail-title {
-  font-size: 17px;
-  font-weight: 900;
-  color: var(--text-primary);
-  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+  color: #000;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
   line-height: 1.3;
 }
 
 .wl-detail-store {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  opacity: 0.7;
+  font-size: 11px;
+  font-weight: normal;
+  color: #444;
+  opacity: 1;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
 }
 
 .wl-detail-price {
-  font-size: 15px;
-  font-weight: 900;
-  color: var(--accent, #7c6af7);
+  font-size: 12px;
+  font-weight: bold;
+  color: #000080;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
 }
 
 .wl-detail-note {
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  color: #444;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
   line-height: 1.5;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .wl-detail-link {
   display: inline-block;
-  margin-top: 8px;
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--accent, #7c6af7);
-  text-decoration: none;
-  opacity: 0.85;
-  transition: opacity 0.15s;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: normal;
+  color: #000080;
+  text-decoration: underline;
+  opacity: 1;
+  transition: none;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
 }
 
 .wl-detail-link:hover {
@@ -9814,47 +9977,59 @@ body[data-theme="theme_crt"] .chat-new-msg-btn { background: #005500 !important;
   text-decoration: underline;
 }
 
+/* W95-style sunken divider */
 .wl-detail-divider {
-  height: 1px;
-  background: var(--card-border);
+  height: 0;
+  border-top: 1px solid #808080;
+  border-bottom: 1px solid #fff;
   margin: 4px 0;
   flex-shrink: 0;
 }
 
 .wl-detail-comments-heading {
-  font-size: 13px;
-  font-weight: 900;
-  color: var(--text-secondary);
-  padding: 8px 24px 0;
+  font-size: 12px;
+  font-weight: bold;
+  color: #000;
+  padding: 6px 14px 0;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
 }
 
 #wishlistItemCommentsModal .wl-comments-list {
-  max-height: 220px;
-  margin: 0 24px 8px;
+  max-height: 200px;
+  margin: 0 14px 6px;
 }
 
 #wishlistItemCommentsModal .wl-comment-input-row {
-  padding: 0 24px 20px;
+  padding: 0 14px 14px;
 }
 
+/* W95-style close button for item detail modal */
 #wishlistItemCommentsModal .modal-x {
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
+  background: #c0c0c0;
+  color: #000;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  border-radius: 0;
   z-index: 2;
+  font-size: 10px;
+  width: 18px;
+  height: 18px;
 }
 
 #wishlistItemCommentsModal .modal-x:hover {
-  background: rgba(0, 0, 0, 0.7);
+  background: #c0c0c0;
 }
 
-/* Wishlist comments modal */
+/* ---- Comments list ---- */
 .wl-comment-item-title {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--text-secondary);
-  font-family: 'Nunito', sans-serif;
-  margin-bottom: 10px;
-  opacity: 0.75;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  margin-bottom: 8px;
+  opacity: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -9863,75 +10038,82 @@ body[data-theme="theme_crt"] .chat-new-msg-btn { background: #005500 !important;
 .wl-comments-list {
   max-height: 280px;
   overflow-y: auto;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .wl-comments-empty {
-  font-size: 12px;
-  color: var(--text-secondary);
-  opacity: 0.6;
-  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  color: #444;
+  opacity: 1;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
   text-align: center;
-  padding: 20px 0;
+  padding: 16px 0;
 }
 
+/* W95 inset comment bubble */
 .wl-comment-item {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  padding: 8px 10px;
+  background: #fff;
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  border-radius: 0;
+  padding: 5px 8px;
 }
 
 .wl-comment-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .wl-comment-author {
-  font-size: 12px;
-  font-weight: 900;
-  color: var(--text-primary);
-  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
 }
 
 .wl-comment-ts {
-  font-size: 11px;
-  color: var(--text-secondary);
-  opacity: 0.6;
-  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  color: #444;
+  opacity: 1;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
   flex: 1;
 }
 
 .wl-comment-delete {
-  background: none;
-  border: none;
+  background: #c0c0c0;
+  border: 1px solid #808080;
+  border-radius: 0;
   cursor: pointer;
   font-size: 10px;
-  color: var(--text-secondary);
+  color: #000;
   opacity: 0;
-  padding: 2px 4px;
-  border-radius: 50%;
-  transition: opacity 0.15s;
+  padding: 1px 4px;
+  transition: opacity 0.1s;
   margin-left: auto;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
 }
 
 .wl-comment-item:hover .wl-comment-delete {
-  opacity: 0.5;
+  opacity: 1;
 }
 
 .wl-comment-item:hover .wl-comment-delete:hover {
+  background: #000080;
+  color: #fff;
   opacity: 1;
 }
 
 .wl-comment-text {
-  font-size: 13px;
-  color: var(--text-primary);
-  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  color: #000;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
@@ -9939,6 +10121,158 @@ body[data-theme="theme_crt"] .chat-new-msg-btn { background: #005500 !important;
 
 .wl-comment-input-row {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: flex-end;
+}
+
+/* W95 overrides for the comment textarea & send button in wishlist */
+#wishlistItemCommentsModal .reply-input {
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  border-radius: 0;
+  background: #fff;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 12px;
+  color: #000;
+  padding: 4px 6px;
+  box-shadow: none;
+}
+
+#wishlistItemCommentsModal .reply-input:focus {
+  border-color: #808080 #fff #fff #808080;
+  box-shadow: none;
+  outline: 1px dotted #000;
+  outline-offset: -2px;
+}
+
+#wishlistItemCommentsModal .reply-input::placeholder {
+  color: #808080;
+}
+
+#wishlistItemCommentsModal .reply-send-btn {
+  background: #c0c0c0;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  border-radius: 0;
+  width: 30px;
+  height: 30px;
+  transition: none;
+}
+
+#wishlistItemCommentsModal .reply-send-btn:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+#wishlistItemCommentsModal .reply-send-btn:active {
+  border-top: 2px solid #404040;
+  border-left: 2px solid #404040;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+}
+
+#wishlistItemCommentsModal .reply-send-btn svg {
+  stroke: #000;
+}
+
+/* ---- Wishlist create/add modals — W95 dialog style ---- */
+#createWishlistBoardModal .modal-content,
+#addWishlistItemModal .modal-content {
+  background: #c0c0c0;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  border-radius: 0;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+}
+
+#createWishlistBoardModal .modal-heading,
+#addWishlistItemModal .modal-heading {
+  font-size: 13px;
+  font-weight: bold;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  color: #000;
+}
+
+#createWishlistBoardModal .form-label,
+#addWishlistItemModal .form-label {
+  font-size: 11px;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  color: #000;
+}
+
+#createWishlistBoardModal input,
+#addWishlistItemModal input,
+#addWishlistItemModal textarea {
+  background: #fff;
+  border-top: 2px solid #808080;
+  border-left: 2px solid #808080;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  border-radius: 0;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 12px;
+  color: #000;
+  padding: 3px 5px;
+}
+
+#createWishlistBoardModal .btn-primary,
+#addWishlistItemModal .btn-primary {
+  background: #c0c0c0;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  border-radius: 0;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: normal;
+  color: #000;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: none;
+  transform: none;
+  box-shadow: none;
+  width: auto !important;
+}
+
+#createWishlistBoardModal .btn-primary:hover,
+#addWishlistItemModal .btn-primary:hover {
+  background: #c0c0c0;
+  box-shadow: none;
+  transform: none;
+}
+
+#createWishlistBoardModal .btn-primary:active,
+#addWishlistItemModal .btn-primary:active {
+  border-top: 2px solid #404040;
+  border-left: 2px solid #404040;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  padding: 6px 13px 4px 15px;
+}
+
+#createWishlistBoardModal .modal-x,
+#addWishlistItemModal .modal-x {
+  background: #c0c0c0;
+  color: #000;
+  border-top: 2px solid #fff;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  border-radius: 0;
+  font-size: 10px;
+  width: 18px;
+  height: 18px;
+  line-height: 1;
+}
+
+#createWishlistBoardModal .modal-x:hover,
+#addWishlistItemModal .modal-x:hover {
+  background: #c0c0c0;
 }
