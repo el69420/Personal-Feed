@@ -1,0 +1,28 @@
+#!/bin/sh
+# Pre-commit hook: warn if app.js is staged but UPDATE_HISTORY hasn't been touched.
+
+staged=$(git diff --cached --name-only)
+
+# Check if app.js is being modified
+echo "$staged" | grep -q "app\.js" || exit 0
+
+# Check if UPDATE_HISTORY block is part of the staged diff
+if git diff --cached app.js | grep -q "UPDATE_HISTORY"; then
+    exit 0
+fi
+
+echo ""
+echo "┌─────────────────────────────────────────────────────────────┐"
+echo "│  WARNING: app.js is staged but UPDATE_HISTORY was not       │"
+echo "│  updated.                                                    │"
+echo "│                                                              │"
+echo "│  If this commit changes user-visible behaviour, please add  │"
+echo "│  an entry to the UPDATE_HISTORY array in app.js so the      │"
+echo "│  System Properties → Update History tab stays current.      │"
+echo "│                                                              │"
+echo "│  To skip this check:  git commit --no-verify                │"
+echo "└─────────────────────────────────────────────────────────────┘"
+echo ""
+
+# Exit 1 to block the commit; change to 0 to make it a warning only.
+exit 1

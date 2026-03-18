@@ -5303,6 +5303,27 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 // ===== System Properties dialog with Update History =====
 const UPDATE_HISTORY = [
     {
+        date: '18-03-26',
+        label: 'Chat & Presence',
+        items: [
+            'Chat windows now inherit the active desktop colour theme — background, text, and borders all match whichever of the six themes you have selected.',
+            'Chat message text was almost invisible in several themes because it was inheriting an incorrect colour from the window background — all six themes now render chat text with full contrast.',
+            'If you left the page open and your browser paused activity, your presence could get stuck showing as "online" for other users indefinitely — the site now marks you offline when the tab goes to the background or the window loses focus, and cleans up correctly when you leave.',
+            'On page load, stale presence entries left over from a previous session were being read as "online" before the realtime listener could correct them — these are now treated as offline immediately so other users never see a ghost presence.',
+        ]
+    },
+    {
+        date: '18-03-26',
+        label: 'Desktop Icons & Shortcuts',
+        items: [
+            'You can now create your own desktop shortcuts via New → Shortcut — choose any app from the list, give it a custom label, and it will appear as a new icon on the desktop.',
+            'When creating a new shortcut, icons that are not available in the current theme were still appearing as options and causing a broken image — only valid icons for your theme are now shown.',
+            'Double-clicking a shortcut in the "New Shortcut" list now immediately confirms the selection, matching the expected Windows 95 behaviour.',
+            'When the "New Shortcut" or "New Category" dialog was opened, the first item in the list was being highlighted as if already selected — the dialog now opens with no pre-selection.',
+            'If you had "Auto Arrange" enabled and dragged an icon to a new position, the grid snapped it back immediately on mouse-up — manually dragging an icon now temporarily disables Auto Arrange so your chosen position is respected.',
+        ]
+    },
+    {
         date: '17-03-26',
         label: 'Desktop & File System',
         items: [
