@@ -9547,14 +9547,11 @@ function getIconPositions() {
 }
 
 function saveIconPositions(positions) {
-    if (!currentUser) { console.warn('[pos] saveIconPositions skipped — no currentUser'); return; }
-    console.log('[pos] saving', JSON.stringify(positions));
+    if (!currentUser) return;
     localStorage.setItem(`iconPositions_${currentUser}`, JSON.stringify(positions));
-    console.log('[pos] saved OK, read back:', localStorage.getItem(`iconPositions_${currentUser}`));
 }
 
 function applyIconPositions() {
-    console.trace('[pos] applyIconPositions called from');
     const positions = getIconPositions();
 
     // Collect all positions already claimed (saved or default) for free-slot detection.
@@ -10084,20 +10081,20 @@ function openFolderWindow(folderItem) {
                     saveIconPositions(positions);
                 }
             } else {
-                // Normal free drag — save exact drop positions
+                // Normal free drag — save exact drop positions.
+                // Manually dragging an icon turns off Auto Arrange (matches Windows XP behaviour).
                 const prefs = getDesktopPrefs();
-                console.log('[pos] free drag end, autoArrange=', prefs.autoArrange);
                 if (prefs.autoArrange) {
-                    arrangeByName();
-                } else {
-                    const positions = getIconPositions();
-                    document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
-                        const sk = si.dataset.app;
-                        console.log('[pos] saving icon', sk, 'style.left=', si.style.left, 'style.top=', si.style.top);
-                        positions[sk] = { x: parseInt(si.style.left) || 0, y: parseInt(si.style.top) || 0 };
-                    });
-                    saveIconPositions(positions);
+                    prefs.autoArrange = false;
+                    saveDesktopPrefs(prefs);
+                    updateAutoArrangeLabel();
                 }
+                const positions = getIconPositions();
+                document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                    const sk = si.dataset.app;
+                    positions[sk] = { x: parseInt(si.style.left) || 0, y: parseInt(si.style.top) || 0 };
+                });
+                saveIconPositions(positions);
             }
         } else {
             // Plain click (no drag)
