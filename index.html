@@ -820,12 +820,20 @@
         </div>
     </div>
 
-    <!-- Wishlist Item Comments Modal -->
+    <!-- Wishlist Item Detail Modal -->
     <div id="wishlistItemCommentsModal" class="modal">
-        <div class="modal-content modal-sm">
+        <div class="modal-content wl-detail-modal-content">
             <button class="modal-x" onclick="closeWishlistItemCommentsModal()" title="Close">✕</button>
-            <h2 class="text-xl font-bold mb-1 modal-heading">&#128172; Comments</h2>
-            <div id="wishlistCommentItemTitle" class="wl-comment-item-title"></div>
+            <div id="wlDetailImgWrap" class="wl-detail-img-wrap"></div>
+            <div class="wl-detail-meta">
+                <div id="wlDetailTitle" class="wl-detail-title"></div>
+                <div id="wlDetailStore" class="wl-detail-store"></div>
+                <div id="wlDetailPrice" class="wl-detail-price"></div>
+                <div id="wlDetailNote" class="wl-detail-note"></div>
+                <a id="wlDetailLink" class="wl-detail-link" href="#" target="_blank" rel="noopener noreferrer">Visit site ↗</a>
+            </div>
+            <div class="wl-detail-divider"></div>
+            <div class="wl-detail-comments-heading">&#128172; Comments</div>
             <div id="wishlistCommentsList" class="wl-comments-list"></div>
             <div class="wl-comment-input-row">
                 <textarea id="wishlistCommentInput" class="reply-input" rows="2" placeholder="Add a comment…" onkeydown="handleWishlistCommentKey(event)"></textarea>

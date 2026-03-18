@@ -1426,11 +1426,10 @@ function renderWishlistItems(boardId, items) {
         return;
     }
     grid.innerHTML = entries.map(([itemId, item]) => {
-        const safeUrl = safeText(item.url || '');
         const imgHtml = item.image
             ? `<img class="wishlist-item-img" src="${safeText(item.image)}" alt="" onerror="this.style.display='none'">`
             : `<div class="wishlist-item-img-placeholder">&#128279;</div>`;
-        return `<div class="wishlist-item-card" data-item-id="${itemId}" onclick="window.open('${safeUrl}','_blank')">
+        return `<div class="wishlist-item-card" data-item-id="${itemId}" onclick="openWishlistItemComments('${boardId}','${itemId}')">
             ${imgHtml}
             <div class="wishlist-item-body">
                 <div class="wishlist-item-title">${safeText(item.title || item.url)}</div>
@@ -1439,9 +1438,9 @@ function renderWishlistItems(boardId, items) {
                 ${item.note ? `<div class="wishlist-item-note">${safeText(item.note)}</div>` : ''}
             </div>
             <div class="wishlist-item-footer">
-                <button class="wishlist-item-comment-btn" onclick="event.stopPropagation();openWishlistItemComments('${boardId}','${itemId}')" title="Comments">
+                <span class="wishlist-item-comment-btn" onclick="event.stopPropagation();openWishlistItemComments('${boardId}','${itemId}')" title="Comments">
                     &#128172; <span class="wl-cmt-count" id="wl-cmt-count-${itemId}"></span>
-                </button>
+                </span>
             </div>
             ${isOwner ? `<button class="wishlist-item-delete" onclick="event.stopPropagation();deleteWishlistItem('${boardId}','${itemId}')" title="Remove">&#10005;</button>` : ''}
         </div>`;
@@ -1569,7 +1568,40 @@ window.openWishlistItemComments = async function(boardId, itemId) {
     const modal = document.getElementById('wishlistItemCommentsModal');
     if (!modal) return;
 
-    document.getElementById('wishlistCommentItemTitle').textContent = item?.title || item?.url || 'Item';
+    // Populate image
+    const imgWrap = document.getElementById('wlDetailImgWrap');
+    if (item?.image) {
+        imgWrap.innerHTML = `<img class="wl-detail-img" src="${safeText(item.image)}" alt="" onerror="this.parentElement.style.display='none'">`;
+        imgWrap.style.display = '';
+    } else {
+        imgWrap.innerHTML = '';
+        imgWrap.style.display = 'none';
+    }
+
+    // Populate meta fields
+    const titleEl = document.getElementById('wlDetailTitle');
+    titleEl.textContent = item?.title || item?.url || 'Item';
+
+    const storeEl = document.getElementById('wlDetailStore');
+    storeEl.textContent = item?.store || '';
+    storeEl.style.display = item?.store ? '' : 'none';
+
+    const priceEl = document.getElementById('wlDetailPrice');
+    priceEl.textContent = item?.priceText || '';
+    priceEl.style.display = item?.priceText ? '' : 'none';
+
+    const noteEl = document.getElementById('wlDetailNote');
+    noteEl.textContent = item?.note || '';
+    noteEl.style.display = item?.note ? '' : 'none';
+
+    const linkEl = document.getElementById('wlDetailLink');
+    if (item?.url) {
+        linkEl.href = item.url;
+        linkEl.style.display = '';
+    } else {
+        linkEl.style.display = 'none';
+    }
+
     document.getElementById('wishlistCommentInput').value = '';
 
     const snap = await get(ref(database, `wishlistComments/${itemId}`));

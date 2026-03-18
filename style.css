@@ -9736,6 +9736,117 @@ body[data-theme="theme_crt"] .chat-new-msg-btn { background: #005500 !important;
   font-weight: 900;
 }
 
+/* Wishlist item detail modal */
+.wl-detail-modal-content {
+  max-width: 480px;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.wl-detail-img-wrap {
+  width: 100%;
+  max-height: 260px;
+  overflow: hidden;
+  background: var(--card-border);
+  flex-shrink: 0;
+}
+
+.wl-detail-img {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+  display: block;
+}
+
+.wl-detail-meta {
+  padding: 18px 24px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wl-detail-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--text-primary);
+  font-family: 'Nunito', sans-serif;
+  line-height: 1.3;
+}
+
+.wl-detail-store {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wl-detail-price {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--accent, #7c6af7);
+}
+
+.wl-detail-note {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: 'Nunito', sans-serif;
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+.wl-detail-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent, #7c6af7);
+  text-decoration: none;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+
+.wl-detail-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.wl-detail-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
+.wl-detail-comments-heading {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text-secondary);
+  padding: 8px 24px 0;
+}
+
+#wishlistItemCommentsModal .wl-comments-list {
+  max-height: 220px;
+  margin: 0 24px 8px;
+}
+
+#wishlistItemCommentsModal .wl-comment-input-row {
+  padding: 0 24px 20px;
+}
+
+#wishlistItemCommentsModal .modal-x {
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  z-index: 2;
+}
+
+#wishlistItemCommentsModal .modal-x:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
 /* Wishlist comments modal */
 .wl-comment-item-title {
   font-size: 12px;
