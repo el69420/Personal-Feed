@@ -91,6 +91,10 @@
             <div class="desktop-icon-img">&#128204;</div>
             <div class="desktop-icon-label">Scrapbook.exe</div>
         </div>
+        <div class="w95-desktop-icon" data-app="wishlist" tabindex="0">
+            <div class="desktop-icon-img">&#127873;</div>
+            <div class="desktop-icon-label">Wishlist.exe</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -437,6 +441,31 @@
       </div>
     </div>
 
+    <!-- Wishlist window -->
+    <div id="w95-win-wishlist" class="w95-window is-hidden" style="left:250px;top:90px;width:500px;height:540px;">
+      <div class="w95-titlebar" id="w95-wishlist-handle">
+        <div class="w95-title">&#127873; Wishlist.exe</div>
+        <div class="w95-controls">
+          <button class="w95-control" id="w95-wishlist-min" type="button" aria-label="Minimise">_</button>
+          <button class="w95-control" id="w95-wishlist-max" type="button" aria-label="Maximise">&#9633;</button>
+          <button class="w95-control w95-control-close" id="w95-wishlist-close" type="button" aria-label="Close">X</button>
+        </div>
+      </div>
+      <div class="w95-body w95-wishlist-body" id="w95-wishlist-body">
+        <div id="wishlistBoardsList">
+          <div class="boards-header">
+            <h2 class="boards-title">&#127873; Wishlists</h2>
+          </div>
+          <div id="wishlistBoardsContent"></div>
+        </div>
+        <div id="wishlistBoardDetail" class="hidden">
+          <button class="board-back-btn" onclick="closeWishlistBoardDetail()">&#8592; Back to boards</button>
+          <div id="wishlistBoardDetailHeader" class="boards-header" style="margin-bottom:16px;"></div>
+          <div id="wishlistItemsGrid" class="wishlist-items-grid"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Keyboard Shortcuts Modal -->
     <div id="shortcutsModal" class="modal">
         <div class="modal-content modal-sm">
@@ -745,6 +774,52 @@
         </div>
     </div>
 
+    <!-- Create Wishlist Board Modal -->
+    <div id="createWishlistBoardModal" class="modal">
+        <div class="modal-content modal-sm">
+            <button class="modal-x" id="createWishlistBoardClose" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-5 modal-heading">&#127873; New Wishlist Board</h2>
+            <div class="space-y-4">
+                <div class="form-field">
+                    <label class="form-label">Name</label>
+                    <input type="text" id="wishlistBoardNameInput" placeholder="e.g. Jewellery, Clothes…">
+                </div>
+                <button id="createWishlistBoardConfirmBtn" class="btn-primary w-full py-3 rounded-xl">Create Board</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Wishlist Item Modal -->
+    <div id="addWishlistItemModal" class="modal">
+        <div class="modal-content modal-sm">
+            <button class="modal-x" id="addWishlistItemClose" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-4 modal-heading">&#127873; Add Item</h2>
+            <div class="space-y-3">
+                <div class="form-field">
+                    <label class="form-label">URL <span style="color:#c04;">(required)</span></label>
+                    <input type="url" id="wishlistItemUrl" placeholder="Paste a link…">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Title <span class="coll-pick-label">(optional)</span></label>
+                    <input type="text" id="wishlistItemTitle" placeholder="Auto-filled if left blank">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Store <span class="coll-pick-label">(optional)</span></label>
+                    <input type="text" id="wishlistItemStore" placeholder="e.g. ASOS, Etsy…">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Price <span class="coll-pick-label">(optional)</span></label>
+                    <input type="text" id="wishlistItemPrice" placeholder="e.g. £24.99">
+                </div>
+                <div class="form-field">
+                    <label class="form-label">Note <span class="coll-pick-label">(optional)</span></label>
+                    <textarea id="wishlistItemNote" rows="2" placeholder="Any extra notes…"></textarea>
+                </div>
+                <button id="addWishlistItemConfirmBtn" class="btn-primary w-full py-3 rounded-xl">Add to Wishlist</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Compose Letter Modal -->
     <div id="composeLetterModal" class="modal">
         <div class="modal-content">
@@ -794,6 +869,7 @@
         <button class="w95-start-item" data-app="mailbox" type="button">&#9993; Mailbox</button>
         <button class="w95-start-item" data-app="jukebox" type="button">&#127926; Jukebox</button>
         <button class="w95-start-item" data-app="scrapbook" type="button">&#128204; Scrapbook</button>
+        <button class="w95-start-item" data-app="wishlist" type="button">&#127873; Wishlist</button>
         <button class="w95-start-item" data-app="myComputer" type="button">&#128187; My Computer</button>
         <hr class="w95-start-separator">
         <button class="w95-start-item" data-app="settings" type="button">&#9881;&#65039; Settings</button>

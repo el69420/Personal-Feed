@@ -15,7 +15,9 @@ const boardDeleteRequestsRef = ref(database, 'board_delete_requests');
 const lettersRef    = ref(database, 'letters');
 const linkMetaRef   = ref(database, 'linkMeta');
 const recycleBinRef = ref(database, 'recycleBin');
-const categoriesRef = ref(database, 'categories');
+const categoriesRef     = ref(database, 'categories');
+const wishlistBoardsRef = ref(database, 'wishlistBoards');
+const wishlistItemsRef  = ref(database, 'wishlistItems');
 
 const API_BASE = ''; // Set to the deployed origin (e.g. 'https://your-api.example.com') for GitHub Pages use
 
@@ -317,6 +319,8 @@ let currentSection = 'feed';
 let allBoards = {};             // boardId → board object
 let allBoardDeleteRequests = {}; // boardId → { requestedBy, requestedAt, boardTitle }
 let _boardPickerPostId = null;  // postId being saved to a board
+let allWishlistBoards = {};       // boardId → wishlist board object
+let currentWishlistBoardId = null; // currently open wishlist board
 let allLetters = {};            // letterId → letter object
 let mailboxTab = 'inbox';
 let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
@@ -1324,6 +1328,198 @@ window.denyBoardDeletion = async function() {
     showToast('Board kept ♡');
 };
 
+// ---- WISHLIST ----
+
+function setupWishlistBoardsListener() {
+    onValue(wishlistBoardsRef, snap => {
+        allWishlistBoards = snap.val() || {};
+        const win = document.getElementById('w95-win-wishlist');
+        if (win && !win.classList.contains('is-hidden')) {
+            if (currentWishlistBoardId) {
+                if (allWishlistBoards[currentWishlistBoardId]) {
+                    openWishlistBoardDetail(currentWishlistBoardId);
+                } else {
+                    closeWishlistBoardDetail();
+                }
+            } else {
+                renderWishlistBoardsList();
+            }
+        }
+    });
+}
+
+function renderWishlistBoardsList() {
+    const detail = document.getElementById('wishlistBoardDetail');
+    const listEl = document.getElementById('wishlistBoardsList');
+    if (!listEl) return;
+    if (detail) detail.classList.add('hidden');
+    listEl.classList.remove('hidden');
+    currentWishlistBoardId = null;
+
+    const container = document.getElementById('wishlistBoardsContent');
+    if (!container) return;
+
+    function renderSection(ownerName, boards) {
+        const isMe = ownerName === currentUser;
+        let html = `<div class="wishlist-owner-section">
+            <div class="wishlist-owner-heading">${safeText(ownerName)}'s Boards${isMe ? `<button class="boards-action-btn btn-primary" style="font-size:11px;padding:4px 12px;margin-left:8px;" onclick="openCreateWishlistBoardModal()">+ New</button>` : ''}</div>`;
+        if (boards.length === 0) {
+            html += `<div class="boards-empty" style="padding:12px 0 8px;">No boards yet.</div>`;
+        } else {
+            html += boards.map(([id, board]) => `
+                <div class="board-card" onclick="openWishlistBoardDetail('${id}')">
+                    <div class="board-card-title">${safeText(board.title)}</div>
+                    <div class="board-card-meta">by ${safeText(board.owner)}</div>
+                </div>
+            `).join('');
+        }
+        html += '</div>';
+        return html;
+    }
+
+    const elBoards   = Object.entries(allWishlistBoards).filter(([, b]) => b.owner === 'El').sort((a, b) => b[1].createdAt - a[1].createdAt);
+    const teroBoards = Object.entries(allWishlistBoards).filter(([, b]) => b.owner === 'Tero').sort((a, b) => b[1].createdAt - a[1].createdAt);
+
+    container.innerHTML = renderSection('El', elBoards) + renderSection('Tero', teroBoards);
+}
+
+window.openWishlistBoardDetail = async function(boardId) {
+    const board = allWishlistBoards[boardId];
+    if (!board) return;
+    currentWishlistBoardId = boardId;
+    document.getElementById('wishlistBoardsList').classList.add('hidden');
+    const detail = document.getElementById('wishlistBoardDetail');
+    detail.classList.remove('hidden');
+
+    const isOwner = board.owner === currentUser;
+    document.getElementById('wishlistBoardDetailHeader').innerHTML = `
+        <div>
+            <h3 class="boards-title">${safeText(board.title)}</h3>
+            <span class="board-card-meta">by ${safeText(board.owner)}</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+            ${isOwner ? `<button class="btn-primary boards-action-btn" onclick="openAddWishlistItemModal()">+ Add</button>` : ''}
+            ${isOwner ? `<button class="board-delete-btn" onclick="deleteWishlistBoard('${boardId}')" title="Delete board">&#128465;</button>` : ''}
+        </div>
+    `;
+
+    const grid = document.getElementById('wishlistItemsGrid');
+    grid.innerHTML = '<div class="boards-empty">Loading\u2026</div>';
+    const snap = await get(ref(database, `wishlistItems/${boardId}`));
+    renderWishlistItems(boardId, snap.val() || {});
+};
+
+function renderWishlistItems(boardId, items) {
+    const grid = document.getElementById('wishlistItemsGrid');
+    if (!grid) return;
+    const isOwner = allWishlistBoards[boardId]?.owner === currentUser;
+    const entries = Object.entries(items).sort((a, b) => b[1].createdAt - a[1].createdAt);
+    if (entries.length === 0) {
+        grid.innerHTML = `<div class="boards-empty">No items yet.${isOwner ? ' Add one!' : ''}</div>`;
+        return;
+    }
+    grid.innerHTML = entries.map(([itemId, item]) => {
+        const safeUrl = safeText(item.url || '');
+        const imgHtml = item.image
+            ? `<img class="wishlist-item-img" src="${safeText(item.image)}" alt="" onerror="this.style.display='none'">`
+            : `<div class="wishlist-item-img-placeholder">&#128279;</div>`;
+        return `<div class="wishlist-item-card" onclick="window.open('${safeUrl}','_blank')">
+            ${imgHtml}
+            <div class="wishlist-item-body">
+                <div class="wishlist-item-title">${safeText(item.title || item.url)}</div>
+                ${item.store ? `<div class="wishlist-item-store">${safeText(item.store)}</div>` : ''}
+                ${item.priceText ? `<div class="wishlist-item-price">${safeText(item.priceText)}</div>` : ''}
+                ${item.note ? `<div class="wishlist-item-note">${safeText(item.note)}</div>` : ''}
+            </div>
+            ${isOwner ? `<button class="wishlist-item-delete" onclick="event.stopPropagation();deleteWishlistItem('${boardId}','${itemId}')" title="Remove">&#10005;</button>` : ''}
+        </div>`;
+    }).join('');
+}
+
+window.closeWishlistBoardDetail = function() {
+    document.getElementById('wishlistBoardDetail').classList.add('hidden');
+    document.getElementById('wishlistBoardsList').classList.remove('hidden');
+    currentWishlistBoardId = null;
+    renderWishlistBoardsList();
+};
+
+window.openCreateWishlistBoardModal = function() {
+    const modal = document.getElementById('createWishlistBoardModal');
+    if (!modal) return;
+    document.getElementById('wishlistBoardNameInput').value = '';
+    openModal(modal);
+};
+
+window.createWishlistBoard = async function() {
+    const title = document.getElementById('wishlistBoardNameInput').value.trim();
+    if (!title) { showToast('Enter a board name'); return; }
+    await push(wishlistBoardsRef, { title, owner: currentUser, createdAt: Date.now() });
+    closeModal(document.getElementById('createWishlistBoardModal'));
+    showToast('Board created \u2713');
+};
+
+window.deleteWishlistBoard = async function(boardId) {
+    const board = allWishlistBoards[boardId];
+    if (!board || board.owner !== currentUser) return;
+    if (!confirm(`Delete "${board.title}"? This cannot be undone.`)) return;
+    await remove(ref(database, `wishlistItems/${boardId}`));
+    await remove(ref(database, `wishlistBoards/${boardId}`));
+    closeWishlistBoardDetail();
+    showToast('Board deleted');
+};
+
+window.openAddWishlistItemModal = function() {
+    const modal = document.getElementById('addWishlistItemModal');
+    if (!modal) return;
+    document.getElementById('wishlistItemUrl').value = '';
+    document.getElementById('wishlistItemTitle').value = '';
+    document.getElementById('wishlistItemNote').value = '';
+    document.getElementById('wishlistItemPrice').value = '';
+    document.getElementById('wishlistItemStore').value = '';
+    openModal(modal);
+};
+
+window.addWishlistItem = async function() {
+    const boardId = currentWishlistBoardId;
+    if (!boardId) return;
+    const url = document.getElementById('wishlistItemUrl').value.trim();
+    if (!url) { showToast('Enter a URL'); return; }
+    const title     = document.getElementById('wishlistItemTitle').value.trim() || null;
+    const note      = document.getElementById('wishlistItemNote').value.trim() || null;
+    const priceText = document.getElementById('wishlistItemPrice').value.trim() || null;
+    const store     = document.getElementById('wishlistItemStore').value.trim() || null;
+
+    const item = { url, createdAt: Date.now(), owner: currentUser };
+    if (title)     item.title     = title;
+    if (note)      item.note      = note;
+    if (priceText) item.priceText = priceText;
+    if (store)     item.store     = store;
+
+    closeModal(document.getElementById('addWishlistItemModal'));
+    showToast('Adding item\u2026');
+
+    // Auto-fetch metadata if no title or image provided
+    if (!title || !item.image) {
+        const meta = await fetchLinkMeta(url);
+        if (meta) {
+            if (!title && meta.title) item.title = meta.title;
+            if (meta.image) item.image = meta.image;
+        }
+    }
+
+    await push(ref(database, `wishlistItems/${boardId}`), item);
+    const snap = await get(ref(database, `wishlistItems/${boardId}`));
+    renderWishlistItems(boardId, snap.val() || {});
+    showToast('Item added \u2713');
+};
+
+window.deleteWishlistItem = async function(boardId, itemId) {
+    await remove(ref(database, `wishlistItems/${boardId}/${itemId}`));
+    const snap = await get(ref(database, `wishlistItems/${boardId}`));
+    renderWishlistItems(boardId, snap.val() || {});
+    showToast('Item removed');
+};
+
 // ---- MAILBOX ----
 function setupLettersListener() {
     onValue(lettersRef, snap => {
@@ -1513,6 +1709,7 @@ function setupDBListeners() {
 
     setupBoardsListener();
     setupBoardDeleteRequestsListener();
+    setupWishlistBoardsListener();
     setupLettersListener();
 
     onValue(recycleBinRef, (snapshot) => {
@@ -5279,6 +5476,13 @@ document.getElementById('boardPickerModal')?.addEventListener('click', e => { if
 document.getElementById('createBoardClose')?.addEventListener('click', () => closeModal(document.getElementById('createBoardModal')));
 document.getElementById('createBoardModal')?.addEventListener('click', e => { if (e.target.id === 'createBoardModal') closeModal(e.target); });
 document.getElementById('createBoardConfirmBtn')?.addEventListener('click', () => createBoard());
+// Wishlist modals
+document.getElementById('createWishlistBoardClose')?.addEventListener('click', () => closeModal(document.getElementById('createWishlistBoardModal')));
+document.getElementById('createWishlistBoardModal')?.addEventListener('click', e => { if (e.target.id === 'createWishlistBoardModal') closeModal(e.target); });
+document.getElementById('createWishlistBoardConfirmBtn')?.addEventListener('click', () => createWishlistBoard());
+document.getElementById('addWishlistItemClose')?.addEventListener('click', () => closeModal(document.getElementById('addWishlistItemModal')));
+document.getElementById('addWishlistItemModal')?.addEventListener('click', e => { if (e.target.id === 'addWishlistItemModal') closeModal(e.target); });
+document.getElementById('addWishlistItemConfirmBtn')?.addEventListener('click', () => addWishlistItem());
 document.getElementById('composeLetterClose')?.addEventListener('click', () => closeModal(document.getElementById('composeLetterModal')));
 document.getElementById('composeLetterModal')?.addEventListener('click', e => { if (e.target.id === 'composeLetterModal') closeModal(e.target); });
 document.getElementById('sendLetterBtn')?.addEventListener('click', () => sendLetter());
@@ -9555,6 +9759,56 @@ function renderAchievementsWindow() {
     }};
 })();
 
+// ===== Win95 Wishlist Window =====
+(() => {
+    const win      = document.getElementById('w95-win-wishlist');
+    const minBtn   = document.getElementById('w95-wishlist-min');
+    const maxBtn   = document.getElementById('w95-wishlist-max');
+    const closeBtn = document.getElementById('w95-wishlist-close');
+    const handle   = document.getElementById('w95-wishlist-handle');
+    if (!win || !handle) return;
+
+    let btn = null;
+
+    function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-wishlist', 'WISHLIST', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-wishlist');
+        localStorage.setItem('w95_wishlist_open', '1');
+        renderWishlistBoardsList();
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-wishlist')) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_wishlist_open', '0');
+    }
+
+    function closeWin() {
+        if (w95Mgr.isMaximised('w95-win-wishlist')) w95Mgr.toggleMaximise(win, 'w95-win-wishlist');
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-wishlist')) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_wishlist_open', '0');
+        if (btn) { btn.remove(); btn = null; }
+    }
+
+    win.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-wishlist'));
+
+    if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
+    if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-wishlist'); };
+    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
+
+    makeDraggable(win, handle, 'w95-win-wishlist');
+
+    if (localStorage.getItem('w95_wishlist_open') === '1') show();
+
+    w95Apps['wishlist'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-wishlist');
+    }};
+})();
+
 // ===== Desktop Icon Positions =====
 const ICON_DEFAULTS = {
     feed:         { x: 16,  y: 16  },
@@ -9568,6 +9822,7 @@ const ICON_DEFAULTS = {
     myComputer:   { x: 16,  y: 688 },
     console:      { x: 104, y: 16  },
     scrapbook:    { x: 104, y: 100 },
+    wishlist:     { x: 104, y: 184 },
 };
 
 // ===== Snap-to-grid + Arrange =====
@@ -9682,6 +9937,7 @@ const SHORTCUTABLE_APPS = [
     { app: 'jukebox',      icon: '🎵', name: 'Jukebox.exe' },
     { app: 'console',      icon: '💻', name: 'Console.exe' },
     { app: 'scrapbook',    icon: '📋', name: 'Scrapbook.exe' },
+    { app: 'wishlist',     icon: '🎁', name: 'Wishlist.exe' },
     { app: 'stats',        icon: '📊', name: 'Stats.exe' },
     { app: 'achievements', icon: '🏆', name: 'Achievements.exe' },
     { app: 'myComputer',   icon: '🖥️', name: 'My Computer' },
