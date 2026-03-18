@@ -10157,6 +10157,13 @@ function openFolderWindow(folderItem) {
     }
 
     document.querySelectorAll('.w95-desktop-icon').forEach(setupDesktopIcon);
+    console.log('[drag] setupDesktopIcon called for', document.querySelectorAll('.w95-desktop-icon').length, 'icons');
+
+    // Capture-phase global listener — shows what element receives any mousedown
+    document.addEventListener('mousedown', (e) => {
+        console.log('[doc-mousedown CAPTURE] target:', e.target.tagName, e.target.id || e.target.className, 'closest icon:', e.target.closest('.w95-desktop-icon')?.dataset.app);
+    }, true);
+
 
     // ===== Custom Desktop Items (New Folder / New Text Document) =====
     function getCustomItems() {
