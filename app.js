@@ -10173,7 +10173,8 @@ function openFolderWindow(folderItem) {
         el.className = 'w95-desktop-icon';
         el.dataset.app = item.id;
         el.tabIndex = 0;
-        el.innerHTML = `<div class="desktop-icon-img">${item.type === 'folder' ? '📁' : '📝'}</div><div class="desktop-icon-label">${safeName}</div>`;
+        const iconEmoji = item.type === 'folder' ? '📁' : item.type === 'shortcut' ? item.icon : '📝';
+        el.innerHTML = `<div class="desktop-icon-img">${iconEmoji}</div><div class="desktop-icon-label">${safeName}</div>`;
         if (item.type === 'folder') el.dataset.folder = '1';
         desktop.appendChild(el);
         applyIconPositions();
@@ -10181,6 +10182,8 @@ function openFolderWindow(folderItem) {
             open: () => {
                 if (item.type === 'folder') {
                     openFolderWindow(item);
+                } else if (item.type === 'shortcut') {
+                    w95Apps[item.app]?.open();
                 } else {
                     openW95Notepad(item);
                 }
@@ -13168,11 +13171,73 @@ function initPixelCat() {
 
     document.getElementById('ctx-new-shortcut')?.addEventListener('click', () => {
         hideAll();
-        openW95Dialog({
-            icon: '📄',
-            title: 'New Shortcut',
-            message: 'This feature is not yet available.',
-            buttons: [{ label: 'OK', action: null }]
+
+        function isAppOnDesktop(appKey) {
+            if (document.querySelector(`.w95-desktop-icon[data-app="${appKey}"]`)) return true;
+            return (window._desktopCustom?.getItems() || []).some(i => i.type === 'shortcut' && i.app === appKey);
+        }
+
+        function esc2(s) { return String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
+        const overlay = document.createElement('div');
+        overlay.className = 'w95-dialog-overlay';
+
+        const appItems = SHORTCUTABLE_APPS.map(a => {
+            const already = isAppOnDesktop(a.app);
+            return `<div class="explorer-item${already ? ' shortcut-already-here' : ''}" data-app-key="${esc2(a.app)}" data-already="${already}" tabindex="0" style="${already ? 'opacity:0.7;cursor:default;' : ''}">
+                <span class="explorer-item-icon">${a.icon}</span>
+                <span class="explorer-item-name" style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+                    <span>${esc2(a.name)}</span>
+                    ${already ? '<span style="font-size:9px;color:#000080;font-weight:bold;white-space:nowrap;">It\'s already here!</span>' : ''}
+                </span>
+            </div>`;
+        }).join('');
+
+        overlay.innerHTML = `
+            <div class="w95-dialog" role="dialog" aria-modal="true" style="width:400px;max-width:95vw;">
+                <div class="w95-titlebar window--active">
+                    <div class="w95-title">📄 New Shortcut</div>
+                    <div class="w95-controls">
+                        <button class="w95-control w95-control-close w95-dialog-x" type="button" aria-label="Close">X</button>
+                    </div>
+                </div>
+                <div class="w95-dialog-body" style="flex-direction:column;align-items:stretch;padding:8px;">
+                    <div style="margin:0 0 6px;font:11px Tahoma,sans-serif;">Double-click an app to add a shortcut to the desktop:</div>
+                    <div class="explorer-grid" style="max-height:230px;overflow-y:auto;border:2px inset #808080;background:#fff;">${appItems}</div>
+                </div>
+                <div class="w95-dialog-btns">
+                    <button class="w95-btn w95-dialog-btn" type="button">Cancel</button>
+                </div>
+            </div>`;
+
+        document.body.appendChild(overlay);
+        function closeDialog() { overlay.remove(); document.removeEventListener('keydown', onShortcutKey); }
+        overlay.querySelector('.w95-dialog-x').addEventListener('click', closeDialog);
+        overlay.querySelector('.w95-dialog-btn').addEventListener('click', closeDialog);
+        overlay.addEventListener('pointerdown', e => { if (e.target === overlay) closeDialog(); });
+        function onShortcutKey(e) { if (e.key === 'Escape') closeDialog(); }
+        document.addEventListener('keydown', onShortcutKey);
+
+        const clickTimes = {};
+        overlay.querySelectorAll('.explorer-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const already = el.dataset.already === 'true';
+                const now = Date.now();
+                const key = el.dataset.appKey;
+                overlay.querySelectorAll('.explorer-item').forEach(i => i.classList.remove('selected'));
+                el.classList.add('selected');
+                if (already) return;
+                if (clickTimes[key] && now - clickTimes[key] < 500) {
+                    const appDef = SHORTCUTABLE_APPS.find(a => a.app === key);
+                    if (appDef) {
+                        const item = { id: 'custom_' + Date.now(), type: 'shortcut', name: appDef.name, app: appDef.app, icon: appDef.icon };
+                        const items = window._desktopCustom.getItems();
+                        items.push(item);
+                        window._desktopCustom.saveItems(items);
+                        window._desktopCustom.createIcon(item);
+                        closeDialog();
+                    }
+                } else { clickTimes[key] = now; }
+            });
         });
     });
 
