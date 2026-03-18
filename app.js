@@ -240,6 +240,9 @@ let currentWallpaperId = DEFAULT_WALLPAPER_ID;
 let _desktopCustomisationReady = false;
 
 function applyWallpaper(id, _fromUser = false) {
+    // Stop any running animated wallpaper before switching
+    window._animWallpaper?.stop();
+
     // Check base wallpapers first, then reward wallpapers
     const wp = WALLPAPERS.find(w => w.id === id)
         || REWARD_REGISTRY.find(r => r.type === REWARD_TYPE_WALLPAPER && r.id === id && unlockedRewards.has(r.id));
@@ -247,6 +250,10 @@ function applyWallpaper(id, _fromUser = false) {
     const desktop = document.getElementById('w95-desktop');
     if (desktop) desktop.style.background = resolved.css || resolved.swatchCss || '';
     currentWallpaperId = resolved.id;
+
+    // Start canvas animation for animated wallpapers
+    if (resolved.animated) window._animWallpaper?.start(resolved.id);
+
     if (_fromUser && _desktopCustomisationReady) {
         unlockAchievement('first_wallpaper_change');
         const wpc = Number(localStorage.getItem('wallpaperChangeCount') || 0) + 1;
@@ -8206,6 +8213,7 @@ var ACHIEVEMENTS = [
         tier:        'bronze',
         target:      25,
         getProgress: () => totalWaterings,
+        rewardIds:   ['wp_anim_clouds'],
     },
     {
         id:          'watering_50',
@@ -8283,6 +8291,7 @@ var ACHIEVEMENTS = [
         tier:        'bronze',
         target:      14,
         getProgress: () => Object.keys(gardenVisitDays).length,
+        rewardIds:   ['wp_anim_forest'],
     },
     {
         id:          'visit_30_total',
@@ -8346,6 +8355,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  30,
+        rewardIds:           ['wp_anim_nightsky'],
     },
     {
         id:                  'early_bird',
@@ -8920,6 +8930,17 @@ const REWARD_REGISTRY = [
     // ---- Achievement Set: First Transmission & beyond ----
 
     // Wallpapers
+    // ---- Animated wallpapers ---- (canvas-based; animated: true signals the engine to run a canvas animation)
+    { id: 'wp_anim_clouds',   type: REWARD_TYPE_WALLPAPER, name: 'Drifting Clouds',  description: 'Fluffy clouds float lazily across a soft blue sky', animated: true,
+      css: '#87ceeb',
+      swatchCss: 'linear-gradient(to bottom, #5aaee0 0%, #87ceeb 50%, #c8e8f8 100%)' },
+    { id: 'wp_anim_forest',   type: REWARD_TYPE_WALLPAPER, name: 'Swaying Trees',    description: 'A forest silhouette where every branch sways gently in the evening breeze', animated: true,
+      css: 'linear-gradient(to bottom, #1a2a40 0%, #0d2008 100%)',
+      swatchCss: 'linear-gradient(to bottom, #1a2a40 0%, #2a4a2a 40%, #0d2008 100%)' },
+    { id: 'wp_anim_nightsky', type: REWARD_TYPE_WALLPAPER, name: 'Twinkling Stars',  description: 'A clear night sky where every star quietly twinkles', animated: true,
+      css: 'linear-gradient(to bottom, #000510 0%, #000c28 50%, #001440 100%)',
+      swatchCss: 'linear-gradient(to bottom, #000510 0%, #000c28 60%, #001440 100%)' },
+
     { id: 'wp_cat_monitor',       type: REWARD_TYPE_WALLPAPER, name: 'Cat Monitor',         description: 'A CRT screen in a dark room, watched over by a glowing-eyed cat',
       css: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3300 0%, #0a1800 50%, #030800 100%)',
       swatchCss: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3300 0%, #030800 100%)' },
@@ -11433,7 +11454,8 @@ async function loadUserWallpaper() {
                 sw.type = 'button';
                 sw.className = 'wallpaper-swatch reward-item--wallpaper' +
                     (rw.id === wpSelectedId ? ' selected' : '') +
-                    (unlocked ? '' : ' reward-item--locked');
+                    (unlocked ? '' : ' reward-item--locked') +
+                    (rw.animated ? ' wallpaper-swatch--animated' : '');
                 sw.style.background = unlocked ? (rw.swatchCss || rw.css) : '';
                 sw.setAttribute('aria-label', rw.name);
                 sw.setAttribute('title', unlocked ? rw.name : `🔒 ${rw.name} — ${rw.description}`);
@@ -15863,3 +15885,330 @@ document.addEventListener('click', (e) => {
 } // end initApp
 
 window.addEventListener('DOMContentLoaded', initApp, { once: true });
+
+// ===== Animated Wallpapers =====
+// Runs canvas-based background animations for wallpapers with animated:true.
+// Exposes window._animWallpaper = { start(id), stop() }.
+(function () {
+    const canvas = document.getElementById('wallpaper-anim-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rmq = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    let rafId   = null;
+    let activeId = null;
+    let frame   = 0;
+
+    // ---- Shared helpers ----
+    function resizeCanvas() {
+        canvas.width  = canvas.offsetWidth  || window.innerWidth;
+        canvas.height = canvas.offsetHeight || (window.innerHeight - 40);
+    }
+
+    // ---- Clouds ----
+    const CLOUDS = [];
+
+    function initClouds() {
+        const W = canvas.width, H = canvas.height;
+        CLOUDS.length = 0;
+        for (let i = 0; i < 8; i++) {
+            CLOUDS.push({
+                x:     Math.random() * W,
+                y:     40 + Math.random() * H * 0.5,
+                speed: 0.12 + Math.random() * 0.25,
+                scale: 0.55 + Math.random() * 0.85,
+                alpha: 0.70 + Math.random() * 0.28,
+            });
+        }
+    }
+
+    function _drawCloudShape(cx, cy, scale) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(scale, scale);
+        ctx.beginPath();
+        ctx.arc(  0,  0, 28, 0, Math.PI * 2);
+        ctx.arc( 32,-10, 22, 0, Math.PI * 2);
+        ctx.arc( 58,  0, 25, 0, Math.PI * 2);
+        ctx.arc( 38, 14, 20, 0, Math.PI * 2);
+        ctx.arc( 12, 14, 18, 0, Math.PI * 2);
+        ctx.arc(-18,  8, 20, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function animateClouds() {
+        const W = canvas.width, H = canvas.height;
+
+        // Sky gradient
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0,   '#4a9fd6');
+        sky.addColorStop(0.55, '#87ceeb');
+        sky.addColorStop(1,   '#c8e8f8');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+
+        for (const c of CLOUDS) {
+            c.x += c.speed;
+            if (c.x - 80 * c.scale > W) c.x = -120 * c.scale;
+            ctx.save();
+            ctx.globalAlpha = c.alpha;
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur  = 18;
+            ctx.shadowColor = 'rgba(200,230,255,0.6)';
+            _drawCloudShape(c.x, c.y, c.scale);
+            ctx.restore();
+        }
+    }
+
+    // ---- Forest ----
+    const TREES = [];
+
+    function initForest() {
+        const W = canvas.width, H = canvas.height;
+        TREES.length = 0;
+        const count = Math.max(10, Math.round(W / 50));
+        for (let i = 0; i < count; i++) {
+            const layer = (i % 3 === 0) ? 1 : 0;  // 1 = foreground
+            TREES.push({
+                x:      (i / count) * W + (Math.random() - 0.5) * (W / count * 0.5),
+                height: H * (layer === 1 ? 0.48 + Math.random() * 0.18 : 0.30 + Math.random() * 0.20),
+                width:  layer === 1 ? 14 + Math.random() * 10 : 8 + Math.random() * 8,
+                phase:  Math.random() * Math.PI * 2,
+                freq:   0.40 + Math.random() * 0.35,
+                amp:    0.014 + Math.random() * 0.010,
+                layer,
+            });
+        }
+        TREES.sort((a, b) => a.layer - b.layer);
+    }
+
+    function _drawTree(tree, t) {
+        const H = canvas.height;
+        const sway    = Math.sin(t * tree.freq + tree.phase) * tree.amp;
+        const baseX   = tree.x;
+        const baseY   = H;
+        const tipX    = baseX + Math.sin(sway) * tree.height;
+        const tipY    = baseY - tree.height;
+        const midX    = baseX + (tipX - baseX) * 0.45;
+        const midY    = baseY + (tipY - baseY) * 0.45;
+
+        ctx.save();
+        ctx.strokeStyle = tree.layer === 1 ? '#0a1808' : '#162810';
+        ctx.lineWidth   = tree.width;
+        ctx.lineCap     = 'round';
+        ctx.beginPath();
+        ctx.moveTo(baseX, baseY);
+        ctx.quadraticCurveTo(midX, midY, tipX, tipY);
+        ctx.stroke();
+
+        // Two side branches near the upper third
+        for (let b = 0; b < 2; b++) {
+            const bp    = 0.62 + b * 0.14;
+            const bx    = baseX + (tipX - baseX) * bp;
+            const by    = baseY + (tipY - baseY) * bp;
+            const bLen  = tree.height * (0.18 - b * 0.04);
+            const dir   = (b % 2 === 0 ? 1 : -1);
+            const bSway = sway * 1.6;
+            const endX  = bx + Math.cos(dir * 1.1 + bSway) * bLen;
+            const endY  = by - Math.abs(Math.sin(dir * 1.1 + bSway)) * bLen * 0.8;
+            ctx.lineWidth = tree.width * 0.35;
+            ctx.beginPath();
+            ctx.moveTo(bx, by);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function animateForest() {
+        const W = canvas.width, H = canvas.height;
+        const t = frame / 60;
+
+        // Dusk sky
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0,    '#181c2e');
+        sky.addColorStop(0.35, '#2a3a28');
+        sky.addColorStop(0.70, '#1a3010');
+        sky.addColorStop(1,    '#0c1a08');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+
+        // Distant moon glow
+        const moonX = W * 0.72, moonY = H * 0.18, moonR = 18;
+        const moonGrad = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, moonR * 4);
+        moonGrad.addColorStop(0,   'rgba(230,230,180,0.22)');
+        moonGrad.addColorStop(1,   'transparent');
+        ctx.fillStyle = moonGrad;
+        ctx.fillRect(moonX - moonR * 4, moonY - moonR * 4, moonR * 8, moonR * 8);
+        ctx.fillStyle = '#e8e8c8';
+        ctx.beginPath();
+        ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#2a3a28';
+        ctx.beginPath();
+        ctx.arc(moonX + 6, moonY - 2, moonR * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Background trees (layer 0)
+        for (const tree of TREES) {
+            if (tree.layer === 0) _drawTree(tree, t);
+        }
+
+        // Ground strip
+        ctx.fillStyle = '#080e06';
+        ctx.fillRect(0, H * 0.84, W, H * 0.16);
+
+        // Foreground trees (layer 1)
+        for (const tree of TREES) {
+            if (tree.layer === 1) _drawTree(tree, t);
+        }
+    }
+
+    // ---- Night Sky ----
+    const STARS      = [];
+    const MOON_NS    = {};
+    let shootTimer   = 0;
+    let shoot        = null;
+
+    function initNightSky() {
+        const W = canvas.width, H = canvas.height;
+        STARS.length = 0;
+        for (let i = 0; i < 220; i++) {
+            STARS.push({
+                x:          Math.random() * W,
+                y:          Math.random() * H * 0.92,
+                size:       0.4 + Math.random() * 1.6,
+                phase:      Math.random() * Math.PI * 2,
+                freq:       0.6 + Math.random() * 1.8,
+                brightness: 0.45 + Math.random() * 0.55,
+            });
+        }
+        MOON_NS.x = W * 0.78;
+        MOON_NS.y = H * 0.16;
+        MOON_NS.r = 20;
+        shootTimer = 0;
+        shoot = null;
+    }
+
+    function animateNightSky() {
+        const W = canvas.width, H = canvas.height;
+        const t = frame / 60;
+
+        // Sky gradient
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0,   '#000510');
+        sky.addColorStop(0.5, '#000c28');
+        sky.addColorStop(1,   '#001440');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+
+        // Moon glow + crescent
+        const mx = MOON_NS.x, my = MOON_NS.y, mr = MOON_NS.r;
+        const glow = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 3.5);
+        glow.addColorStop(0,   'rgba(220,220,170,0.28)');
+        glow.addColorStop(1,   'transparent');
+        ctx.fillStyle = glow;
+        ctx.fillRect(mx - mr * 4, my - mr * 4, mr * 8, mr * 8);
+        ctx.fillStyle = '#f0f0d8';
+        ctx.beginPath();
+        ctx.arc(mx, my, mr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000c28';
+        ctx.beginPath();
+        ctx.arc(mx + 7, my - 3, mr * 0.82, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Twinkling stars
+        for (const s of STARS) {
+            const twinkle = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(t * s.freq + s.phase));
+            ctx.save();
+            ctx.globalAlpha = twinkle * s.brightness;
+            ctx.fillStyle   = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+            ctx.fill();
+            // Cross glint on larger stars
+            if (s.size > 1.3) {
+                ctx.globalAlpha = twinkle * s.brightness * 0.35;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth   = 0.6;
+                const gl = s.size * 3.5;
+                ctx.beginPath();
+                ctx.moveTo(s.x - gl, s.y); ctx.lineTo(s.x + gl, s.y);
+                ctx.moveTo(s.x, s.y - gl); ctx.lineTo(s.x, s.y + gl);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Occasional shooting star
+        shootTimer--;
+        if (shootTimer <= 0) {
+            shootTimer = 180 + Math.floor(Math.random() * 300);
+            shoot = {
+                x: Math.random() * W * 0.7,
+                y: Math.random() * H * 0.4,
+                vx: 3.5 + Math.random() * 3,
+                vy: 1.2 + Math.random() * 1.5,
+                life: 40,
+            };
+        }
+        if (shoot && shoot.life > 0) {
+            const alpha = shoot.life / 40;
+            ctx.save();
+            ctx.globalAlpha = alpha * 0.85;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth   = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(shoot.x, shoot.y);
+            ctx.lineTo(shoot.x - shoot.vx * 6, shoot.y - shoot.vy * 6);
+            ctx.stroke();
+            ctx.restore();
+            shoot.x += shoot.vx;
+            shoot.y += shoot.vy;
+            shoot.life--;
+        }
+    }
+
+    // ---- Core animation loop ----
+    function tick() {
+        if (!activeId) return;
+        frame++;
+        if      (activeId === 'wp_anim_clouds')   animateClouds();
+        else if (activeId === 'wp_anim_forest')   animateForest();
+        else if (activeId === 'wp_anim_nightsky') animateNightSky();
+        rafId = requestAnimationFrame(tick);
+    }
+
+    function start(id) {
+        stop();
+        if (rmq.matches) return;  // respect prefers-reduced-motion
+        activeId = id;
+        frame    = 0;
+        resizeCanvas();
+        canvas.style.display = 'block';
+        if      (id === 'wp_anim_clouds')   initClouds();
+        else if (id === 'wp_anim_forest')   initForest();
+        else if (id === 'wp_anim_nightsky') initNightSky();
+        rafId = requestAnimationFrame(tick);
+    }
+
+    function stop() {
+        activeId = null;
+        cancelAnimationFrame(rafId);
+        rafId = null;
+        canvas.style.display = 'none';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    window.addEventListener('resize', () => {
+        if (!activeId) return;
+        resizeCanvas();
+        if      (activeId === 'wp_anim_clouds')   initClouds();
+        else if (activeId === 'wp_anim_forest')   initForest();
+        else if (activeId === 'wp_anim_nightsky') initNightSky();
+    });
+
+    window._animWallpaper = { start, stop };
+})();

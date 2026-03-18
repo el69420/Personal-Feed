@@ -6257,6 +6257,31 @@ body.dark-mode .wallpaper-swatch {
   pointer-events: none;
 }
 
+/* Animated wallpaper canvas — fills the desktop, behind icons */
+#wallpaper-anim-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  display: none;
+}
+
+/* Small animated indicator badge on swatch thumbnails */
+.wallpaper-swatch--animated::after {
+  content: '▶';
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 7px;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 0 4px rgba(0,0,0,0.9);
+  pointer-events: none;
+  line-height: 1;
+}
+
 /* ===== Settings / Preferences Window ===== */
 .settings-body { padding: 8px 8px 6px; }
 
