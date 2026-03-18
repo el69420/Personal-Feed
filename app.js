@@ -9927,45 +9927,13 @@ function openFolderWindow(folderItem) {
     function setupDesktopIcon(icon) {
         const appKey = icon.dataset.app;
         // dragStarts: map of appKey → {left, top} for every selected icon at drag start
-        let startX, startY, didDrag, capturedId, dragStarts, wasSelectedOnDown, dropTarget;
+        let startX, startY, didDrag, activePointerId, dragStarts, wasSelectedOnDown, dropTarget;
 
-        icon.addEventListener('pointerdown', (e) => {
-            if (e.button !== 0) return;
-            e.stopPropagation();
-
-            const isCtrl = e.ctrlKey || e.metaKey;
-            wasSelectedOnDown = icon.classList.contains('selected');
-
-            if (isCtrl) {
-                // Ctrl+click: toggle this icon in/out of the selection
-                icon.classList.toggle('selected');
-            } else if (!wasSelectedOnDown) {
-                // Clicking an unselected icon: deselect all, then select this one
-                clearIconSelection();
-                icon.classList.add('selected');
-            }
-            // If already selected (no Ctrl): keep the whole group so a drag moves them all.
-            // Deselection of others is deferred to pointerup if no drag happens.
-
-            startX = e.clientX;
-            startY = e.clientY;
-            didDrag    = false;
-            capturedId = e.pointerId;
-            icon.setPointerCapture(e.pointerId);
-
-            // Snapshot start positions of every selected icon for group drag
-            dragStarts = {};
-            document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
-                const sk = si.dataset.app;
-                dragStarts[sk] = {
-                    left: si.style.left ? parseInt(si.style.left) : (ICON_DEFAULTS[sk]?.x ?? GRID_OFFSET),
-                    top:  si.style.top  ? parseInt(si.style.top)  : (ICON_DEFAULTS[sk]?.y ?? GRID_OFFSET),
-                };
-            });
-        });
-
-        icon.addEventListener('pointermove', (e) => {
-            if (e.pointerId !== capturedId) return;
+        // Document-level move handler — tracks the pointer anywhere on the page.
+        // Using document listeners instead of setPointerCapture avoids a known issue
+        // where setPointerCapture silently fails inside pointer-events:none parents.
+        function onDragMove(e) {
+            if (e.pointerId !== activePointerId) return;
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
             if (!didDrag && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
@@ -10024,11 +9992,15 @@ function openFolderWindow(folderItem) {
                     dropTarget = newTarget;
                 }
             }
-        });
+        }
 
-        icon.addEventListener('pointerup', (e) => {
-            if (e.pointerId !== capturedId) return;
-            icon.releasePointerCapture(capturedId);
+        function onDragEnd(e) {
+            if (e.pointerId !== activePointerId) return;
+            // Remove document-level drag listeners
+            document.removeEventListener('pointermove',   onDragMove);
+            document.removeEventListener('pointerup',     onDragEnd);
+            document.removeEventListener('pointercancel', onDragCancel);
+
             const isCtrl = e.ctrlKey || e.metaKey;
 
             if (didDrag) {
@@ -10118,7 +10090,7 @@ function openFolderWindow(folderItem) {
                         saveIconPositions(positions);
                     }
                 } else {
-                    // Normal drag: save exact drop position (no snap); autoArrange re-sorts alphabetically
+                    // Normal drag: save exact drop position; autoArrange re-sorts alphabetically
                     const prefs = getDesktopPrefs();
                     if (prefs.autoArrange) {
                         arrangeByName();
@@ -10147,16 +10119,60 @@ function openFolderWindow(folderItem) {
                     clickTimes[appKey] = now;
                 }
             }
-            didDrag    = false;
-            capturedId = undefined;
-            dropTarget = null;
-        });
+            activePointerId = undefined;
+            didDrag         = false;
+            dropTarget      = null;
+        }
 
-        icon.addEventListener('pointercancel', (e) => {
-            if (e.pointerId === capturedId) {
-                if (dropTarget) { dropTarget.el.classList.remove('drop-target'); dropTarget = null; }
-                capturedId = undefined; didDrag = false;
+        function onDragCancel(e) {
+            if (e.pointerId !== activePointerId) return;
+            document.removeEventListener('pointermove',   onDragMove);
+            document.removeEventListener('pointerup',     onDragEnd);
+            document.removeEventListener('pointercancel', onDragCancel);
+            if (dropTarget) { dropTarget.el.classList.remove('drop-target'); dropTarget = null; }
+            activePointerId = undefined;
+            didDrag         = false;
+        }
+
+        icon.addEventListener('pointerdown', (e) => {
+            if (e.button !== 0) return;
+            e.stopPropagation();
+
+            const isCtrl = e.ctrlKey || e.metaKey;
+            wasSelectedOnDown = icon.classList.contains('selected');
+
+            if (isCtrl) {
+                // Ctrl+click: toggle this icon in/out of the selection
+                icon.classList.toggle('selected');
+            } else if (!wasSelectedOnDown) {
+                // Clicking an unselected icon: deselect all, then select this one
+                clearIconSelection();
+                icon.classList.add('selected');
             }
+            // If already selected (no Ctrl): keep the whole group so a drag moves them all.
+            // Deselection of others is deferred to pointerup if no drag happens.
+
+            startX          = e.clientX;
+            startY          = e.clientY;
+            didDrag         = false;
+            activePointerId = e.pointerId;
+            dropTarget      = null;
+
+            // Snapshot start positions of every selected icon for group drag
+            dragStarts = {};
+            document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                const sk = si.dataset.app;
+                dragStarts[sk] = {
+                    left: si.style.left ? parseInt(si.style.left) : (ICON_DEFAULTS[sk]?.x ?? GRID_OFFSET),
+                    top:  si.style.top  ? parseInt(si.style.top)  : (ICON_DEFAULTS[sk]?.y ?? GRID_OFFSET),
+                };
+            });
+
+            // Attach document-level listeners so the drag works even when the
+            // pointer leaves the icon element (avoids setPointerCapture issues).
+            document.addEventListener('pointermove',   onDragMove);
+            document.addEventListener('pointerup',     onDragEnd);
+            document.addEventListener('pointercancel', onDragCancel);
         });
 
         // Keyboard: Enter/Space to open
