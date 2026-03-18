@@ -13173,7 +13173,7 @@ function initPixelCat() {
         hideAll();
 
         function isAppOnDesktop(appKey) {
-            if (document.querySelector(`.w95-desktop-icon[data-app="${appKey}"]`)) return true;
+            if (document.querySelector(`.w95-desktop-icon[data-app="${appKey}"]:not(.is-hidden)`)) return true;
             return (window._desktopCustom?.getItems() || []).some(i => i.type === 'shortcut' && i.app === appKey);
         }
 
@@ -13187,7 +13187,7 @@ function initPixelCat() {
                 <span class="explorer-item-icon">${a.icon}</span>
                 <span class="explorer-item-name" style="display:flex;flex-direction:column;align-items:center;gap:1px;">
                     <span>${esc2(a.name)}</span>
-                    ${already ? '<span style="font-size:9px;color:#000080;font-weight:bold;white-space:nowrap;">It\'s already here!</span>' : ''}
+                    ${already ? '<span style="font-size:9px;color:#000080;font-weight:bold;">It\'s already here!</span>' : ''}
                 </span>
             </div>`;
         }).join('');
