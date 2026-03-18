@@ -5167,7 +5167,7 @@ document.getElementById('addPostBtn')?.addEventListener('click', () => addPost()
 // Collection picker pills (event delegation on static picker in add-post modal)
 document.getElementById('collectionPicker')?.addEventListener('click', e => {
     const btn = e.target.closest('.coll-pick-btn');
-    if (btn) toggleCollPick(btn);
+    if (btn && !btn.classList.contains('coll-pick-add-btn')) toggleCollPick(btn);
 });
 
 // Collections modal
