@@ -5525,6 +5525,7 @@ const UPDATE_HISTORY = [
             'Double-clicking a shortcut in the "New Shortcut" list now immediately confirms the selection, matching the expected Windows 95 behaviour.',
             'When the "New Shortcut" or "New Category" dialog was opened, the first item in the list was being highlighted as if already selected — the dialog now opens with no pre-selection.',
             'If you had "Auto Arrange" enabled and dragged an icon to a new position, the grid snapped it back immediately on mouse-up — manually dragging an icon now temporarily disables Auto Arrange so your chosen position is respected.',
+            'Deleting a built-in .exe icon and then using Arrange by Name or Auto Arrange was leaving gaps in the icon grid where the deleted icon used to be — hidden icons are now excluded from the arrangement so the remaining icons pack together without gaps.',
         ]
     },
     {
@@ -9847,7 +9848,7 @@ function saveDesktopPrefs(prefs) {
 }
 
 function arrangeByName() {
-    const icons = Array.from(document.querySelectorAll('.w95-desktop-icon'));
+    const icons = Array.from(document.querySelectorAll('.w95-desktop-icon:not(.is-hidden)'));
     icons.sort((a, b) => {
         const la = a.querySelector('.desktop-icon-label')?.textContent || '';
         const lb = b.querySelector('.desktop-icon-label')?.textContent || '';
