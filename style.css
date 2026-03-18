@@ -10301,3 +10301,316 @@ body[data-theme="theme_crt"] .chat-new-msg-btn { background: #005500 !important;
 #addWishlistItemModal .modal-x:hover {
   background: #c0c0c0;
 }
+
+/* ============================================================
+   DESKTOP THEME OVERRIDES — WINDOW INNER CONTENT
+   These rules ensure that .exe windows with hardcoded W95 chrome
+   colours (board cards, tabs, panels, dialogs, etc.) respond to
+   the active desktop theme exactly like the window chrome does.
+   ============================================================ */
+
+/* ── Helper: theme-colour variables declared on <body> ──────
+   Each theme block re-declares these so every inner element that
+   uses var() gets the right palette automatically.
+   Default values are the classic W95 grey palette.            */
+:root {
+  --theme-chrome:    #c0c0c0;   /* raised panel / button face   */
+  --theme-chrome-dk: #808080;   /* image placeholder / well bg  */
+  --theme-well:      #ffffff;   /* sunken inset / comment bg    */
+  --theme-text:      #000000;   /* primary text                 */
+  --theme-text-2:    #444444;   /* secondary / meta text        */
+  --theme-accent:    #000080;   /* price, links, active badge   */
+  --theme-hover-bg:  #000080;   /* hover highlight bg           */
+  --theme-hover-txt: #ffffff;   /* hover highlight text         */
+}
+body[data-theme="theme_pastel"] {
+  --theme-chrome:    #ffe0f0;
+  --theme-chrome-dk: #d8a8c8;
+  --theme-well:      #fff5fa;
+  --theme-text:      #2a002a;
+  --theme-text-2:    #804080;
+  --theme-accent:    #600060;
+  --theme-hover-bg:  #b080b0;
+  --theme-hover-txt: #ffffff;
+}
+body[data-theme="theme_midnight"] {
+  --theme-chrome:    #0e0e2e;
+  --theme-chrome-dk: #080820;
+  --theme-well:      #0c0c28;
+  --theme-text:      #c8c8ff;
+  --theme-text-2:    #8888cc;
+  --theme-accent:    #a0a0ff;
+  --theme-hover-bg:  #1a1a6a;
+  --theme-hover-txt: #e8e8ff;
+}
+body[data-theme="theme_autumn"] {
+  --theme-chrome:    #3a1800;
+  --theme-chrome-dk: #280e00;
+  --theme-well:      #281000;
+  --theme-text:      #f0c080;
+  --theme-text-2:    #c09050;
+  --theme-accent:    #e0a050;
+  --theme-hover-bg:  #6b2800;
+  --theme-hover-txt: #fff8e8;
+}
+body[data-theme="theme_glass"] {
+  --theme-chrome:    rgba(210, 230, 255, 0.80);
+  --theme-chrome-dk: rgba(160, 195, 240, 0.70);
+  --theme-well:      rgba(240, 248, 255, 0.90);
+  --theme-text:      #1a2a4a;
+  --theme-text-2:    #3a60a0;
+  --theme-accent:    #1a50d0;
+  --theme-hover-bg:  rgba(80, 140, 240, 0.80);
+  --theme-hover-txt: #ffffff;
+}
+body[data-theme="theme_pixel"] {
+  --theme-chrome:    #1b4332;
+  --theme-chrome-dk: #0d2016;
+  --theme-well:      #0d2016;
+  --theme-text:      #a8ff80;
+  --theme-text-2:    #52b788;
+  --theme-accent:    #74c69d;
+  --theme-hover-bg:  #2d6a4f;
+  --theme-hover-txt: #001a00;
+}
+body[data-theme="theme_crt"] {
+  --theme-chrome:    #001a00;
+  --theme-chrome-dk: #000d00;
+  --theme-well:      #000d00;
+  --theme-text:      #00ff41;
+  --theme-text-2:    #00aa2a;
+  --theme-accent:    #00cc33;
+  --theme-hover-bg:  #003300;
+  --theme-hover-txt: #00ff88;
+}
+/* Dark-mode + Pastel combined */
+body.dark-mode[data-theme="theme_pastel"] {
+  --theme-chrome:    #3a1028;
+  --theme-chrome-dk: #220818;
+  --theme-well:      #1a0818;
+  --theme-text:      #ffb8d8;
+  --theme-text-2:    #c07898;
+  --theme-accent:    #ff80c0;
+  --theme-hover-bg:  #7a2860;
+  --theme-hover-txt: #ffffff;
+}
+/* Dark-mode + Glass combined */
+body.dark-mode[data-theme="theme_glass"] {
+  --theme-chrome:    rgba(40, 65, 110, 0.85);
+  --theme-chrome-dk: rgba(20, 40, 80, 0.85);
+  --theme-well:      rgba(25, 50, 100, 0.90);
+  --theme-text:      #d0e8ff;
+  --theme-text-2:    #7090c0;
+  --theme-accent:    #80b8ff;
+  --theme-hover-bg:  rgba(60, 110, 200, 0.80);
+  --theme-hover-txt: #ffffff;
+}
+
+/* ============================================================
+   WISHLIST.EXE — inner chrome  (board cards, item cards, buttons,
+   modals, comment bubbles) all keyed to --theme-* variables.
+   ============================================================ */
+
+/* --- Chrome backgrounds --- */
+body[data-theme] #w95-win-wishlist .board-card,
+body[data-theme] #w95-win-wishlist .board-back-btn,
+body[data-theme] #w95-win-wishlist .board-delete-btn,
+body[data-theme] #w95-win-wishlist .boards-action-btn,
+body[data-theme] #w95-win-wishlist .btn-primary,
+body[data-theme] .wishlist-item-card,
+body[data-theme] .wishlist-item-body,
+body[data-theme] .wishlist-item-footer,
+body[data-theme] .wishlist-item-delete,
+body[data-theme] .wl-detail-modal-content,
+body[data-theme] .wl-detail-meta,
+body[data-theme] #wishlistItemCommentsModal .modal-x,
+body[data-theme] #wishlistItemCommentsModal .modal-x:hover,
+body[data-theme] #wishlistItemCommentsModal .reply-send-btn,
+body[data-theme] .wl-comment-delete,
+body[data-theme] #createWishlistBoardModal .modal-content,
+body[data-theme] #addWishlistItemModal .modal-content,
+body[data-theme] #createWishlistBoardModal .modal-x,
+body[data-theme] #addWishlistItemModal .modal-x,
+body[data-theme] #createWishlistBoardModal .modal-x:hover,
+body[data-theme] #addWishlistItemModal .modal-x:hover,
+body[data-theme] #createWishlistBoardModal .btn-primary,
+body[data-theme] #addWishlistItemModal .btn-primary,
+body[data-theme] #createWishlistBoardModal .btn-primary:hover,
+body[data-theme] #addWishlistItemModal .btn-primary:hover {
+  background: var(--theme-chrome) !important;
+}
+
+/* --- Image placeholder / darker-well backgrounds --- */
+body[data-theme] .wishlist-item-img-placeholder,
+body[data-theme] .wl-detail-img-wrap {
+  background: var(--theme-chrome-dk) !important;
+}
+
+/* --- Sunken-well backgrounds (comment bubbles, reply input) --- */
+body[data-theme] .wl-comment-item {
+  background: var(--theme-well) !important;
+}
+body[data-theme] #wishlistItemCommentsModal .reply-input,
+body[data-theme] #createWishlistBoardModal input,
+body[data-theme] #addWishlistItemModal input,
+body[data-theme] #addWishlistItemModal textarea {
+  background: var(--theme-well) !important;
+}
+
+/* --- Primary text --- */
+body[data-theme] #w95-win-wishlist .boards-title,
+body[data-theme] #w95-win-wishlist .board-card-title,
+body[data-theme] #w95-win-wishlist .board-back-btn,
+body[data-theme] #w95-win-wishlist .board-delete-btn,
+body[data-theme] #w95-win-wishlist .boards-action-btn,
+body[data-theme] #w95-win-wishlist .btn-primary,
+body[data-theme] .wishlist-owner-heading,
+body[data-theme] .wishlist-item-title,
+body[data-theme] .wishlist-item-delete,
+body[data-theme] .wl-detail-title,
+body[data-theme] .wl-detail-comments-heading,
+body[data-theme] .wl-comment-item-title,
+body[data-theme] .wl-comment-author,
+body[data-theme] .wl-comment-text,
+body[data-theme] #wishlistItemCommentsModal .reply-input,
+body[data-theme] #createWishlistBoardModal .modal-heading,
+body[data-theme] #addWishlistItemModal .modal-heading,
+body[data-theme] #createWishlistBoardModal .form-label,
+body[data-theme] #addWishlistItemModal .form-label,
+body[data-theme] #createWishlistBoardModal input,
+body[data-theme] #addWishlistItemModal input,
+body[data-theme] #addWishlistItemModal textarea,
+body[data-theme] #createWishlistBoardModal .btn-primary,
+body[data-theme] #addWishlistItemModal .btn-primary,
+body[data-theme] .wl-comment-delete,
+body[data-theme] #wishlistItemCommentsModal .modal-x {
+  color: var(--theme-text) !important;
+}
+
+/* --- SVG icon stroke in send button --- */
+body[data-theme] #wishlistItemCommentsModal .reply-send-btn svg {
+  stroke: var(--theme-text) !important;
+}
+
+/* --- Secondary / meta text --- */
+body[data-theme] #w95-win-wishlist .board-card-meta,
+body[data-theme] .wishlist-item-store,
+body[data-theme] .wishlist-item-note,
+body[data-theme] .wl-detail-store,
+body[data-theme] .wl-detail-note,
+body[data-theme] .wl-comment-ts,
+body[data-theme] .wl-comments-empty {
+  color: var(--theme-text-2) !important;
+}
+
+/* --- Accent colour (prices, links) --- */
+body[data-theme] .wishlist-item-price,
+body[data-theme] .wl-detail-price,
+body[data-theme] .wl-detail-link {
+  color: var(--theme-accent) !important;
+}
+
+/* --- Hover highlight states --- */
+body[data-theme] #w95-win-wishlist .board-card:hover {
+  background: var(--theme-hover-bg) !important;
+}
+body[data-theme] #w95-win-wishlist .board-card:hover .board-card-title,
+body[data-theme] #w95-win-wishlist .board-card:hover .board-card-meta {
+  color: var(--theme-hover-txt) !important;
+}
+body[data-theme] .wishlist-item-comment-btn:hover {
+  background: var(--theme-hover-bg) !important;
+  color: var(--theme-hover-txt) !important;
+}
+body[data-theme] .wl-comment-item:hover .wl-comment-delete:hover {
+  background: var(--theme-hover-bg) !important;
+  color: var(--theme-hover-txt) !important;
+}
+body[data-theme] #w95-win-wishlist .board-delete-btn:hover,
+body[data-theme] #w95-win-wishlist .boards-action-btn:hover {
+  background: var(--theme-chrome) !important;
+}
+
+/* ============================================================
+   STATS.EXE — inner chrome
+   ============================================================ */
+body[data-theme] .stats-win-body,
+body[data-theme] .stats-tabs,
+body[data-theme] .stats-section,
+body[data-theme] .stats-section-title {
+  background: var(--theme-chrome) !important;
+}
+body[data-theme] .stats-tab {
+  background: var(--theme-chrome-dk) !important;
+  color: var(--theme-text) !important;
+}
+body[data-theme] .stats-tab.active {
+  background: var(--theme-chrome) !important;
+  border-bottom-color: var(--theme-chrome) !important;
+  color: var(--theme-text) !important;
+}
+body[data-theme] .stats-panel,
+body[data-theme] .stats-section-title,
+body[data-theme] .stats-label {
+  color: var(--theme-text) !important;
+}
+body[data-theme] .stats-empty,
+body[data-theme] .stats-na {
+  color: var(--theme-text-2) !important;
+}
+
+/* ============================================================
+   SETTINGS.EXE — inner chrome
+   ============================================================ */
+body[data-theme] .settings-panel {
+  background: var(--theme-chrome) !important;
+}
+body[data-theme] .settings-tab-btn {
+  background: var(--theme-chrome-dk) !important;
+  color: var(--theme-text) !important;
+}
+body[data-theme] .settings-tab-btn.is-active {
+  background: var(--theme-chrome) !important;
+  border-bottom-color: var(--theme-chrome) !important;
+  color: var(--theme-text) !important;
+}
+body[data-theme] .settings-hint,
+body[data-theme] .settings-about-ver,
+body[data-theme] .settings-about-footer em {
+  color: var(--theme-text-2) !important;
+}
+body[data-theme] .settings-about-footer {
+  color: var(--theme-text) !important;
+}
+body[data-theme] .ss-picker-card {
+  background: var(--theme-chrome-dk) !important;
+  color: var(--theme-text) !important;
+}
+body[data-theme] .ss-picker-card:has(input:checked) {
+  background: var(--theme-chrome) !important;
+}
+
+/* ============================================================
+   GENERIC W95 DIALOG (.w95-dialog, .sys-props-*)
+   Used by multiple windows (e.g. confirmation prompts, System
+   Properties). Not inside a .w95-window so needs its own rules.
+   ============================================================ */
+body[data-theme] .w95-dialog {
+  background: var(--theme-chrome) !important;
+  color: var(--theme-text) !important;
+}
+body[data-theme] .w95-dialog-btns {
+  border-top-color: var(--theme-chrome-dk) !important;
+}
+body[data-theme] .sys-props-tabs {
+  background: var(--theme-chrome) !important;
+}
+body[data-theme] .sys-props-tab {
+  background: var(--theme-chrome-dk) !important;
+  color: var(--theme-text) !important;
+}
+body[data-theme] .sys-props-tab--active {
+  background: var(--theme-chrome) !important;
+  border-bottom-color: var(--theme-chrome) !important;
+  color: var(--theme-text) !important;
+}
