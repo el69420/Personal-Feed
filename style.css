@@ -5447,6 +5447,578 @@ body.dark-mode .garden-actions-bar{
 }
 
 /* ============================================================
+   Garden Redesign — Scenic, Alive, Romantic
+   All rules here override earlier garden definitions via
+   source-order cascade (same-or-higher specificity).
+   ============================================================ */
+
+/* ---- 1. SCENIC GARDEN BED LAYOUT ---- */
+
+/* Unified bed: transparent sky at top, soil at bottom via gradient.
+   align-items:flex-end lets plants grow from a shared ground line.   */
+.garden-tiles-row {
+  align-items: flex-end;
+  background: transparent;
+  background-image: none;
+  min-height: 172px;
+  padding: 6px 4px 14px; /* bottom padding keeps status bars above grass strip */
+  position: relative;
+  overflow: visible;
+}
+
+/* Grass ground strip across the full bed bottom */
+.garden-tiles-row::after {
+  content: '';
+  position: absolute;
+  left: 2px; right: 2px; bottom: 2px; /* 2px = inset from Win95 border */
+  height: 11px;
+  background: linear-gradient(to bottom, #6baa28, #3a7814);
+  background-image: repeating-linear-gradient(
+    90deg, transparent 0, transparent 3px,
+    rgba(0,0,0,0.10) 3px, rgba(0,0,0,0.10) 4px
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Sky-to-soil gradient for each time-of-day
+   (overrides the old background-color approach at higher specificity)  */
+#w95-win-garden .w95-body .garden-tiles-row {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%, transparent 40%,
+    rgba(90,55,20,0.50) 54%, #7a4f2d 68%
+  );
+}
+#w95-win-garden .w95-body.garden--dawn .garden-tiles-row {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%, transparent 40%,
+    rgba(72,40,16,0.55) 54%, #6b4424 68%
+  );
+}
+#w95-win-garden .w95-body.garden--day .garden-tiles-row {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%, transparent 40%,
+    rgba(90,55,20,0.50) 54%, #7a4f2d 68%
+  );
+}
+#w95-win-garden .w95-body.garden--dusk .garden-tiles-row {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%, transparent 40%,
+    rgba(105,52,22,0.58) 54%, #8a4d2a 68%
+  );
+}
+#w95-win-garden .w95-body.garden--night .garden-tiles-row {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%, transparent 40%,
+    rgba(28,12,4,0.72) 54%, #3d2210 68%
+  );
+}
+
+/* Remove individual tile borders — one unified bed, not a grid */
+.garden-soil-tile {
+  border: none;
+  background: transparent;
+}
+.garden-tile-col {
+  border-right: none;
+  justify-content: flex-end;
+}
+.garden-tile-col--locked .garden-soil-tile {
+  background: transparent;
+}
+
+/* Organic tile stagger: each column sits at a slightly different depth.
+   Padding-bottom shifts the plant baseline so plants don't all
+   line up at exactly the same height.  */
+.garden-tile-col:nth-child(1) { padding-bottom: 0px; }
+.garden-tile-col:nth-child(2) { padding-bottom: 7px; }
+.garden-tile-col:nth-child(3) { padding-bottom: 3px; }
+.garden-tile-col:nth-child(4) { padding-bottom: 11px; }
+.garden-tile-col:nth-child(5) { padding-bottom: 5px; }
+.garden-tile-col:nth-child(6) { padding-bottom: 9px; }
+.garden-tile-col:nth-child(7) { padding-bottom: 2px; }
+.garden-tile-col:nth-child(8) { padding-bottom: 6px; }
+
+/* Tile status bar — keep visible above the grass strip */
+.garden-tile-status-el { margin-top: 3px; }
+
+/* ---- 2. IMPROVED SEED & SPROUT ---- */
+
+.garden-plant--seed {
+  width: 13px; height: 8px;
+  background: radial-gradient(ellipse at 38% 30%, #9a6530, #5a3510);
+  border-radius: 50% 50% 0 0;
+  bottom: 8px;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.45));
+}
+.garden-plant--sprout {
+  width: 4px; height: 28px;
+  background: linear-gradient(to top, #2a7a2f, #5abb4a);
+  bottom: 8px;
+  border-radius: 1px 1px 0 0;
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.30));
+}
+.garden-plant--sprout::before {
+  width: 13px; height: 7px;
+  background: #3aaa3f;
+  border-radius: 50% 0 50% 0;
+  top: 5px; left: -13px;
+  transform: rotate(-18deg);
+  transform-origin: right center;
+}
+.garden-plant--sprout::after {
+  width: 13px; height: 7px;
+  background: #4ab84f;
+  border-radius: 0 50% 0 50%;
+  top: 3px; left: 4px;
+  transform: rotate(18deg);
+  transform-origin: left center;
+}
+
+/* ---- 3. BUD STAGE ---- */
+
+.garden-plant--bud {
+  position: absolute;
+  width: 4px; height: 33px;
+  background: linear-gradient(to top, #2a7a2f, #50aa45);
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
+}
+.garden-plant--bud::before {
+  content: '';
+  position: absolute;
+  width: 9px; height: 14px;
+  background: #7ac155;
+  border-radius: 50% 50% 20% 20%;
+  top: -13px; left: -2.5px;
+  box-shadow: inset 0 3px 3px rgba(255,255,255,0.22);
+}
+.garden-plant--bud::after {
+  content: '';
+  position: absolute;
+  width: 5px; height: 6px;
+  background: #aada70;
+  border-radius: 50%;
+  top: -12px; left: -0.5px;
+}
+/* Per-type bud colours — only override what changes */
+.garden-plant--bud.garden-plant--type-sunflower::before  { background:#c9a010; width:11px; height:12px; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-sunflower::after   { background:#553300; width:5px; height:5px; border-radius:50%; top:-11px; left:-0.5px; }
+.garden-plant--bud.garden-plant--type-daisy::before      { background:#e8f2cc; }
+.garden-plant--bud.garden-plant--type-daisy::after       { background:#ffe040; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-tulip::before      { background:#cc2244; width:11px; height:18px; left:-3.5px; border-radius:40% 40% 10% 10%; }
+.garden-plant--bud.garden-plant--type-tulip::after       { background:#ff6688; width:5px; height:10px; left:-0.5px; top:-17px; border-radius:40% 40% 0 0; }
+.garden-plant--bud.garden-plant--type-rose::before       { background:#aa001a; width:11px; height:14px; border-radius:50% 50% 30% 30%; }
+.garden-plant--bud.garden-plant--type-rose::after        { background:#ee2244; width:7px; height:8px; top:-12px; left:-1.5px; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-orchid::before     { background:#7722aa; width:13px; height:14px; left:-4.5px; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-orchid::after      { background:#cc88ff; width:5px; height:6px; top:-12px; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-lavender::before   { background:#9966cc; width:6px; height:18px; left:-1px; border-radius:50% 50% 0 0; }
+.garden-plant--bud.garden-plant--type-lavender::after    { background:#ddbbff; width:4px; height:6px; top:-17px; left:0; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-twocolourbloom::before { background:#cc1155; width:10px; height:14px; left:-3px; border-radius:50% 30% 20% 20%; }
+.garden-plant--bud.garden-plant--type-twocolourbloom::after  { background:#ffaa00; width:7px; height:8px; top:-12px; left:-1px; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-mint::before       { background:#44bb88; width:14px; height:12px; left:-5px; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-mint::after        { background:#aaffdd; width:8px; height:7px; top:-12px; left:-2px; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-fern::before       { background:#2a5a2a; width:16px; height:10px; left:-6px; border-radius:50%; transform:rotate(-10deg); }
+.garden-plant--bud.garden-plant--type-fern::after        { background:#4a8a4a; width:10px; height:7px; top:-11px; left:-1px; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-wildflower::before { background:#ff66aa; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-wildflower::after  { background:#cc44aa; border-radius:50%; }
+
+/* Bud stage transition sparkle (reuse the existing keyframe) */
+@media(prefers-reduced-motion:no-preference){
+  .garden-plant.garden-plant--bud.garden-plant--stage-change {
+    animation: garden-stage-sparkle 0.75s ease-out;
+  }
+}
+
+/* ---- 4. BLOOM: DISTINCTIVE SILHOUETTES PER TYPE ---- */
+/* All overrides use .garden-plant--bloom.garden-plant--type-X
+   specificity (0-3-0) — same as existing rules, but later in file → wins */
+
+/* Default / Sunflower: golden face with 8 radiating petal lobes */
+.garden-plant--bloom {
+  width: 5px; height: 44px;
+  background: linear-gradient(to top, #2a7a2a, #3c9a30);
+  bottom: 8px;
+}
+.garden-plant--bloom::before {
+  content: ''; position: absolute;
+  width: 9px; height: 9px;
+  background: #ffcc00;
+  border-radius: 50%;
+  top: -19px; left: -2px;
+  box-shadow:
+    0   -14px 0 4px #ffd700,
+    9px  -9px 0 3px #ffcc00,
+    14px  0   0 3px #ffd700,
+    9px   9px 0 3px #ffcc00,
+    0    14px 0 4px #ffd700,
+   -9px   9px 0 3px #ffcc00,
+   -14px  0   0 3px #ffd700,
+   -9px  -9px 0 3px #ffcc00;
+}
+.garden-plant--bloom::after {
+  content: ''; position: absolute;
+  width: 13px; height: 13px;
+  background: #5a2800;
+  border-radius: 50%;
+  top: -22px; left: -4px;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Daisy: white-cream petal ring, warm yellow disc */
+.garden-plant--bloom.garden-plant--type-daisy {
+  background: linear-gradient(to top, #2a7a2a, #4aaa44);
+  width: 4px; height: 36px;
+}
+.garden-plant--bloom.garden-plant--type-daisy::before {
+  width: 5px; height: 5px;
+  background: #f8f8f2;
+  border: none;
+  border-radius: 50%;
+  top: -18px; left: -0.5px;
+  box-shadow:
+     0   -11px 0 3px #f8f8f0,
+     7px  -7px 0 3px #f0f0e8,
+    11px   0   0 3px #f8f8f0,
+     7px   7px 0 3px #f0f0e8,
+     0    11px 0 3px #f8f8f0,
+    -7px   7px 0 3px #f0f0e8,
+   -11px   0   0 3px #f8f8f0,
+    -7px  -7px 0 3px #f0f0e8;
+}
+.garden-plant--bloom.garden-plant--type-daisy::after {
+  width: 9px; height: 9px;
+  background: #ffe000;
+  border-radius: 50%;
+  top: -20px; left: -2px;
+  box-shadow: 0 0 3px 1px rgba(255,180,0,0.4);
+}
+
+/* Tulip: elegant tall closed cup, subtle inner highlight */
+.garden-plant--bloom.garden-plant--type-tulip {
+  background: linear-gradient(to top, #2a8a30, #3da040);
+  width: 5px; height: 50px;
+}
+.garden-plant--bloom.garden-plant--type-tulip::before {
+  width: 17px; height: 25px;
+  background: linear-gradient(160deg, #ee1144, #cc0033);
+  border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
+  top: -25px; left: -6px;
+  box-shadow: -4px 4px 0 2px rgba(170,0,35,0.6), 4px 4px 0 2px rgba(170,0,35,0.6);
+}
+.garden-plant--bloom.garden-plant--type-tulip::after {
+  width: 7px; height: 13px;
+  background: rgba(255,120,150,0.55);
+  border-radius: 50% 50% 20% 20%;
+  top: -24px; left: -1px;
+}
+
+/* Rose: layered romantic petal cluster with outer lobes */
+.garden-plant--bloom.garden-plant--type-rose {
+  background: linear-gradient(to top, #2a5a28, #3a7a35);
+  width: 5px; height: 42px;
+}
+.garden-plant--bloom.garden-plant--type-rose::before {
+  width: 18px; height: 18px;
+  background: #cc0022;
+  border-radius: 50% 50% 40% 40%;
+  top: -18px; left: -6.5px;
+  box-shadow:
+   -7px 5px 0 3px #aa001a,
+    7px 5px 0 3px #aa001a,
+    0    7px 0 4px #bb001f,
+   -4px -3px 0 2px #cc0022,
+    4px -3px 0 2px #cc0022;
+}
+.garden-plant--bloom.garden-plant--type-rose::after {
+  width: 10px; height: 10px;
+  background: #ff2244;
+  border-radius: 50%;
+  top: -14px; left: -2.5px;
+  box-shadow: -2px -2px 0 1px #ff4466, 2px -2px 0 1px #cc0033, 0 2px 0 1px #ee1133;
+}
+
+/* Orchid: wide butterfly wings + distinctive bright lip (labellum) */
+.garden-plant--bloom.garden-plant--type-orchid {
+  background: linear-gradient(to top, #2a7a30, #3a9038);
+  width: 4px; height: 44px;
+}
+.garden-plant--bloom.garden-plant--type-orchid::before {
+  width: 28px; height: 11px;
+  background: #8822cc;
+  border-radius: 50%;
+  top: -22px; left: -12px;
+  box-shadow: -9px 8px 0 5px #6611aa, 9px 8px 0 5px #6611aa;
+}
+.garden-plant--bloom.garden-plant--type-orchid::after {
+  width: 8px; height: 13px;
+  background: linear-gradient(to bottom, #ff88ee, #cc55cc);
+  border-radius: 50% 50% 30% 30%;
+  top: -22px; left: -2px;
+  box-shadow: 0 0 5px 2px rgba(200,100,255,0.35);
+}
+
+/* Lavender: tall spike with side bud-clusters via box-shadow */
+.garden-plant--bloom.garden-plant--type-lavender {
+  background: linear-gradient(to top, #6a5a7a, #8a6a9a);
+  width: 3px; height: 54px;
+}
+.garden-plant--bloom.garden-plant--type-lavender::before {
+  width: 7px; height: 28px;
+  background: #9966cc;
+  border-radius: 50% 50% 0 0;
+  top: -27px; left: -2px;
+  box-shadow:
+    5px  2px 0 3px #aa77dd,
+   -5px  2px 0 3px #aa77dd,
+    5px  9px 0 2px #9966cc,
+   -5px  9px 0 2px #9966cc,
+    5px 16px 0 2px #8855bb,
+   -5px 16px 0 2px #8855bb;
+}
+.garden-plant--bloom.garden-plant--type-lavender::after {
+  width: 5px; height: 7px;
+  background: #ddbfff;
+  border-radius: 50%;
+  top: -26px; left: -1px;
+}
+
+/* Two-colour bloom: bold split teardrop petals */
+.garden-plant--bloom.garden-plant--type-twocolourbloom {
+  background: linear-gradient(to top, #2a8a30, #3aaa3a);
+  width: 4px; height: 44px;
+}
+.garden-plant--bloom.garden-plant--type-twocolourbloom::before {
+  width: 13px; height: 26px;
+  background: #ee2266;
+  border-radius: 50% 0 50% 50%;
+  top: -26px; left: -13px;
+  box-shadow: 0 -4px 0 3px #cc1144;
+}
+.garden-plant--bloom.garden-plant--type-twocolourbloom::after {
+  width: 13px; height: 26px;
+  background: #ffcc00;
+  border-radius: 0 50% 50% 50%;
+  top: -26px; left: 2px;
+  box-shadow: 0 -4px 0 3px #dd9900;
+}
+
+/* Mint: bushy round cluster with side lobes */
+.garden-plant--bloom.garden-plant--type-mint {
+  background: linear-gradient(to top, #1a6040, #2a8858);
+  width: 5px; height: 38px;
+}
+.garden-plant--bloom.garden-plant--type-mint::before {
+  width: 22px; height: 18px;
+  background: #44bb88;
+  border-radius: 50%;
+  top: -18px; left: -8.5px;
+  box-shadow: 9px -5px 0 4px #55cc99, -9px -5px 0 3px #33aa77, 0 -8px 0 3px #44bb88;
+}
+.garden-plant--bloom.garden-plant--type-mint::after {
+  width: 12px; height: 9px;
+  background: #aaffdd;
+  border-radius: 50%;
+  top: -20px; left: -3.5px;
+}
+
+/* Fern: dramatic asymmetric arching fronds with sub-frondlets */
+.garden-plant--bloom.garden-plant--type-fern {
+  background: linear-gradient(to top, #2a5a20, #3a7028);
+  width: 4px; height: 46px;
+}
+.garden-plant--bloom.garden-plant--type-fern::before {
+  width: 26px; height: 14px;
+  background: #2a5a2a;
+  border-radius: 0 80% 0 80%;
+  top: -12px; left: -21px;
+  transform: rotate(-14deg);
+  transform-origin: right center;
+  box-shadow: 7px -12px 0 4px #317731, 13px -21px 0 3px #296029;
+}
+.garden-plant--bloom.garden-plant--type-fern::after {
+  width: 20px; height: 12px;
+  background: #338833;
+  border-radius: 80% 0 80% 0;
+  top: -23px; left: 2px;
+  transform: rotate(14deg);
+  transform-origin: left center;
+  box-shadow: -5px -11px 0 3px #4a9a4a;
+}
+
+/* Wildflower: energetic 8-point star-burst */
+.garden-plant--bloom.garden-plant--type-wildflower {
+  background: linear-gradient(to top, #2a8a30, #4aaa44);
+  width: 4px; height: 35px;
+}
+.garden-plant--bloom.garden-plant--type-wildflower::before {
+  width: 6px; height: 6px;
+  background: #ff88cc;
+  border-radius: 50%;
+  top: -19px; left: -1px;
+  box-shadow:
+     0   -12px 0 3px #ff99cc,
+     8px  -8px 0 2px #ffaadd,
+    12px   0   0 2px #ff88cc,
+     8px   8px 0 2px #ffaadd,
+     0    12px 0 3px #ff99cc,
+    -8px   8px 0 2px #ffaadd,
+   -12px   0   0 2px #ff88cc,
+    -8px  -8px 0 2px #ffaadd;
+}
+.garden-plant--bloom.garden-plant--type-wildflower::after {
+  width: 8px; height: 8px;
+  background: #cc44aa;
+  border-radius: 50%;
+  top: -20px; left: -2px;
+  box-shadow: 0 0 4px 2px rgba(200,80,200,0.4);
+}
+
+/* Wilted — muted grey droop, unchanged logically */
+.garden-plant--wilted {
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25)) grayscale(30%);
+}
+
+/* ---- 5. AMBIENT GRASS BLADES ---- */
+
+.garden-grass {
+  position: absolute;
+  bottom: 3px;
+  left: 4px;
+  pointer-events: none;
+  z-index: 3;
+}
+.garden-grass::before,
+.garden-grass::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  border-radius: 1px 1px 0 0;
+}
+/* Variant 1: two blades, left-lean */
+.garden-grass--v1::before { left:3px; height:8px; background:linear-gradient(to top,#3a7a1a,#7ab840); transform:rotate(-7deg); }
+.garden-grass--v1::after  { left:9px; height:6px; background:linear-gradient(to top,#3a7a1a,#6aaa30); transform:rotate(6deg); }
+/* Variant 2: two blades, right-lean, taller */
+.garden-grass--v2::before { left:2px; height:6px; background:linear-gradient(to top,#356a18,#72b038); transform:rotate(8deg); }
+.garden-grass--v2::after  { left:8px; height:10px; background:linear-gradient(to top,#3a7a1a,#80c040); transform:rotate(-11deg); }
+/* Variant 3: two blades, centre, mixed heights */
+.garden-grass--v3::before { left:4px; height:10px; background:linear-gradient(to top,#306016,#78bc3a); transform:rotate(-5deg); }
+.garden-grass--v3::after  { left:10px; height:7px; background:linear-gradient(to top,#356a18,#68a830); transform:rotate(9deg); }
+
+/* ---- 6. PEBBLE ACCENTS ---- */
+
+.garden-pebble {
+  position: absolute;
+  bottom: 5px;
+  right: 3px;
+  pointer-events: none;
+  z-index: 3;
+}
+.garden-pebble::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 5px; height: 3px;
+  background: rgba(140,118,98,0.65);
+  border-radius: 50%;
+}
+.garden-pebble--1::before { right:0; box-shadow: 7px 0 0 1px rgba(118,100,82,0.50); }
+.garden-pebble--2::before { right:2px; width:4px; height:2px; box-shadow: 6px 1px 0 1px rgba(130,108,90,0.45); }
+.garden-pebble--3::before { right:1px; box-shadow: 8px 0 0 0 rgba(110,94,78,0.40); }
+
+/* ---- 7. PASSIVE FIREFLIES (night only) ---- */
+
+.garden-passive-firefly {
+  display: none;
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: #e0f000;
+  pointer-events: none;
+  z-index: 6;
+  box-shadow: 0 0 4px 2px rgba(200,230,0,0.55);
+}
+#w95-win-garden .w95-body.garden--night .garden-passive-firefly {
+  display: block;
+}
+@keyframes garden-firefly-passive {
+  0%   { opacity:0; transform:translate(0,0); }
+  25%  { opacity:0; }
+  50%  { opacity:0.85; transform:translate(4px,-6px); }
+  75%  { opacity:0.55; transform:translate(-3px,-9px); }
+  100% { opacity:0; transform:translate(2px,-12px); }
+}
+@media(prefers-reduced-motion:no-preference){
+  #w95-win-garden .w95-body.garden--night .garden-passive-firefly {
+    animation: garden-firefly-passive var(--ff-dur,4s) ease-in-out var(--ff-delay,0s) infinite;
+  }
+}
+
+/* ---- 8. DAWN DEW SHIMMER on blooming plants ---- */
+
+@media(prefers-reduced-motion:no-preference){
+  #w95-win-garden .w95-body.garden--dawn .garden-plant--bloom,
+  #w95-win-garden .w95-body.garden--dawn .garden-plant--bud {
+    filter: drop-shadow(0 3px 5px rgba(0,0,0,0.40))
+            drop-shadow(0 0 5px rgba(180,230,255,0.40));
+  }
+}
+
+/* ---- 9. LOCKED TILE: overgrown mystery patch ---- */
+
+.garden-tile-col--locked .garden-lock-hint {
+  color: rgba(160,130,90,0.60);
+  font-size: 22px;
+}
+
+/* ---- 10. PROGRESSION: ambient environment reveals ---- */
+
+/* After 3+ tiles: tiny clover dot appears next to a mid tile */
+.garden-tiles-row[data-garden-size]:not([data-garden-size="1"]):not([data-garden-size="2"])
+  .garden-tile-col:nth-child(3) .garden-grass--v2::before {
+  background: linear-gradient(to top, #228822, #44cc44);
+  box-shadow: 4px 0 0 1px rgba(50,180,50,0.4), 2px -4px 0 1px rgba(50,180,50,0.35);
+}
+
+/* After 5+ tiles: richer grass on later tiles */
+.garden-tiles-row[data-garden-size="5"] .garden-grass,
+.garden-tiles-row[data-garden-size="6"] .garden-grass,
+.garden-tiles-row[data-garden-size="7"] .garden-grass,
+.garden-tiles-row[data-garden-size="8"] .garden-grass {
+  opacity: 1;
+}
+.garden-tiles-row[data-garden-size="5"] .garden-tile-col:nth-child(n+4) .garden-grass::before,
+.garden-tiles-row[data-garden-size="6"] .garden-tile-col:nth-child(n+4) .garden-grass::before,
+.garden-tiles-row[data-garden-size="7"] .garden-tile-col:nth-child(n+4) .garden-grass::before,
+.garden-tiles-row[data-garden-size="8"] .garden-tile-col:nth-child(n+4) .garden-grass::before {
+  height: 12px; /* taller grass on developed tiles */
+}
+
+/* After 7+ tiles: the grass ground strip grows a little richer */
+.garden-tiles-row[data-garden-size="7"]::after,
+.garden-tiles-row[data-garden-size="8"]::after {
+  height: 13px;
+  background: linear-gradient(to bottom, #72bb2a, #3a7814);
+}
+
+/* Dark mode: mute very bright colours in the new plant styles */
+body.dark-mode .garden-plant--bloom,
+body.dark-mode .garden-plant--bud {
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6)) brightness(0.85);
+}
+
+/* ============================================================
    Win95 Desktop
    ============================================================ */
 #w95-desktop {

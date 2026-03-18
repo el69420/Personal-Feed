@@ -5882,7 +5882,7 @@ const w95Apps = {};
     { streak: 7,  id: 'lavender' },
     { streak: 14, id: 'twocolourbloom' },
   ];
-  const STAGE_LABELS    = { seed: 'Seed', sprout: 'Sprout', bloom: 'Bloom', wilted: 'Wilted' };
+  const STAGE_LABELS    = { seed: 'Seed', sprout: 'Sprout', bud: 'Bud', bloom: 'Bloom', wilted: 'Wilted' };
   const TOTAL_SLOTS = 8;
   // Bloom count thresholds to unlock each slot (index = slot number)
   const TILE_UNLOCK_THRESHOLDS = [0, 1, 5, 10, 15, 20, 25, 30];
@@ -5901,9 +5901,12 @@ const w95Apps = {};
     if (ageHrs >= 24 && wateredHrsAgo >= 48) return 'wilted';
 
     if (ageHrs < 24) return 'seed';
-    if (ageHrs < 48) return lastWatered ? 'sprout' : 'seed';
+    if (ageHrs < 40) return lastWatered ? 'sprout' : 'seed';
 
-    // 48h+: bloom only if watered within last 24h
+    // Bud: 40-68h, watered within 32h — flower forming but not yet open
+    if (ageHrs < 68 && wateredHrsAgo < 32) return 'bud';
+
+    // 68h+: full bloom if watered within last 24h
     if (wateredHrsAgo < 24) return 'bloom';
 
     // Watered but not recently enough for bloom
@@ -5941,6 +5944,21 @@ const w95Apps = {};
         tilesRowEl.appendChild(col);
       }
     }
+    // Passive fireflies — hidden via CSS until garden--night class is active
+    if (!tilesRowEl.querySelector('.garden-passive-firefly')) {
+      const FF_POSITIONS = [
+        [12, 22], [30, 38], [55, 18], [72, 42], [88, 28],
+      ];
+      FF_POSITIONS.forEach(([l, t], i) => {
+        const ff = document.createElement('span');
+        ff.className = 'garden-passive-firefly';
+        ff.style.left = l + '%';
+        ff.style.top  = t + '%';
+        ff.style.setProperty('--ff-delay', (i * 0.9) + 's');
+        ff.style.setProperty('--ff-dur',   (3.2 + i * 0.7) + 's');
+        tilesRowEl.appendChild(ff);
+      });
+    }
   }
 
   function renderTile(n, tileData, isUnlocked) {
@@ -5960,19 +5978,26 @@ const w95Apps = {};
     // ---- Determine occupied vs empty and rebuild HTML if state changed ----
     const isOccupied = !!tileData;
     if (col.dataset.occupied !== String(isOccupied)) {
-      col.className = 'garden-tile-col';
+      // Grass blades vary by tile position for organic feel
+      const gv = `garden-grass--v${(n % 3) + 1}`;
+      // Pebbles on tiles beyond the first two
+      const pebble = n >= 2 ? `<span class="garden-pebble garden-pebble--${(n % 3) + 1}"></span>` : '';
+      col.className = `garden-tile-col garden-tile-col--v${(n % 3) + 1}`;
       col.dataset.occupied = String(isOccupied);
       if (isOccupied) {
         col.innerHTML =
           `<div class="garden-soil-tile">` +
             `<div class="garden-plant-el"></div>` +
             `<div class="garden-tile-events"></div>` +
+            `<span class="garden-grass ${gv}"></span>${pebble}` +
           `</div>` +
           `<div class="garden-tile-status-el"></div>`;
       } else {
+        col.className += ' garden-tile-col--empty';
         col.innerHTML =
           `<div class="garden-soil-tile">` +
             `<div class="garden-plant garden-plant--seed"></div>` +
+            `<span class="garden-grass ${gv}"></span>${pebble}` +
           `</div>` +
           `<div class="garden-tile-actions">` +
             `<button class="w95-btn garden-plant-btn" data-tile="${n}">Plant</button>` +
@@ -6077,6 +6102,7 @@ const w95Apps = {};
     const tiles         = state.tiles || {};
     const unlockedPlants = Array.isArray(state.unlockedPlants) ? state.unlockedPlants : [];
     const unlockedTiles = state.unlockedTiles || 1;
+    tilesRowEl.dataset.gardenSize = String(unlockedTiles);
 
     renderPlantSelector(unlockedPlants);
 
