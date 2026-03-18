@@ -2236,6 +2236,170 @@ if (localStorage.getItem('darkMode') === 'true') {
     toggleDarkMode();
 }
 
+// ---- Sun-based theme mode ----
+let isSunMode = false;
+let _sunModeInterval = null;
+let _sunModeGeoCoords = null;
+
+// CSS variable values for light and dark endpoints
+const _SUN_VARS_LIGHT = {
+    '--bg-gradient-start': '#006868',
+    '--bg-gradient-mid1':  '#008080',
+    '--bg-gradient-mid2':  '#009898',
+    '--bg-gradient-end':   '#006060',
+    '--card-bg':           'rgba(240,255,255,0.94)',
+    '--card-border':       'rgba(0,160,160,0.22)',
+    '--section-bg':        'rgba(200,240,240,0.55)',
+    '--text-primary':      'rgba(30,27,75,1)',
+    '--text-secondary':    'rgba(107,114,128,1)',
+    '--input-bg':          'rgba(255,255,255,1)',
+    '--input-border':      'rgba(0,180,180,0.35)',
+};
+const _SUN_VARS_DARK = {
+    '--bg-gradient-start': '#001a1a',
+    '--bg-gradient-mid1':  '#0a2a2a',
+    '--bg-gradient-mid2':  '#0d3535',
+    '--bg-gradient-end':   '#001a1a',
+    '--card-bg':           'rgba(8,30,30,0.97)',
+    '--card-border':       'rgba(0,180,180,0.35)',
+    '--section-bg':        'rgba(0,50,50,0.6)',
+    '--text-primary':      'rgba(224,250,250,1)',
+    '--text-secondary':    'rgba(122,186,186,1)',
+    '--input-bg':          'rgba(0,40,40,0.9)',
+    '--input-border':      'rgba(0,180,180,0.4)',
+};
+
+function _parseRgba(c) {
+    if (c && c[0] === '#') {
+        const h = c.slice(1);
+        return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16), 1];
+    }
+    const m = c && c.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/);
+    return m ? [+m[1],+m[2],+m[3], m[4]!==undefined?+m[4]:1] : [0,0,0,1];
+}
+
+function _lerpColor(a, b, t) {
+    const ca = _parseRgba(a), cb = _parseRgba(b);
+    const r  = Math.round(ca[0]+(cb[0]-ca[0])*t);
+    const g  = Math.round(ca[1]+(cb[1]-ca[1])*t);
+    const bl = Math.round(ca[2]+(cb[2]-ca[2])*t);
+    const al = +(ca[3]+(cb[3]-ca[3])*t).toFixed(3);
+    return `rgba(${r},${g},${bl},${al})`;
+}
+
+// Calculates sunrise and sunset times for today at the given coordinates.
+// Returns { sunrise: Date, sunset: Date } or null for polar regions.
+function _calcSunTimes(lat, lon) {
+    const now = new Date();
+    const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+    const lat_r = lat * Math.PI / 180;
+    const decl  = -23.45 * Math.cos(2 * Math.PI / 365 * (dayOfYear + 10)) * Math.PI / 180;
+    const cosHA = (Math.cos(90.833 * Math.PI / 180) - Math.sin(lat_r) * Math.sin(decl))
+                / (Math.cos(lat_r) * Math.cos(decl));
+    if (cosHA < -1 || cosHA > 1) return null; // polar day or night
+    const ha  = Math.acos(cosHA) * 180 / Math.PI;
+    const B   = 2 * Math.PI / 365 * (dayOfYear - 81);
+    const eot = 9.87 * Math.sin(2*B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B); // equation of time (minutes)
+    const solarNoonUTC = 720 - 4 * lon - eot;
+    const tzOffset     = -now.getTimezoneOffset(); // minutes east of UTC
+    const srMin = solarNoonUTC - 4 * ha + tzOffset;
+    const ssMin = solarNoonUTC + 4 * ha + tzOffset;
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return {
+        sunrise: new Date(today.getTime() + srMin * 60000),
+        sunset:  new Date(today.getTime() + ssMin * 60000),
+    };
+}
+
+// Returns a blend factor t where 0 = full day (light) and 1 = full night (dark).
+// Transitions are smoothed over ±60 min around sunrise and sunset.
+function _getSunBlend(lat, lon) {
+    const times = _calcSunTimes(lat, lon);
+    if (!times) return null;
+    const { sunrise, sunset } = times;
+    const now = Date.now();
+    const sr  = sunrise.getTime();
+    const ss  = sunset.getTime();
+    const WIN = 60 * 60 * 1000; // 60-minute transition window (each side)
+    const smoothstep = t => t * t * (3 - 2 * t);
+    if (now < sr - WIN) return 1;
+    if (now < sr + WIN) return 1 - smoothstep((now - (sr - WIN)) / (2 * WIN));
+    if (now < ss - WIN) return 0;
+    if (now < ss + WIN) return smoothstep((now - (ss - WIN)) / (2 * WIN));
+    return 1;
+}
+
+function _applySunBlend(t) {
+    // Interpolate all CSS variables directly on the body element
+    for (const [v, lightVal] of Object.entries(_SUN_VARS_LIGHT)) {
+        document.body.style.setProperty(v, _lerpColor(lightVal, _SUN_VARS_DARK[v], t));
+    }
+    // Toggle dark-mode class for the star/twinkling effect when it's mostly night
+    const wantDark = t > 0.5;
+    if (wantDark !== isDarkMode) {
+        isDarkMode = wantDark;
+        document.body.classList.toggle('dark-mode', wantDark);
+        const icon = document.getElementById('darkModeIcon');
+        if (icon) icon.textContent = wantDark ? '☼' : '☾';
+    }
+}
+
+function _updateSunTheme() {
+    if (!_sunModeGeoCoords) return;
+    const t = _getSunBlend(_sunModeGeoCoords.lat, _sunModeGeoCoords.lon);
+    if (t !== null) _applySunBlend(t);
+}
+
+function startSunMode(lat, lon) {
+    _sunModeGeoCoords = { lat, lon };
+    localStorage.setItem('sunModeCoords', JSON.stringify({ lat, lon }));
+    isSunMode = true;
+    localStorage.setItem('sunMode', 'true');
+    _updateSunTheme();
+    if (!_sunModeInterval) {
+        _sunModeInterval = setInterval(_updateSunTheme, 60000);
+    }
+}
+
+function stopSunMode() {
+    isSunMode = false;
+    localStorage.setItem('sunMode', 'false');
+    if (_sunModeInterval) {
+        clearInterval(_sunModeInterval);
+        _sunModeInterval = null;
+    }
+    // Remove inline CSS variable overrides so the normal dark/light classes take over
+    for (const v of Object.keys(_SUN_VARS_LIGHT)) {
+        document.body.style.removeProperty(v);
+    }
+}
+
+function enableSunMode() {
+    const stored   = localStorage.getItem('sunModeCoords');
+    const fallback = { lat: 51.5, lon: -0.12 }; // London fallback
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            pos => startSunMode(pos.coords.latitude, pos.coords.longitude),
+            ()  => startSunMode(...(stored ? Object.values(JSON.parse(stored)) : [fallback.lat, fallback.lon])),
+            { timeout: 5000 }
+        );
+    } else {
+        const c = stored ? JSON.parse(stored) : fallback;
+        startSunMode(c.lat, c.lon);
+    }
+}
+
+// Restore sun mode on startup
+if (localStorage.getItem('sunMode') === 'true') {
+    const stored = localStorage.getItem('sunModeCoords');
+    if (stored) {
+        const c = JSON.parse(stored);
+        startSunMode(c.lat, c.lon);
+    } else {
+        enableSunMode();
+    }
+}
+
 // Apply any stored desktop theme on startup
 {
     const _storedTheme = localStorage.getItem('activeDesktopTheme') || '';
@@ -11185,6 +11349,7 @@ async function loadUserWallpaper() {
         snap = {
             wallpaper:    currentWallpaperId,
             darkMode:     isDarkMode,
+            sunMode:      isSunMode,
             sound:        soundEnabled,
             masterVolume: soundMasterVolume,
             uiEffects:    soundUiEffects,
@@ -11501,10 +11666,26 @@ async function loadUserWallpaper() {
 
     // ---- Appearance tab ----
     const darkModeChk = document.getElementById('settings-darkmode-chk');
+    const sunModeChk  = document.getElementById('settings-sunmode-chk');
 
     if (darkModeChk) {
         darkModeChk.addEventListener('change', () => {
             if (darkModeChk.checked !== isDarkMode) toggleDarkMode();
+        });
+    }
+
+    if (sunModeChk) {
+        sunModeChk.addEventListener('change', () => {
+            if (sunModeChk.checked) {
+                enableSunMode();
+                if (darkModeChk) darkModeChk.disabled = true;
+            } else {
+                stopSunMode();
+                if (darkModeChk) {
+                    darkModeChk.disabled = false;
+                    darkModeChk.checked  = isDarkMode;
+                }
+            }
         });
     }
 
@@ -11630,7 +11811,11 @@ async function loadUserWallpaper() {
         renderRewardSoundPacks();
         renderRewardScreensavers();
 
-        if (darkModeChk)    darkModeChk.checked    = isDarkMode;
+        if (darkModeChk) {
+            darkModeChk.checked  = isDarkMode;
+            darkModeChk.disabled = isSunMode;
+        }
+        if (sunModeChk)     sunModeChk.checked     = isSunMode;
 
         if (muteChk)        muteChk.checked        = !soundEnabled;
         if (volSlider) {
@@ -11691,7 +11876,12 @@ async function loadUserWallpaper() {
     function revertSettings() {
         applyWallpaper(snap.wallpaper);
 
-        if (snap.darkMode !== isDarkMode) toggleDarkMode();
+        if (snap.sunMode !== isSunMode) {
+            if (snap.sunMode) enableSunMode(); else stopSunMode();
+            if (sunModeChk)  sunModeChk.checked = snap.sunMode;
+            if (darkModeChk) darkModeChk.disabled = snap.sunMode;
+        }
+        if (!isSunMode && snap.darkMode !== isDarkMode) toggleDarkMode();
 
         soundEnabled = snap.sound;
         localStorage.setItem('soundEnabled', soundEnabled ? 'true' : 'false');
