@@ -118,11 +118,16 @@ function applyLinkMeta(el, meta) {
 }
 
 // Shared: check Firebase cache then fall back to microlink.io
-async function fetchLinkMeta(url) {
+// opts.requireImage: if true, bypass cache when cached result has no image
+async function fetchLinkMeta(url, opts = {}) {
     const key = urlToKey(url);
     try {
         const snap = await get(child(ref(database), `linkMeta/${key}`));
-        if (snap.exists()) return snap.val();
+        if (snap.exists()) {
+            const cached = snap.val();
+            if (!opts.requireImage || cached.image) return cached;
+            // cached has no image and caller needs one — fall through to fresh fetch
+        }
         const resp = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(6000) });
         if (!resp.ok) return null;
         const data = await resp.json();
@@ -1425,7 +1430,7 @@ function renderWishlistItems(boardId, items) {
         const imgHtml = item.image
             ? `<img class="wishlist-item-img" src="${safeText(item.image)}" alt="" onerror="this.style.display='none'">`
             : `<div class="wishlist-item-img-placeholder">&#128279;</div>`;
-        return `<div class="wishlist-item-card" onclick="window.open('${safeUrl}','_blank')">
+        return `<div class="wishlist-item-card" data-item-id="${itemId}" onclick="window.open('${safeUrl}','_blank')">
             ${imgHtml}
             <div class="wishlist-item-body">
                 <div class="wishlist-item-title">${safeText(item.title || item.url)}</div>
@@ -1448,6 +1453,27 @@ function renderWishlistItems(boardId, items) {
         const badge = document.getElementById(`wl-cmt-count-${itemId}`);
         if (badge) badge.textContent = count > 0 ? count : '';
     }));
+    // Hydrate missing thumbnails: items with no stored image try a fresh fetch
+    const noImageEntries = entries.filter(([, item]) => !item.image);
+    if (noImageEntries.length > 0) {
+        Promise.all(noImageEntries.map(async ([itemId, item]) => {
+            const meta = await fetchLinkMeta(item.url, { requireImage: true });
+            if (!meta?.image) return;
+            // Persist newly found image to Firebase
+            set(ref(database, `wishlistItems/${boardId}/${itemId}/image`), meta.image).catch(() => {});
+            // Swap placeholder in DOM if card is still visible
+            const card = grid.querySelector(`[data-item-id="${itemId}"]`);
+            if (!card) return;
+            const placeholder = card.querySelector('.wishlist-item-img-placeholder');
+            if (!placeholder) return;
+            const img = document.createElement('img');
+            img.className = 'wishlist-item-img';
+            img.src = meta.image;
+            img.alt = '';
+            img.onerror = () => img.style.display = 'none';
+            placeholder.replaceWith(img);
+        }));
+    }
 }
 
 window.closeWishlistBoardDetail = function() {
