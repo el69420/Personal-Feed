@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect, runTransaction } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+import { getDatabase, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { firebaseConfig } from './firebase-config.js';
 
@@ -3873,14 +3873,22 @@ function setupPresence() {
     _presRef = ref(database, `presence/${currentUser}`);
     _presState = 'online';
 
-    // Announce online; clean up on disconnect
-    set(_presRef, { state: 'online', ts: Date.now() });
-    onDisconnect(_presRef).set({ state: 'offline', ts: Date.now() });
+    // Re-register the onDisconnect handler every time the connection is established
+    // (or re-established after a drop). Without this, a reconnect clears the server-side
+    // handler and the user gets stuck showing as permanently online.
+    onValue(ref(database, '.info/connected'), snap => {
+        if (!snap.val()) return; // currently disconnected — nothing to register
+        // Register server-side cleanup; serverTimestamp() is evaluated at disconnect time
+        onDisconnect(_presRef).set({ state: 'offline', ts: serverTimestamp() });
+        // Announce online
+        set(_presRef, { state: _presState === 'offline' ? 'online' : _presState, ts: Date.now() });
+        if (_presState === 'offline') _presState = 'online';
+    });
 
     // Heartbeat every 30 s (keeps ts fresh so the other client knows we're still alive)
     clearInterval(_presHbInterval);
     _presHbInterval = setInterval(() => {
-        if (_presRef) update(_presRef, { ts: Date.now() });
+        if (_presRef && _presState !== 'offline') update(_presRef, { ts: Date.now() });
     }, 30_000);
 
     // Idle detection: go idle after 60 s of no mouse/key activity
