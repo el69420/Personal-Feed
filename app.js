@@ -3897,6 +3897,27 @@ function setupPresence() {
     );
     _resetPresIdle();
 
+    // Go offline immediately when the tab is hidden or closed.
+    // The heartbeat keeps the WebSocket alive, so the server-side onDisconnect
+    // handler never fires while the page is open — these listeners bridge that gap.
+    document.addEventListener('visibilitychange', () => {
+        if (!_presRef) return;
+        if (document.visibilityState === 'hidden') {
+            clearTimeout(_presIdleTimer);
+            _presState = 'offline';
+            set(_presRef, { state: 'offline', ts: Date.now() });
+        } else {
+            // Tab became visible again — come back online
+            _presState = 'online';
+            set(_presRef, { state: 'online', ts: Date.now() });
+            _resetPresIdle();
+        }
+    });
+
+    window.addEventListener('beforeunload', () => {
+        if (_presRef) set(_presRef, { state: 'offline', ts: Date.now() });
+    });
+
     // Listen to all presence nodes and refresh the dots
     onValue(ref(database, 'presence'), snap => {
         updatePresenceDots(snap.val() || {});
