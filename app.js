@@ -9924,242 +9924,214 @@ function openFolderWindow(folderItem) {
     const DRAG_THRESHOLD = 4; // px — below this, treat as a click not a drag
     const clickTimes = {};
 
-    function setupDesktopIcon(icon) {
-        const appKey = icon.dataset.app;
-        // dragStarts: map of appKey → {left, top} for every selected icon at drag start
-        let startX, startY, didDrag, activePointerId, dragStarts, wasSelectedOnDown, dropTarget;
+    // ---- Shared icon drag state (mouse-event based, same pattern as window dragging) ----
+    // Using mousedown/mousemove/mouseup mirrors the proven window-drag implementation and
+    // avoids pointer-capture and pointer-events:none interaction issues.
+    let _drag = null; // active drag descriptor, or null when idle
 
-        // Document-level move handler — tracks the pointer anywhere on the page.
-        // Using document listeners instead of setPointerCapture avoids a known issue
-        // where setPointerCapture silently fails inside pointer-events:none parents.
-        function onDragMove(e) {
-            if (e.pointerId !== activePointerId) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            if (!didDrag && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
-                didDrag = true;
+    window.addEventListener('mousemove', (e) => {
+        if (!_drag) return;
+        const dx = e.clientX - _drag.startX;
+        const dy = e.clientY - _drag.startY;
+        if (!_drag.didDrag && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+            _drag.didDrag = true;
+        }
+        if (_drag.didDrag) {
+            const desktop = document.getElementById('w95-desktop');
+            const dw = desktop.offsetWidth;
+            const dh = desktop.offsetHeight;
+            // Move every selected icon by the same delta
+            document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                const sk = si.dataset.app;
+                const start = _drag.dragStarts[sk];
+                if (!start) return;
+                const iconW = si.offsetWidth  || 72;
+                const iconH = si.offsetHeight || 68;
+                si.style.left = Math.max(0, Math.min(dw - iconW, start.left + dx)) + 'px';
+                si.style.top  = Math.max(0, Math.min(dh - iconH, start.top  + dy)) + 'px';
+            });
+            // Detect folder / recycle-bin drop target under dragged icon's centre
+            const rect = _drag.icon.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top  + rect.height / 2;
+            let newTarget = null;
+            // Check folder desktop icons (skip any that are being dragged)
+            document.querySelectorAll('.w95-desktop-icon[data-folder="1"]').forEach(fi => {
+                if (fi.classList.contains('selected')) return;
+                const fr = fi.getBoundingClientRect();
+                if (cx >= fr.left && cx <= fr.right && cy >= fr.top && cy <= fr.bottom) {
+                    newTarget = { el: fi, folderId: fi.dataset.app };
+                }
+            });
+            // Check open folder window grids
+            if (!newTarget) {
+                document.querySelectorAll('[id^="fwin-"] .explorer-grid').forEach(grid => {
+                    const gr = grid.getBoundingClientRect();
+                    if (cx >= gr.left && cx <= gr.right && cy >= gr.top && cy <= gr.bottom) {
+                        newTarget = { el: grid, folderId: grid.closest('[id^="fwin-"]').id.replace('fwin-', '') };
+                    }
+                });
             }
-            if (didDrag) {
-                const desktop = document.getElementById('w95-desktop');
-                const dw = desktop.offsetWidth;
-                const dh = desktop.offsetHeight;
-                // Move every selected icon by the same delta
-                document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
-                    const sk = si.dataset.app;
-                    const start = dragStarts[sk];
-                    if (!start) return;
-                    const iconW = si.offsetWidth  || 72;
-                    const iconH = si.offsetHeight || 68;
-                    si.style.left = Math.max(0, Math.min(dw - iconW, start.left + dx)) + 'px';
-                    si.style.top  = Math.max(0, Math.min(dh - iconH, start.top  + dy)) + 'px';
-                });
-                // Detect folder drop target under dragged icon's center
-                const rect = icon.getBoundingClientRect();
-                const cx = rect.left + rect.width / 2;
-                const cy = rect.top + rect.height / 2;
-                let newTarget = null;
-                // Check folder desktop icons (not any of the selected ones being dragged)
-                document.querySelectorAll('.w95-desktop-icon[data-folder="1"]').forEach(fi => {
-                    if (fi.classList.contains('selected')) return;
-                    const fr = fi.getBoundingClientRect();
-                    if (cx >= fr.left && cx <= fr.right && cy >= fr.top && cy <= fr.bottom) {
-                        newTarget = { el: fi, folderId: fi.dataset.app };
-                    }
-                });
-                // Check open folder window grids
-                if (!newTarget) {
-                    document.querySelectorAll('[id^="fwin-"] .explorer-grid').forEach(grid => {
-                        const gr = grid.getBoundingClientRect();
-                        if (cx >= gr.left && cx <= gr.right && cy >= gr.top && cy <= gr.bottom) {
-                            newTarget = { el: grid, folderId: grid.closest('[id^="fwin-"]').id.replace('fwin-', '') };
-                        }
-                    });
-                }
-                // Check recycle bin icon
-                if (!newTarget) {
-                    const rbEl = document.querySelector('.w95-desktop-icon[data-app="recycleBin"]');
-                    if (rbEl && !rbEl.classList.contains('selected')) {
-                        const rr = rbEl.getBoundingClientRect();
-                        if (cx >= rr.left && cx <= rr.right && cy >= rr.top && cy <= rr.bottom) {
-                            newTarget = { el: rbEl, type: 'recycleBin' };
-                        }
+            // Check recycle bin icon
+            if (!newTarget) {
+                const rbEl = document.querySelector('.w95-desktop-icon[data-app="recycleBin"]');
+                if (rbEl && !rbEl.classList.contains('selected')) {
+                    const rr = rbEl.getBoundingClientRect();
+                    if (cx >= rr.left && cx <= rr.right && cy >= rr.top && cy <= rr.bottom) {
+                        newTarget = { el: rbEl, type: 'recycleBin' };
                     }
                 }
-                // Update highlight
-                if (dropTarget?.el !== newTarget?.el) {
-                    dropTarget?.el.classList.remove('drop-target');
-                    newTarget?.el.classList.add('drop-target');
-                    dropTarget = newTarget;
-                }
+            }
+            // Update drop-target highlight
+            if (_drag.dropTarget?.el !== newTarget?.el) {
+                _drag.dropTarget?.el.classList.remove('drop-target');
+                newTarget?.el.classList.add('drop-target');
+                _drag.dropTarget = newTarget;
             }
         }
+    });
 
-        function onDragEnd(e) {
-            if (e.pointerId !== activePointerId) return;
-            // Remove document-level drag listeners
-            document.removeEventListener('pointermove',   onDragMove);
-            document.removeEventListener('pointerup',     onDragEnd);
-            document.removeEventListener('pointercancel', onDragCancel);
+    window.addEventListener('mouseup', (e) => {
+        if (!_drag) return;
+        const drag = _drag;
+        _drag = null; // clear before any callbacks
 
-            const isCtrl = e.ctrlKey || e.metaKey;
+        const isCtrl = e.ctrlKey || e.metaKey;
 
-            if (didDrag) {
-                // Clear drop-target highlight
-                if (dropTarget) dropTarget.el.classList.remove('drop-target');
-                if (dropTarget?.type === 'recycleBin') {
-                    // === Drop icons into recycle bin ===
-                    dropTarget = null;
-                    const customItems = window._desktopCustom?.getItems() || [];
+        if (drag.didDrag) {
+            if (drag.dropTarget) drag.dropTarget.el.classList.remove('drop-target');
+            if (drag.dropTarget?.type === 'recycleBin') {
+                // === Drop icons into recycle bin ===
+                const dropTarget = drag.dropTarget;
+                const customItems = window._desktopCustom?.getItems() || [];
+                const positions = getIconPositions();
+                const toRemove = [];
+                document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                    const sk = si.dataset.app;
+                    if (sk === 'recycleBin') return;
+                    const srcItem = customItems.find(i => i.id === sk);
+                    if (srcItem) {
+                        addToLocalTrash(srcItem);
+                        toRemove.push(sk);
+                        si.remove();
+                        delete w95Apps[sk];
+                        delete positions[sk];
+                    } else {
+                        // Built-in icon: send to Firebase recycle bin and hide immediately
+                        const label = si.querySelector('.desktop-icon-label')?.textContent || sk;
+                        set(ref(database, `recycleBin/icon_${sk}`), {
+                            type: 'desktop-icon', iconApp: sk, iconLabel: label, deletedAt: Date.now(),
+                        });
+                        si.classList.add('is-hidden');
+                    }
+                });
+                if (toRemove.length) {
+                    window._desktopCustom?.saveItems(customItems.filter(i => !toRemove.includes(i.id)));
+                    saveIconPositions(positions);
+                    renderRecycleBin();
+                }
+            } else if (drag.dropTarget) {
+                // === Drop icons into folder ===
+                const tid = drag.dropTarget.folderId;
+                const customItems = window._desktopCustom?.getItems() || [];
+                const targetFolder = customItems.find(i => i.id === tid);
+                if (targetFolder) {
+                    if (!targetFolder.children) targetFolder.children = [];
                     const positions = getIconPositions();
                     const toRemove = [];
                     document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
                         const sk = si.dataset.app;
-                        if (sk === 'recycleBin') return;
+                        if (sk === tid) return; // don't drop folder into itself
                         const srcItem = customItems.find(i => i.id === sk);
                         if (srcItem) {
-                            addToLocalTrash(srcItem);
+                            targetFolder.children.push({
+                                id: 'child_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+                                type: srcItem.type, name: srcItem.name,
+                                ...(srcItem.content   !== undefined && { content:   srcItem.content }),
+                                ...(srcItem.children  !== undefined && { children:  srcItem.children }),
+                                ...(srcItem.app       !== undefined && { app:       srcItem.app, icon: srcItem.icon }),
+                            });
                             toRemove.push(sk);
                             si.remove();
                             delete w95Apps[sk];
                             delete positions[sk];
                         } else {
-                            // Built-in icon: send to Firebase recycle bin and hide immediately
-                            const label = si.querySelector('.desktop-icon-label')?.textContent || sk;
-                            set(ref(database, `recycleBin/icon_${sk}`), {
-                                type: 'desktop-icon', iconApp: sk, iconLabel: label, deletedAt: Date.now(),
-                            });
-                            si.classList.add('is-hidden');
-                        }
-                    });
-                    if (toRemove.length) {
-                        window._desktopCustom?.saveItems(customItems.filter(i => !toRemove.includes(i.id)));
-                        saveIconPositions(positions);
-                        renderRecycleBin();
-                    }
-                } else if (dropTarget) {
-                    // === Drop icons into folder ===
-                    const tid = dropTarget.folderId;
-                    dropTarget = null;
-                    const customItems = window._desktopCustom?.getItems() || [];
-                    const targetFolder = customItems.find(i => i.id === tid);
-                    if (targetFolder) {
-                        if (!targetFolder.children) targetFolder.children = [];
-                        const positions = getIconPositions();
-                        const toRemove = [];
-                        document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
-                            const sk = si.dataset.app;
-                            if (sk === tid) return; // don't drop a folder into itself
-                            const srcItem = customItems.find(i => i.id === sk);
-                            if (srcItem) {
-                                // Custom item: move it into folder
+                            // Built-in icon: add shortcut only
+                            const meta = SHORTCUTABLE_APPS.find(a => a.app === sk);
+                            if (meta) {
                                 targetFolder.children.push({
                                     id: 'child_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-                                    type: srcItem.type, name: srcItem.name,
-                                    ...(srcItem.content !== undefined && { content: srcItem.content }),
-                                    ...(srcItem.children  !== undefined && { children: srcItem.children }),
-                                    ...(srcItem.app       !== undefined && { app: srcItem.app, icon: srcItem.icon }),
+                                    type: 'shortcut', name: meta.name, app: meta.app, icon: meta.icon,
                                 });
-                                toRemove.push(sk);
-                                si.remove();
-                                delete w95Apps[sk];
-                                delete positions[sk];
-                            } else {
-                                // Built-in app icon: add a shortcut (icon stays on desktop)
-                                const meta = SHORTCUTABLE_APPS.find(a => a.app === sk);
-                                if (meta) {
-                                    targetFolder.children.push({
-                                        id: 'child_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-                                        type: 'shortcut', name: meta.name, app: meta.app, icon: meta.icon,
-                                    });
-                                }
                             }
-                        });
-                        // Persist
-                        window._desktopCustom?.saveItems(customItems.filter(i => !toRemove.includes(i.id)));
-                        saveIconPositions(positions);
-                        // Re-render the folder window if it's open
-                        const openWin = window._openFolderWindows?.[tid];
-                        if (openWin) { openWin.item.children = targetFolder.children; openWin.render(); }
-                    } else {
-                        // Target folder no longer exists — treat as normal drag (save exact position)
-                        const positions = getIconPositions();
-                        document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
-                            const sk = si.dataset.app;
-                            positions[sk] = { x: parseInt(si.style.left) || 0, y: parseInt(si.style.top) || 0 };
-                        });
-                        saveIconPositions(positions);
-                    }
+                        }
+                    });
+                    window._desktopCustom?.saveItems(customItems.filter(i => !toRemove.includes(i.id)));
+                    saveIconPositions(positions);
+                    const openWin = window._openFolderWindows?.[tid];
+                    if (openWin) { openWin.item.children = targetFolder.children; openWin.render(); }
                 } else {
-                    // Normal drag: save exact drop position; autoArrange re-sorts alphabetically
-                    const prefs = getDesktopPrefs();
-                    if (prefs.autoArrange) {
-                        arrangeByName();
-                    } else {
-                        const positions = getIconPositions();
-                        document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
-                            const sk = si.dataset.app;
-                            positions[sk] = { x: parseInt(si.style.left) || 0, y: parseInt(si.style.top) || 0 };
-                        });
-                        saveIconPositions(positions);
-                    }
+                    // Target folder gone — save current positions as a normal drag
+                    const positions = getIconPositions();
+                    document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                        const sk = si.dataset.app;
+                        positions[sk] = { x: parseInt(si.style.left) || 0, y: parseInt(si.style.top) || 0 };
+                    });
+                    saveIconPositions(positions);
                 }
             } else {
-                // It was a plain click (no drag)
-                if (!isCtrl && wasSelectedOnDown) {
-                    // Clicking an already-selected icon without Ctrl narrows selection to just this one
-                    clearIconSelection();
-                    icon.classList.add('selected');
-                }
-                // Double-click detection — opens the app on second click within 500 ms
-                const now = Date.now();
-                if (clickTimes[appKey] && now - clickTimes[appKey] < 500) {
-                    openApp(appKey);
-                    clickTimes[appKey] = 0;
+                // Normal free drag — save exact drop positions
+                const prefs = getDesktopPrefs();
+                if (prefs.autoArrange) {
+                    arrangeByName();
                 } else {
-                    clickTimes[appKey] = now;
+                    const positions = getIconPositions();
+                    document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
+                        const sk = si.dataset.app;
+                        positions[sk] = { x: parseInt(si.style.left) || 0, y: parseInt(si.style.top) || 0 };
+                    });
+                    saveIconPositions(positions);
                 }
             }
-            activePointerId = undefined;
-            didDrag         = false;
-            dropTarget      = null;
+        } else {
+            // Plain click (no drag)
+            if (!isCtrl && drag.wasSelectedOnDown) {
+                clearIconSelection();
+                drag.icon.classList.add('selected');
+            }
+            // Double-click: open app on second click within 500 ms
+            const now = Date.now();
+            if (clickTimes[drag.appKey] && now - clickTimes[drag.appKey] < 500) {
+                openApp(drag.appKey);
+                clickTimes[drag.appKey] = 0;
+            } else {
+                clickTimes[drag.appKey] = now;
+            }
         }
+    });
 
-        function onDragCancel(e) {
-            if (e.pointerId !== activePointerId) return;
-            document.removeEventListener('pointermove',   onDragMove);
-            document.removeEventListener('pointerup',     onDragEnd);
-            document.removeEventListener('pointercancel', onDragCancel);
-            if (dropTarget) { dropTarget.el.classList.remove('drop-target'); dropTarget = null; }
-            activePointerId = undefined;
-            didDrag         = false;
-        }
+    function setupDesktopIcon(icon) {
+        const appKey = icon.dataset.app;
 
-        icon.addEventListener('pointerdown', (e) => {
+        icon.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
             e.stopPropagation();
+            e.preventDefault(); // prevent browser native drag / text selection
 
             const isCtrl = e.ctrlKey || e.metaKey;
-            wasSelectedOnDown = icon.classList.contains('selected');
+            const wasSelectedOnDown = icon.classList.contains('selected');
 
             if (isCtrl) {
-                // Ctrl+click: toggle this icon in/out of the selection
                 icon.classList.toggle('selected');
             } else if (!wasSelectedOnDown) {
-                // Clicking an unselected icon: deselect all, then select this one
                 clearIconSelection();
                 icon.classList.add('selected');
             }
-            // If already selected (no Ctrl): keep the whole group so a drag moves them all.
-            // Deselection of others is deferred to pointerup if no drag happens.
+            // If already selected without Ctrl: keep group selected for multi-drag.
+            // Deselection of others deferred to mouseup if no drag occurs.
 
-            startX          = e.clientX;
-            startY          = e.clientY;
-            didDrag         = false;
-            activePointerId = e.pointerId;
-            dropTarget      = null;
-
-            // Snapshot start positions of every selected icon for group drag
-            dragStarts = {};
+            // Snapshot start positions of every selected icon
+            const dragStarts = {};
             document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
                 const sk = si.dataset.app;
                 dragStarts[sk] = {
@@ -10168,11 +10140,11 @@ function openFolderWindow(folderItem) {
                 };
             });
 
-            // Attach document-level listeners so the drag works even when the
-            // pointer leaves the icon element (avoids setPointerCapture issues).
-            document.addEventListener('pointermove',   onDragMove);
-            document.addEventListener('pointerup',     onDragEnd);
-            document.addEventListener('pointercancel', onDragCancel);
+            _drag = {
+                icon, appKey, wasSelectedOnDown,
+                startX: e.clientX, startY: e.clientY,
+                didDrag: false, dragStarts, dropTarget: null,
+            };
         });
 
         // Keyboard: Enter/Space to open
