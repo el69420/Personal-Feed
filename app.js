@@ -9935,7 +9935,6 @@ function openFolderWindow(folderItem) {
         const dy = e.clientY - _drag.startY;
         if (!_drag.didDrag && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
             _drag.didDrag = true;
-            console.log('[drag] threshold crossed, starting drag of', _drag.appKey, 'dragStarts=', JSON.stringify(_drag.dragStarts));
         }
         if (_drag.didDrag) {
             const desktop = document.getElementById('w95-desktop');
@@ -9996,7 +9995,7 @@ function openFolderWindow(folderItem) {
         if (!_drag) return;
         const drag = _drag;
         _drag = null; // clear before any callbacks
-        console.log('[drag] mouseup, didDrag=', drag.didDrag, 'currentUser=', currentUser);
+
 
         const isCtrl = e.ctrlKey || e.metaKey;
 
@@ -10119,7 +10118,6 @@ function openFolderWindow(folderItem) {
             if (e.button !== 0) return;
             e.stopPropagation();
             e.preventDefault(); // prevent browser native drag / text selection
-            console.log('[drag] mousedown on', appKey, 'at', e.clientX, e.clientY);
 
             const isCtrl = e.ctrlKey || e.metaKey;
             const wasSelectedOnDown = icon.classList.contains('selected');
@@ -10157,13 +10155,6 @@ function openFolderWindow(folderItem) {
     }
 
     document.querySelectorAll('.w95-desktop-icon').forEach(setupDesktopIcon);
-    console.log('[drag] setupDesktopIcon called for', document.querySelectorAll('.w95-desktop-icon').length, 'icons');
-
-    // Capture-phase global listener — shows what element receives any mousedown
-    document.addEventListener('mousedown', (e) => {
-        console.log('[doc-mousedown CAPTURE] target:', e.target.tagName, e.target.id || e.target.className, 'closest icon:', e.target.closest('.w95-desktop-icon')?.dataset.app);
-    }, true);
-
 
     // ===== Custom Desktop Items (New Folder / New Text Document) =====
     function getCustomItems() {
