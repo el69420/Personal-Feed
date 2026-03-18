@@ -3853,9 +3853,13 @@ function _presRelativeTime(ts) {
 
 function updatePresenceDots(data) {
     const STATE_LABEL = { online: 'Online', idle: 'Idle', typing: 'Typing…', offline: 'Offline' };
+    // If the heartbeat timestamp is older than 3× the heartbeat interval the client
+    // is gone without having cleaned up (crash / forced kill / onDisconnect skipped).
+    const STALE_MS = 90_000;
     ['El', 'Tero'].forEach(user => {
         const entry = data[user] || {};
-        const state = entry.state || 'offline';
+        const stale = entry.ts && (Date.now() - entry.ts) > STALE_MS;
+        const state = (entry.state && !stale) ? entry.state : 'offline';
         const ts    = entry.ts   || null;
         document.querySelectorAll(`.presence-dot[data-user="${user}"]`).forEach(dot => {
             dot.className = `presence-dot ${state}`;
