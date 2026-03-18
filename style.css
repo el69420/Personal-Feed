@@ -9701,3 +9701,133 @@ body[data-theme="theme_crt"] .chat-new-msg-btn { background: #005500 !important;
 .wishlist-item-card:hover .wishlist-item-delete {
   opacity: 1;
 }
+
+.wishlist-item-footer {
+  border-top: 1px solid var(--card-border);
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+}
+
+.wishlist-item-comment-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.65;
+  padding: 2px 4px;
+  border-radius: 8px;
+  transition: opacity 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+}
+
+.wishlist-item-comment-btn:hover {
+  opacity: 1;
+  background: var(--card-border);
+}
+
+.wl-cmt-count {
+  font-size: 10px;
+  font-weight: 900;
+}
+
+/* Wishlist comments modal */
+.wl-comment-item-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  font-family: 'Nunito', sans-serif;
+  margin-bottom: 10px;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wl-comments-list {
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wl-comments-empty {
+  font-size: 12px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  font-family: 'Nunito', sans-serif;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.wl-comment-item {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.wl-comment-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.wl-comment-author {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text-primary);
+  font-family: 'Nunito', sans-serif;
+}
+
+.wl-comment-ts {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  font-family: 'Nunito', sans-serif;
+  flex: 1;
+}
+
+.wl-comment-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0;
+  padding: 2px 4px;
+  border-radius: 50%;
+  transition: opacity 0.15s;
+  margin-left: auto;
+}
+
+.wl-comment-item:hover .wl-comment-delete {
+  opacity: 0.5;
+}
+
+.wl-comment-item:hover .wl-comment-delete:hover {
+  opacity: 1;
+}
+
+.wl-comment-text {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: 'Nunito', sans-serif;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.wl-comment-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}

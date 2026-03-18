@@ -321,6 +321,8 @@ let allBoardDeleteRequests = {}; // boardId → { requestedBy, requestedAt, boar
 let _boardPickerPostId = null;  // postId being saved to a board
 let allWishlistBoards = {};       // boardId → wishlist board object
 let currentWishlistBoardId = null; // currently open wishlist board
+let currentWishlistCommentItemId = null;  // itemId whose comments modal is open
+let currentWishlistCommentBoardId = null; // boardId for the above item
 let allLetters = {};            // letterId → letter object
 let mailboxTab = 'inbox';
 let lastChatSeenTs = Number(localStorage.getItem('chatSeenTs') || '0');
@@ -1431,9 +1433,21 @@ function renderWishlistItems(boardId, items) {
                 ${item.priceText ? `<div class="wishlist-item-price">${safeText(item.priceText)}</div>` : ''}
                 ${item.note ? `<div class="wishlist-item-note">${safeText(item.note)}</div>` : ''}
             </div>
+            <div class="wishlist-item-footer">
+                <button class="wishlist-item-comment-btn" onclick="event.stopPropagation();openWishlistItemComments('${boardId}','${itemId}')" title="Comments">
+                    &#128172; <span class="wl-cmt-count" id="wl-cmt-count-${itemId}"></span>
+                </button>
+            </div>
             ${isOwner ? `<button class="wishlist-item-delete" onclick="event.stopPropagation();deleteWishlistItem('${boardId}','${itemId}')" title="Remove">&#10005;</button>` : ''}
         </div>`;
     }).join('');
+    // Update comment counts asynchronously
+    Promise.all(entries.map(async ([itemId]) => {
+        const snap = await get(ref(database, `wishlistComments/${itemId}`));
+        const count = snap.exists() ? Object.keys(snap.val()).length : 0;
+        const badge = document.getElementById(`wl-cmt-count-${itemId}`);
+        if (badge) badge.textContent = count > 0 ? count : '';
+    }));
 }
 
 window.closeWishlistBoardDetail = function() {
@@ -1513,9 +1527,103 @@ window.addWishlistItem = async function() {
 
 window.deleteWishlistItem = async function(boardId, itemId) {
     await remove(ref(database, `wishlistItems/${boardId}/${itemId}`));
+    await remove(ref(database, `wishlistComments/${itemId}`));
     const snap = await get(ref(database, `wishlistItems/${boardId}`));
     renderWishlistItems(boardId, snap.val() || {});
     showToast('Item removed');
+};
+
+// ---- WISHLIST COMMENTS ----
+
+window.openWishlistItemComments = async function(boardId, itemId) {
+    currentWishlistCommentItemId = itemId;
+    currentWishlistCommentBoardId = boardId;
+
+    const item = (await get(ref(database, `wishlistItems/${boardId}/${itemId}`))).val();
+    const modal = document.getElementById('wishlistItemCommentsModal');
+    if (!modal) return;
+
+    document.getElementById('wishlistCommentItemTitle').textContent = item?.title || item?.url || 'Item';
+    document.getElementById('wishlistCommentInput').value = '';
+
+    const snap = await get(ref(database, `wishlistComments/${itemId}`));
+    renderWishlistCommentsList(itemId, snap.val() || {});
+    openModal(modal);
+};
+
+function renderWishlistCommentsList(itemId, comments) {
+    const list = document.getElementById('wishlistCommentsList');
+    if (!list) return;
+    const entries = Object.entries(comments).sort((a, b) => a[1].timestamp - b[1].timestamp);
+    if (entries.length === 0) {
+        list.innerHTML = `<div class="wl-comments-empty">No comments yet. Say something! &#128172;</div>`;
+        return;
+    }
+    list.innerHTML = entries.map(([commentId, c]) => {
+        const ae = AUTHOR_EMOJI[c.author] || '[?]';
+        const ts = c.timestamp ? timeAgo(c.timestamp) : '';
+        const tsFull = c.timestamp ? exactTimestamp(c.timestamp) : '';
+        return `<div class="wl-comment-item">
+            <div class="wl-comment-header">
+                <span class="wl-comment-author">${safeText(c.author)} ${ae}</span>
+                ${ts ? `<span class="wl-comment-ts" title="${safeText(tsFull)}">${safeText(ts)}</span>` : ''}
+                ${c.author === currentUser ? `<button class="wl-comment-delete" onclick="deleteWishlistItemComment('${itemId}','${commentId}')" title="Delete">&#10005;</button>` : ''}
+            </div>
+            <div class="wl-comment-text">${safeText(c.text)}</div>
+        </div>`;
+    }).join('');
+    list.scrollTop = list.scrollHeight;
+}
+
+window.addWishlistItemComment = async function() {
+    const itemId = currentWishlistCommentItemId;
+    const boardId = currentWishlistCommentBoardId;
+    if (!itemId) return;
+    const input = document.getElementById('wishlistCommentInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const commentId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    await set(ref(database, `wishlistComments/${itemId}/${commentId}`), {
+        author: currentUser,
+        text,
+        timestamp: Date.now()
+    });
+
+    input.value = '';
+    const snap = await get(ref(database, `wishlistComments/${itemId}`));
+    renderWishlistCommentsList(itemId, snap.val() || {});
+
+    // Update badge on card
+    const count = Object.keys(snap.val() || {}).length;
+    const badge = document.getElementById(`wl-cmt-count-${itemId}`);
+    if (badge) badge.textContent = count > 0 ? count : '';
+
+    sparkSound('reply');
+};
+
+window.deleteWishlistItemComment = async function(itemId, commentId) {
+    await remove(ref(database, `wishlistComments/${itemId}/${commentId}`));
+    const snap = await get(ref(database, `wishlistComments/${itemId}`));
+    renderWishlistCommentsList(itemId, snap.val() || {});
+
+    // Update badge on card
+    const count = Object.keys(snap.val() || {}).length;
+    const badge = document.getElementById(`wl-cmt-count-${itemId}`);
+    if (badge) badge.textContent = count > 0 ? count : '';
+};
+
+window.closeWishlistItemCommentsModal = function() {
+    currentWishlistCommentItemId = null;
+    currentWishlistCommentBoardId = null;
+    closeModal(document.getElementById('wishlistItemCommentsModal'));
+};
+
+window.handleWishlistCommentKey = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        addWishlistItemComment();
+    }
 };
 
 // ---- MAILBOX ----

@@ -820,6 +820,24 @@
         </div>
     </div>
 
+    <!-- Wishlist Item Comments Modal -->
+    <div id="wishlistItemCommentsModal" class="modal">
+        <div class="modal-content modal-sm">
+            <button class="modal-x" onclick="closeWishlistItemCommentsModal()" title="Close">✕</button>
+            <h2 class="text-xl font-bold mb-1 modal-heading">&#128172; Comments</h2>
+            <div id="wishlistCommentItemTitle" class="wl-comment-item-title"></div>
+            <div id="wishlistCommentsList" class="wl-comments-list"></div>
+            <div class="wl-comment-input-row">
+                <textarea id="wishlistCommentInput" class="reply-input" rows="2" placeholder="Add a comment…" onkeydown="handleWishlistCommentKey(event)"></textarea>
+                <button onclick="addWishlistItemComment()" class="reply-send-btn" title="Send">
+                    <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Compose Letter Modal -->
     <div id="composeLetterModal" class="modal">
         <div class="modal-content">
