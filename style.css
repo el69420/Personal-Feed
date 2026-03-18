@@ -9707,6 +9707,7 @@ body[data-theme="theme_crt"] .chat-new-msg-btn { background: #005500 !important;
   padding: 4px 8px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
 .wishlist-item-comment-btn {
@@ -9734,6 +9735,58 @@ body[data-theme="theme_crt"] .chat-new-msg-btn { background: #005500 !important;
 .wl-cmt-count {
   font-size: 10px;
   font-weight: 900;
+}
+
+.wishlist-item-purchase-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  opacity: 0.4;
+  padding: 2px 5px;
+  border-radius: 8px;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  line-height: 1;
+  margin-left: auto;
+}
+
+.wishlist-item-purchase-btn:hover {
+  opacity: 1;
+  background: rgba(0, 180, 120, 0.15);
+  color: #009848;
+}
+
+.wishlist-item-purchase-btn.is-purchased {
+  opacity: 1;
+  color: #009848;
+  background: rgba(0, 180, 120, 0.15);
+}
+
+.wishlist-item-card.is-purchased {
+  opacity: 0.7;
+}
+
+.wishlist-item-card.is-purchased .wishlist-item-img,
+.wishlist-item-card.is-purchased .wishlist-item-img-placeholder {
+  filter: grayscale(0.5);
+}
+
+.wishlist-item-purchased-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: #009848;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  font-family: 'Nunito', sans-serif;
+  padding: 2px 7px;
+  border-radius: 20px;
+  pointer-events: none;
+  letter-spacing: 0.02em;
 }
 
 /* Wishlist comments modal */

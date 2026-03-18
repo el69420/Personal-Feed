@@ -1422,11 +1422,14 @@ function renderWishlistItems(boardId, items) {
     }
     grid.innerHTML = entries.map(([itemId, item]) => {
         const safeUrl = safeText(item.url || '');
+        const isPurchased = !!item.purchased;
+        const purchasedBy = isPurchased ? safeText(item.purchased.by || '') : '';
         const imgHtml = item.image
             ? `<img class="wishlist-item-img" src="${safeText(item.image)}" alt="" onerror="this.style.display='none'">`
             : `<div class="wishlist-item-img-placeholder">&#128279;</div>`;
-        return `<div class="wishlist-item-card" onclick="window.open('${safeUrl}','_blank')">
+        return `<div class="wishlist-item-card${isPurchased ? ' is-purchased' : ''}" onclick="window.open('${safeUrl}','_blank')">
             ${imgHtml}
+            ${isPurchased ? `<div class="wishlist-item-purchased-badge">&#10003; Gifted${purchasedBy ? ' by ' + purchasedBy : ''}</div>` : ''}
             <div class="wishlist-item-body">
                 <div class="wishlist-item-title">${safeText(item.title || item.url)}</div>
                 ${item.store ? `<div class="wishlist-item-store">${safeText(item.store)}</div>` : ''}
@@ -1436,6 +1439,9 @@ function renderWishlistItems(boardId, items) {
             <div class="wishlist-item-footer">
                 <button class="wishlist-item-comment-btn" onclick="event.stopPropagation();openWishlistItemComments('${boardId}','${itemId}')" title="Comments">
                     &#128172; <span class="wl-cmt-count" id="wl-cmt-count-${itemId}"></span>
+                </button>
+                <button class="wishlist-item-purchase-btn${isPurchased ? ' is-purchased' : ''}" onclick="event.stopPropagation();toggleWishlistItemPurchased('${boardId}','${itemId}')" title="${isPurchased ? 'Mark as not purchased' : 'Mark as purchased'}">
+                    &#10003;
                 </button>
             </div>
             ${isOwner ? `<button class="wishlist-item-delete" onclick="event.stopPropagation();deleteWishlistItem('${boardId}','${itemId}')" title="Remove">&#10005;</button>` : ''}
@@ -1523,6 +1529,17 @@ window.addWishlistItem = async function() {
     const snap = await get(ref(database, `wishlistItems/${boardId}`));
     renderWishlistItems(boardId, snap.val() || {});
     showToast('Item added \u2713');
+};
+
+window.toggleWishlistItemPurchased = async function(boardId, itemId) {
+    const snap = await get(ref(database, `wishlistItems/${boardId}/${itemId}`));
+    if (!snap.exists()) return;
+    const item = snap.val();
+    const newPurchased = item.purchased ? null : { by: currentUser, at: Date.now() };
+    await set(ref(database, `wishlistItems/${boardId}/${itemId}/purchased`), newPurchased);
+    const allSnap = await get(ref(database, `wishlistItems/${boardId}`));
+    renderWishlistItems(boardId, allSnap.val() || {});
+    showToast(newPurchased ? 'Marked as purchased \u2713' : 'Marked as unpurchased');
 };
 
 window.deleteWishlistItem = async function(boardId, itemId) {
