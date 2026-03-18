@@ -8173,6 +8173,11 @@ body.dark-mode[data-theme="theme_pastel"] .w95-window {
   --input-bg:       rgba(18, 0, 10, 0.95);
   --input-border:   rgba(90, 30, 60, 0.55);
 }
+/* Pastel dark: presence window text */
+body.dark-mode[data-theme="theme_pastel"] .pres-name    { color: #ffb8d8 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pres-status  { color: #cc88aa !important; }
+body.dark-mode[data-theme="theme_pastel"] .pres-last    { color: #995577 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pres-divider { background: #4a1838 !important; box-shadow: 0 1px 0 #200510 !important; }
 
 /* ============================================================
    FROSTED GLASS + DARK MODE
