@@ -1498,13 +1498,11 @@ window.addWishlistItem = async function() {
     closeModal(document.getElementById('addWishlistItemModal'));
     showToast('Adding item\u2026');
 
-    // Auto-fetch metadata if no title or image provided
-    if (!title || !item.image) {
-        const meta = await fetchLinkMeta(url);
-        if (meta) {
-            if (!title && meta.title) item.title = meta.title;
-            if (meta.image) item.image = meta.image;
-        }
+    // Always fetch thumbnail (and title if the user didn't supply one)
+    const meta = await fetchLinkMeta(url);
+    if (meta) {
+        if (!title && meta.title) item.title = meta.title;
+        if (meta.image) item.image = meta.image;
     }
 
     await push(ref(database, `wishlistItems/${boardId}`), item);
