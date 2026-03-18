@@ -10109,19 +10109,16 @@ function openFolderWindow(folderItem) {
                         const openWin = window._openFolderWindows?.[tid];
                         if (openWin) { openWin.item.children = targetFolder.children; openWin.render(); }
                     } else {
-                        // Target folder no longer exists — treat as normal drag (snap + save)
+                        // Target folder no longer exists — treat as normal drag (save exact position)
                         const positions = getIconPositions();
                         document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
                             const sk = si.dataset.app;
-                            const snapped = snapToGrid(parseInt(si.style.left), parseInt(si.style.top));
-                            si.style.left = snapped.x + 'px';
-                            si.style.top  = snapped.y + 'px';
-                            positions[sk] = { x: snapped.x, y: snapped.y };
+                            positions[sk] = { x: parseInt(si.style.left) || 0, y: parseInt(si.style.top) || 0 };
                         });
                         saveIconPositions(positions);
                     }
                 } else {
-                    // Normal drag: snap and save positions
+                    // Normal drag: save exact drop position (no snap); autoArrange re-sorts alphabetically
                     const prefs = getDesktopPrefs();
                     if (prefs.autoArrange) {
                         arrangeByName();
@@ -10129,10 +10126,7 @@ function openFolderWindow(folderItem) {
                         const positions = getIconPositions();
                         document.querySelectorAll('.w95-desktop-icon.selected').forEach(si => {
                             const sk = si.dataset.app;
-                            const snapped = snapToGrid(parseInt(si.style.left), parseInt(si.style.top));
-                            si.style.left = snapped.x + 'px';
-                            si.style.top  = snapped.y + 'px';
-                            positions[sk] = { x: snapped.x, y: snapped.y };
+                            positions[sk] = { x: parseInt(si.style.left) || 0, y: parseInt(si.style.top) || 0 };
                         });
                         saveIconPositions(positions);
                     }
