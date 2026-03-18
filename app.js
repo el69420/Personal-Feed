@@ -7413,7 +7413,7 @@ async function checkVisitSpark() {
 // To add an achievement that unlocks a reward:
 //   1. Add the reward entry to REWARD_REGISTRY (above ACHIEVEMENTS).
 //   2. Add rewardIds: ['your_reward_id'] to the achievement entry here.
-const ACHIEVEMENTS = [
+var ACHIEVEMENTS = [
     // ---- Posting ----
     // To adjust XP values: change the `xp` field below. Level formula is flat 100 XP/level.
     {
@@ -8565,7 +8565,7 @@ async function initAchievements() {
 }
 
 async function unlockAchievement(id) {
-    if (!ACHIEVEMENTS.find(a => a.id === id)) return;
+    if (!ACHIEVEMENTS?.find(a => a.id === id)) return;
     if (unlockedAchievements.has(id) || !currentUser) return;
     try {
         const ts          = Date.now();
