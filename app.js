@@ -7957,6 +7957,8 @@ function _profRenderEditorSections(draft) {
         { id: 'bored',    emoji: '😑', label: 'bored' },
         { id: 'stressed', emoji: '😤', label: 'stressed' },
         { id: 'cozy',     emoji: '🫶', label: 'cozy' },
+        { id: 'ill',      emoji: '🤒', label: 'ill' },
+        { id: 'done_in',  emoji: '😵', label: 'done in' },
     ];
     let btn = null;
     const avatarData = { El: null, Tero: null };
