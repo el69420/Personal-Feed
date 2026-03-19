@@ -8025,14 +8025,14 @@ function _profRenderEditorSections(draft) {
 
     function _openMoodPicker(user) {
         if (!currentUser || user !== currentUser) return;
-        // Position the picker window just above the profiles window.
-        // Use a fixed height estimate (titlebar ~28px + 12 items ~26px each + padding).
-        const MP_HEIGHT_EST = 380;
+        // Position the picker window to the left of the profiles window.
+        // Use a fixed width estimate for the picker (180px) to offset from profiles' left edge.
+        const MP_WIDTH_EST = 184;
         const profWin = document.getElementById('w95-win-profiles');
         if (profWin) {
             const r = profWin.getBoundingClientRect();
-            mpWin.style.left = r.left + 'px';
-            mpWin.style.top  = Math.max(0, r.top - MP_HEIGHT_EST - 4) + 'px';
+            mpWin.style.left = Math.max(0, r.left - MP_WIDTH_EST - 4) + 'px';
+            mpWin.style.top  = r.top + 'px';
         }
         mpUser = user;
         const list = document.getElementById('mood-picker-list');
