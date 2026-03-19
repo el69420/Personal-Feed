@@ -3742,6 +3742,174 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     text-align: center;
 }
 
+.pj-loc { color: #555; }
+
+.pj-actions-cell { text-align: right; padding-right: 4px; }
+
+.pj-edit-btn {
+    font: 10px Tahoma, Verdana, Arial, sans-serif;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #404040;
+    border-bottom: 2px solid #404040;
+    padding: 1px 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.pj-edit-btn:active {
+    border-top: 2px solid #404040;
+    border-left: 2px solid #404040;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+}
+
+.pj-edited-tag {
+    font: 9px Tahoma, Verdana, Arial, sans-serif;
+    background: #ffe8a0;
+    border: 1px solid #c8a000;
+    color: #806000;
+    padding: 0 3px;
+    margin-left: 3px;
+    vertical-align: middle;
+    cursor: help;
+}
+
+.pj-history-row td {
+    font: 10px Tahoma, Verdana, Arial, sans-serif;
+    color: #666;
+    background: #f8f8e8;
+    padding: 2px 6px 2px 28px;
+    border-bottom: 1px solid #e8e8c8;
+    font-style: italic;
+}
+
+.pj-history-label {
+    font-style: normal;
+    font-weight: bold;
+    margin-right: 6px;
+    color: #888;
+}
+
+/* Pain picker — redesigned */
+.pain-picker-win-body {
+    padding: 6px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+}
+
+.pp-section-label {
+    font: bold 10px Tahoma, Verdana, Arial, sans-serif;
+    text-transform: uppercase;
+    color: #444;
+    margin: 6px 0 3px;
+}
+
+.pp-optional {
+    font-weight: normal;
+    text-transform: none;
+    font-size: 9px;
+    color: #888;
+}
+
+.pp-level-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-bottom: 2px;
+}
+
+.pp-level-btn {
+    flex: 0 0 auto;
+    width: 38px;
+    text-align: center;
+    padding: 3px 2px;
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    line-height: 1.2;
+}
+
+.pp-sublabel {
+    display: block;
+    font-size: 8px;
+    color: #666;
+    line-height: 1;
+}
+
+.pp-level-btn.is-active .pp-sublabel { color: #999; }
+
+.pp-loc-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 2px;
+}
+
+.pp-loc-btn {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #404040;
+    border-bottom: 2px solid #404040;
+    padding: 2px 6px;
+    cursor: pointer;
+}
+
+.pp-loc-btn:hover { background: #d0d0d0; }
+
+.pp-loc-btn.is-active {
+    border-top: 2px solid #404040;
+    border-left: 2px solid #404040;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    background: #a8a8a8;
+}
+
+.pp-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+
+.pp-save-tip {
+    font-size: 9px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Edit dialog body */
+.pj-edit-body {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pj-edit-orig {
+    font: 10px Tahoma, Verdana, Arial, sans-serif;
+    color: #666;
+    font-style: italic;
+    padding: 3px 5px;
+    background: #d8d8d8;
+    border-left: 3px solid #808080;
+    margin-bottom: 2px;
+}
+
+.pj-edit-comment {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    background: #fff;
+    padding: 3px;
+    resize: vertical;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .mood-picker-win-body {
     display: flex;
     flex-direction: column;

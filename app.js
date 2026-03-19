@@ -7943,6 +7943,21 @@ function _profRenderEditorSections(draft) {
     }).join('');
 }
 
+const PAIN_LOCATIONS = [
+    { id: 'head',      label: 'Head' },
+    { id: 'neck',      label: 'Neck' },
+    { id: 'shoulders', label: 'Shoulders' },
+    { id: 'chest',     label: 'Chest' },
+    { id: 'back',      label: 'Back' },
+    { id: 'abdomen',   label: 'Abdomen' },
+    { id: 'arms',      label: 'Arms' },
+    { id: 'hands',     label: 'Hands' },
+    { id: 'hips',      label: 'Hips' },
+    { id: 'legs',      label: 'Legs' },
+    { id: 'feet',      label: 'Feet' },
+    { id: 'other',     label: 'Other' },
+];
+
 // ===== Profiles.exe Window =====
 (() => {
     const win      = document.getElementById('w95-win-profiles');
@@ -7972,9 +7987,12 @@ function _profRenderEditorSections(draft) {
         { id: 'done_in',  emoji: '😵', label: 'done in' },
     ];
     let btn = null;
-    const avatarData = { El: null, Tero: null };
-    const moodData   = { El: null, Tero: null };
-    const painData   = { El: null, Tero: null };
+    const avatarData          = { El: null, Tero: null };
+    const moodData            = { El: null, Tero: null };
+    const painData            = { El: null, Tero: null };
+    const painLocationsData   = { El: null, Tero: null };
+    let ppDraftLevel     = null;
+    let ppDraftLocations = [];
     let editorUser  = null;
     let editorDraft = null;
 
@@ -8043,7 +8061,10 @@ function _profRenderEditorSections(draft) {
                 el.textContent = '';
                 el.className = 'profile-pain';
             } else {
-                el.textContent = `Pain: ${lvl}/10`;
+                const locs = Array.isArray(painLocationsData[u]) && painLocationsData[u].length
+                    ? ` · ${painLocationsData[u].join(', ')}`
+                    : '';
+                el.textContent = `Pain: ${lvl}/10${locs}`;
                 const sev = lvl <= 3 ? 'low' : lvl <= 6 ? 'mid' : 'high';
                 el.className = `profile-pain pain-${sev}`;
             }
@@ -8111,34 +8132,6 @@ function _profRenderEditorSections(draft) {
     const ppClose  = document.getElementById('w95-pain-picker-close');
     let   ppUser   = null;
 
-    function _openPainPicker(user) {
-        if (!currentUser || user !== currentUser) return;
-        const profWin = document.getElementById('w95-win-profiles');
-        if (profWin) {
-            const r = profWin.getBoundingClientRect();
-            ppWin.style.left = Math.max(0, r.left - 188) + 'px';
-            ppWin.style.top  = r.top + 'px';
-        }
-        ppUser = user;
-        const body = document.getElementById('pain-picker-body');
-        if (body) {
-            const cur = painData[user];
-            body.innerHTML = Array.from({ length: 11 }, (_, i) =>
-                `<button class="pain-btn${cur === i ? ' is-active' : ''}"
-                         onclick="pfSetPain('${user}',${i})"
-                         type="button">${i} — ${_painLabel(i)}</button>`
-            ).join('');
-        }
-        ppWin.classList.remove('is-hidden');
-        w95Mgr.focusWindow('w95-win-pain-picker');
-    }
-
-    function _closePainPicker() {
-        ppWin.classList.add('is-hidden');
-        if (w95Mgr.isActiveWin('w95-win-pain-picker')) w95Mgr.focusWindow(null);
-        ppUser = null;
-    }
-
     function _painLabel(lvl) {
         if (lvl === 0)  return 'None';
         if (lvl <= 3)   return 'Mild';
@@ -8147,22 +8140,87 @@ function _profRenderEditorSections(draft) {
         return 'Worst';
     }
 
-    async function _setPain(user, level) {
+    function _renderPainPicker() {
+        const bd = document.getElementById('pain-picker-body');
+        if (!bd) return;
+        const locBtns = PAIN_LOCATIONS.map(l =>
+            `<button class="pp-loc-btn${ppDraftLocations.includes(l.id) ? ' is-active' : ''}"
+                     onclick="pfPainToggleLocation('${l.id}')"
+                     type="button">${l.label}</button>`
+        ).join('');
+        const lvlBtns = Array.from({ length: 11 }, (_, i) =>
+            `<button class="pain-btn pp-level-btn${ppDraftLevel === i ? ' is-active' : ''}"
+                     onclick="pfPainPickLevel(${i})"
+                     type="button">${i} <span class="pp-sublabel">${_painLabel(i)}</span></button>`
+        ).join('');
+        const saveTip = ppDraftLevel === null ? ' <span class="pp-save-tip">(clears pain)</span>' : '';
+        bd.innerHTML = `
+            <div class="pp-section-label">Level</div>
+            <div class="pp-level-grid">${lvlBtns}</div>
+            <div class="pp-section-label">Location <span class="pp-optional">(optional)</span></div>
+            <div class="pp-loc-grid">${locBtns}</div>
+            <div class="pp-actions">
+                <button class="w95-btn" onclick="pfPainSave()" type="button">Save${saveTip}</button>
+            </div>`;
+    }
+
+    function _openPainPicker(user) {
         if (!currentUser || user !== currentUser) return;
-        const newLevel = painData[user] === level ? null : level;
+        const profWin = document.getElementById('w95-win-profiles');
+        if (profWin) {
+            const r = profWin.getBoundingClientRect();
+            ppWin.style.left = Math.max(0, r.left - 230) + 'px';
+            ppWin.style.top  = r.top + 'px';
+        }
+        ppUser           = user;
+        ppDraftLevel     = painData[user] ?? null;
+        ppDraftLocations = Array.isArray(painLocationsData[user]) ? [...painLocationsData[user]] : [];
+        _renderPainPicker();
+        ppWin.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-pain-picker');
+    }
+
+    function _closePainPicker() {
+        ppWin.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-pain-picker')) w95Mgr.focusWindow(null);
+        ppUser           = null;
+        ppDraftLevel     = null;
+        ppDraftLocations = [];
+    }
+
+    function _ppPickLevel(lvl) {
+        ppDraftLevel = ppDraftLevel === lvl ? null : lvl;
+        _renderPainPicker();
+    }
+
+    function _ppToggleLocation(locId) {
+        const idx = ppDraftLocations.indexOf(locId);
+        if (idx >= 0) ppDraftLocations.splice(idx, 1); else ppDraftLocations.push(locId);
+        _renderPainPicker();
+    }
+
+    async function _ppSave() {
+        if (!ppUser) return;
+        await _setPain(ppUser, ppDraftLevel, ppDraftLocations);
+    }
+
+    async function _setPain(user, level, locations = []) {
+        if (!currentUser || user !== currentUser) return;
         try {
-            if (newLevel !== null) {
-                await set(ref(database, `profiles/${user}/pain`), newLevel);
+            if (level !== null) {
+                await set(ref(database, `profiles/${user}/pain`), level);
+                await set(ref(database, `profiles/${user}/painLocations`), locations.length ? locations : null);
             } else {
                 await remove(ref(database, `profiles/${user}/pain`));
+                await remove(ref(database, `profiles/${user}/painLocations`));
             }
-            // Log every change (set or clear) to the pain journal
             await push(ref(painJournalRef, user), {
-                level: newLevel,   // null = cleared
-                ts: serverTimestamp(),
+                level:     level ?? null,
+                locations: locations.length ? locations : null,
+                ts:        serverTimestamp(),
             });
             _closePainPicker();
-            showToast(newLevel !== null ? 'Pain level updated!' : 'Pain level cleared!');
+            showToast(level !== null ? 'Pain level updated!' : 'Pain level cleared!');
         } catch (e) {
             showToast('Save failed — try again.');
         }
@@ -8172,13 +8230,14 @@ function _profRenderEditorSections(draft) {
     if (ppWin)   ppWin.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-pain-picker'));
     if (ppWin && ppHandle) makeDraggable(ppWin, ppHandle, 'w95-win-pain-picker');
 
-    // ---- Firebase: load saved avatars and moods ----
+    // ---- Firebase: load saved avatars, moods and pain ----
     onValue(ref(database, 'profiles'), snap => {
         const data = snap.val() || {};
         USERS.forEach(u => {
-            avatarData[u] = data[u]?.avatar || null;
-            moodData[u]   = data[u]?.mood   || null;
-            painData[u]   = data[u]?.pain   ?? null;
+            avatarData[u]        = data[u]?.avatar        || null;
+            moodData[u]          = data[u]?.mood          || null;
+            painData[u]          = data[u]?.pain          ?? null;
+            painLocationsData[u] = data[u]?.painLocations || null;
         });
         _renderAllAvatars();
         _renderAllMoods();
@@ -8263,8 +8322,10 @@ function _profRenderEditorSections(draft) {
     window.pfAvatarPick     = _pickTrait;
     window.openMoodPicker   = _openMoodPicker;
     window.pfSetMood        = _setMood;
-    window.openPainPicker   = _openPainPicker;
-    window.pfSetPain        = _setPain;
+    window.openPainPicker          = _openPainPicker;
+    window.pfPainPickLevel         = _ppPickLevel;
+    window.pfPainToggleLocation    = _ppToggleLocation;
+    window.pfPainSave              = _ppSave;
 
     // ---- Called after login to show the correct edit button ----
     window._profilesOnLogin = _updateEditButtons;
@@ -17531,10 +17592,14 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
     if (!win || !handle || !body) return;
 
     const WIN_ID = 'w95-win-painjournal';
-    let btn      = null;
-    let entries  = {};   // { El: { pushId: { level, ts }, … }, Tero: { … } }
+    let btn     = null;
+    let entries = {};   // { El: { pushId: { level, locations, ts, editedAt?, editHistory? }, … }, … }
 
-    // ---- Rendering ----
+    // ---- Helpers ----
+    function _esc(s) {
+        return String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+    }
+
     function _painLabel(lvl) {
         if (lvl === null || lvl === undefined) return 'Cleared';
         if (lvl === 0) return '0 — None';
@@ -17554,19 +17619,46 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
     function _fmtDate(ts) {
         if (!ts) return '—';
         const d = new Date(ts);
-        const days  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
         const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         const hh = String(d.getHours()).padStart(2, '0');
         const mm = String(d.getMinutes()).padStart(2, '0');
         return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${hh}:${mm}`;
     }
 
+    function _locLabels(locs) {
+        if (!Array.isArray(locs) || !locs.length) return '—';
+        return locs.map(id => PAIN_LOCATIONS.find(x => x.id === id)?.label ?? id).join(', ');
+    }
+
+    // ---- Edit history sub-rows ----
+    function _historyRows(editHistory) {
+        if (!editHistory) return '';
+        const arr = (Array.isArray(editHistory) ? editHistory : Object.values(editHistory))
+            .slice()
+            .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+        return arr.map(h => {
+            const was  = `${_painLabel(h.prevLevel ?? null)} · ${_locLabels(h.prevLocations || [])}`;
+            const note = h.comment ? ` — <em>"${_esc(h.comment)}"</em>` : '';
+            return `<tr class="pj-history-row">
+                <td colspan="5"><span class="pj-history-label">&#10000; ${_fmtDate(h.ts)}</span>was: ${_esc(was)}${note}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ---- Main render ----
     function render() {
-        // Flatten all entries from both users into a single sorted list
         const rows = [];
         for (const user of Object.keys(entries)) {
             for (const [id, e] of Object.entries(entries[user] || {})) {
-                rows.push({ id, user, level: e.level ?? null, ts: e.ts || 0 });
+                rows.push({
+                    id, user,
+                    level:       e.level     ?? null,
+                    locations:   e.locations || [],
+                    ts:          e.ts        || 0,
+                    editedAt:    e.editedAt  || null,
+                    editHistory: e.editHistory || null,
+                });
             }
         }
         rows.sort((a, b) => b.ts - a.ts);
@@ -17579,24 +17671,144 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         body.innerHTML = `
             <div class="pj-table-wrap">
                 <table class="pj-table">
-                    <thead>
-                        <tr>
-                            <th>Date &amp; Time</th>
-                            <th>Who</th>
-                            <th>Level</th>
-                        </tr>
-                    </thead>
+                    <thead><tr>
+                        <th>Date &amp; Time</th>
+                        <th>Who</th>
+                        <th>Level</th>
+                        <th>Location</th>
+                        <th></th>
+                    </tr></thead>
                     <tbody>
-                        ${rows.map(r => `
-                            <tr>
-                                <td class="pj-ts">${_fmtDate(r.ts)}</td>
-                                <td class="pj-user">${r.user}</td>
-                                <td class="pj-level ${_painClass(r.level)}">${_painLabel(r.level)}</td>
-                            </tr>
-                        `).join('')}
+                        ${rows.map(r => {
+                            const editedBadge = r.editedAt
+                                ? `<span class="pj-edited-tag" title="Last edited ${_fmtDate(r.editedAt)}">edited</span>`
+                                : '';
+                            const editBtn = (r.user === currentUser)
+                                ? `<button class="pj-edit-btn" data-user="${r.user}" data-id="${r.id}" type="button">Edit</button>`
+                                : '';
+                            return `
+                                <tr>
+                                    <td class="pj-ts">${_fmtDate(r.ts)} ${editedBadge}</td>
+                                    <td class="pj-user">${_esc(r.user)}</td>
+                                    <td class="pj-level ${_painClass(r.level)}">${_painLabel(r.level)}</td>
+                                    <td class="pj-loc">${_esc(_locLabels(r.locations))}</td>
+                                    <td class="pj-actions-cell">${editBtn}</td>
+                                </tr>
+                                ${r.editedAt ? _historyRows(r.editHistory) : ''}`;
+                        }).join('')}
                     </tbody>
                 </table>
             </div>`;
+
+        body.querySelectorAll('.pj-edit-btn').forEach(b => {
+            b.addEventListener('click', () => {
+                const { user, id } = b.dataset;
+                const entry = entries[user]?.[id];
+                if (entry) _openEditDialog(user, id, entry);
+            });
+        });
+    }
+
+    // ---- Edit dialog ----
+    function _openEditDialog(user, id, entry) {
+        if (!currentUser || user !== currentUser) return;
+
+        let draftLevel     = entry.level     ?? null;
+        let draftLocations = Array.isArray(entry.locations) ? [...entry.locations] : [];
+        let draftComment   = '';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'w95-dialog-overlay';
+
+        function rebuild() {
+            const saved = overlay.querySelector('.pj-edit-comment');
+            if (saved) draftComment = saved.value;
+
+            const locBtns = PAIN_LOCATIONS.map(l =>
+                `<button class="pp-loc-btn${draftLocations.includes(l.id) ? ' is-active' : ''}"
+                         data-loc="${l.id}" type="button">${l.label}</button>`
+            ).join('');
+
+            const lvlBtns = Array.from({ length: 11 }, (_, i) =>
+                `<button class="pain-btn pp-level-btn${draftLevel === i ? ' is-active' : ''}"
+                         data-lvl="${i}" type="button">${i} <span class="pp-sublabel">${_painLabel(i)}</span></button>`
+            ).join('');
+
+            overlay.innerHTML = `
+                <div class="w95-dialog" style="width:320px;max-width:95vw;">
+                    <div class="w95-titlebar window--active">
+                        <div class="w95-title">&#10000; Edit Entry</div>
+                        <div class="w95-controls">
+                            <button class="w95-control w95-control-close" id="pj-dlg-x" type="button" aria-label="Close">X</button>
+                        </div>
+                    </div>
+                    <div class="pj-edit-body">
+                        <div class="pj-edit-orig">Original: ${_esc(_painLabel(entry.level ?? null))} &middot; ${_esc(_locLabels(entry.locations || []))}</div>
+                        <div class="pp-section-label">Level</div>
+                        <div class="pp-level-grid">${lvlBtns}</div>
+                        <div class="pp-section-label">Location <span class="pp-optional">(optional)</span></div>
+                        <div class="pp-loc-grid">${locBtns}</div>
+                        <div class="pp-section-label">Reason for edit <span class="pp-optional">(optional)</span></div>
+                        <textarea class="pj-edit-comment" rows="2" placeholder="Why are you editing this?">${_esc(draftComment)}</textarea>
+                        <div class="pp-actions" style="margin-top:8px;">
+                            <button class="w95-btn" id="pj-dlg-cancel" type="button">Cancel</button>
+                            <button class="w95-btn" id="pj-dlg-save" type="button">Save</button>
+                        </div>
+                    </div>
+                </div>`;
+
+            overlay.querySelectorAll('[data-lvl]').forEach(b => {
+                b.addEventListener('click', () => {
+                    const lvl = parseInt(b.dataset.lvl, 10);
+                    draftLevel = draftLevel === lvl ? null : lvl;
+                    rebuild();
+                });
+            });
+            overlay.querySelectorAll('[data-loc]').forEach(b => {
+                b.addEventListener('click', () => {
+                    const loc = b.dataset.loc;
+                    const idx = draftLocations.indexOf(loc);
+                    if (idx >= 0) draftLocations.splice(idx, 1); else draftLocations.push(loc);
+                    rebuild();
+                });
+            });
+
+            const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+            overlay.querySelector('#pj-dlg-x')?.addEventListener('click', close);
+            overlay.querySelector('#pj-dlg-cancel')?.addEventListener('click', close);
+            overlay.querySelector('#pj-dlg-save')?.addEventListener('click', async () => {
+                const comment = overlay.querySelector('.pj-edit-comment')?.value.trim() || '';
+                await _saveEdit(user, id, entry, draftLevel, draftLocations, comment);
+                close();
+            });
+            overlay.addEventListener('pointerdown', e => { if (e.target === overlay) close(); });
+        }
+
+        function onKey(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onKey); } }
+        document.addEventListener('keydown', onKey);
+
+        rebuild();
+        document.body.appendChild(overlay);
+        setTimeout(() => overlay.querySelector('#pj-dlg-save')?.focus(), 0);
+    }
+
+    async function _saveEdit(user, entryId, origEntry, newLevel, newLocations, comment) {
+        try {
+            await push(ref(database, `painJournal/${user}/${entryId}/editHistory`), {
+                ts:            serverTimestamp(),
+                prevLevel:     origEntry.level     ?? null,
+                prevLocations: Array.isArray(origEntry.locations) ? origEntry.locations : [],
+                comment:       comment || null,
+            });
+            await update(ref(database, `painJournal/${user}/${entryId}`), {
+                level:     newLevel     ?? null,
+                locations: newLocations.length ? newLocations : null,
+                editedAt:  serverTimestamp(),
+            });
+            showToast('Entry updated!');
+        } catch (e) {
+            showToast('Save failed — try again.');
+        }
     }
 
     // ---- Window management ----
