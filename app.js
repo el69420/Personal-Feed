@@ -7746,9 +7746,13 @@ function _profDarken(hex, amt) {
 }
 
 function _profAvatarHairBack(style, H, HD, out) {
-    if (style === 'long_curly') {
-        out.push(`<path d="M28 54 Q16 70 17 88 Q20 96 26 94 Q30 84 28 68 Q30 58 32 54Z" fill="${H}"/>`);
-        out.push(`<path d="M72 54 Q84 70 83 88 Q80 96 74 94 Q70 84 72 68 Q70 58 68 54Z" fill="${H}"/>`);
+    if (style === 'bob') {
+        // Full bob silhouette drawn behind the face so the face stays visible
+        out.push(`<path d="M26 50 Q20 54 20 64 Q20 72 26 73 Q36 75 50 75 Q64 75 74 73 Q80 72 80 64 Q80 54 74 50 Q67 56 50 57 Q33 56 26 50Z" fill="${H}"/>`);
+    } else if (style === 'long_curly') {
+        // Wide, voluminous sides — no longer narrow braid-like columns
+        out.push(`<path d="M28 52 Q12 58 11 74 Q12 86 19 88 Q25 88 25 81 Q23 71 24 62 Q26 55 28 52Z" fill="${H}"/>`);
+        out.push(`<path d="M72 52 Q88 58 89 74 Q88 86 81 88 Q75 88 75 81 Q77 71 76 62 Q74 55 72 52Z" fill="${H}"/>`);
     } else if (style === 'shaggy') {
         out.push(`<path d="M28 52 Q22 62 23 76 Q26 84 30 80 Q33 70 31 60 Q31 54 28 52Z" fill="${H}"/>`);
         out.push(`<path d="M72 52 Q78 62 77 76 Q74 84 70 80 Q67 70 69 60 Q69 54 72 52Z" fill="${H}"/>`);
@@ -7761,12 +7765,12 @@ function _profAvatarHairFront(style, H, HD, out) {
     if (style === 'none') return;
     const shapes = {
         short_straight: `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q66 44 50 43 Q34 44 28 50Z" fill="${H}"/>`,
-        bob:            `<path d="M27 52 Q27 18 50 16 Q73 18 73 52 Q73 64 68 70 Q58 74 50 74 Q42 74 32 70 Q27 64 27 52Z" fill="${H}"/>`,
-        long_curly:     `<path d="M28 52 Q28 18 50 16 Q72 18 72 52 Q68 46 62 40 Q56 24 50 18 Q44 24 38 40 Q32 46 28 52Z" fill="${H}"/>
-                         <path d="M28 54 Q23 58 24 66 Q26 72 28 66 Q29 60 28 54Z" fill="${H}"/>
-                         <path d="M72 54 Q77 58 76 66 Q74 72 72 66 Q71 60 72 54Z" fill="${H}"/>
-                         <path d="M24 68 Q20 74 22 80 Q24 84 26 80 Q27 74 24 68Z" fill="${H}"/>
-                         <path d="M76 68 Q80 74 78 80 Q76 84 74 80 Q73 74 76 68Z" fill="${H}"/>`,
+        bob:            `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q66 44 50 43 Q34 44 28 50Z" fill="${H}"/>`,
+        long_curly:     `<path d="M28 52 Q28 18 50 16 Q72 18 72 52 Q66 46 50 44 Q34 46 28 52Z" fill="${H}"/>
+                         <path d="M28 52 Q22 55 22 61 Q23 67 27 63 Q28 58 28 52Z" fill="${H}"/>
+                         <path d="M72 52 Q78 55 78 61 Q77 67 73 63 Q72 58 72 52Z" fill="${H}"/>
+                         <path d="M26 63 Q20 70 22 76 Q24 79 27 76 Q27 69 26 63Z" fill="${H}"/>
+                         <path d="M74 63 Q80 70 78 76 Q76 79 73 76 Q73 69 74 63Z" fill="${H}"/>`,
         shaggy:         `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q68 44 62 40 Q56 36 50 34 Q44 36 38 40 Q32 44 28 50Z" fill="${H}"/>
                          <path d="M28 50 Q23 44 22 50 Q21 56 24 58 Q26 58 27 54Z" fill="${H}"/>
                          <path d="M72 50 Q77 44 78 50 Q79 56 76 58 Q74 58 73 54Z" fill="${H}"/>
