@@ -12408,6 +12408,17 @@ async function loadUserWallpaper() {
     }};
 })();
 
+// Colour palettes for the desktop cat sprite (fur + accent colours).
+// Defined at module level so both the Cat Window IIFE and initPixelCat() can access them.
+const CAT_COLOUR_PALETTES = [
+    { id: 'blue',   name: 'Blue-grey', fur: '#C0C2D8', accent: '#E8829A' },
+    { id: 'ginger', name: 'Ginger',    fur: '#E8A87C', accent: '#D4604A' },
+    { id: 'black',  name: 'Black',     fur: '#3A3A4A', accent: '#9E7AB0' },
+    { id: 'cream',  name: 'Cream',     fur: '#EDD9A8', accent: '#E8829A' },
+    { id: 'white',  name: 'White',     fur: '#ECECEC', accent: '#F0A0B0' },
+    { id: 'tabby',  name: 'Brown',     fur: '#B8956A', accent: '#C87A5A' },
+];
+
 // ===== Win95 Cat Window =====
 (() => {
     const win      = document.getElementById('w95-win-cat');
@@ -12451,16 +12462,6 @@ async function loadUserWallpaper() {
     const CAT_ACTION_DELTAS   = { feed: 25, water: 25, yarn: 35 };
     const CAT_ACTION_STAT     = { feed: 'hunger', water: 'thirst', yarn: 'play' };
     const CAT_DEFAULTS        = { catName: '', hunger: 75, thirst: 75, play: 75 };
-
-    // Colour palettes for the desktop cat sprite (fur + accent colours)
-    const CAT_COLOUR_PALETTES = [
-        { id: 'blue',   name: 'Blue-grey', fur: '#C0C2D8', accent: '#E8829A' },
-        { id: 'ginger', name: 'Ginger',    fur: '#E8A87C', accent: '#D4604A' },
-        { id: 'black',  name: 'Black',     fur: '#3A3A4A', accent: '#9E7AB0' },
-        { id: 'cream',  name: 'Cream',     fur: '#EDD9A8', accent: '#E8829A' },
-        { id: 'white',  name: 'White',     fur: '#ECECEC', accent: '#F0A0B0' },
-        { id: 'tabby',  name: 'Brown',     fur: '#B8956A', accent: '#C87A5A' },
-    ];
 
     function applyCatDecay(stored) {
         const hoursElapsed = (Date.now() - (stored.lastUpdated || Date.now())) / 3_600_000;
