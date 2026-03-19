@@ -108,6 +108,10 @@
             <div class="desktop-icon-img">&#128148;</div>
             <div class="desktop-icon-label">Mood Journal.exe</div>
         </div>
+        <div class="w95-desktop-icon" data-app="shoplist" tabindex="0">
+            <div class="desktop-icon-img">&#128722;</div>
+            <div class="desktop-icon-label">Shopping List.exe</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -925,6 +929,7 @@
         <button class="w95-start-item" data-app="scrapbook" type="button">&#128204; Scrapbook</button>
         <button class="w95-start-item" data-app="wishlist" type="button">&#127873; Wishlist</button>
         <button class="w95-start-item" data-app="fooddiary" type="button">&#127859; Food Diary</button>
+        <button class="w95-start-item" data-app="shoplist" type="button">&#128722; Shopping List</button>
         <button class="w95-start-item" data-app="stats" type="button">&#128202; Stats.exe</button>
         <button class="w95-start-item" data-app="myComputer" type="button">&#128187; My Computer</button>
         <hr class="w95-start-separator">
@@ -1462,6 +1467,19 @@
     </div>
   </div>
   <div class="w95-body painjournal-body" id="w95-painjournal-body"></div>
+</div>
+
+<!-- Shopping List.exe window -->
+<div id="w95-win-shoplist" class="w95-window is-hidden" style="left:240px;top:80px;width:380px;height:480px;">
+  <div class="w95-titlebar" id="w95-shoplist-handle">
+    <div class="w95-title">&#128722; Shopping List.exe</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-shoplist-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-shoplist-max" type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-shoplist-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body sl-body" id="w95-shoplist-body"></div>
 </div>
 
 <!-- Profiles.exe window -->

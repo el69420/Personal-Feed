@@ -11785,3 +11785,164 @@ body.dark-mode .fd-status-error {
   background: rgba(200,30,30,0.15);
   color: #fca5a5;
 }
+
+/* ===== Shopping List.exe ===== */
+.sl-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sl-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+.sl-tabs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 8px 0;
+  border-bottom: 1px solid var(--card-border, rgba(0,0,0,0.12));
+  flex-shrink: 0;
+}
+.sl-tab {
+  background: none;
+  border: 1px solid transparent;
+  border-bottom: none;
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text-secondary, #555);
+  border-radius: 3px 3px 0 0;
+  position: relative;
+  bottom: -1px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.sl-tab:hover { color: var(--text-primary, #111); }
+.sl-tab-active {
+  color: var(--text-primary, #111);
+  font-weight: 700;
+  background: var(--win-bg, #f0f0f0);
+  border-color: var(--card-border, rgba(0,0,0,0.12));
+  border-bottom-color: var(--win-bg, #f0f0f0);
+}
+.sl-tab-new {
+  font-weight: bold;
+  font-size: 14px;
+  padding: 1px 9px;
+  color: var(--text-secondary, #666);
+}
+.sl-tab-del {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  padding: 0 1px;
+  border-radius: 2px;
+}
+.sl-tab-del:hover { color: #c00; background: rgba(200,0,0,0.08); }
+.sl-add-row {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--card-border, rgba(0,0,0,0.08));
+}
+.sl-item-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 13px;
+  border: 1px solid var(--input-border, rgba(0,0,0,0.2));
+  border-radius: 3px;
+  background: var(--input-bg, #fff);
+  color: var(--text-primary, #111);
+  outline: none;
+}
+.sl-item-input:focus {
+  border-color: rgba(0, 160, 160, 0.6);
+  box-shadow: 0 0 0 2px rgba(0,160,160,0.12);
+}
+.sl-add-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--card-border, rgba(0,0,0,0.2));
+  border-radius: 3px;
+  background: var(--section-bg, rgba(0,160,160,0.1));
+  color: var(--text-primary, #111);
+  cursor: pointer;
+}
+.sl-add-btn:hover { background: rgba(0,160,160,0.18); }
+.sl-items-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 4px;
+}
+.sl-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  min-height: 32px;
+}
+.sl-item:hover { background: rgba(0,0,0,0.04); }
+.sl-item-done {
+  opacity: 0.45;
+}
+.sl-item-done .sl-item-text {
+  text-decoration: line-through;
+}
+.sl-check {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-primary, #111);
+  flex-shrink: 0;
+  padding: 0 2px;
+}
+.sl-item-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary, #111);
+  word-break: break-word;
+}
+.sl-item-by {
+  font-size: 10px;
+  color: var(--text-secondary, #888);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sl-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--text-secondary, #aaa);
+  flex-shrink: 0;
+  padding: 0 2px;
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.sl-item:hover .sl-del { opacity: 1; }
+.sl-del:hover { color: #c00; }
+.sl-empty {
+  padding: 24px 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary, #888);
+}
+/* dark mode */
+body.dark-mode .sl-tab-active {
+  background: var(--card-bg, #0a2a2a);
+  border-bottom-color: var(--card-bg, #0a2a2a);
+}
+body.dark-mode .sl-item:hover { background: rgba(255,255,255,0.04); }
