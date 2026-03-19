@@ -8508,6 +8508,21 @@ function checkTimeBasedAchievements() {
         localStorage.setItem('morningVisitCount', String(mv));
         if (mv >= 5) unlockAchievement('morning_visits');
     }
+
+    // sun_chaser: visit during both daytime (9–17) and nighttime (21–3) on the same calendar day
+    if (!unlockedAchievements.has('sun_chaser')) {
+        const today = localDateStr();
+        if (localStorage.getItem('sunChaser_date') !== today) {
+            localStorage.setItem('sunChaser_date', today);
+            localStorage.removeItem('sunChaser_hadDay');
+            localStorage.removeItem('sunChaser_hadNight');
+        }
+        if (hr >= 9 && hr < 18)  localStorage.setItem('sunChaser_hadDay',   '1');
+        if (hr >= 21 || hr < 4)  localStorage.setItem('sunChaser_hadNight', '1');
+        if (localStorage.getItem('sunChaser_hadDay') && localStorage.getItem('sunChaser_hadNight')) {
+            unlockAchievement('sun_chaser');
+        }
+    }
 }
 
 // Check all mythic achievements. Call after any significant action.
@@ -9032,6 +9047,16 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  30,
+    },
+    {
+        id:                  'sun_chaser',
+        title:               'Sun Chaser',
+        desc:                'Be here for both the day and the night',
+        icon:                '[☀☾]',
+        hiddenUntilUnlocked: true,
+        tier:                'gold',
+        xp:                  50,
+        rewardIds:           ['wp_anim_daynight'],
     },
     {
         id:                  'anniversary_mode',
@@ -9607,6 +9632,9 @@ const REWARD_REGISTRY = [
     { id: 'wp_anim_nightsky', type: REWARD_TYPE_WALLPAPER, name: 'Twinkling Stars',  description: 'A clear night sky where every star quietly twinkles', animated: true,
       css: 'linear-gradient(to bottom, #000510 0%, #000c28 50%, #001440 100%)',
       swatchCss: 'linear-gradient(to bottom, #000510 0%, #000c28 60%, #001440 100%)' },
+    { id: 'wp_anim_daynight', type: REWARD_TYPE_WALLPAPER, name: 'Living Sky',       description: 'The sky as it really is right now — dawn, noon, dusk, or deep night, always moving', animated: true,
+      css: 'linear-gradient(to bottom, #4a9fd6 0%, #87ceeb 100%)',
+      swatchCss: 'linear-gradient(to bottom, #4a9fd6 0%, #f7a040 45%, #000c28 100%)' },
 
     { id: 'wp_cat_monitor',       type: REWARD_TYPE_WALLPAPER, name: 'Cat Monitor',         description: 'A CRT screen in a dark room, watched over by a glowing-eyed cat',
       css: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3300 0%, #0a1800 50%, #030800 100%)',
@@ -17809,6 +17837,214 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         }
     }
 
+    // ---- Day / Night Cycle ----
+    const DN_CLOUDS    = [];
+    const DN_STARS     = [];
+    const DN_MOON      = {};
+    let   dnShootTimer = 0;
+    let   dnShoot      = null;
+    let   dnT          = 0;       // 0 = full day, 1 = full night
+    let   dnLastUpdate = -9999;
+
+    // Returns blend 0 (day) → 1 (night) based on local time using smooth transitions.
+    function _getDayNightBlend() {
+        const now = new Date();
+        const m   = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+        const ss  = x => x * x * (3 - 2 * x);  // smoothstep
+        // 0:00–4:59  night (1)
+        // 5:00–6:59  dawn  (1 → 0)
+        // 7:00–16:59 day   (0)
+        // 17:00–19:59 dusk  (0 → 1)
+        // 20:00–23:59 night (1)
+        if (m < 300)  return 1;
+        if (m < 420)  return 1 - ss((m - 300) / 120);
+        if (m < 1020) return 0;
+        if (m < 1200) return ss((m - 1020) / 180);
+        return 1;
+    }
+
+    // Interpolate between three RGB triplets: a (t=0) → b (t=0.5) → c (t=1).
+    function _dnLerp3(a, b, c, t) {
+        const u = t <= 0.5 ? t * 2 : (t - 0.5) * 2;
+        const s = t <= 0.5 ? a : b;
+        const e = t <= 0.5 ? b : c;
+        return [
+            Math.round(s[0] + (e[0] - s[0]) * u),
+            Math.round(s[1] + (e[1] - s[1]) * u),
+            Math.round(s[2] + (e[2] - s[2]) * u),
+        ];
+    }
+
+    function initDayNight() {
+        const W = canvas.width, H = canvas.height;
+        dnT          = _getDayNightBlend();
+        dnLastUpdate = frame;
+
+        DN_CLOUDS.length = 0;
+        for (let i = 0; i < 7; i++) {
+            DN_CLOUDS.push({
+                x:     Math.random() * W,
+                y:     50 + Math.random() * H * 0.42,
+                speed: 0.10 + Math.random() * 0.22,
+                scale: 0.5  + Math.random() * 0.80,
+                alpha: 0.65 + Math.random() * 0.30,
+            });
+        }
+
+        DN_STARS.length = 0;
+        for (let i = 0; i < 200; i++) {
+            DN_STARS.push({
+                x:          Math.random() * W,
+                y:          Math.random() * H * 0.88,
+                size:       0.4 + Math.random() * 1.5,
+                phase:      Math.random() * Math.PI * 2,
+                freq:       0.5 + Math.random() * 1.5,
+                brightness: 0.4 + Math.random() * 0.6,
+            });
+        }
+
+        DN_MOON.x = W * 0.76;
+        DN_MOON.y = H * 0.15;
+        DN_MOON.r = 20;
+        dnShootTimer = 0;
+        dnShoot      = null;
+    }
+
+    function animateDayNight() {
+        const W = canvas.width, H = canvas.height;
+        const t = frame / 60;
+
+        // Resample time blend roughly every 5 s (300 frames at 60 fps).
+        if (frame - dnLastUpdate > 300) {
+            dnT          = _getDayNightBlend();
+            dnLastUpdate = frame;
+        }
+
+        // Sky colour keyframes: day → dusk → night
+        const DAY_TOP   = [74,  159, 214], DUSK_TOP   = [42,  30,  80], NIGHT_TOP   = [0,  5,  16];
+        const DAY_MID   = [135, 206, 235], DUSK_MID   = [200, 75,  24], NIGHT_MID   = [0,  12, 40];
+        const DAY_BOT   = [200, 232, 248], DUSK_BOT   = [245, 140, 60], NIGHT_BOT   = [0,  20, 64];
+        const skyTop = _dnLerp3(DAY_TOP, DUSK_TOP, NIGHT_TOP, dnT);
+        const skyMid = _dnLerp3(DAY_MID, DUSK_MID, NIGHT_MID, dnT);
+        const skyBot = _dnLerp3(DAY_BOT, DUSK_BOT, NIGHT_BOT, dnT);
+
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0,   `rgb(${skyTop.join(',')})`);
+        sky.addColorStop(0.5, `rgb(${skyMid.join(',')})`);
+        sky.addColorStop(1,   `rgb(${skyBot.join(',')})`);
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+
+        // ---- Sun (visible during day; fades with dnT) ----
+        const sunAlpha = Math.max(0, 1 - dnT / 0.55);
+        if (sunAlpha > 0) {
+            const hr      = new Date().getHours() + new Date().getMinutes() / 60;
+            const sunNorm = Math.max(0, Math.min(1, (hr - 6) / 12)); // 0 at 6am, 1 at 6pm
+            const sunX    = W * (0.10 + sunNorm * 0.80);
+            const sunY    = H * (0.14 + Math.abs(sunNorm - 0.5) * 0.38); // arc peak at noon
+            const sunR    = 22;
+
+            const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 5);
+            glow.addColorStop(0,   `rgba(255,220,80,${(sunAlpha * 0.35).toFixed(3)})`);
+            glow.addColorStop(0.4, `rgba(255,180,40,${(sunAlpha * 0.15).toFixed(3)})`);
+            glow.addColorStop(1,   'transparent');
+            ctx.fillStyle = glow;
+            ctx.fillRect(sunX - sunR * 5, sunY - sunR * 5, sunR * 10, sunR * 10);
+
+            ctx.save();
+            ctx.globalAlpha = sunAlpha;
+            ctx.fillStyle   = '#fff5a0';
+            ctx.beginPath(); ctx.arc(sunX, sunY, sunR,        0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle   = '#ffe040';
+            ctx.beginPath(); ctx.arc(sunX, sunY, sunR * 0.75, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        // ---- Clouds (day only; fade and warm-tint as dusk approaches) ----
+        const cloudAlpha = Math.max(0, 1 - dnT * 2.2);
+        if (cloudAlpha > 0) {
+            for (const c of DN_CLOUDS) {
+                c.x += c.speed;
+                if (c.x - 80 * c.scale > W) c.x = -120 * c.scale;
+                ctx.save();
+                ctx.globalAlpha = c.alpha * cloudAlpha;
+                const cr = Math.round(255);
+                const cg = Math.round(255 * (1 - dnT * 0.45));
+                const cb = Math.round(255 * (1 - dnT * 0.70));
+                ctx.fillStyle   = `rgb(${cr},${cg},${cb})`;
+                ctx.shadowBlur  = 16;
+                ctx.shadowColor = dnT > 0.08 ? 'rgba(255,140,60,0.4)' : 'rgba(200,230,255,0.5)';
+                _drawCloudShape(c.x, c.y, c.scale);
+                ctx.restore();
+            }
+        }
+
+        // ---- Moon (fades in from mid-transition) ----
+        const moonAlpha = Math.max(0, (dnT - 0.35) / 0.65);
+        if (moonAlpha > 0) {
+            const mx = DN_MOON.x, my = DN_MOON.y, mr = DN_MOON.r;
+            const glow2 = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 3.5);
+            glow2.addColorStop(0,   `rgba(220,220,170,${(moonAlpha * 0.28).toFixed(3)})`);
+            glow2.addColorStop(1,   'transparent');
+            ctx.fillStyle = glow2;
+            ctx.fillRect(mx - mr * 4, my - mr * 4, mr * 8, mr * 8);
+            ctx.save();
+            ctx.globalAlpha = moonAlpha;
+            ctx.fillStyle   = '#f0f0d8';
+            ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = `rgb(${skyTop.join(',')})`;  // crescent shadow matches sky
+            ctx.beginPath(); ctx.arc(mx + 7, my - 3, mr * 0.82, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        // ---- Stars (fade in as night deepens) ----
+        const starAlpha = Math.max(0, (dnT - 0.40) / 0.60);
+        if (starAlpha > 0) {
+            for (const s of DN_STARS) {
+                const twinkle = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(t * s.freq + s.phase));
+                ctx.save();
+                ctx.globalAlpha = twinkle * s.brightness * starAlpha;
+                ctx.fillStyle   = '#ffffff';
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
+                if (s.size > 1.2 && starAlpha > 0.5) {
+                    ctx.globalAlpha = twinkle * s.brightness * starAlpha * 0.35;
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth   = 0.6;
+                    const gl = s.size * 3.5;
+                    ctx.beginPath();
+                    ctx.moveTo(s.x - gl, s.y); ctx.lineTo(s.x + gl, s.y);
+                    ctx.moveTo(s.x, s.y - gl); ctx.lineTo(s.x, s.y + gl);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // Occasional shooting star (night only)
+            dnShootTimer--;
+            if (dnShootTimer <= 0) {
+                dnShootTimer = 200 + Math.floor(Math.random() * 350);
+                dnShoot = {
+                    x: Math.random() * W * 0.7, y: Math.random() * H * 0.4,
+                    vx: 3 + Math.random() * 3,  vy: 1 + Math.random() * 1.5, life: 40,
+                };
+            }
+            if (dnShoot && dnShoot.life > 0) {
+                ctx.save();
+                ctx.globalAlpha = (dnShoot.life / 40) * 0.85 * starAlpha;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth   = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(dnShoot.x, dnShoot.y);
+                ctx.lineTo(dnShoot.x - dnShoot.vx * 6, dnShoot.y - dnShoot.vy * 6);
+                ctx.stroke();
+                ctx.restore();
+                dnShoot.x += dnShoot.vx;
+                dnShoot.y += dnShoot.vy;
+                dnShoot.life--;
+            }
+        }
+    }
+
     // ---- Core animation loop ----
     function tick() {
         if (!activeId) return;
@@ -17816,6 +18052,7 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         if      (activeId === 'wp_anim_clouds')   animateClouds();
         else if (activeId === 'wp_anim_forest')   animateForest();
         else if (activeId === 'wp_anim_nightsky') animateNightSky();
+        else if (activeId === 'wp_anim_daynight') animateDayNight();
         rafId = requestAnimationFrame(tick);
     }
 
@@ -17829,6 +18066,7 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         if      (id === 'wp_anim_clouds')   initClouds();
         else if (id === 'wp_anim_forest')   initForest();
         else if (id === 'wp_anim_nightsky') initNightSky();
+        else if (id === 'wp_anim_daynight') initDayNight();
         rafId = requestAnimationFrame(tick);
     }
 
@@ -17846,6 +18084,7 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         if      (activeId === 'wp_anim_clouds')   initClouds();
         else if (activeId === 'wp_anim_forest')   initForest();
         else if (activeId === 'wp_anim_nightsky') initNightSky();
+        else if (activeId === 'wp_anim_daynight') initDayNight();
     });
 
     window._animWallpaper = { start, stop };
