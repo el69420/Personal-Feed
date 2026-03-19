@@ -7973,6 +7973,7 @@ function _profRenderEditorSections(draft) {
     let btn = null;
     const avatarData = { El: null, Tero: null };
     const moodData   = { El: null, Tero: null };
+    const painData   = { El: null, Tero: null };
     let editorUser  = null;
     let editorDraft = null;
 
@@ -8002,10 +8003,12 @@ function _profRenderEditorSections(draft) {
 
     function _updateEditButtons() {
         USERS.forEach(u => {
-            const b  = document.getElementById(`profile-edit-btn-${u}`);
-            const mb = document.getElementById(`profile-mood-btn-${u}`);
+            const b   = document.getElementById(`profile-edit-btn-${u}`);
+            const mb  = document.getElementById(`profile-mood-btn-${u}`);
+            const pb  = document.getElementById(`profile-pain-btn-${u}`);
             if (b)  { if (u === currentUser) b.classList.remove('is-hidden');  else b.classList.add('is-hidden'); }
             if (mb) { if (u === currentUser) mb.classList.remove('is-hidden'); else mb.classList.add('is-hidden'); }
+            if (pb) { if (u === currentUser) pb.classList.remove('is-hidden'); else pb.classList.add('is-hidden'); }
         });
     }
 
@@ -8027,6 +8030,22 @@ function _profRenderEditorSections(draft) {
             if (!el) return;
             const mood = moodData[u] ? MOODS.find(m => m.id === moodData[u]) : null;
             el.textContent = mood ? `${mood.emoji} ${mood.label}` : '';
+        });
+    }
+
+    function _renderAllPains() {
+        USERS.forEach(u => {
+            const el = document.getElementById(`profile-pain-${u}`);
+            if (!el) return;
+            const lvl = painData[u];
+            if (lvl === null || lvl === undefined) {
+                el.textContent = '';
+                el.className = 'profile-pain';
+            } else {
+                el.textContent = `Pain: ${lvl}/10`;
+                const sev = lvl <= 3 ? 'low' : lvl <= 6 ? 'mid' : 'high';
+                el.className = `profile-pain pain-${sev}`;
+            }
         });
     }
 
@@ -8085,15 +8104,79 @@ function _profRenderEditorSections(draft) {
     if (mpWin)   mpWin.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-mood-picker'));
     if (mpWin && mpHandle) makeDraggable(mpWin, mpHandle, 'w95-win-mood-picker');
 
+    // ---- Pain Picker ----
+    const ppWin    = document.getElementById('w95-win-pain-picker');
+    const ppHandle = document.getElementById('w95-pain-picker-handle');
+    const ppClose  = document.getElementById('w95-pain-picker-close');
+    let   ppUser   = null;
+
+    function _openPainPicker(user) {
+        if (!currentUser || user !== currentUser) return;
+        const profWin = document.getElementById('w95-win-profiles');
+        if (profWin) {
+            const r = profWin.getBoundingClientRect();
+            ppWin.style.left = Math.max(0, r.left - 188) + 'px';
+            ppWin.style.top  = r.top + 'px';
+        }
+        ppUser = user;
+        const body = document.getElementById('pain-picker-body');
+        if (body) {
+            const cur = painData[user];
+            body.innerHTML = Array.from({ length: 11 }, (_, i) =>
+                `<button class="pain-btn${cur === i ? ' is-active' : ''}"
+                         onclick="pfSetPain('${user}',${i})"
+                         type="button">${i} — ${_painLabel(i)}</button>`
+            ).join('');
+        }
+        ppWin.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-pain-picker');
+    }
+
+    function _closePainPicker() {
+        ppWin.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-pain-picker')) w95Mgr.focusWindow(null);
+        ppUser = null;
+    }
+
+    function _painLabel(lvl) {
+        if (lvl === 0)  return 'None';
+        if (lvl <= 3)   return 'Mild';
+        if (lvl <= 6)   return 'Moderate';
+        if (lvl <= 9)   return 'Severe';
+        return 'Worst';
+    }
+
+    async function _setPain(user, level) {
+        if (!currentUser || user !== currentUser) return;
+        const newLevel = painData[user] === level ? null : level;
+        try {
+            if (newLevel !== null) {
+                await set(ref(database, `profiles/${user}/pain`), newLevel);
+            } else {
+                await remove(ref(database, `profiles/${user}/pain`));
+            }
+            _closePainPicker();
+            showToast(newLevel !== null ? 'Pain level updated!' : 'Pain level cleared!');
+        } catch (e) {
+            showToast('Save failed — try again.');
+        }
+    }
+
+    if (ppClose) ppClose.onclick = (e) => { e.stopPropagation(); _closePainPicker(); };
+    if (ppWin)   ppWin.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-pain-picker'));
+    if (ppWin && ppHandle) makeDraggable(ppWin, ppHandle, 'w95-win-pain-picker');
+
     // ---- Firebase: load saved avatars and moods ----
     onValue(ref(database, 'profiles'), snap => {
         const data = snap.val() || {};
         USERS.forEach(u => {
             avatarData[u] = data[u]?.avatar || null;
             moodData[u]   = data[u]?.mood   || null;
+            painData[u]   = data[u]?.pain   ?? null;
         });
         _renderAllAvatars();
         _renderAllMoods();
+        _renderAllPains();
     });
 
     // ---- Avatar editor ----
@@ -8174,6 +8257,8 @@ function _profRenderEditorSections(draft) {
     window.pfAvatarPick     = _pickTrait;
     window.openMoodPicker   = _openMoodPicker;
     window.pfSetMood        = _setMood;
+    window.openPainPicker   = _openPainPicker;
+    window.pfSetPain        = _setPain;
 
     // ---- Called after login to show the correct edit button ----
     window._profilesOnLogin = _updateEditButtons;
