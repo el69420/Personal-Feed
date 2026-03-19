@@ -10967,43 +10967,115 @@ body[data-theme] .sys-props-tab--active {
   line-height: 1.4;
 }
 
-.fd-status-loading {
-  background: rgba(0,0,0,0.05);
-  color: var(--text-secondary, #555);
-}
-
-.fd-status-success {
-  background: rgba(0,160,80,0.1);
-  color: #006630;
-  border: 1px solid rgba(0,160,80,0.25);
-}
-
 .fd-status-error {
   background: rgba(200,30,30,0.08);
   color: #9b1c1c;
   border: 1px solid rgba(200,30,30,0.2);
 }
 
+/* Nutrition toggle button */
+.fd-nut-toggle-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--accent, #0080c0);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  align-self: flex-start;
+}
+.fd-nut-toggle-btn:hover { opacity: 0.75; }
+
+/* Nutrition input grid */
+.fd-nut-fields {
+  margin-top: 2px;
+}
+
+.fd-nut-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px 8px;
+}
+
+.fd-nut-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fd-nut-input {
+  padding: 3px 5px;
+  font-size: 11px;
+}
+
+/* Entry list */
 .fd-entries-list {
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
 }
 
 .fd-empty {
   font-size: 11px;
   color: var(--text-secondary, #666);
-  padding: 8px 0;
+  padding: 6px 0 8px;
 }
 
+/* Day headers */
+.fd-day-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary, #666);
+  padding: 8px 0 4px;
+}
+
+.fd-old-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--card-border, rgba(0,0,0,0.1));
+  padding: 7px 0 4px;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.fd-old-header:hover { color: var(--text-primary, #111); }
+
+.fd-old-arrow {
+  font-size: 8px;
+  flex-shrink: 0;
+}
+
+.fd-past-day-header {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary, #777);
+  padding: 8px 0 3px;
+}
+
+/* Entry card */
 .fd-entry-card {
   background: var(--card-bg, #fff);
   border: 1px solid var(--card-border, rgba(0,0,0,0.1));
   border-radius: 4px;
-  padding: 8px 10px;
+  padding: 7px 10px;
   font-size: 11px;
+  margin-bottom: 5px;
 }
 
 .fd-entry-header {
@@ -11011,7 +11083,7 @@ body[data-theme] .sys-props-tab--active {
   justify-content: space-between;
   align-items: baseline;
   gap: 6px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .fd-entry-food {
@@ -11032,17 +11104,18 @@ body[data-theme] .sys-props-tab--active {
   text-transform: capitalize;
 }
 
+.fd-entry-nut {
+  font-size: 10px;
+  color: var(--text-secondary, #555);
+  margin-bottom: 2px;
+}
+
 .fd-entry-meta {
   font-size: 10px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary, #999);
 }
 
 /* Dark mode */
-body.dark-mode .fd-status-success {
-  background: rgba(0,160,80,0.15);
-  color: #4ade80;
-}
-
 body.dark-mode .fd-status-error {
   background: rgba(200,30,30,0.15);
   color: #fca5a5;
