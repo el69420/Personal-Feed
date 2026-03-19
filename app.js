@@ -12678,10 +12678,7 @@ function initPixelCat() {
         _lastCatClick = now;
         setTimeout(() => {
             if (Date.now() - _lastCatClick < 350) return; // dblclick fired, skip
-            window._catLocalEmote?.('heart');
-            canvas.classList.remove('cat-bounce');
-            void canvas.offsetWidth;
-            canvas.classList.add('cat-bounce');
+            window._catController?.petCat();
         }, 220);
     });
 
