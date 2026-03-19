@@ -7907,8 +7907,8 @@ function buildAvatarSVG(t) {
 
     const fp = Array.isArray(t.face_pierce) ? t.face_pierce : [];
     if (fp.includes('septum'))    layers.push(`<path d="M47 58 Q50 61.5 53 58" fill="none" stroke="#C4C4C4" stroke-width="1.8" stroke-linecap="round"/>`);
-    if (fp.includes('nostril_l')) layers.push(`<circle cx="44" cy="56.5" r="1.6" fill="none" stroke="#C4C4C4" stroke-width="1.2"/>`);
-    if (fp.includes('nostril_r')) layers.push(`<circle cx="56" cy="56.5" r="1.6" fill="none" stroke="#C4C4C4" stroke-width="1.2"/>`);
+    if (fp.includes('nostril_l')) layers.push(`<circle cx="44" cy="56.5" r="1.6" fill="#C4C4C4"/>`);
+    if (fp.includes('nostril_r')) layers.push(`<circle cx="56" cy="56.5" r="1.6" fill="#C4C4C4"/>`);
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="90" height="90" aria-hidden="true">${layers.join('')}</svg>`;
 }
