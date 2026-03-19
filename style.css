@@ -3640,10 +3640,9 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 
 .mood-picker {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 2px;
-    justify-content: center;
-    max-width: 140px;
+    width: 100%;
     margin-top: 2px;
     padding: 4px;
     background: #c0c0c0;
@@ -3651,15 +3650,17 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     border-left: 2px solid #fff;
     border-right: 2px solid #404040;
     border-bottom: 2px solid #404040;
+    box-sizing: border-box;
 }
 
 .mood-btn {
-    font-size: 17px;
-    line-height: 1;
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    text-align: left;
     background: #c0c0c0;
     border: 2px solid transparent;
-    padding: 2px 3px;
+    padding: 3px 6px;
     cursor: pointer;
+    width: 100%;
 }
 
 .mood-btn:hover {

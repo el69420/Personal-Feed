@@ -8029,7 +8029,7 @@ function _profRenderEditorSections(draft) {
         picker.innerHTML = MOODS.map(m =>
             `<button class="mood-btn${moodData[user] === m.id ? ' is-active' : ''}"
                      onclick="pfSetMood('${user}','${m.id}')"
-                     title="${m.label}" type="button">${m.emoji}</button>`
+                     type="button">${m.emoji} ${m.label}</button>`
         ).join('');
         picker.classList.remove('is-hidden');
     }
