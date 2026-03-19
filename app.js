@@ -8214,7 +8214,7 @@ const PAIN_LOCATIONS = [
                 await remove(ref(database, `profiles/${user}/pain`));
                 await remove(ref(database, `profiles/${user}/painLocations`));
             }
-            await push(ref(painJournalRef, user), {
+            await push(child(painJournalRef, user), {
                 level:     level ?? null,
                 locations: locations.length ? locations : null,
                 ts:        serverTimestamp(),
