@@ -96,6 +96,10 @@
             <div class="desktop-icon-img">&#127873;</div>
             <div class="desktop-icon-label">Wishlist.exe</div>
         </div>
+        <div class="w95-desktop-icon" data-app="fooddiary" tabindex="0">
+            <div class="desktop-icon-img">&#127859;</div>
+            <div class="desktop-icon-label">Food Diary.exe</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -465,6 +469,19 @@
           <div id="wishlistItemsGrid" class="wishlist-items-grid"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Food Diary Window -->
+    <div id="w95-win-fooddiary" class="w95-window is-hidden" style="left:220px;top:80px;width:480px;height:580px;">
+      <div class="w95-titlebar" id="w95-fooddiary-handle">
+        <div class="w95-title">&#127859; Food Diary.exe</div>
+        <div class="w95-controls">
+          <button class="w95-control" id="w95-fooddiary-min" type="button" aria-label="Minimise">_</button>
+          <button class="w95-control" id="w95-fooddiary-max" type="button" aria-label="Maximise">&#9633;</button>
+          <button class="w95-control w95-control-close" id="w95-fooddiary-close" type="button" aria-label="Close">X</button>
+        </div>
+      </div>
+      <div class="w95-body w95-fooddiary-body" id="w95-fooddiary-body"></div>
     </div>
 
     <!-- Keyboard Shortcuts Modal -->
@@ -899,6 +916,7 @@
         <button class="w95-start-item" data-app="console" type="button">&#9000; Console.exe</button>
         <button class="w95-start-item" data-app="scrapbook" type="button">&#128204; Scrapbook</button>
         <button class="w95-start-item" data-app="wishlist" type="button">&#127873; Wishlist</button>
+        <button class="w95-start-item" data-app="fooddiary" type="button">&#127859; Food Diary</button>
         <button class="w95-start-item" data-app="stats" type="button">&#128202; Stats.exe</button>
         <button class="w95-start-item" data-app="myComputer" type="button">&#128187; My Computer</button>
         <hr class="w95-start-separator">

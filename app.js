@@ -18,6 +18,7 @@ const recycleBinRef = ref(database, 'recycleBin');
 const categoriesRef     = ref(database, 'categories');
 const wishlistBoardsRef = ref(database, 'wishlistBoards');
 const wishlistItemsRef  = ref(database, 'wishlistItems');
+const foodDiaryRef      = ref(database, 'foodDiary');
 
 const API_BASE = ''; // Set to the deployed origin (e.g. 'https://your-api.example.com') for GitHub Pages use
 
@@ -5843,6 +5844,16 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 // ===== System Properties dialog with Update History =====
 const UPDATE_HISTORY = [
     {
+        date: '19-03-26',
+        label: 'Food Diary',
+        items: [
+            'Added Food Diary.exe — log meals with free-text input (e.g. "2 eggs, toast, coffee") and an optional meal type.',
+            'Nutrition data (calories, protein, carbs, fat) is fetched automatically from the Nutritionix API on submit.',
+            'If the API is unavailable or returns no data, a clear error message is shown and nothing is saved.',
+            'Past entries are listed in reverse-chronological order with their nutrition summary.',
+        ]
+    },
+    {
         date: '18-03-26',
         label: 'Chat & Presence',
         items: [
@@ -10614,6 +10625,214 @@ function renderAchievementsWindow() {
     }};
 })();
 
+// ===== Win95 Food Diary Window =====
+(() => {
+    const win      = document.getElementById('w95-win-fooddiary');
+    const body     = document.getElementById('w95-fooddiary-body');
+    const minBtn   = document.getElementById('w95-fooddiary-min');
+    const maxBtn   = document.getElementById('w95-fooddiary-max');
+    const closeBtn = document.getElementById('w95-fooddiary-close');
+    const handle   = document.getElementById('w95-fooddiary-handle');
+    if (!win || !handle) return;
+
+    let btn         = null;
+    let allEntries  = {};   // keyed by Firebase push id
+    let isSubmitting = false;
+
+    // ---- Firebase listener ----
+    onValue(foodDiaryRef, snap => {
+        allEntries = snap.val() || {};
+        if (!win.classList.contains('is-hidden')) renderEntries();
+    });
+
+    // ---- Window controls ----
+    function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-fooddiary', 'FOOD DIARY', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-fooddiary');
+        localStorage.setItem('w95_fooddiary_open', '1');
+        renderApp();
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-fooddiary')) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_fooddiary_open', '0');
+    }
+
+    function closeWin() {
+        if (w95Mgr.isMaximised('w95-win-fooddiary')) w95Mgr.toggleMaximise(win, 'w95-win-fooddiary');
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-fooddiary')) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_fooddiary_open', '0');
+        if (btn) { btn.remove(); btn = null; }
+    }
+
+    win.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-fooddiary'));
+    if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
+    if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-fooddiary'); };
+    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
+    makeDraggable(win, handle, 'w95-win-fooddiary');
+
+    // ---- Render ----
+    function renderApp() {
+        if (!body) return;
+        body.innerHTML = `
+            <div class="fd-layout">
+                <div class="fd-form-section">
+                    <div class="fd-section-title">&#127859; Log a meal</div>
+                    <div class="fd-form">
+                        <div class="fd-field">
+                            <label class="fd-label" for="fd-food-input">What did you eat?</label>
+                            <input id="fd-food-input" class="fd-input" type="text"
+                                placeholder="e.g. 2 eggs, toast, coffee"
+                                autocomplete="off" maxlength="300" />
+                        </div>
+                        <div class="fd-field">
+                            <label class="fd-label" for="fd-meal-select">Meal type <span class="fd-optional">(optional)</span></label>
+                            <select id="fd-meal-select" class="fd-select">
+                                <option value="">— select —</option>
+                                <option value="breakfast">&#127749; Breakfast</option>
+                                <option value="lunch">&#127822; Lunch</option>
+                                <option value="dinner">&#127857; Dinner</option>
+                                <option value="snack">&#127863; Snack</option>
+                            </select>
+                        </div>
+                        <div id="fd-status" class="fd-status" style="display:none;"></div>
+                        <button id="fd-submit-btn" class="btn-primary fd-submit-btn" type="button">Log meal</button>
+                    </div>
+                </div>
+                <div class="fd-entries-section">
+                    <div class="fd-section-title">&#128203; Past entries</div>
+                    <div id="fd-entries-list" class="fd-entries-list"></div>
+                </div>
+            </div>`;
+        renderEntries();
+        document.getElementById('fd-submit-btn').addEventListener('click', handleSubmit);
+        document.getElementById('fd-food-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') handleSubmit();
+        });
+    }
+
+    function renderEntries() {
+        const list = document.getElementById('fd-entries-list');
+        if (!list) return;
+
+        const mine = Object.entries(allEntries)
+            .filter(([, e]) => e.userId === currentUser)
+            .sort((a, b) => b[1].eatenAt - a[1].eatenAt);
+
+        if (!mine.length) {
+            list.innerHTML = '<div class="fd-empty">No entries yet. Log your first meal above!</div>';
+            return;
+        }
+
+        const MEAL_ICONS = { breakfast: '&#127749;', lunch: '&#127822;', dinner: '&#127857;', snack: '&#127863;' };
+        list.innerHTML = mine.map(([id, entry]) => {
+            const d   = new Date(entry.eatenAt);
+            const dateStr = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+            const timeStr = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+            const mealLabel = entry.mealType ? `${MEAL_ICONS[entry.mealType] || ''} ${entry.mealType}` : '';
+            const n = entry.nutrition;
+            return `
+                <div class="fd-entry-card">
+                    <div class="fd-entry-header">
+                        <span class="fd-entry-food">${safeText(entry.foodText)}</span>
+                        ${mealLabel ? `<span class="fd-entry-meal">${mealLabel}</span>` : ''}
+                    </div>
+                    <div class="fd-entry-nutrition">
+                        <span class="fd-nut-cal">&#128293; ${n.calories} kcal</span>
+                        <span class="fd-nut-item">P ${n.protein_g}g</span>
+                        <span class="fd-nut-item">C ${n.carbs_g}g</span>
+                        <span class="fd-nut-item">F ${n.fat_g}g</span>
+                    </div>
+                    <div class="fd-entry-meta">${dateStr} · ${timeStr}</div>
+                </div>`;
+        }).join('');
+    }
+
+    // ---- Submit ----
+    async function handleSubmit() {
+        if (isSubmitting) return;
+        const input    = document.getElementById('fd-food-input');
+        const select   = document.getElementById('fd-meal-select');
+        const statusEl = document.getElementById('fd-status');
+        const submitBtn = document.getElementById('fd-submit-btn');
+        if (!input || !statusEl) return;
+
+        const foodText = input.value.trim();
+        if (!foodText) { showStatus('error', 'Please enter what you ate.'); return; }
+
+        isSubmitting = true;
+        submitBtn.disabled = true;
+        showStatus('loading', 'Looking up nutrition data…');
+
+        try {
+            const resp = await fetch(`${API_BASE}/api/nutrition`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: foodText }),
+            });
+            const data = await resp.json();
+            if (!resp.ok) {
+                showStatus('error', data.error || 'Could not get nutrition data. Try again.');
+                return;
+            }
+
+            // Sum nutrition across all recognised foods
+            const totals = data.foods.reduce((acc, f) => ({
+                calories:  acc.calories  + f.calories,
+                protein_g: acc.protein_g + f.protein_g,
+                carbs_g:   acc.carbs_g   + f.carbohydrates_g,
+                fat_g:     acc.fat_g     + f.fat_g,
+            }), { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 });
+
+            const entry = {
+                userId:   currentUser,
+                foodText: foodText,
+                mealType: select ? (select.value || null) : null,
+                eatenAt:  Date.now(),
+                nutrition: {
+                    calories:  totals.calories,
+                    protein_g: Math.round(totals.protein_g * 10) / 10,
+                    carbs_g:   Math.round(totals.carbs_g   * 10) / 10,
+                    fat_g:     Math.round(totals.fat_g     * 10) / 10,
+                },
+                createdAt: Date.now(),
+            };
+
+            await push(foodDiaryRef, entry);
+
+            input.value = '';
+            if (select) select.value = '';
+            showStatus('success',
+                `&#128293; ${entry.nutrition.calories} kcal · P ${entry.nutrition.protein_g}g · C ${entry.nutrition.carbs_g}g · F ${entry.nutrition.fat_g}g`);
+        } catch (err) {
+            console.error('Food diary submit error:', err);
+            showStatus('error', 'Something went wrong. Please try again.');
+        } finally {
+            isSubmitting = false;
+            submitBtn.disabled = false;
+        }
+    }
+
+    function showStatus(type, message) {
+        const el = document.getElementById('fd-status');
+        if (!el) return;
+        el.style.display = 'block';
+        el.className = `fd-status fd-status-${type}`;
+        el.innerHTML = message;
+    }
+
+    if (localStorage.getItem('w95_fooddiary_open') === '1') show();
+
+    w95Apps['fooddiary'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-fooddiary');
+    }};
+})();
+
 // ===== Win95 Wishlist Window =====
 (() => {
     const win      = document.getElementById('w95-win-wishlist');
@@ -10678,6 +10897,7 @@ const ICON_DEFAULTS = {
     console:      { x: 104, y: 16  },
     scrapbook:    { x: 104, y: 100 },
     wishlist:     { x: 104, y: 184 },
+    fooddiary:    { x: 104, y: 268 },
 };
 
 // ===== Snap-to-grid + Arrange =====

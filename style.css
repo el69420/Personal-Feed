@@ -10869,3 +10869,197 @@ body[data-theme] .sys-props-tab--active {
   border-bottom-color: var(--theme-chrome) !important;
   color: var(--theme-text) !important;
 }
+
+/* ============================================================
+   FOOD DIARY
+   ============================================================ */
+.w95-fooddiary-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.fd-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.fd-form-section {
+  flex-shrink: 0;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--card-border, rgba(0,0,0,0.12));
+}
+
+.fd-entries-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 10px 14px 12px;
+}
+
+.fd-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary, #666);
+  margin-bottom: 8px;
+}
+
+.fd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.fd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fd-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary, #111);
+}
+
+.fd-optional {
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.fd-input,
+.fd-select {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  border: 1px solid var(--input-border, rgba(0,0,0,0.25));
+  border-radius: 3px;
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #111);
+  box-sizing: border-box;
+  outline: none;
+}
+
+.fd-input:focus,
+.fd-select:focus {
+  border-color: var(--accent, #0080c0);
+  box-shadow: 0 0 0 2px rgba(0,128,192,0.15);
+}
+
+.fd-submit-btn {
+  align-self: flex-start;
+  margin-top: 2px;
+  font-size: 12px;
+  padding: 5px 16px;
+}
+
+.fd-status {
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 3px;
+  line-height: 1.4;
+}
+
+.fd-status-loading {
+  background: rgba(0,0,0,0.05);
+  color: var(--text-secondary, #555);
+}
+
+.fd-status-success {
+  background: rgba(0,160,80,0.1);
+  color: #006630;
+  border: 1px solid rgba(0,160,80,0.25);
+}
+
+.fd-status-error {
+  background: rgba(200,30,30,0.08);
+  color: #9b1c1c;
+  border: 1px solid rgba(200,30,30,0.2);
+}
+
+.fd-entries-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fd-empty {
+  font-size: 11px;
+  color: var(--text-secondary, #666);
+  padding: 8px 0;
+}
+
+.fd-entry-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, rgba(0,0,0,0.1));
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+.fd-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.fd-entry-food {
+  font-weight: 600;
+  color: var(--text-primary, #111);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fd-entry-meal {
+  font-size: 10px;
+  color: var(--text-secondary, #666);
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: capitalize;
+}
+
+.fd-entry-nutrition {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+
+.fd-nut-cal {
+  font-weight: 700;
+  color: var(--text-primary, #111);
+}
+
+.fd-nut-item {
+  color: var(--text-secondary, #555);
+}
+
+.fd-entry-meta {
+  font-size: 10px;
+  color: var(--text-secondary, #888);
+}
+
+/* Dark mode */
+body.dark-mode .fd-status-success {
+  background: rgba(0,160,80,0.15);
+  color: #4ade80;
+}
+
+body.dark-mode .fd-status-error {
+  background: rgba(200,30,30,0.15);
+  color: #fca5a5;
+}
