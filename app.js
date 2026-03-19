@@ -1878,7 +1878,6 @@ async function prefetchAlbumCovers() {
     _acCache.tracks = results;
     _acCache.images = results.map(td => {
         const img = new Image();
-        img.crossOrigin = 'anonymous';
         img.src = td.imageUrl;
         return img;
     });

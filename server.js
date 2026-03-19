@@ -233,7 +233,7 @@ app.get('/api/recent-tracks', async (req, res) => {
             return {
                 track:    t.name || '—',
                 artist:   t.artist?.['#text'] || '',
-                imageUrl: images[images.length - 1]?.['#text'] || '',
+                imageUrl: [...images].reverse().find(i => i['#text'])?.['#text'] || '',
             };
         }).filter(t => t.imageUrl);
         const data = { tracks };
