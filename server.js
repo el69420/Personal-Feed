@@ -209,6 +209,62 @@ app.post('/api/garden/select-plant', (req, res) => {
     res.json({ ok: true, selectedPlant: plantType });
 });
 
+// GET /api/recent-tracks?user=<key>  – last 10 scrobbles with album art
+const recentCache = {};
+const RECENT_CACHE_TTL = 120_000;
+
+app.get('/api/recent-tracks', async (req, res) => {
+    const key = req.query.user;
+    if (!LASTFM_USERS[key]) return res.status(400).json({ error: 'invalid user' });
+    if (!LASTFM_API_KEY)   return res.json({ tracks: [] });
+
+    const cached = recentCache[key];
+    if (cached && Date.now() - cached.fetchedAt < RECENT_CACHE_TTL) return res.json(cached.data);
+
+    try {
+        const username = LASTFM_USERS[key];
+        const url = `https://ws.audioscrobbler.com/2.0/?method=user.getRecentTracks&user=${username}&api_key=${LASTFM_API_KEY}&format=json&limit=10`;
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(`Last.fm HTTP ${r.status}`);
+        const json = await r.json();
+        const raw = json.recenttracks?.track || [];
+        const tracks = (Array.isArray(raw) ? raw : [raw]).map(t => {
+            const images = t.image || [];
+            return {
+                track:    t.name || '—',
+                artist:   t.artist?.['#text'] || '',
+                imageUrl: images[images.length - 1]?.['#text'] || '',
+            };
+        }).filter(t => t.imageUrl);
+        const data = { tracks };
+        recentCache[key] = { data, fetchedAt: Date.now() };
+        res.json(data);
+    } catch (e) {
+        console.error('Last.fm recent-tracks error:', e.message);
+        res.status(500).json({ error: 'fetch failed' });
+    }
+});
+
+// GET /api/letterboxd-meta?url=<letterboxd-url>  – extracts og: meta tags server-side
+app.get('/api/letterboxd-meta', async (req, res) => {
+    const url = req.query.url;
+    if (!url || !url.startsWith('https://letterboxd.com/')) {
+        return res.status(400).json({ error: 'invalid url' });
+    }
+    try {
+        const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        if (!r.ok) return res.status(502).json({ error: 'fetch failed' });
+        const html = await r.text();
+        const match = (prop) =>
+            html.match(new RegExp(`<meta[^>]+property="${prop}"[^>]+content="([^"]+)"`))?.[1] ||
+            html.match(new RegExp(`<meta[^>]+content="([^"]+)"[^>]+property="${prop}"`))?.[1] || null;
+        res.json({ posterUrl: match('og:image'), description: match('og:description') });
+    } catch (e) {
+        console.error('letterboxd-meta error:', e.message);
+        res.status(500).json({ error: 'fetch failed' });
+    }
+});
+
 // Static files served last so API routes always take priority
 app.use(express.static(path.join(__dirname)));
 

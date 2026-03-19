@@ -1800,26 +1800,10 @@ const LASTFM_API_KEY = '4d927af2241b4f77b711972fb2112329';
 const LASTFM_USERS   = { el: 'elliotmakesart', tero: 'afduarte1' };
 
 async function fetchNowPlaying(userKey) {
-    const username = LASTFM_USERS[userKey];
-    if (!username) return null;
     try {
-        const lastfmUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(username)}&api_key=${LASTFM_API_KEY}&format=json&limit=1&t=${Date.now()}`;
-        const proxyUrl  = `https://api.allorigins.win/raw?url=${encodeURIComponent(lastfmUrl)}`;
-        const r = await fetch(proxyUrl, { cache: 'no-store' });
+        const r = await fetch(`/api/now-playing?user=${userKey}`, { cache: 'no-store' });
         if (!r.ok) return null;
-        const json = await r.json();
-        const tracks = json.recenttracks?.track;
-        if (!tracks) return null;
-        const track = Array.isArray(tracks) ? tracks[0] : tracks;
-        const nowPlaying = track['@attr']?.nowplaying === 'true';
-        const images = track.image || [];
-        return {
-            nowPlaying,
-            track:     track.name || '—',
-            artist:    track.artist?.['#text'] || '',
-            image:     images[images.length - 1]?.['#text'] || '',
-            timestamp: nowPlaying ? null : (track.date?.uts ? Number(track.date.uts) * 1000 : null),
-        };
+        return await r.json();
     } catch { return null; }
 }
 
@@ -1880,19 +1864,13 @@ const _acCache = { tracks: [], images: [] };
 
 async function prefetchAlbumCovers() {
     const results = [];
-    for (const username of Object.values(LASTFM_USERS)) {
+    for (const key of Object.keys(LASTFM_USERS)) {
         try {
-            const lastfmUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(username)}&api_key=${LASTFM_API_KEY}&format=json&limit=10`;
-            const proxyUrl  = `https://api.allorigins.win/raw?url=${encodeURIComponent(lastfmUrl)}`;
-            const r = await fetch(proxyUrl, { cache: 'no-store' });
+            const r = await fetch(`/api/recent-tracks?user=${key}`, { cache: 'no-store' });
             if (!r.ok) continue;
-            const json = await r.json();
-            const tracks = json.recenttracks?.track;
-            if (!tracks) continue;
-            for (const t of (Array.isArray(tracks) ? tracks : [tracks])) {
-                const images = t.image || [];
-                const imgUrl = images[images.length - 1]?.['#text'] || '';
-                if (imgUrl) results.push({ track: t.name || '—', artist: t.artist?.['#text'] || '', imageUrl: imgUrl });
+            const { tracks } = await r.json();
+            for (const t of (tracks || [])) {
+                if (t.imageUrl) results.push(t);
             }
         } catch { /* ignore */ }
     }
@@ -3290,13 +3268,9 @@ window.previewImage = function(input) {
 
 async function fetchLetterboxdMeta(url) {
     try {
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        const res = await fetch(`/api/letterboxd-meta?url=${encodeURIComponent(url)}`);
         if (!res.ok) return null;
-        const { contents } = await res.json();
-        const match = (prop) =>
-            contents.match(new RegExp(`<meta[^>]+property="${prop}"[^>]+content="([^"]+)"`))?.[1] ||
-            contents.match(new RegExp(`<meta[^>]+content="([^"]+)"[^>]+property="${prop}"`))?.[1] || null;
-        return { posterUrl: match('og:image'), description: match('og:description') };
+        return await res.json();
     } catch { return null; }
 }
 
