@@ -17250,6 +17250,276 @@ document.addEventListener('click', (e) => {
     // Start ambience if enabled on load
     if (soundEnabled && soundAmbience) startAmbience();
 
+// ===== Pain Journal.exe =====
+(() => {
+    const win      = document.getElementById('w95-win-painjournal');
+    const handle   = document.getElementById('w95-painjournal-handle');
+    const minBtn   = document.getElementById('w95-painjournal-min');
+    const maxBtn   = document.getElementById('w95-painjournal-max');
+    const closeBtn = document.getElementById('w95-painjournal-close');
+    const body     = document.getElementById('w95-painjournal-body');
+    if (!win || !handle || !body) return;
+
+    const WIN_ID = 'w95-win-painjournal';
+    let btn     = null;
+    let entries = {};   // { El: { pushId: { level, locations, ts, editedAt?, editHistory? }, … }, … }
+
+    // ---- Helpers ----
+    function _esc(s) {
+        return String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+    }
+
+    function _painLabel(lvl) {
+        if (lvl === null || lvl === undefined) return 'Cleared';
+        if (lvl === 0) return '0 — None';
+        if (lvl <= 3)  return `${lvl} — Mild`;
+        if (lvl <= 6)  return `${lvl} — Moderate`;
+        if (lvl <= 9)  return `${lvl} — Severe`;
+        return `${lvl} — Worst`;
+    }
+
+    function _painClass(lvl) {
+        if (lvl === null || lvl === undefined || lvl === 0) return 'pj-level-none';
+        if (lvl <= 3) return 'pj-level-low';
+        if (lvl <= 6) return 'pj-level-mid';
+        return 'pj-level-high';
+    }
+
+    function _fmtDate(ts) {
+        if (!ts) return '—';
+        const d = new Date(ts);
+        const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${hh}:${mm}`;
+    }
+
+    function _locLabels(locs) {
+        if (!Array.isArray(locs) || !locs.length) return '—';
+        return locs.map(id => PAIN_LOCATIONS.find(x => x.id === id)?.label ?? id).join(', ');
+    }
+
+    // ---- Edit history sub-rows ----
+    function _historyRows(editHistory) {
+        if (!editHistory) return '';
+        const arr = (Array.isArray(editHistory) ? editHistory : Object.values(editHistory))
+            .slice()
+            .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+        return arr.map(h => {
+            const was  = `${_painLabel(h.prevLevel ?? null)} · ${_locLabels(h.prevLocations || [])}`;
+            const note = h.comment ? ` — <em>"${_esc(h.comment)}"</em>` : '';
+            return `<tr class="pj-history-row">
+                <td colspan="5"><span class="pj-history-label">&#10000; ${_fmtDate(h.ts)}</span>was: ${_esc(was)}${note}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ---- Main render ----
+    function render() {
+        const rows = [];
+        for (const user of Object.keys(entries)) {
+            for (const [id, e] of Object.entries(entries[user] || {})) {
+                rows.push({
+                    id, user,
+                    level:       e.level     ?? null,
+                    locations:   e.locations || [],
+                    ts:          e.ts        || 0,
+                    editedAt:    e.editedAt  || null,
+                    editHistory: e.editHistory || null,
+                });
+            }
+        }
+        rows.sort((a, b) => b.ts - a.ts);
+
+        if (rows.length === 0) {
+            body.innerHTML = '<div class="pj-empty">No entries yet.</div>';
+            return;
+        }
+
+        body.innerHTML = `
+            <div class="pj-table-wrap">
+                <table class="pj-table">
+                    <thead><tr>
+                        <th>Date &amp; Time</th>
+                        <th>Who</th>
+                        <th>Level</th>
+                        <th>Location</th>
+                        <th></th>
+                    </tr></thead>
+                    <tbody>
+                        ${rows.map(r => {
+                            const editedBadge = r.editedAt
+                                ? `<span class="pj-edited-tag" title="Last edited ${_fmtDate(r.editedAt)}">edited</span>`
+                                : '';
+                            const editBtn = (r.user === currentUser)
+                                ? `<button class="pj-edit-btn" data-user="${r.user}" data-id="${r.id}" type="button">Edit</button>`
+                                : '';
+                            return `
+                                <tr>
+                                    <td class="pj-ts">${_fmtDate(r.ts)} ${editedBadge}</td>
+                                    <td class="pj-user">${_esc(r.user)}</td>
+                                    <td class="pj-level ${_painClass(r.level)}">${_painLabel(r.level)}</td>
+                                    <td class="pj-loc">${_esc(_locLabels(r.locations))}</td>
+                                    <td class="pj-actions-cell">${editBtn}</td>
+                                </tr>
+                                ${r.editedAt ? _historyRows(r.editHistory) : ''}`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+
+        body.querySelectorAll('.pj-edit-btn').forEach(b => {
+            b.addEventListener('click', () => {
+                const { user, id } = b.dataset;
+                const entry = entries[user]?.[id];
+                if (entry) _openEditDialog(user, id, entry);
+            });
+        });
+    }
+
+    // ---- Edit dialog ----
+    function _openEditDialog(user, id, entry) {
+        if (!currentUser || user !== currentUser) return;
+
+        let draftLevel     = entry.level     ?? null;
+        let draftLocations = Array.isArray(entry.locations) ? [...entry.locations] : [];
+        let draftComment   = '';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'w95-dialog-overlay';
+
+        function rebuild() {
+            const saved = overlay.querySelector('.pj-edit-comment');
+            if (saved) draftComment = saved.value;
+
+            const locBtns = PAIN_LOCATIONS.map(l =>
+                `<button class="pp-loc-btn${draftLocations.includes(l.id) ? ' is-active' : ''}"
+                         data-loc="${l.id}" type="button">${l.label}</button>`
+            ).join('');
+
+            const lvlBtns = Array.from({ length: 11 }, (_, i) =>
+                `<button class="pain-btn pp-level-btn${draftLevel === i ? ' is-active' : ''}"
+                         data-lvl="${i}" type="button">${i} <span class="pp-sublabel">${_painLabel(i)}</span></button>`
+            ).join('');
+
+            overlay.innerHTML = `
+                <div class="w95-dialog" style="width:320px;max-width:95vw;">
+                    <div class="w95-titlebar window--active">
+                        <div class="w95-title">&#10000; Edit Entry</div>
+                        <div class="w95-controls">
+                            <button class="w95-control w95-control-close" id="pj-dlg-x" type="button" aria-label="Close">X</button>
+                        </div>
+                    </div>
+                    <div class="pj-edit-body">
+                        <div class="pj-edit-orig">Original: ${_esc(_painLabel(entry.level ?? null))} &middot; ${_esc(_locLabels(entry.locations || []))}</div>
+                        <div class="pp-section-label">Level</div>
+                        <div class="pp-level-grid">${lvlBtns}</div>
+                        <div class="pp-section-label">Location <span class="pp-optional">(optional)</span></div>
+                        <div class="pp-loc-grid">${locBtns}</div>
+                        <div class="pp-section-label">Reason for edit <span class="pp-optional">(optional)</span></div>
+                        <textarea class="pj-edit-comment" rows="2" placeholder="Why are you editing this?">${_esc(draftComment)}</textarea>
+                        <div class="pp-actions" style="margin-top:8px;">
+                            <button class="w95-btn" id="pj-dlg-cancel" type="button">Cancel</button>
+                            <button class="w95-btn" id="pj-dlg-save" type="button">Save</button>
+                        </div>
+                    </div>
+                </div>`;
+
+            overlay.querySelectorAll('[data-lvl]').forEach(b => {
+                b.addEventListener('click', () => {
+                    const lvl = parseInt(b.dataset.lvl, 10);
+                    draftLevel = draftLevel === lvl ? null : lvl;
+                    rebuild();
+                });
+            });
+            overlay.querySelectorAll('[data-loc]').forEach(b => {
+                b.addEventListener('click', () => {
+                    const loc = b.dataset.loc;
+                    const idx = draftLocations.indexOf(loc);
+                    if (idx >= 0) draftLocations.splice(idx, 1); else draftLocations.push(loc);
+                    rebuild();
+                });
+            });
+
+            const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+            overlay.querySelector('#pj-dlg-x')?.addEventListener('click', close);
+            overlay.querySelector('#pj-dlg-cancel')?.addEventListener('click', close);
+            overlay.querySelector('#pj-dlg-save')?.addEventListener('click', async () => {
+                const comment = overlay.querySelector('.pj-edit-comment')?.value.trim() || '';
+                await _saveEdit(user, id, entry, draftLevel, draftLocations, comment);
+                close();
+            });
+            overlay.addEventListener('pointerdown', e => { if (e.target === overlay) close(); });
+        }
+
+        function onKey(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onKey); } }
+        document.addEventListener('keydown', onKey);
+
+        rebuild();
+        document.body.appendChild(overlay);
+        setTimeout(() => overlay.querySelector('#pj-dlg-save')?.focus(), 0);
+    }
+
+    async function _saveEdit(user, entryId, origEntry, newLevel, newLocations, comment) {
+        try {
+            await push(ref(database, `painJournal/${user}/${entryId}/editHistory`), {
+                ts:            serverTimestamp(),
+                prevLevel:     origEntry.level     ?? null,
+                prevLocations: Array.isArray(origEntry.locations) ? origEntry.locations : [],
+                comment:       comment || null,
+            });
+            await update(ref(database, `painJournal/${user}/${entryId}`), {
+                level:     newLevel     ?? null,
+                locations: newLocations.length ? newLocations : null,
+                editedAt:  serverTimestamp(),
+            });
+            showToast('Entry updated!');
+        } catch (e) {
+            showToast('Save failed — try again.');
+        }
+    }
+
+    // ---- Window management ----
+    function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn(WIN_ID, 'PAIN JOURNAL', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow(WIN_ID);
+        render();
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
+    }
+
+    // ---- Firebase listener ----
+    onValue(painJournalRef, snap => {
+        entries = snap.val() || {};
+        render();
+    });
+
+    // ---- Event bindings ----
+    if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
+    if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, WIN_ID); };
+    if (closeBtn) closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (w95Mgr.isMaximised(WIN_ID)) w95Mgr.toggleMaximise(win, WIN_ID);
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
+        if (btn) { btn.remove(); btn = null; }
+    };
+    win.addEventListener('mousedown', () => w95Mgr.focusWindow(WIN_ID));
+
+    makeDraggable(win, handle, WIN_ID);
+
+    w95Apps['painjournal'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow(WIN_ID);
+    }};
+})();
+
 } // end initApp
 
 window.addEventListener('DOMContentLoaded', initApp, { once: true });
@@ -17579,274 +17849,4 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
     });
 
     window._animWallpaper = { start, stop };
-})();
-
-// ===== Pain Journal.exe =====
-(() => {
-    const win      = document.getElementById('w95-win-painjournal');
-    const handle   = document.getElementById('w95-painjournal-handle');
-    const minBtn   = document.getElementById('w95-painjournal-min');
-    const maxBtn   = document.getElementById('w95-painjournal-max');
-    const closeBtn = document.getElementById('w95-painjournal-close');
-    const body     = document.getElementById('w95-painjournal-body');
-    if (!win || !handle || !body) return;
-
-    const WIN_ID = 'w95-win-painjournal';
-    let btn     = null;
-    let entries = {};   // { El: { pushId: { level, locations, ts, editedAt?, editHistory? }, … }, … }
-
-    // ---- Helpers ----
-    function _esc(s) {
-        return String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
-    }
-
-    function _painLabel(lvl) {
-        if (lvl === null || lvl === undefined) return 'Cleared';
-        if (lvl === 0) return '0 — None';
-        if (lvl <= 3)  return `${lvl} — Mild`;
-        if (lvl <= 6)  return `${lvl} — Moderate`;
-        if (lvl <= 9)  return `${lvl} — Severe`;
-        return `${lvl} — Worst`;
-    }
-
-    function _painClass(lvl) {
-        if (lvl === null || lvl === undefined || lvl === 0) return 'pj-level-none';
-        if (lvl <= 3) return 'pj-level-low';
-        if (lvl <= 6) return 'pj-level-mid';
-        return 'pj-level-high';
-    }
-
-    function _fmtDate(ts) {
-        if (!ts) return '—';
-        const d = new Date(ts);
-        const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        const hh = String(d.getHours()).padStart(2, '0');
-        const mm = String(d.getMinutes()).padStart(2, '0');
-        return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${hh}:${mm}`;
-    }
-
-    function _locLabels(locs) {
-        if (!Array.isArray(locs) || !locs.length) return '—';
-        return locs.map(id => PAIN_LOCATIONS.find(x => x.id === id)?.label ?? id).join(', ');
-    }
-
-    // ---- Edit history sub-rows ----
-    function _historyRows(editHistory) {
-        if (!editHistory) return '';
-        const arr = (Array.isArray(editHistory) ? editHistory : Object.values(editHistory))
-            .slice()
-            .sort((a, b) => (a.ts || 0) - (b.ts || 0));
-        return arr.map(h => {
-            const was  = `${_painLabel(h.prevLevel ?? null)} · ${_locLabels(h.prevLocations || [])}`;
-            const note = h.comment ? ` — <em>"${_esc(h.comment)}"</em>` : '';
-            return `<tr class="pj-history-row">
-                <td colspan="5"><span class="pj-history-label">&#10000; ${_fmtDate(h.ts)}</span>was: ${_esc(was)}${note}</td>
-            </tr>`;
-        }).join('');
-    }
-
-    // ---- Main render ----
-    function render() {
-        const rows = [];
-        for (const user of Object.keys(entries)) {
-            for (const [id, e] of Object.entries(entries[user] || {})) {
-                rows.push({
-                    id, user,
-                    level:       e.level     ?? null,
-                    locations:   e.locations || [],
-                    ts:          e.ts        || 0,
-                    editedAt:    e.editedAt  || null,
-                    editHistory: e.editHistory || null,
-                });
-            }
-        }
-        rows.sort((a, b) => b.ts - a.ts);
-
-        if (rows.length === 0) {
-            body.innerHTML = '<div class="pj-empty">No entries yet.</div>';
-            return;
-        }
-
-        body.innerHTML = `
-            <div class="pj-table-wrap">
-                <table class="pj-table">
-                    <thead><tr>
-                        <th>Date &amp; Time</th>
-                        <th>Who</th>
-                        <th>Level</th>
-                        <th>Location</th>
-                        <th></th>
-                    </tr></thead>
-                    <tbody>
-                        ${rows.map(r => {
-                            const editedBadge = r.editedAt
-                                ? `<span class="pj-edited-tag" title="Last edited ${_fmtDate(r.editedAt)}">edited</span>`
-                                : '';
-                            const editBtn = (r.user === currentUser)
-                                ? `<button class="pj-edit-btn" data-user="${r.user}" data-id="${r.id}" type="button">Edit</button>`
-                                : '';
-                            return `
-                                <tr>
-                                    <td class="pj-ts">${_fmtDate(r.ts)} ${editedBadge}</td>
-                                    <td class="pj-user">${_esc(r.user)}</td>
-                                    <td class="pj-level ${_painClass(r.level)}">${_painLabel(r.level)}</td>
-                                    <td class="pj-loc">${_esc(_locLabels(r.locations))}</td>
-                                    <td class="pj-actions-cell">${editBtn}</td>
-                                </tr>
-                                ${r.editedAt ? _historyRows(r.editHistory) : ''}`;
-                        }).join('')}
-                    </tbody>
-                </table>
-            </div>`;
-
-        body.querySelectorAll('.pj-edit-btn').forEach(b => {
-            b.addEventListener('click', () => {
-                const { user, id } = b.dataset;
-                const entry = entries[user]?.[id];
-                if (entry) _openEditDialog(user, id, entry);
-            });
-        });
-    }
-
-    // ---- Edit dialog ----
-    function _openEditDialog(user, id, entry) {
-        if (!currentUser || user !== currentUser) return;
-
-        let draftLevel     = entry.level     ?? null;
-        let draftLocations = Array.isArray(entry.locations) ? [...entry.locations] : [];
-        let draftComment   = '';
-
-        const overlay = document.createElement('div');
-        overlay.className = 'w95-dialog-overlay';
-
-        function rebuild() {
-            const saved = overlay.querySelector('.pj-edit-comment');
-            if (saved) draftComment = saved.value;
-
-            const locBtns = PAIN_LOCATIONS.map(l =>
-                `<button class="pp-loc-btn${draftLocations.includes(l.id) ? ' is-active' : ''}"
-                         data-loc="${l.id}" type="button">${l.label}</button>`
-            ).join('');
-
-            const lvlBtns = Array.from({ length: 11 }, (_, i) =>
-                `<button class="pain-btn pp-level-btn${draftLevel === i ? ' is-active' : ''}"
-                         data-lvl="${i}" type="button">${i} <span class="pp-sublabel">${_painLabel(i)}</span></button>`
-            ).join('');
-
-            overlay.innerHTML = `
-                <div class="w95-dialog" style="width:320px;max-width:95vw;">
-                    <div class="w95-titlebar window--active">
-                        <div class="w95-title">&#10000; Edit Entry</div>
-                        <div class="w95-controls">
-                            <button class="w95-control w95-control-close" id="pj-dlg-x" type="button" aria-label="Close">X</button>
-                        </div>
-                    </div>
-                    <div class="pj-edit-body">
-                        <div class="pj-edit-orig">Original: ${_esc(_painLabel(entry.level ?? null))} &middot; ${_esc(_locLabels(entry.locations || []))}</div>
-                        <div class="pp-section-label">Level</div>
-                        <div class="pp-level-grid">${lvlBtns}</div>
-                        <div class="pp-section-label">Location <span class="pp-optional">(optional)</span></div>
-                        <div class="pp-loc-grid">${locBtns}</div>
-                        <div class="pp-section-label">Reason for edit <span class="pp-optional">(optional)</span></div>
-                        <textarea class="pj-edit-comment" rows="2" placeholder="Why are you editing this?">${_esc(draftComment)}</textarea>
-                        <div class="pp-actions" style="margin-top:8px;">
-                            <button class="w95-btn" id="pj-dlg-cancel" type="button">Cancel</button>
-                            <button class="w95-btn" id="pj-dlg-save" type="button">Save</button>
-                        </div>
-                    </div>
-                </div>`;
-
-            overlay.querySelectorAll('[data-lvl]').forEach(b => {
-                b.addEventListener('click', () => {
-                    const lvl = parseInt(b.dataset.lvl, 10);
-                    draftLevel = draftLevel === lvl ? null : lvl;
-                    rebuild();
-                });
-            });
-            overlay.querySelectorAll('[data-loc]').forEach(b => {
-                b.addEventListener('click', () => {
-                    const loc = b.dataset.loc;
-                    const idx = draftLocations.indexOf(loc);
-                    if (idx >= 0) draftLocations.splice(idx, 1); else draftLocations.push(loc);
-                    rebuild();
-                });
-            });
-
-            const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
-            overlay.querySelector('#pj-dlg-x')?.addEventListener('click', close);
-            overlay.querySelector('#pj-dlg-cancel')?.addEventListener('click', close);
-            overlay.querySelector('#pj-dlg-save')?.addEventListener('click', async () => {
-                const comment = overlay.querySelector('.pj-edit-comment')?.value.trim() || '';
-                await _saveEdit(user, id, entry, draftLevel, draftLocations, comment);
-                close();
-            });
-            overlay.addEventListener('pointerdown', e => { if (e.target === overlay) close(); });
-        }
-
-        function onKey(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onKey); } }
-        document.addEventListener('keydown', onKey);
-
-        rebuild();
-        document.body.appendChild(overlay);
-        setTimeout(() => overlay.querySelector('#pj-dlg-save')?.focus(), 0);
-    }
-
-    async function _saveEdit(user, entryId, origEntry, newLevel, newLocations, comment) {
-        try {
-            await push(ref(database, `painJournal/${user}/${entryId}/editHistory`), {
-                ts:            serverTimestamp(),
-                prevLevel:     origEntry.level     ?? null,
-                prevLocations: Array.isArray(origEntry.locations) ? origEntry.locations : [],
-                comment:       comment || null,
-            });
-            await update(ref(database, `painJournal/${user}/${entryId}`), {
-                level:     newLevel     ?? null,
-                locations: newLocations.length ? newLocations : null,
-                editedAt:  serverTimestamp(),
-            });
-            showToast('Entry updated!');
-        } catch (e) {
-            showToast('Save failed — try again.');
-        }
-    }
-
-    // ---- Window management ----
-    function show() {
-        if (!btn) btn = w95Mgr.addTaskbarBtn(WIN_ID, 'PAIN JOURNAL', () => {
-            if (win.classList.contains('is-hidden')) show(); else hide();
-        });
-        win.classList.remove('is-hidden');
-        w95Mgr.focusWindow(WIN_ID);
-        render();
-    }
-
-    function hide() {
-        win.classList.add('is-hidden');
-        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
-    }
-
-    // ---- Firebase listener ----
-    onValue(painJournalRef, snap => {
-        entries = snap.val() || {};
-        render();
-    });
-
-    // ---- Event bindings ----
-    if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
-    if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, WIN_ID); };
-    if (closeBtn) closeBtn.onclick = (e) => {
-        e.stopPropagation();
-        if (w95Mgr.isMaximised(WIN_ID)) w95Mgr.toggleMaximise(win, WIN_ID);
-        win.classList.add('is-hidden');
-        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
-        if (btn) { btn.remove(); btn = null; }
-    };
-    win.addEventListener('mousedown', () => w95Mgr.focusWindow(WIN_ID));
-
-    makeDraggable(win, handle, WIN_ID);
-
-    w95Apps['painjournal'] = { open: () => {
-        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow(WIN_ID);
-    }};
 })();
