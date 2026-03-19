@@ -10664,7 +10664,17 @@ function renderAchievementsWindow() {
     // ---- Firebase listener ----
     onValue(foodDiaryRef, snap => {
         allEntries = snap.val() || {};
-        if (!win.classList.contains('is-hidden')) renderEntries();
+        if (win.classList.contains('is-hidden')) return;
+        // Re-render the full app shell if currentUser wasn't known yet when
+        // the window first opened (e.g. page-restore before auth resolves).
+        const otherTabEl = body && body.querySelector('[data-fd-view="other"]');
+        const otherLabel = otherTabEl && otherTabEl.textContent.trim();
+        const expectedOther = currentUser === 'El' ? "Tero's diary" : "El's diary";
+        if (!otherTabEl || otherLabel !== expectedOther) {
+            renderApp();
+        } else {
+            renderEntries();
+        }
     });
 
     // ---- Window controls ----
