@@ -8,9 +8,6 @@ app.use(express.json());
 const LASTFM_API_KEY = process.env.LASTFM_API_KEY || '';
 const LASTFM_USERS = { el: 'elliotmakesart', tero: 'afduarte1' };
 
-const NUTRITIONIX_APP_ID  = process.env.NUTRITIONIX_APP_ID  || '';
-const NUTRITIONIX_API_KEY = process.env.NUTRITIONIX_API_KEY || '';
-
 // In-memory cache per user: { userKey: { data, fetchedAt } }
 const cache = {};
 const CACHE_TTL = 60_000;
@@ -53,54 +50,6 @@ app.get('/api/now-playing', async (req, res) => {
     } catch (e) {
         console.error('Last.fm fetch error:', e.message);
         res.status(500).json({ error: 'fetch failed' });
-    }
-});
-
-// ===== Nutrition API =====
-
-// POST /api/nutrition
-// Body: { query }  e.g. { query: "2 eggs and toast" }
-// Returns: { foods: [{ food_name, calories, protein_g, carbohydrates_g, fat_g, serving_qty, serving_unit }] }
-app.post('/api/nutrition', async (req, res) => {
-    const { query } = req.body || {};
-    if (!query || typeof query !== 'string' || !query.trim()) {
-        return res.status(400).json({ error: 'query is required' });
-    }
-    if (!NUTRITIONIX_APP_ID || !NUTRITIONIX_API_KEY) {
-        return res.status(503).json({ error: 'Nutrition API not configured' });
-    }
-    try {
-        const r = await fetch('https://trackapi.nutritionix.com/v2/natural/nutrients', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-app-id':  NUTRITIONIX_APP_ID,
-                'x-app-key': NUTRITIONIX_API_KEY,
-            },
-            body: JSON.stringify({ query: query.trim() }),
-        });
-        if (!r.ok) {
-            const text = await r.text();
-            console.error('Nutritionix error:', r.status, text);
-            return res.status(502).json({ error: 'Nutrition lookup failed' });
-        }
-        const json = await r.json();
-        if (!json.foods || !json.foods.length) {
-            return res.status(422).json({ error: 'No nutrition data found for that food' });
-        }
-        const foods = json.foods.map(f => ({
-            food_name:        f.food_name,
-            serving_qty:      f.serving_qty,
-            serving_unit:     f.serving_unit,
-            calories:         Math.round(f.nf_calories        || 0),
-            protein_g:        Math.round((f.nf_protein        || 0) * 10) / 10,
-            carbohydrates_g:  Math.round((f.nf_total_carbohydrate || 0) * 10) / 10,
-            fat_g:            Math.round((f.nf_total_fat       || 0) * 10) / 10,
-        }));
-        res.json({ foods });
-    } catch (e) {
-        console.error('Nutrition fetch error:', e.message);
-        res.status(500).json({ error: 'Nutrition lookup failed' });
     }
 });
 

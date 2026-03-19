@@ -5848,9 +5848,7 @@ const UPDATE_HISTORY = [
         label: 'Food Diary',
         items: [
             'Added Food Diary.exe — log meals with free-text input (e.g. "2 eggs, toast, coffee") and an optional meal type.',
-            'Nutrition data (calories, protein, carbs, fat) is fetched automatically from the Nutritionix API on submit.',
-            'If the API is unavailable or returns no data, a clear error message is shown and nothing is saved.',
-            'Past entries are listed in reverse-chronological order with their nutrition summary.',
+            'Past entries are listed in reverse-chronological order, synced to Firebase.',
         ]
     },
     {
@@ -10635,9 +10633,8 @@ function renderAchievementsWindow() {
     const handle   = document.getElementById('w95-fooddiary-handle');
     if (!win || !handle) return;
 
-    let btn         = null;
-    let allEntries  = {};   // keyed by Firebase push id
-    let isSubmitting = false;
+    let btn        = null;
+    let allEntries = {};
 
     // ---- Firebase listener ----
     onValue(foodDiaryRef, snap => {
@@ -10700,7 +10697,7 @@ function renderAchievementsWindow() {
                                 <option value="snack">&#127863; Snack</option>
                             </select>
                         </div>
-                        <div id="fd-status" class="fd-status" style="display:none;"></div>
+                        <div id="fd-error" class="fd-status fd-status-error" style="display:none;"></div>
                         <button id="fd-submit-btn" class="btn-primary fd-submit-btn" type="button">Log meal</button>
                     </div>
                 </div>
@@ -10730,23 +10727,16 @@ function renderAchievementsWindow() {
         }
 
         const MEAL_ICONS = { breakfast: '&#127749;', lunch: '&#127822;', dinner: '&#127857;', snack: '&#127863;' };
-        list.innerHTML = mine.map(([id, entry]) => {
-            const d   = new Date(entry.eatenAt);
+        list.innerHTML = mine.map(([, entry]) => {
+            const d       = new Date(entry.eatenAt);
             const dateStr = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
             const timeStr = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
             const mealLabel = entry.mealType ? `${MEAL_ICONS[entry.mealType] || ''} ${entry.mealType}` : '';
-            const n = entry.nutrition;
             return `
                 <div class="fd-entry-card">
                     <div class="fd-entry-header">
                         <span class="fd-entry-food">${safeText(entry.foodText)}</span>
                         ${mealLabel ? `<span class="fd-entry-meal">${mealLabel}</span>` : ''}
-                    </div>
-                    <div class="fd-entry-nutrition">
-                        <span class="fd-nut-cal">&#128293; ${n.calories} kcal</span>
-                        <span class="fd-nut-item">P ${n.protein_g}g</span>
-                        <span class="fd-nut-item">C ${n.carbs_g}g</span>
-                        <span class="fd-nut-item">F ${n.fat_g}g</span>
                     </div>
                     <div class="fd-entry-meta">${dateStr} · ${timeStr}</div>
                 </div>`;
@@ -10755,75 +10745,36 @@ function renderAchievementsWindow() {
 
     // ---- Submit ----
     async function handleSubmit() {
-        if (isSubmitting) return;
-        const input    = document.getElementById('fd-food-input');
-        const select   = document.getElementById('fd-meal-select');
-        const statusEl = document.getElementById('fd-status');
+        const input     = document.getElementById('fd-food-input');
+        const select    = document.getElementById('fd-meal-select');
+        const errorEl   = document.getElementById('fd-error');
         const submitBtn = document.getElementById('fd-submit-btn');
-        if (!input || !statusEl) return;
+        if (!input) return;
 
         const foodText = input.value.trim();
-        if (!foodText) { showStatus('error', 'Please enter what you ate.'); return; }
+        if (!foodText) {
+            if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = 'Please enter what you ate.'; }
+            return;
+        }
+        if (errorEl) errorEl.style.display = 'none';
 
-        isSubmitting = true;
         submitBtn.disabled = true;
-        showStatus('loading', 'Looking up nutrition data…');
-
         try {
-            const resp = await fetch(`${API_BASE}/api/nutrition`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: foodText }),
-            });
-            const data = await resp.json();
-            if (!resp.ok) {
-                showStatus('error', data.error || 'Could not get nutrition data. Try again.');
-                return;
-            }
-
-            // Sum nutrition across all recognised foods
-            const totals = data.foods.reduce((acc, f) => ({
-                calories:  acc.calories  + f.calories,
-                protein_g: acc.protein_g + f.protein_g,
-                carbs_g:   acc.carbs_g   + f.carbohydrates_g,
-                fat_g:     acc.fat_g     + f.fat_g,
-            }), { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 });
-
-            const entry = {
-                userId:   currentUser,
-                foodText: foodText,
-                mealType: select ? (select.value || null) : null,
-                eatenAt:  Date.now(),
-                nutrition: {
-                    calories:  totals.calories,
-                    protein_g: Math.round(totals.protein_g * 10) / 10,
-                    carbs_g:   Math.round(totals.carbs_g   * 10) / 10,
-                    fat_g:     Math.round(totals.fat_g     * 10) / 10,
-                },
+            await push(foodDiaryRef, {
+                userId:    currentUser,
+                foodText:  foodText,
+                mealType:  select ? (select.value || null) : null,
+                eatenAt:   Date.now(),
                 createdAt: Date.now(),
-            };
-
-            await push(foodDiaryRef, entry);
-
+            });
             input.value = '';
             if (select) select.value = '';
-            showStatus('success',
-                `&#128293; ${entry.nutrition.calories} kcal · P ${entry.nutrition.protein_g}g · C ${entry.nutrition.carbs_g}g · F ${entry.nutrition.fat_g}g`);
         } catch (err) {
             console.error('Food diary submit error:', err);
-            showStatus('error', 'Something went wrong. Please try again.');
+            if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = 'Could not save entry. Please try again.'; }
         } finally {
-            isSubmitting = false;
             submitBtn.disabled = false;
         }
-    }
-
-    function showStatus(type, message) {
-        const el = document.getElementById('fd-status');
-        if (!el) return;
-        el.style.display = 'block';
-        el.className = `fd-status fd-status-${type}`;
-        el.innerHTML = message;
     }
 
     if (localStorage.getItem('w95_fooddiary_open') === '1') show();

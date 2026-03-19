@@ -11032,22 +11032,6 @@ body[data-theme] .sys-props-tab--active {
   text-transform: capitalize;
 }
 
-.fd-entry-nutrition {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 3px;
-}
-
-.fd-nut-cal {
-  font-weight: 700;
-  color: var(--text-primary, #111);
-}
-
-.fd-nut-item {
-  color: var(--text-secondary, #555);
-}
-
 .fd-entry-meta {
   font-size: 10px;
   color: var(--text-secondary, #888);
