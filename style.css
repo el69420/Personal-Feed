@@ -11062,10 +11062,35 @@ body[data-theme] .sys-props-tab--active {
 }
 
 .fd-past-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--card-border, rgba(0,0,0,0.08));
+  padding: 6px 0 4px;
+  margin-top: 2px;
   font-size: 10px;
   font-weight: 600;
   color: var(--text-secondary, #777);
-  padding: 8px 0 3px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.fd-past-day-header:hover { color: var(--text-primary, #111); }
+
+.fd-past-day-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.fd-past-day-total {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-secondary, #888);
 }
 
 /* Entry card */
@@ -11110,9 +11135,74 @@ body[data-theme] .sys-props-tab--active {
   margin-bottom: 2px;
 }
 
+.fd-entry-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 3px;
+}
+
 .fd-entry-meta {
   font-size: 10px;
   color: var(--text-secondary, #999);
+}
+
+.fd-edit-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 10px;
+  font-family: inherit;
+  color: var(--accent, #0080c0);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  opacity: 0.7;
+}
+.fd-edit-btn:hover { opacity: 1; }
+
+/* Inline edit form */
+.fd-entry-editing {
+  border-color: var(--accent, #0080c0);
+}
+
+.fd-edit-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 7px;
+}
+
+.fd-edit-save-btn {
+  font-size: 11px;
+  padding: 4px 12px;
+}
+
+.fd-edit-cancel-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.fd-edit-cancel-btn:hover { color: var(--text-primary, #111); }
+
+/* Daily total row */
+.fd-day-total {
+  font-size: 10px;
+  color: var(--text-secondary, #555);
+  border-top: 1px solid var(--card-border, rgba(0,0,0,0.1));
+  padding: 5px 0 8px;
+  margin-top: 2px;
+}
+
+.fd-day-total-label {
+  font-weight: 700;
+  margin-right: 2px;
 }
 
 /* Dark mode */

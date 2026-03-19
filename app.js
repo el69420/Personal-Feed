@@ -10634,10 +10634,23 @@ function renderAchievementsWindow() {
     const handle   = document.getElementById('w95-fooddiary-handle');
     if (!win || !handle) return;
 
-    let btn        = null;
-    let allEntries = {};
-    let oldOpen    = false;
-    let nutOpen    = false;
+    let btn          = null;
+    let allEntries   = {};
+    let oldOpen      = false;
+    let nutOpen      = false;
+    let editingId    = null;
+    let expandedDays = new Set();
+
+    const MEAL_ICONS = { breakfast: '&#127749;', lunch: '&#127822;', dinner: '&#127857;', snack: '&#127863;' };
+    // Field definitions shared by the new-entry form and inline edit form
+    const NUT_FIELDS = [
+        { key: 'calories',  newId: 'fd-nut-cal',  editId: 'fd-ei-cal',  label: 'Calories', step: '1',   ph: 'kcal' },
+        { key: 'protein_g', newId: 'fd-nut-pro',  editId: 'fd-ei-pro',  label: 'Protein',  step: '0.1', ph: 'g' },
+        { key: 'carbs_g',   newId: 'fd-nut-carb', editId: 'fd-ei-carb', label: 'Carbs',    step: '0.1', ph: 'g' },
+        { key: 'fat_g',     newId: 'fd-nut-fat',  editId: 'fd-ei-fat',  label: 'Fat',      step: '0.1', ph: 'g' },
+        { key: 'sat_fat_g', newId: 'fd-nut-sat',  editId: 'fd-ei-sat',  label: 'Sat. fat', step: '0.1', ph: 'g' },
+        { key: 'sugar_g',   newId: 'fd-nut-sug',  editId: 'fd-ei-sug',  label: 'Sugar',    step: '0.1', ph: 'g' },
+    ];
 
     // ---- Firebase listener ----
     onValue(foodDiaryRef, snap => {
@@ -10677,6 +10690,15 @@ function renderAchievementsWindow() {
     makeDraggable(win, handle, 'w95-win-fooddiary');
 
     // ---- App shell (rendered once on open) ----
+    function nutGridHtml(idProp, values) {
+        return `<div class="fd-nut-grid">${NUT_FIELDS.map(f => `
+            <div class="fd-nut-field">
+                <label class="fd-label" for="${f[idProp]}">${f.label}</label>
+                <input id="${f[idProp]}" class="fd-input fd-nut-input" type="number" min="0" step="${f.step}"
+                    placeholder="${f.ph}"${values && values[f.key] != null ? ` value="${values[f.key]}"` : ''} />
+            </div>`).join('')}</div>`;
+    }
+
     function renderApp() {
         if (!body) return;
         body.innerHTML = `
@@ -10702,14 +10724,7 @@ function renderAchievementsWindow() {
                         </div>
                         <button class="fd-nut-toggle-btn" type="button" id="fd-nut-toggle-btn">&#43; Add nutrition</button>
                         <div id="fd-nut-fields" class="fd-nut-fields" style="display:none;">
-                            <div class="fd-nut-grid">
-                                <div class="fd-nut-field"><label class="fd-label" for="fd-nut-cal">Calories</label><input id="fd-nut-cal" class="fd-input fd-nut-input" type="number" min="0" placeholder="kcal" /></div>
-                                <div class="fd-nut-field"><label class="fd-label" for="fd-nut-pro">Protein</label><input id="fd-nut-pro" class="fd-input fd-nut-input" type="number" min="0" step="0.1" placeholder="g" /></div>
-                                <div class="fd-nut-field"><label class="fd-label" for="fd-nut-carb">Carbs</label><input id="fd-nut-carb" class="fd-input fd-nut-input" type="number" min="0" step="0.1" placeholder="g" /></div>
-                                <div class="fd-nut-field"><label class="fd-label" for="fd-nut-fat">Fat</label><input id="fd-nut-fat" class="fd-input fd-nut-input" type="number" min="0" step="0.1" placeholder="g" /></div>
-                                <div class="fd-nut-field"><label class="fd-label" for="fd-nut-sat">Sat. fat</label><input id="fd-nut-sat" class="fd-input fd-nut-input" type="number" min="0" step="0.1" placeholder="g" /></div>
-                                <div class="fd-nut-field"><label class="fd-label" for="fd-nut-sug">Sugar</label><input id="fd-nut-sug" class="fd-input fd-nut-input" type="number" min="0" step="0.1" placeholder="g" /></div>
-                            </div>
+                            ${nutGridHtml('newId', null)}
                         </div>
                         <div id="fd-error" class="fd-status fd-status-error" style="display:none;"></div>
                         <button id="fd-submit-btn" class="btn-primary fd-submit-btn" type="button">Log meal</button>
@@ -10721,6 +10736,8 @@ function renderAchievementsWindow() {
             </div>`;
         renderEntries();
 
+        // Event listeners on stable elements
+        document.getElementById('fd-entries-list').addEventListener('click', handleEntryAction);
         document.getElementById('fd-nut-toggle-btn').addEventListener('click', () => {
             nutOpen = !nutOpen;
             document.getElementById('fd-nut-fields').style.display = nutOpen ? 'block' : 'none';
@@ -10732,20 +10749,62 @@ function renderAchievementsWindow() {
         });
     }
 
-    // ---- Entry card ----
-    const MEAL_ICONS = { breakfast: '&#127749;', lunch: '&#127822;', dinner: '&#127857;', snack: '&#127863;' };
+    // ---- Nutrition helpers ----
+    function parseNum(id) { const v = parseFloat(document.getElementById(id)?.value); return isNaN(v) ? null : v; }
 
-    function renderEntryCard(entry) {
+    function nutSummaryParts(n) {
+        if (!n) return [];
+        const r = v => Math.round(v * 10) / 10;
+        const parts = [];
+        if (n.calories  != null) parts.push(`${Math.round(n.calories)} kcal`);
+        if (n.protein_g != null) parts.push(`P ${r(n.protein_g)}g`);
+        if (n.carbs_g   != null) parts.push(`C ${r(n.carbs_g)}g`);
+        if (n.fat_g     != null) parts.push(`F ${r(n.fat_g)}g`);
+        if (n.sat_fat_g != null) parts.push(`Sat ${r(n.sat_fat_g)}g`);
+        if (n.sugar_g   != null) parts.push(`Sug ${r(n.sugar_g)}g`);
+        return parts;
+    }
+
+    function calcDayTotals(entries) {
+        const t = {};
+        entries.forEach(e => {
+            const n = e.nutrition || {};
+            NUT_FIELDS.forEach(f => {
+                if (n[f.key] != null) t[f.key] = (t[f.key] || 0) + n[f.key];
+            });
+        });
+        return t;
+    }
+
+    function dayTotalHtml(entries) {
+        const parts = nutSummaryParts(calcDayTotals(entries));
+        if (!parts.length) return '';
+        return `<div class="fd-day-total"><span class="fd-day-total-label">Total</span> ${parts.join(' · ')}</div>`;
+    }
+
+    // ---- Entry card ----
+    function renderEntryCard(entry, id) {
         const timeStr   = new Date(entry.eatenAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
         const mealLabel = entry.mealType ? `${MEAL_ICONS[entry.mealType] || ''} ${entry.mealType}` : '';
-        const n = entry.nutrition || {};
-        const nutParts = [];
-        if (n.calories  != null) nutParts.push(`${n.calories} kcal`);
-        if (n.protein_g != null) nutParts.push(`P ${n.protein_g}g`);
-        if (n.carbs_g   != null) nutParts.push(`C ${n.carbs_g}g`);
-        if (n.fat_g     != null) nutParts.push(`F ${n.fat_g}g`);
-        if (n.sat_fat_g != null) nutParts.push(`Sat ${n.sat_fat_g}g`);
-        if (n.sugar_g   != null) nutParts.push(`Sug ${n.sugar_g}g`);
+
+        if (editingId === id) {
+            return `
+                <div class="fd-entry-card fd-entry-editing">
+                    <div class="fd-entry-header">
+                        <span class="fd-entry-food">${safeText(entry.foodText)}</span>
+                        ${mealLabel ? `<span class="fd-entry-meal">${mealLabel}</span>` : ''}
+                    </div>
+                    <div class="fd-nut-fields" style="display:block;margin-top:6px;">
+                        ${nutGridHtml('editId', entry.nutrition || {})}
+                    </div>
+                    <div class="fd-edit-actions">
+                        <button class="btn-primary fd-edit-save-btn" type="button" data-action="save-edit">Save</button>
+                        <button class="fd-edit-cancel-btn" type="button" data-action="cancel-edit">Cancel</button>
+                    </div>
+                </div>`;
+        }
+
+        const nutParts = nutSummaryParts(entry.nutrition);
         return `
             <div class="fd-entry-card">
                 <div class="fd-entry-header">
@@ -10753,7 +10812,10 @@ function renderAchievementsWindow() {
                     ${mealLabel ? `<span class="fd-entry-meal">${mealLabel}</span>` : ''}
                 </div>
                 ${nutParts.length ? `<div class="fd-entry-nut">${nutParts.join(' · ')}</div>` : ''}
-                <div class="fd-entry-meta">${timeStr}</div>
+                <div class="fd-entry-footer">
+                    <span class="fd-entry-meta">${timeStr}</span>
+                    <button class="fd-edit-btn" type="button" data-action="start-edit" data-entry-id="${id}">edit</button>
+                </div>
             </div>`;
     }
 
@@ -10762,7 +10824,7 @@ function renderAchievementsWindow() {
         const list = document.getElementById('fd-entries-list');
         if (!list) return;
 
-        const todayKey = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local tz
+        const todayKey = new Date().toLocaleDateString('en-CA');
         const mine = Object.entries(allEntries)
             .filter(([, e]) => e.userId === currentUser)
             .sort((a, b) => b[1].eatenAt - a[1].eatenAt);
@@ -10772,51 +10834,113 @@ function renderAchievementsWindow() {
             return;
         }
 
-        const todayEntries = mine.filter(([, e]) => new Date(e.eatenAt).toLocaleDateString('en-CA') === todayKey);
-        const pastEntries  = mine.filter(([, e]) => new Date(e.eatenAt).toLocaleDateString('en-CA') !== todayKey);
+        const todayPairs = mine.filter(([, e]) => new Date(e.eatenAt).toLocaleDateString('en-CA') === todayKey);
+        const pastPairs  = mine.filter(([, e]) => new Date(e.eatenAt).toLocaleDateString('en-CA') !== todayKey);
 
         let html = `<div class="fd-day-header">Today</div>`;
-        if (todayEntries.length) {
-            html += todayEntries.map(([, e]) => renderEntryCard(e)).join('');
+        if (todayPairs.length) {
+            html += todayPairs.map(([id, e]) => renderEntryCard(e, id)).join('');
+            html += dayTotalHtml(todayPairs.map(([, e]) => e));
         } else {
             html += `<div class="fd-empty">Nothing logged today yet.</div>`;
         }
 
-        if (pastEntries.length) {
+        if (pastPairs.length) {
+            // Group by calendar day
             const byDay = {};
-            pastEntries.forEach(([, e]) => {
+            pastPairs.forEach(([id, e]) => {
                 const k = new Date(e.eatenAt).toLocaleDateString('en-CA');
-                (byDay[k] = byDay[k] || []).push(e);
+                (byDay[k] = byDay[k] || []).push([id, e]);
             });
             const sortedDays = Object.keys(byDay).sort((a, b) => b.localeCompare(a));
 
             html += `
-                <button class="fd-old-header" id="fd-old-toggle" type="button">
+                <button class="fd-old-header" type="button" data-action="toggle-old">
                     <span>Old entries</span>
                     <span class="fd-old-arrow">${oldOpen ? '&#9660;' : '&#9654;'}</span>
                 </button>
                 <div id="fd-old-body"${oldOpen ? '' : ' style="display:none;"'}>`;
 
             sortedDays.forEach(dayKey => {
-                const label = new Date(dayKey + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-                html += `<div class="fd-past-day-header">${label}</div>`;
-                html += byDay[dayKey].map(e => renderEntryCard(e)).join('');
+                const dayPairs   = byDay[dayKey];
+                const isExpanded = expandedDays.has(dayKey);
+                const label      = new Date(dayKey + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                const totalParts = nutSummaryParts(calcDayTotals(dayPairs.map(([, e]) => e)));
+
+                html += `
+                    <button class="fd-past-day-header" type="button" data-action="toggle-day" data-day="${dayKey}">
+                        <span class="fd-past-day-label">${label}</span>
+                        <span class="fd-past-day-right">
+                            ${totalParts.length ? `<span class="fd-past-day-total">${totalParts.join(' · ')}</span>` : ''}
+                            <span class="fd-old-arrow">${isExpanded ? '&#9660;' : '&#9654;'}</span>
+                        </span>
+                    </button>
+                    <div id="fd-day-${dayKey}"${isExpanded ? '' : ' style="display:none;"'}>
+                        ${dayPairs.map(([id, e]) => renderEntryCard(e, id)).join('')}
+                    </div>`;
             });
             html += `</div>`;
         }
 
         list.innerHTML = html;
-
-        document.getElementById('fd-old-toggle')?.addEventListener('click', () => {
-            oldOpen = !oldOpen;
-            const body = document.getElementById('fd-old-body');
-            const arrow = document.getElementById('fd-old-toggle')?.querySelector('.fd-old-arrow');
-            if (body)  body.style.display  = oldOpen ? 'block' : 'none';
-            if (arrow) arrow.innerHTML = oldOpen ? '&#9660;' : '&#9654;';
-        });
     }
 
-    // ---- Submit ----
+    // ---- Event delegation on the entries list ----
+    function handleEntryAction(e) {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const action = btn.dataset.action;
+
+        if (action === 'toggle-old') {
+            oldOpen = !oldOpen;
+            const bodyEl  = document.getElementById('fd-old-body');
+            const arrowEl = btn.querySelector('.fd-old-arrow');
+            if (bodyEl)  bodyEl.style.display = oldOpen ? 'block' : 'none';
+            if (arrowEl) arrowEl.innerHTML     = oldOpen ? '&#9660;' : '&#9654;';
+
+        } else if (action === 'toggle-day') {
+            const dayKey     = btn.dataset.day;
+            const isExpanded = expandedDays.has(dayKey);
+            if (isExpanded) expandedDays.delete(dayKey); else expandedDays.add(dayKey);
+            const entriesDiv = document.getElementById(`fd-day-${dayKey}`);
+            const arrowEl    = btn.querySelector('.fd-old-arrow');
+            if (entriesDiv) entriesDiv.style.display = isExpanded ? 'none' : 'block';
+            if (arrowEl)    arrowEl.innerHTML        = isExpanded ? '&#9654;' : '&#9660;';
+
+        } else if (action === 'start-edit') {
+            editingId = btn.dataset.entryId;
+            renderEntries();
+
+        } else if (action === 'cancel-edit') {
+            editingId = null;
+            renderEntries();
+
+        } else if (action === 'save-edit') {
+            saveNutritionEdit();
+        }
+    }
+
+    // ---- Save nutrition edit ----
+    async function saveNutritionEdit() {
+        if (!editingId) return;
+        const saveBtn = document.querySelector('[data-action="save-edit"]');
+        if (saveBtn) saveBtn.disabled = true;
+
+        const nutrition = {};
+        NUT_FIELDS.forEach(f => { nutrition[f.key] = parseNum(f.editId); });
+        const hasNutrition = Object.values(nutrition).some(v => v !== null);
+
+        try {
+            await update(ref(database, `foodDiary/${editingId}`), { nutrition: hasNutrition ? nutrition : null });
+            editingId = null;
+            // Firebase onValue re-triggers renderEntries automatically
+        } catch (err) {
+            console.error('Food diary edit error:', err);
+            if (saveBtn) saveBtn.disabled = false;
+        }
+    }
+
+    // ---- Submit new entry ----
     async function handleSubmit() {
         const input     = document.getElementById('fd-food-input');
         const select    = document.getElementById('fd-meal-select');
@@ -10831,15 +10955,8 @@ function renderAchievementsWindow() {
         }
         if (errorEl) errorEl.style.display = 'none';
 
-        const parseNum = id => { const v = parseFloat(document.getElementById(id)?.value); return isNaN(v) ? null : v; };
-        const nutrition = {
-            calories:  parseNum('fd-nut-cal'),
-            protein_g: parseNum('fd-nut-pro'),
-            carbs_g:   parseNum('fd-nut-carb'),
-            fat_g:     parseNum('fd-nut-fat'),
-            sat_fat_g: parseNum('fd-nut-sat'),
-            sugar_g:   parseNum('fd-nut-sug'),
-        };
+        const nutrition = {};
+        NUT_FIELDS.forEach(f => { nutrition[f.key] = parseNum(f.newId); });
         const hasNutrition = Object.values(nutrition).some(v => v !== null);
 
         submitBtn.disabled = true;
@@ -10854,9 +10971,7 @@ function renderAchievementsWindow() {
             });
             input.value = '';
             if (select) select.value = '';
-            ['fd-nut-cal','fd-nut-pro','fd-nut-carb','fd-nut-fat','fd-nut-sat','fd-nut-sug'].forEach(id => {
-                const el = document.getElementById(id); if (el) el.value = '';
-            });
+            NUT_FIELDS.forEach(f => { const el = document.getElementById(f.newId); if (el) el.value = ''; });
         } catch (err) {
             console.error('Food diary submit error:', err);
             if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = 'Could not save entry. Please try again.'; }
