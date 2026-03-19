@@ -1872,6 +1872,38 @@ function startNowListening() {
     if (_nlInterval) clearInterval(_nlInterval);
     pollNowListening();
     _nlInterval = setInterval(pollNowListening, 35_000);
+    prefetchAlbumCovers();
+}
+
+// ---- Album cover pre-loader (feeds the screensaver) ----
+const _acCache = { tracks: [], images: [] };
+
+async function prefetchAlbumCovers() {
+    const results = [];
+    for (const username of Object.values(LASTFM_USERS)) {
+        try {
+            const lastfmUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(username)}&api_key=${LASTFM_API_KEY}&format=json&limit=10`;
+            const proxyUrl  = `https://api.allorigins.win/raw?url=${encodeURIComponent(lastfmUrl)}`;
+            const r = await fetch(proxyUrl, { cache: 'no-store' });
+            if (!r.ok) continue;
+            const json = await r.json();
+            const tracks = json.recenttracks?.track;
+            if (!tracks) continue;
+            for (const t of (Array.isArray(tracks) ? tracks : [tracks])) {
+                const images = t.image || [];
+                const imgUrl = images[images.length - 1]?.['#text'] || '';
+                if (imgUrl) results.push({ track: t.name || '—', artist: t.artist?.['#text'] || '', imageUrl: imgUrl });
+            }
+        } catch { /* ignore */ }
+    }
+    if (!results.length) return;
+    _acCache.tracks = results;
+    _acCache.images = results.map(td => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = td.imageUrl;
+        return img;
+    });
 }
 
 // ---- DB LISTENERS ----
@@ -15901,36 +15933,14 @@ function initPixelCat() {
     const AC = { tiles: [], frame: 0 };
     const AC_FALLBACK_COLORS = ['#1a1a2e','#16213e','#0f3460','#533483','#1a2a1a','#2a1a1a','#0d1b2a','#2a1a2a'];
 
-    async function _fetchAndApplyAlbumCovers() {
-        const results = [];
-        for (const username of Object.values(LASTFM_USERS)) {
-            try {
-                const lastfmUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(username)}&api_key=${LASTFM_API_KEY}&format=json&limit=10`;
-                const proxyUrl  = `https://api.allorigins.win/raw?url=${encodeURIComponent(lastfmUrl)}`;
-                const r = await fetch(proxyUrl, { cache: 'no-store' });
-                if (!r.ok) continue;
-                const json = await r.json();
-                const tracks = json.recenttracks?.track;
-                if (!tracks) continue;
-                for (const t of (Array.isArray(tracks) ? tracks : [tracks])) {
-                    const images = t.image || [];
-                    const imgUrl = images[images.length - 1]?.['#text'] || '';
-                    if (imgUrl) results.push({ track: t.name || '—', artist: t.artist?.['#text'] || '', image: imgUrl });
-                }
-            } catch { /* ignore */ }
-        }
-        if (!results.length || !AC.tiles.length) return;
-        // Apply fetched data to existing tiles
+    function _applyCacheToTiles() {
+        if (!_acCache.tracks.length || !AC.tiles.length) return;
         AC.tiles.forEach((tile, i) => {
-            const td = results[i % results.length];
+            const td  = _acCache.tracks[i % _acCache.tracks.length];
+            const img = _acCache.images[i % _acCache.images.length];
             tile.track  = td.track;
             tile.artist = td.artist;
-            if (td.image) {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => { tile.img = img; };
-                img.src = td.image;
-            }
+            tile.img    = img;   // already loading / loaded
         });
     }
 
@@ -15963,7 +15973,10 @@ function initPixelCat() {
                 });
             }
         }
-        _fetchAndApplyAlbumCovers();
+        // Apply pre-loaded cache immediately so covers show from frame one
+        _applyCacheToTiles();
+        // Refresh cache in background (updates tiles once new images load)
+        prefetchAlbumCovers().then(_applyCacheToTiles);
     }
 
     function drawAlbumCovers() {
