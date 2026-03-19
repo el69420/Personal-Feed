@@ -21,6 +21,7 @@ const wishlistItemsRef  = ref(database, 'wishlistItems');
 const foodDiaryRef      = ref(database, 'foodDiary');
 const painJournalRef    = ref(database, 'painJournal');
 const moodJournalRef    = ref(database, 'moodJournal');
+const shoppingListsRef  = ref(database, 'shoppingLists');
 
 const API_BASE = ''; // Set to the deployed origin (e.g. 'https://your-api.example.com') for GitHub Pages use
 
@@ -11316,6 +11317,7 @@ const ICON_DEFAULTS = {
     scrapbook:    { x: 104, y: 100 },
     wishlist:     { x: 104, y: 184 },
     fooddiary:    { x: 104, y: 268 },
+    shoplist:     { x: 104, y: 352 },
 };
 
 // ===== Snap-to-grid + Arrange =====
@@ -11436,6 +11438,7 @@ const SHORTCUTABLE_APPS = [
     { app: 'myComputer',   icon: '🖥️', name: 'My Computer' },
     { app: 'painjournal',  icon: '🩹', name: 'Pain Journal.exe' },
     { app: 'moodjournal',  icon: '📔', name: 'Mood Journal.exe' },
+    { app: 'shoplist',     icon: '🛒', name: 'Shopping List.exe' },
 ];
 
 // Shows a picker dialog for selecting an app to create a shortcut to
@@ -17685,6 +17688,213 @@ document.addEventListener('click', (e) => {
     makeDraggable(win, handle, WIN_ID);
 
     w95Apps['painjournal'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow(WIN_ID);
+    }};
+})();
+
+// ===== Shopping List.exe =====
+(() => {
+    const WIN_ID   = 'w95-win-shoplist';
+    const win      = document.getElementById(WIN_ID);
+    const handle   = document.getElementById('w95-shoplist-handle');
+    const minBtn   = document.getElementById('w95-shoplist-min');
+    const maxBtn   = document.getElementById('w95-shoplist-max');
+    const closeBtn = document.getElementById('w95-shoplist-close');
+    const body     = document.getElementById('w95-shoplist-body');
+    if (!win || !handle || !body) return;
+
+    let btn             = null;
+    let allLists        = {};  // { listId: { name, createdBy, createdAt } }
+    let allItems        = {};  // { itemId: { text, completed, createdBy, createdAt } }
+    let activeId        = null;
+    let subscribedId    = null;
+    let itemsUnsub      = null;
+
+    function _esc(s) {
+        return String(s || '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // ---- Firebase: lists ----
+    onValue(shoppingListsRef, snap => {
+        allLists = snap.val() || {};
+        if (activeId && !allLists[activeId]) {
+            activeId = null;
+        }
+        if (!activeId) {
+            const ids = Object.keys(allLists).sort((a, b) => (allLists[a].createdAt || 0) - (allLists[b].createdAt || 0));
+            if (ids.length) activeId = ids[0];
+        }
+        if (!win.classList.contains('is-hidden')) {
+            renderTabs();
+            subscribeItems(activeId);
+        }
+    });
+
+    // ---- Firebase: items for selected list ----
+    function subscribeItems(listId) {
+        if (listId === subscribedId) return;
+        if (itemsUnsub) { itemsUnsub(); itemsUnsub = null; }
+        subscribedId = listId;
+        allItems = {};
+        if (!listId) { renderItems(); return; }
+        itemsUnsub = onValue(ref(database, `shoppingItems/${listId}`), snap => {
+            allItems = snap.val() || {};
+            if (!win.classList.contains('is-hidden')) renderItems();
+        });
+    }
+
+    // ---- Render ----
+    function render() {
+        body.innerHTML = `
+            <div class="sl-layout">
+                <div class="sl-tabs-row" id="sl-tabs-row"></div>
+                <div class="sl-add-row">
+                    <input id="sl-item-input" class="sl-item-input" type="text" placeholder="Add item…" autocomplete="off" maxlength="200">
+                    <button class="sl-add-btn" data-action="add-item" type="button">Add</button>
+                </div>
+                <div class="sl-items-list" id="sl-items-list"></div>
+            </div>`;
+        renderTabs();
+        subscribeItems(activeId);
+    }
+
+    function renderTabs() {
+        const tabsRow = document.getElementById('sl-tabs-row');
+        if (!tabsRow) return;
+        const sorted = Object.entries(allLists).sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
+        tabsRow.innerHTML = sorted.map(([id, l]) => `
+            <button class="sl-tab${id === activeId ? ' sl-tab-active' : ''}" data-action="select-list" data-list-id="${_esc(id)}" type="button">
+                ${_esc(l.name)}${id === activeId ? `<span class="sl-tab-del" data-action="delete-list" data-list-id="${_esc(id)}" title="Delete list">×</span>` : ''}
+            </button>`).join('') +
+            `<button class="sl-tab sl-tab-new" data-action="new-list" type="button" title="New list">+</button>`;
+    }
+
+    function renderItems() {
+        const list = document.getElementById('sl-items-list');
+        if (!list) return;
+        if (!activeId) {
+            list.innerHTML = '<div class="sl-empty">Create a list to get started.</div>';
+            return;
+        }
+        const sorted = Object.entries(allItems)
+            .map(([id, item]) => ({ id, ...item }))
+            .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        const unchecked = sorted.filter(i => !i.completed);
+        const checked   = sorted.filter(i =>  i.completed);
+        const all       = [...unchecked, ...checked];
+        if (all.length === 0) {
+            list.innerHTML = '<div class="sl-empty">No items yet — add one above.</div>';
+            return;
+        }
+        list.innerHTML = all.map(item => `
+            <div class="sl-item${item.completed ? ' sl-item-done' : ''}">
+                <button class="sl-check" data-action="toggle-item" data-item-id="${_esc(item.id)}" type="button" title="${item.completed ? 'Mark incomplete' : 'Mark complete'}">${item.completed ? '&#9745;' : '&#9744;'}</button>
+                <span class="sl-item-text">${_esc(item.text)}</span>
+                <span class="sl-item-by">by ${_esc(item.createdBy)}</span>
+                <button class="sl-del" data-action="delete-item" data-item-id="${_esc(item.id)}" type="button" title="Delete">&#215;</button>
+            </div>`).join('');
+    }
+
+    // ---- Actions ----
+    async function addItem() {
+        if (!currentUser) return;
+        if (!activeId) { promptNewList(); return; }
+        const input = document.getElementById('sl-item-input');
+        const text  = (input?.value || '').trim();
+        if (!text) return;
+        input.value = '';
+        const newRef = push(ref(database, `shoppingItems/${activeId}`));
+        await set(newRef, { text, completed: false, createdBy: currentUser, createdAt: Date.now() });
+        input.focus();
+    }
+
+    function promptNewList() {
+        const name = prompt('List name:');
+        if (!name || !name.trim() || !currentUser) return;
+        const newRef = push(shoppingListsRef);
+        set(newRef, { name: name.trim(), createdBy: currentUser, createdAt: Date.now() });
+        activeId = newRef.key;
+        subscribedId = null;  // force re-subscribe to the new list
+        subscribeItems(activeId);
+        renderTabs();
+    }
+
+    function deleteList(listId) {
+        if (!confirm('Delete this list and all its items?')) return;
+        if (activeId === listId) {
+            activeId = null;
+            subscribedId = null;
+            if (itemsUnsub) { itemsUnsub(); itemsUnsub = null; }
+            allItems = {};
+        }
+        remove(ref(database, `shoppingLists/${listId}`));
+        remove(ref(database, `shoppingItems/${listId}`));
+    }
+
+    // ---- Event delegation on body ----
+    body.addEventListener('click', e => {
+        const el     = e.target.closest('[data-action]');
+        if (!el) return;
+        const action = el.dataset.action;
+        if (action === 'add-item') { addItem(); }
+        else if (action === 'new-list') { promptNewList(); }
+        else if (action === 'select-list') {
+            const id = el.dataset.listId;
+            if (id && id !== activeId) {
+                activeId = id;
+                subscribedId = null;
+                subscribeItems(activeId);
+                renderTabs();
+            }
+        }
+        else if (action === 'delete-list') { e.stopPropagation(); deleteList(el.dataset.listId); }
+        else if (action === 'toggle-item') {
+            const id = el.dataset.itemId;
+            set(ref(database, `shoppingItems/${activeId}/${id}/completed`), !allItems[id]?.completed);
+        }
+        else if (action === 'delete-item') {
+            remove(ref(database, `shoppingItems/${activeId}/${el.dataset.itemId}`));
+        }
+    });
+
+    body.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && e.target.id === 'sl-item-input') addItem();
+    });
+
+    // ---- Window controls ----
+    function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn(WIN_ID, 'SHOPPING LIST', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow(WIN_ID);
+        localStorage.setItem('w95_shoplist_open', '1');
+        render();
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_shoplist_open', '0');
+    }
+
+    function closeWin() {
+        if (w95Mgr.isMaximised(WIN_ID)) w95Mgr.toggleMaximise(win, WIN_ID);
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_shoplist_open', '0');
+        if (btn) { btn.remove(); btn = null; }
+    }
+
+    win.addEventListener('mousedown', () => w95Mgr.focusWindow(WIN_ID));
+    if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
+    if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, WIN_ID); };
+    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
+    makeDraggable(win, handle, WIN_ID);
+
+    if (localStorage.getItem('w95_shoplist_open') === '1') show();
+
+    w95Apps['shoplist'] = { open: () => {
         if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow(WIN_ID);
     }};
 })();
