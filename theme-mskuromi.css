@@ -1904,3 +1904,137 @@ body.dark-mode .rich-card {
 body.dark-mode .rc-title { color: #FFFFFF !important; }
 body.dark-mode .yt-title { color: #ADD8E6 !important; }
 body.dark-mode .rcp-spotify-btn { color: #ADD8E6 !important; }
+
+/* ============================================================
+   THEME-AWARE BUTTON OVERRIDES
+   When a desktop theme is active, buttons pick up the theme
+   colour palette via CSS variables set on body[data-theme].
+   ============================================================ */
+
+/* Nav glass bar */
+body[data-theme] .nav-glass {
+  background: var(--theme-chrome) !important;
+  border-top-color:    var(--theme-bevel-hi) !important;
+  border-bottom-color: var(--theme-bevel-sh) !important;
+  box-shadow: none !important;
+}
+
+/* Nav buttons */
+body[data-theme] .nav-btn {
+  background: var(--theme-chrome) !important;
+  color:      var(--theme-text)   !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+body[data-theme] .nav-btn:hover {
+  background: var(--theme-chrome-dk) !important;
+  color:      var(--theme-text)      !important;
+  border-color: var(--theme-bevel-hi) var(--theme-bevel-sh) var(--theme-bevel-sh) var(--theme-bevel-hi) !important;
+  box-shadow: none !important;
+}
+body[data-theme] .nav-btn.active {
+  background: var(--theme-hover-bg)  !important;
+  color:      var(--theme-hover-txt) !important;
+  border-color: var(--theme-bevel-sh) var(--theme-bevel-hi) var(--theme-bevel-hi) var(--theme-bevel-sh) !important;
+  box-shadow: none !important;
+}
+
+/* Filter glass bar */
+body[data-theme] .filter-glass {
+  background: var(--theme-chrome) !important;
+  border-bottom-color: var(--theme-bevel-sh) !important;
+  box-shadow: none !important;
+}
+
+/* Filter buttons */
+body[data-theme] .filter-btn {
+  background: var(--theme-chrome) !important;
+  color:      var(--theme-text)   !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+body[data-theme] .filter-btn:hover {
+  background: var(--theme-chrome-dk) !important;
+  color:      var(--theme-text)      !important;
+  border-color: var(--theme-bevel-hi) var(--theme-bevel-sh) var(--theme-bevel-sh) var(--theme-bevel-hi) !important;
+  box-shadow: none !important;
+}
+body[data-theme] .filter-btn.active {
+  background: var(--theme-hover-bg)  !important;
+  color:      var(--theme-hover-txt) !important;
+  border-color: var(--theme-bevel-sh) var(--theme-bevel-hi) var(--theme-bevel-hi) var(--theme-bevel-sh) !important;
+  box-shadow: none !important;
+}
+
+/* Primary buttons */
+body[data-theme] .btn-primary {
+  background: var(--theme-primary-bg)  !important;
+  color:      var(--theme-primary-txt) !important;
+  border-color: var(--theme-primary-hi) var(--theme-primary-sh) var(--theme-primary-sh) var(--theme-primary-hi) !important;
+  box-shadow: none !important;
+}
+body[data-theme] .btn-primary:hover {
+  background: var(--theme-hover-bg)  !important;
+  color:      var(--theme-hover-txt) !important;
+  box-shadow: none !important;
+}
+body[data-theme] .btn-primary:active {
+  border-color: var(--theme-primary-sh) var(--theme-primary-hi) var(--theme-primary-hi) var(--theme-primary-sh) !important;
+  box-shadow: none !important;
+}
+
+/* Secondary buttons */
+body[data-theme] .btn-secondary {
+  background: var(--theme-chrome) !important;
+  color:      var(--theme-text)   !important;
+  border-color: var(--theme-bevel-hi) var(--theme-bevel-sh) var(--theme-bevel-sh) var(--theme-bevel-hi) !important;
+  box-shadow: none !important;
+}
+body[data-theme] .btn-secondary:hover {
+  background: var(--theme-chrome-dk) !important;
+  color:      var(--theme-text)      !important;
+  box-shadow: none !important;
+}
+body[data-theme] .btn-secondary:active {
+  border-color: var(--theme-bevel-sh) var(--theme-bevel-hi) var(--theme-bevel-hi) var(--theme-bevel-sh) !important;
+  box-shadow: none !important;
+}
+
+/* Mark all seen / clear filters */
+body[data-theme] .mark-all-btn {
+  background: var(--theme-primary-bg)  !important;
+  color:      var(--theme-primary-txt) !important;
+  border-color: var(--theme-primary-hi) var(--theme-primary-sh) var(--theme-primary-sh) var(--theme-primary-hi) !important;
+  box-shadow: none !important;
+}
+body[data-theme] .mark-all-btn:hover {
+  background: var(--theme-hover-bg)  !important;
+  color:      var(--theme-hover-txt) !important;
+  box-shadow: none !important;
+}
+body[data-theme] .clear-filters-btn {
+  background: var(--theme-chrome) !important;
+  color:      var(--theme-text)   !important;
+  border-color: var(--theme-bevel-hi) var(--theme-bevel-sh) var(--theme-bevel-sh) var(--theme-bevel-hi) !important;
+  box-shadow: none !important;
+}
+
+/* Profile edit / mood / pain buttons */
+body[data-theme] .profile-edit-btn {
+  background: var(--theme-chrome) !important;
+  color:      var(--theme-text)   !important;
+  border-color: var(--theme-bevel-hi) var(--theme-bevel-sh) var(--theme-bevel-sh) var(--theme-bevel-hi) !important;
+}
+body[data-theme] .profile-edit-btn:hover {
+  background: var(--theme-chrome-dk) !important;
+  color:      var(--theme-text)      !important;
+}
+body[data-theme] .profile-edit-btn:active {
+  border-color: var(--theme-bevel-sh) var(--theme-bevel-hi) var(--theme-bevel-hi) var(--theme-bevel-sh) !important;
+}
+
+/* Search bar background */
+body[data-theme] #searchWrap {
+  background:          var(--theme-chrome)    !important;
+  border-bottom-color: var(--theme-bevel-sh)  !important;
+}
