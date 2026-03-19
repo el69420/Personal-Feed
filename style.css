@@ -11262,6 +11262,36 @@ body[data-theme] .sys-props-tab--active {
   font-weight: 600;
 }
 
+/* View tabs */
+.fd-view-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 8px 0;
+  border-bottom: 1px solid var(--card-border, rgba(0,0,0,0.1));
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+.fd-view-tab {
+  background: none;
+  border: 1px solid transparent;
+  border-bottom: none;
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text-secondary, #555);
+  border-radius: 3px 3px 0 0;
+  position: relative;
+  bottom: -1px;
+}
+.fd-view-tab:hover { color: var(--text-primary, #111); }
+.fd-view-tab-active {
+  color: var(--text-primary, #111);
+  font-weight: 700;
+  background: var(--win-bg, #f0f0f0);
+  border-color: var(--card-border, rgba(0,0,0,0.1));
+  border-bottom-color: var(--win-bg, #f0f0f0);
+}
+
 /* Dark mode */
 body.dark-mode .fd-status-error {
   background: rgba(200,30,30,0.15);

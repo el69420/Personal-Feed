@@ -10640,6 +10640,7 @@ function renderAchievementsWindow() {
     let nutOpen      = false;
     let editingId    = null;
     let expandedDays = new Set();
+    let viewingUser  = null; // null = own diary; string = other user's diary (read-only)
 
     const MEAL_ICONS = { breakfast: '&#127749;', lunch: '&#127822;', dinner: '&#127857;', snack: '&#127863;' };
 
@@ -10709,8 +10710,15 @@ function renderAchievementsWindow() {
 
     function renderApp() {
         if (!body) return;
+        const otherUser = currentUser === 'El' ? 'Tero' : 'El';
+        const isViewingOther = viewingUser !== null;
         body.innerHTML = `
             <div class="fd-layout">
+                <div class="fd-view-tabs">
+                    <button class="fd-view-tab${!isViewingOther ? ' fd-view-tab-active' : ''}" type="button" data-fd-view="mine">My diary</button>
+                    <button class="fd-view-tab${isViewingOther ? ' fd-view-tab-active' : ''}" type="button" data-fd-view="other">${otherUser}'s diary</button>
+                </div>
+                ${!isViewingOther ? `
                 <div class="fd-form-section">
                     <div class="fd-section-title">&#127859; Log a meal</div>
                     <div class="fd-form">
@@ -10737,24 +10745,39 @@ function renderAchievementsWindow() {
                         <div id="fd-error" class="fd-status fd-status-error" style="display:none;"></div>
                         <button id="fd-submit-btn" class="btn-primary fd-submit-btn" type="button">Log meal</button>
                     </div>
-                </div>
+                </div>` : ''}
                 <div class="fd-entries-section">
                     <div id="fd-entries-list" class="fd-entries-list"></div>
                 </div>
             </div>`;
         renderEntries();
 
-        // Event listeners on stable elements
-        document.getElementById('fd-entries-list').addEventListener('click', handleEntryAction);
-        document.getElementById('fd-nut-toggle-btn').addEventListener('click', () => {
-            nutOpen = !nutOpen;
-            document.getElementById('fd-nut-fields').style.display = nutOpen ? 'block' : 'none';
-            document.getElementById('fd-nut-toggle-btn').innerHTML = nutOpen ? '&#8722; Hide nutrition' : '&#43; Add nutrition';
+        // Tab switching
+        body.querySelectorAll('[data-fd-view]').forEach(tabBtn => {
+            tabBtn.addEventListener('click', () => {
+                viewingUser = tabBtn.dataset.fdView === 'other' ? otherUser : null;
+                editingId   = null;
+                oldOpen     = false;
+                expandedDays.clear();
+                renderApp();
+            });
         });
-        document.getElementById('fd-submit-btn').addEventListener('click', handleSubmit);
-        document.getElementById('fd-food-input').addEventListener('keydown', e => {
-            if (e.key === 'Enter') handleSubmit();
-        });
+
+        if (!isViewingOther) {
+            // Event listeners on stable elements
+            document.getElementById('fd-entries-list').addEventListener('click', handleEntryAction);
+            document.getElementById('fd-nut-toggle-btn').addEventListener('click', () => {
+                nutOpen = !nutOpen;
+                document.getElementById('fd-nut-fields').style.display = nutOpen ? 'block' : 'none';
+                document.getElementById('fd-nut-toggle-btn').innerHTML = nutOpen ? '&#8722; Hide nutrition' : '&#43; Add nutrition';
+            });
+            document.getElementById('fd-submit-btn').addEventListener('click', handleSubmit);
+            document.getElementById('fd-food-input').addEventListener('keydown', e => {
+                if (e.key === 'Enter') handleSubmit();
+            });
+        } else {
+            document.getElementById('fd-entries-list').addEventListener('click', handleEntryAction);
+        }
     }
 
     // ---- Nutrition helpers ----
@@ -10847,7 +10870,7 @@ function renderAchievementsWindow() {
                 ${nutParts.length ? `<div class="fd-entry-nut">${nutParts.join(' · ')}</div>` : ''}
                 <div class="fd-entry-footer">
                     <span class="fd-entry-meta">${timeStr}</span>
-                    <button class="fd-edit-btn" type="button" data-action="start-edit" data-entry-id="${id}">edit</button>
+                    ${!viewingUser ? `<button class="fd-edit-btn" type="button" data-action="start-edit" data-entry-id="${id}">edit</button>` : ''}
                 </div>
             </div>`;
     }
@@ -10857,13 +10880,16 @@ function renderAchievementsWindow() {
         const list = document.getElementById('fd-entries-list');
         if (!list) return;
 
+        const targetUser = viewingUser || currentUser;
         const todayKey = new Date().toLocaleDateString('en-CA');
         const mine = Object.entries(allEntries)
-            .filter(([, e]) => e.userId === currentUser)
+            .filter(([, e]) => e.userId === targetUser)
             .sort((a, b) => b[1].eatenAt - a[1].eatenAt);
 
         if (!mine.length) {
-            list.innerHTML = '<div class="fd-empty">No entries yet. Log your first meal above!</div>';
+            list.innerHTML = viewingUser
+                ? `<div class="fd-empty">No entries yet for ${viewingUser}.</div>`
+                : '<div class="fd-empty">No entries yet. Log your first meal above!</div>';
             return;
         }
 
