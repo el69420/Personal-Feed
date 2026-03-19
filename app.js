@@ -7750,13 +7750,12 @@ function _profAvatarHairBack(style, H, HD, out) {
         // Full bob silhouette drawn behind the face so the face stays visible
         out.push(`<path d="M26 50 Q20 54 20 64 Q20 72 26 73 Q36 75 50 75 Q64 75 74 73 Q80 72 80 64 Q80 54 74 50 Q67 56 50 57 Q33 56 26 50Z" fill="${H}"/>`);
     } else if (style === 'long_curly') {
-        // Wide, voluminous sides — no longer narrow braid-like columns
-        out.push(`<path d="M28 52 Q12 58 11 74 Q12 86 19 88 Q25 88 25 81 Q23 71 24 62 Q26 55 28 52Z" fill="${H}"/>`);
-        out.push(`<path d="M72 52 Q88 58 89 74 Q88 86 81 88 Q75 88 75 81 Q77 71 76 62 Q74 55 72 52Z" fill="${H}"/>`);
+        // Single connected back shape — outer edge sweeps wide, inner edge scoops
+        // under the face so it reads as one loose mass, not two pigtails
+        out.push(`<path d="M28 52 Q12 58 10 74 Q10 87 18 90 Q34 93 50 93 Q66 93 82 90 Q90 87 90 74 Q88 58 72 52 Q67 57 50 58 Q33 57 28 52Z" fill="${H}"/>`);
     } else if (style === 'shaggy') {
-        // Wide swept sides — shag/wolf cut falls past chin level
-        out.push(`<path d="M28 52 Q15 57 13 71 Q13 82 19 84 Q24 84 24 77 Q22 67 23 59 Q25 54 28 52Z" fill="${H}"/>`);
-        out.push(`<path d="M72 52 Q85 57 87 71 Q87 82 81 84 Q76 84 76 77 Q78 67 77 59 Q75 54 72 52Z" fill="${H}"/>`);
+        // Same idea, slightly shorter length
+        out.push(`<path d="M28 52 Q13 56 12 68 Q12 79 19 81 Q34 84 50 84 Q66 84 81 81 Q88 79 88 68 Q87 56 72 52 Q67 57 50 58 Q33 57 28 52Z" fill="${H}"/>`);
     } else if (style === 'ponytail') {
         out.push(`<path d="M53 22 Q58 32 60 48 Q62 64 63 78 Q64 88 60 90 Q56 92 54 84 Q52 70 50 56 Q50 38 50 22 Q51 20 53 22Z" fill="${H}"/>`);
     }
