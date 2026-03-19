@@ -10923,20 +10923,23 @@ function renderAchievementsWindow() {
     // ---- Save nutrition edit ----
     async function saveNutritionEdit() {
         if (!editingId) return;
-        const saveBtn = document.querySelector('[data-action="save-edit"]');
-        if (saveBtn) saveBtn.disabled = true;
 
         const nutrition = {};
         NUT_FIELDS.forEach(f => { nutrition[f.key] = parseNum(f.editId); });
         const hasNutrition = Object.values(nutrition).some(v => v !== null);
 
+        // Clear the edit form immediately so the onValue re-render doesn't
+        // race and re-show it before the await resolves.
+        const id = editingId;
+        editingId = null;
+        renderEntries();
+
         try {
-            await update(ref(database, `foodDiary/${editingId}`), { nutrition: hasNutrition ? nutrition : null });
-            editingId = null;
-            // Firebase onValue re-triggers renderEntries automatically
+            await update(ref(database, `foodDiary/${id}`), { nutrition: hasNutrition ? nutrition : null });
         } catch (err) {
             console.error('Food diary edit error:', err);
-            if (saveBtn) saveBtn.disabled = false;
+            editingId = id; // restore so user can retry
+            renderEntries();
         }
     }
 
