@@ -6289,8 +6289,10 @@ body.dark-mode .wallpaper-swatch {
   display: flex;
   gap: 2px;
   padding: 0 0 0 3px;
-  position: relative;
+  position: sticky;
+  top: -8px;
   z-index: 1;
+  background: #c0c0c0;
 }
 .settings-tab-btn {
   font: 11px Tahoma, Verdana, Arial, sans-serif;
