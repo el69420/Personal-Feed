@@ -12691,6 +12691,16 @@ function initPixelCat() {
         w95Apps['cat']?.open();
     });
 
+    // Track cursor position for behaviour system (passive — never blocks scroll)
+    window.addEventListener('mousemove', e => {
+        const nx = e.clientX / window.innerWidth;
+        lastCursorX      = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, nx));
+        lastCursorMoveAt = performance.now();
+        // Append to copycat history ring buffer (keep ~2 s at 60 fps ≈ 120 entries)
+        bhvCopycatBuf.push({ x: lastCursorX, ts: lastCursorMoveAt });
+        if (bhvCopycatBuf.length > 120) bhvCopycatBuf.shift();
+    }, { passive: true });
+
     // ---- Firebase refs ----
     const catFbRef    = ref(database, 'desktop/cat');
     const catEventRef = ref(database, 'desktop/catEvent');
@@ -12774,6 +12784,31 @@ function initPixelCat() {
     let drvPerchLastPixel = null;  // { px, py } – saved pixel pos for fall start position
     let drvFalling        = false; // true when cat fell from a closed window (vs graceful jump-down)
     let drvDazedEnd       = 0;    // timestamp when dazed-on-landing state ends
+
+    // ---- Behaviour system state ----
+    // Cursor position tracked globally within initPixelCat for attention/copycat use
+    let lastCursorX      = 0.5;  // normalised x (0–1) of mouse cursor
+    let lastCursorMoveAt = 0;    // performance.now() timestamp of last mousemove
+
+    // Attention Mode: after petting, cat follows cursor for 5–8 s with slight delay
+    let bhvAttentionActive = false;
+    let bhvAttentionEndAt  = 0;  // performance.now() when attention mode expires
+
+    // Shy Mode: after ~15 s of the cat not walking, it creeps behind a nearby window
+    let bhvShyActive    = false;
+    let bhvShyHideWin   = null;  // window element the cat is hiding behind
+    let bhvShyHideSide  = 'left';
+    let bhvShyPeekX     = 0;    // normalised x of the peek position (edge of window)
+    let bhvShyReturning = false; // true while cat walks back into the open
+    let bhvShyIdleMs    = 0;    // accumulated ms the cat has spent not walking
+    const BHV_SHY_MS    = 15000;// ms threshold to trigger shy mode
+
+    // Copycat: cat loosely mirrors cursor with a lag and playful offset
+    let bhvCopycatActive  = false;
+    let bhvCopycatEndAt   = 0;
+    let bhvCopycatOffsetX = 0;   // normalised x offset added to the delayed cursor position
+    const COPYCAT_DELAY_MS = 800; // ms the cat lags behind the cursor
+    const bhvCopycatBuf    = []; // [{x, ts}] ring buffer for delayed cursor lookup (≤120 entries)
 
     // ---- Gift drop driver state ----
     const GIFT_MIN_INTERVAL_MS = 90 * 60 * 1000;  // 90 min minimum between gifts
@@ -13057,6 +13092,153 @@ function initPixelCat() {
         }
     });
 
+    // ---- Behaviour system tick (called from driverTick each frame) ----
+    // Processes all active behaviours; may override drvX / drvDir / drvState / drvNextAct.
+    function behaviourTick(now, dt, speedMult) {
+
+        // ── Attention Mode ───────────────────────────────────────────────────────
+        // Triggered by petCat(); cat follows cursor with slight delay for 5–8 s.
+        if (bhvAttentionActive) {
+            if (now >= bhvAttentionEndAt) {
+                // Attention window has expired — resume normal behaviour
+                bhvAttentionActive = false;
+            } else if (!['sleep', 'wakeup', 'jumping', 'jumpDown', 'perched', 'dazed'].includes(drvState)) {
+                const targetX = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, lastCursorX));
+                const diff    = targetX - drvX;
+                if (Math.abs(diff) > 0.02) {
+                    // Walk toward cursor with a gentle overshoot prevention
+                    drvDir   = diff > 0 ? 'right' : 'left';
+                    drvX    += (drvDir === 'right' ? 1 : -1) * WALK_SPEED * speedMult * 1.15 * dt;
+                    drvX     = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, drvX));
+                    drvState = 'walk';
+                    drvNextAct = now + 1500; // suppress normal sit transition during following
+                } else {
+                    // Close enough — do a brief idle near cursor, then creep again next frame
+                    if (drvState === 'walk') {
+                        drvState   = 'idle';
+                        drvIdleEnd = now + 250 + Math.random() * 300;
+                    }
+                }
+            }
+        }
+
+        // ── Shy Mode ────────────────────────────────────────────────────────────
+        // Triggered after ~15 s of the cat being stationary; cat peeks from behind
+        // a nearby window and returns once the user moves the cursor.
+        if (!bhvShyActive && !bhvAttentionActive) {
+            // Accumulate idle time while cat is not walking
+            if (['idle', 'sit', 'sleep', 'wakeup', 'dazed'].includes(drvState)) {
+                bhvShyIdleMs += dt;
+            } else {
+                bhvShyIdleMs = 0; // walking resets the clock
+            }
+
+            if (bhvShyIdleMs >= BHV_SHY_MS && !drvRoamingPaused
+                && !['sleep', 'jumping', 'jumpDown'].includes(drvState)) {
+                const wins = getPerchableWindows();
+                if (wins.length > 0) {
+                    const win  = wins[Math.floor(Math.random() * wins.length)];
+                    const rect = win.getBoundingClientRect();
+                    const vw   = window.innerWidth;
+                    const catW = CW * S;
+                    const catPx = Math.round(drvX * (vw - catW));
+                    // Pick the nearer side of the window to hide behind
+                    const distLeft  = Math.abs(catPx - rect.left);
+                    const distRight = Math.abs(catPx - rect.right);
+                    bhvShyHideSide = distLeft <= distRight ? 'left' : 'right';
+                    // Peek position: cat mostly hidden, ~10 px of sprite still visible
+                    const peekPx = bhvShyHideSide === 'left'
+                        ? rect.left - (catW - 10)
+                        : rect.right - 10;
+                    bhvShyPeekX     = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, peekPx / (vw - catW)));
+                    bhvShyHideWin   = win;
+                    bhvShyActive    = true;
+                    bhvShyReturning = false;
+                    bhvShyIdleMs    = 0;
+                    // Interrupt any current sit/sleep and sneak toward the window
+                    drvCallTarget = bhvShyPeekX;
+                    drvState      = 'walk';
+                    drvNextAct    = now + 9999999;
+                }
+            }
+        }
+
+        if (bhvShyActive) {
+            // Window the cat was hiding behind was closed or maximised — cancel shy
+            if (bhvShyHideWin && (bhvShyHideWin.classList.contains('is-hidden') ||
+                                   bhvShyHideWin.classList.contains('is-maximised'))) {
+                bhvShyActive    = false;
+                bhvShyReturning = false;
+                bhvShyHideWin   = null;
+                drvCallTarget   = null;
+                bhvShyIdleMs    = 0;
+            }
+
+            // User moved the cursor — emerge from hiding
+            const userJustMoved = (now - lastCursorMoveAt) < 2500;
+            if (!bhvShyReturning && userJustMoved) {
+                bhvShyReturning = true;
+                drvCallTarget   = null;
+                // Slink out to a random open spot, biased away from the hide window
+                const vw = window.innerWidth;
+                const catW = CW * S;
+                const returnX = bhvShyHideSide === 'left'
+                    ? 0.5 + Math.random() * (0.5 - EDGE_PAD)  // come out to the right half
+                    : EDGE_PAD + Math.random() * 0.5;           // come out to the left half
+                drvState   = 'walk';
+                drvDir     = returnX > drvX ? 'right' : 'left';
+                drvNextAct = now + 3000 + Math.random() * 3000;
+                // Store where to walk back to by setting a temporary call target
+                drvCallTarget = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD, returnX));
+            }
+
+            // Once the cat has walked back out and settled, deactivate shy mode
+            if (bhvShyReturning && (drvState === 'idle' || drvState === 'sit')) {
+                bhvShyActive    = false;
+                bhvShyReturning = false;
+                bhvShyHideWin   = null;
+                drvCallTarget   = null;
+                bhvShyIdleMs    = 0;
+            }
+        }
+
+        // ── Copycat ─────────────────────────────────────────────────────────────
+        // Cat loosely mirrors cursor movement with a lag and a playful offset.
+        // Activates occasionally during autonomous roaming (not during other behaviours).
+        if (!bhvCopycatActive && !bhvAttentionActive && !bhvShyActive
+            && drvState === 'walk' && drvCallTarget === null
+            && now > bhvCopycatEndAt + 20000) { // at least 20 s gap between activations
+            // ~30% chance each time the cat transitions from sit back to walking
+            // (checked externally via bhvMaybeCopycat flag set in driverTick sit→walk)
+        }
+        // Note: activation is triggered from the sit→walk transition in driverTick below.
+
+        if (bhvCopycatActive) {
+            if (now >= bhvCopycatEndAt || bhvAttentionActive || bhvShyActive) {
+                bhvCopycatActive = false;
+            } else if (drvState === 'walk' && drvCallTarget === null) {
+                // Look up the cursor position from COPYCAT_DELAY_MS ago
+                let delayedX = lastCursorX;
+                const targetTs = now - COPYCAT_DELAY_MS;
+                for (let i = bhvCopycatBuf.length - 1; i >= 0; i--) {
+                    if (bhvCopycatBuf[i].ts <= targetTs) {
+                        delayedX = bhvCopycatBuf[i].x;
+                        break;
+                    }
+                }
+                // Steer direction to match delayed cursor + offset (without overriding speed)
+                const copycatTarget = Math.max(EDGE_PAD, Math.min(1 - EDGE_PAD,
+                                          delayedX + bhvCopycatOffsetX));
+                const diff = copycatTarget - drvX;
+                if (Math.abs(diff) > 0.04) {
+                    drvDir = diff > 0 ? 'right' : 'left';
+                }
+                // Keep the normal walk-to-sit timer alive so cat doesn't walk forever
+                if (drvNextAct < now + 800) drvNextAct = now + 1200 + Math.random() * 1500;
+            }
+        }
+    }
+
     // ---- Driver behaviour tick (runs every animation frame) ----
     function driverTick(now, dt) {
         const nightSleep = isNightSleepWindow();
@@ -13067,6 +13249,9 @@ function initPixelCat() {
         const sitMinMult  = mood === 'excited' ? 0.55 : (mood === 'drowsy' ? 2.2  : 1.5);
         const sleepProb   = mood === 'excited' ? 0    : (mood === 'drowsy' ? 0.72 : (mood === 'calm' ? 0.38 : SLEEP_P));
         const sitGapBase  = mood === 'excited' ? 3000 : (mood === 'drowsy' ? 12000 : 7000); // ms gap between sits
+
+        // ---- Run the behaviour system before the main state machine ----
+        behaviourTick(now, dt, speedMult);
 
         // ---- Night-time forced sleep (23:00–07:00 Europe/London) ----
         if (nightSleep) {
@@ -13349,6 +13534,14 @@ function initPixelCat() {
                     drvSitEnd = now + 4000 + Math.random() * 3000;
                 } else {
                     drvState = 'walk';
+                    // 30% chance to activate Copycat when resuming a walk (not during other behaviours)
+                    if (!bhvCopycatActive && !bhvAttentionActive && !bhvShyActive
+                        && now > bhvCopycatEndAt + 20000 && Math.random() < 0.30) {
+                        bhvCopycatActive  = true;
+                        bhvCopycatEndAt   = now + 10000 + Math.random() * 10000; // 10–20 s
+                        // Random offset: cat aims for cursor ± up to 12% of screen width
+                        bhvCopycatOffsetX = (Math.random() - 0.5) * 0.24;
+                    }
                 }
             }
 
@@ -13535,11 +13728,19 @@ function initPixelCat() {
             canvas.style.left   = `${Math.round(localX * (vw - CW * S))}px`;
             canvas.style.top    = 'auto';
             canvas.style.bottom = '44px';
-            canvas.style.zIndex = '150';
+            // Shy Mode: lower z-index so the cat renders behind the hide window
+            if (isDriver && bhvShyActive && !bhvShyReturning && bhvShyHideWin
+                && !bhvShyHideWin.classList.contains('is-hidden')) {
+                const hideWinZ = parseInt(bhvShyHideWin.style.zIndex) || 2000;
+                canvas.style.zIndex  = (hideWinZ - 1) + '';
+                emoteEl.style.zIndex = (hideWinZ - 1) + '';
+            } else {
+                canvas.style.zIndex  = '150';
+                emoteEl.style.zIndex = '151';
+            }
             emoteEl.style.left   = canvas.style.left;
             emoteEl.style.top    = 'auto';
             emoteEl.style.bottom = '44px';
-            emoteEl.style.zIndex = '151';
             zzzEl.style.left   = canvas.style.left;
             zzzEl.style.top    = 'auto';
             zzzEl.style.bottom = (44 + CH * S) + 'px';
@@ -13744,6 +13945,16 @@ function initPixelCat() {
             canvas.classList.remove('cat-bounce');
             void canvas.offsetWidth;
             canvas.classList.add('cat-bounce');
+            // Activate Attention Mode: cat follows cursor for 5–8 s
+            if (isDriver) {
+                bhvAttentionActive = true;
+                bhvAttentionEndAt  = performance.now() + 5000 + Math.random() * 3000;
+                // Cancel any conflicting behaviours
+                bhvShyActive       = false;
+                bhvShyReturning    = false;
+                bhvCopycatActive   = false;
+                drvCallTarget      = null;
+            }
         },
 
         // Called when Cat.exe window is opened: cat notices and walks over to jump on top.
