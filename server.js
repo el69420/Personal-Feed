@@ -15,8 +15,6 @@ const NUTRITIONIX_API_KEY = process.env.NUTRITIONIX_API_KEY || '';
 const cache = {};
 const CACHE_TTL = 60_000;
 
-app.use(express.static(path.join(__dirname)));
-
 app.get('/api/now-playing', async (req, res) => {
     const key = req.query.user;
     if (!LASTFM_USERS[key]) return res.status(400).json({ error: 'invalid user' });
@@ -261,6 +259,9 @@ app.post('/api/garden/select-plant', (req, res) => {
     }
     res.json({ ok: true, selectedPlant: plantType });
 });
+
+// Static files served last so API routes always take priority
+app.use(express.static(path.join(__dirname)));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Personal Feed running on http://localhost:${PORT}`));
