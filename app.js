@@ -7766,7 +7766,7 @@ function _profAvatarHairFront(style, H, HD, out) {
     const shapes = {
         short_straight: `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q66 44 50 43 Q34 44 28 50Z" fill="${H}"/>`,
         bob:            `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q66 44 50 43 Q34 44 28 50Z" fill="${H}"/>`,
-        long_curly:     `<path d="M36 22 Q43 16 50 16 Q57 16 64 22 Q60 30 50 32 Q40 30 36 22Z" fill="${H}"/>
+        long_curly:     `<path d="M28 24 Q34 18 50 16 Q66 18 72 24 Q68 30 50 32 Q32 30 28 24Z" fill="${H}"/>
                          <path d="M28 26 Q22 34 20 44 Q18 54 20 62 Q22 66 24 62 Q26 54 26 46 Q27 36 28 26Z" fill="${H}"/>
                          <path d="M72 26 Q78 34 80 44 Q82 54 80 62 Q78 66 76 62 Q74 54 74 46 Q73 36 72 26Z" fill="${H}"/>`,
         shaggy:         `<path d="M26 24 Q28 18 50 16 Q72 18 74 24 Q70 30 64 33 Q58 36 50 35 Q42 36 36 33 Q30 30 26 24Z" fill="${H}"/>
