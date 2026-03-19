@@ -3631,6 +3631,52 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     min-height: 13px;
 }
 
+.profile-mood {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    color: #444;
+    min-height: 16px;
+    text-align: center;
+}
+
+.mood-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+    max-width: 140px;
+    margin-top: 2px;
+    padding: 4px;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #404040;
+    border-bottom: 2px solid #404040;
+}
+
+.mood-btn {
+    font-size: 17px;
+    line-height: 1;
+    background: #c0c0c0;
+    border: 2px solid transparent;
+    padding: 2px 3px;
+    cursor: pointer;
+}
+
+.mood-btn:hover {
+    border-top: 2px solid #404040;
+    border-left: 2px solid #404040;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+}
+
+.mood-btn.is-active {
+    border-top: 2px solid #404040;
+    border-left: 2px solid #404040;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    background: #a8a8a8;
+}
+
 .profile-card-divider {
     width: 1px;
     background: #808080;

@@ -7944,8 +7944,23 @@ function _profRenderEditorSections(draft) {
     if (!win || !minBtn || !closeBtn || !handle) return;
 
     const USERS = ['El', 'Tero'];
+    const MOODS = [
+        { id: 'happy',    emoji: '😊', label: 'happy' },
+        { id: 'sad',      emoji: '😢', label: 'sad' },
+        { id: 'excited',  emoji: '🤩', label: 'excited' },
+        { id: 'tired',    emoji: '😴', label: 'tired' },
+        { id: 'anxious',  emoji: '😰', label: 'anxious' },
+        { id: 'calm',     emoji: '😌', label: 'calm' },
+        { id: 'angry',    emoji: '😠', label: 'angry' },
+        { id: 'silly',    emoji: '🤪', label: 'silly' },
+        { id: 'loved',    emoji: '🥰', label: 'loved' },
+        { id: 'bored',    emoji: '😑', label: 'bored' },
+        { id: 'stressed', emoji: '😤', label: 'stressed' },
+        { id: 'cozy',     emoji: '🫶', label: 'cozy' },
+    ];
     let btn = null;
     const avatarData = { El: null, Tero: null };
+    const moodData   = { El: null, Tero: null };
     let editorUser  = null;
     let editorDraft = null;
 
@@ -7975,10 +7990,10 @@ function _profRenderEditorSections(draft) {
 
     function _updateEditButtons() {
         USERS.forEach(u => {
-            const b = document.getElementById(`profile-edit-btn-${u}`);
-            if (!b) return;
-            if (u === currentUser) b.classList.remove('is-hidden');
-            else b.classList.add('is-hidden');
+            const b  = document.getElementById(`profile-edit-btn-${u}`);
+            const mb = document.getElementById(`profile-mood-btn-${u}`);
+            if (b)  { if (u === currentUser) b.classList.remove('is-hidden');  else b.classList.add('is-hidden'); }
+            if (mb) { if (u === currentUser) mb.classList.remove('is-hidden'); else mb.classList.add('is-hidden'); }
         });
     }
 
@@ -7994,11 +8009,57 @@ function _profRenderEditorSections(draft) {
         });
     }
 
-    // ---- Firebase: load saved avatars ----
+    function _renderAllMoods() {
+        USERS.forEach(u => {
+            const el = document.getElementById(`profile-mood-${u}`);
+            if (!el) return;
+            const mood = moodData[u] ? MOODS.find(m => m.id === moodData[u]) : null;
+            el.textContent = mood ? `${mood.emoji} ${mood.label}` : '';
+        });
+    }
+
+    function _openMoodPicker(user) {
+        if (!currentUser || user !== currentUser) return;
+        const picker = document.getElementById(`mood-picker-${user}`);
+        if (!picker) return;
+        if (!picker.classList.contains('is-hidden')) {
+            picker.classList.add('is-hidden');
+            return;
+        }
+        picker.innerHTML = MOODS.map(m =>
+            `<button class="mood-btn${moodData[user] === m.id ? ' is-active' : ''}"
+                     onclick="pfSetMood('${user}','${m.id}')"
+                     title="${m.label}" type="button">${m.emoji}</button>`
+        ).join('');
+        picker.classList.remove('is-hidden');
+    }
+
+    async function _setMood(user, moodId) {
+        if (!currentUser || user !== currentUser) return;
+        const newMood = moodData[user] === moodId ? null : moodId;
+        try {
+            if (newMood) {
+                await set(ref(database, `profiles/${user}/mood`), newMood);
+            } else {
+                await remove(ref(database, `profiles/${user}/mood`));
+            }
+            const picker = document.getElementById(`mood-picker-${user}`);
+            if (picker) picker.classList.add('is-hidden');
+            showToast(newMood ? 'Mood updated!' : 'Mood cleared!');
+        } catch (e) {
+            showToast('Save failed — try again.');
+        }
+    }
+
+    // ---- Firebase: load saved avatars and moods ----
     onValue(ref(database, 'profiles'), snap => {
         const data = snap.val() || {};
-        USERS.forEach(u => { avatarData[u] = data[u]?.avatar || null; });
+        USERS.forEach(u => {
+            avatarData[u] = data[u]?.avatar || null;
+            moodData[u]   = data[u]?.mood   || null;
+        });
         _renderAllAvatars();
+        _renderAllMoods();
     });
 
     // ---- Avatar editor ----
@@ -8077,6 +8138,8 @@ function _profRenderEditorSections(draft) {
     // ---- Expose globals needed by inline onclick handlers ----
     window.openAvatarEditor = _openEditor;
     window.pfAvatarPick     = _pickTrait;
+    window.openMoodPicker   = _openMoodPicker;
+    window.pfSetMood        = _setMood;
 
     // ---- Called after login to show the correct edit button ----
     window._profilesOnLogin = _updateEditButtons;
