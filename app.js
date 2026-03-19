@@ -6328,6 +6328,7 @@ const w95Layout = (() => {
     const top  = Math.max(0,                  Math.min(vh - MIN_VIS, r.top));
     if (Math.round(left) !== Math.round(r.left)) winEl.style.left = left + 'px';
     if (Math.round(top)  !== Math.round(r.top))  winEl.style.top  = top  + 'px';
+    if (r.height > vh) winEl.style.height = vh + 'px';
   }
 
   return { save, saveMaxState, restore, clamp };
