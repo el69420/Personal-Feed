@@ -3792,6 +3792,65 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     color: #888;
 }
 
+/* ===== Mood Journal ===== */
+.moodjournal-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.mj-table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.mj-table {
+    width: 100%;
+    border-collapse: collapse;
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+}
+
+.mj-table thead tr {
+    background: #000080;
+    color: #fff;
+}
+
+.mj-table th {
+    text-align: left;
+    padding: 3px 6px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.mj-table td {
+    padding: 3px 6px;
+    border-bottom: 1px solid #d0d0d0;
+    white-space: nowrap;
+}
+
+.mj-table tbody tr:hover {
+    background: #e8e8ff;
+}
+
+.mj-ts   { color: #444; }
+.mj-user { font-weight: bold; }
+.mj-mood { font-weight: bold; }
+
+.mj-mood-cleared {
+    color: #808080;
+    font-weight: normal;
+    font-style: italic;
+}
+
+.mj-empty {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    color: #808080;
+    padding: 16px;
+    text-align: center;
+}
+
 /* Pain picker — redesigned */
 .pain-picker-win-body {
     padding: 6px;
