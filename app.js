@@ -20,6 +20,7 @@ const wishlistBoardsRef = ref(database, 'wishlistBoards');
 const wishlistItemsRef  = ref(database, 'wishlistItems');
 const foodDiaryRef      = ref(database, 'foodDiary');
 const painJournalRef    = ref(database, 'painJournal');
+const moodJournalRef    = ref(database, 'moodJournal');
 
 const API_BASE = ''; // Set to the deployed origin (e.g. 'https://your-api.example.com') for GitHub Pages use
 
@@ -8115,6 +8116,10 @@ const PAIN_LOCATIONS = [
             } else {
                 await remove(ref(database, `profiles/${user}/mood`));
             }
+            await push(ref(database, `moodJournal/${user}`), {
+                mood: newMood || null,
+                ts:   serverTimestamp(),
+            });
             _closeMoodPicker();
             showToast(newMood ? 'Mood updated!' : 'Mood cleared!');
         } catch (e) {
@@ -11397,6 +11402,7 @@ const SHORTCUTABLE_APPS = [
     { app: 'achievements', icon: '🏆', name: 'Achievements.exe' },
     { app: 'myComputer',   icon: '🖥️', name: 'My Computer' },
     { app: 'painjournal',  icon: '🩹', name: 'Pain Journal.exe' },
+    { app: 'moodjournal',  icon: '📔', name: 'Mood Journal.exe' },
 ];
 
 // Shows a picker dialog for selecting an app to create a shortcut to
@@ -17249,6 +17255,128 @@ document.addEventListener('click', (e) => {
 
     // Start ambience if enabled on load
     if (soundEnabled && soundAmbience) startAmbience();
+
+// ===== Mood Journal.exe =====
+(() => {
+    const win      = document.getElementById('w95-win-moodjournal');
+    const handle   = document.getElementById('w95-moodjournal-handle');
+    const minBtn   = document.getElementById('w95-moodjournal-min');
+    const maxBtn   = document.getElementById('w95-moodjournal-max');
+    const closeBtn = document.getElementById('w95-moodjournal-close');
+    const body     = document.getElementById('w95-moodjournal-body');
+    if (!win || !handle || !body) return;
+
+    const WIN_ID = 'w95-win-moodjournal';
+    let btn     = null;
+    let entries = {};   // { user: { pushId: { mood, ts }, … }, … }
+
+    const MOOD_MAP = {
+        happy:    { emoji: '😊', label: 'happy' },
+        sad:      { emoji: '😢', label: 'sad' },
+        excited:  { emoji: '🤩', label: 'excited' },
+        tired:    { emoji: '😴', label: 'tired' },
+        anxious:  { emoji: '😰', label: 'anxious' },
+        calm:     { emoji: '😌', label: 'calm' },
+        angry:    { emoji: '😠', label: 'angry' },
+        silly:    { emoji: '🤪', label: 'silly' },
+        loved:    { emoji: '🥰', label: 'loved' },
+        bored:    { emoji: '😑', label: 'bored' },
+        stressed: { emoji: '😤', label: 'stressed' },
+        cozy:     { emoji: '🫶', label: 'cozy' },
+        ill:      { emoji: '🤒', label: 'ill' },
+        done_in:  { emoji: '😵', label: 'done in' },
+    };
+
+    function _esc(s) {
+        return String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+    }
+
+    function _fmtDate(ts) {
+        if (!ts) return '—';
+        const d = new Date(ts);
+        const days   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${hh}:${mm}`;
+    }
+
+    function _moodDisplay(moodId) {
+        if (!moodId) return '<span class="mj-mood-cleared">— cleared —</span>';
+        const m = MOOD_MAP[moodId];
+        return m ? `${m.emoji} ${_esc(m.label)}` : _esc(moodId);
+    }
+
+    function render() {
+        const rows = [];
+        for (const user of Object.keys(entries)) {
+            for (const [id, e] of Object.entries(entries[user] || {})) {
+                rows.push({ id, user, mood: e.mood || null, ts: e.ts || 0 });
+            }
+        }
+        rows.sort((a, b) => b.ts - a.ts);
+
+        if (rows.length === 0) {
+            body.innerHTML = '<div class="mj-empty">No entries yet.</div>';
+            return;
+        }
+
+        body.innerHTML = `
+            <div class="mj-table-wrap">
+                <table class="mj-table">
+                    <thead><tr>
+                        <th>Date &amp; Time</th>
+                        <th>Who</th>
+                        <th>Mood</th>
+                    </tr></thead>
+                    <tbody>
+                        ${rows.map(r => `
+                            <tr>
+                                <td class="mj-ts">${_fmtDate(r.ts)}</td>
+                                <td class="mj-user">${_esc(r.user)}</td>
+                                <td class="mj-mood">${_moodDisplay(r.mood)}</td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
+    function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn(WIN_ID, 'MOOD JOURNAL', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow(WIN_ID);
+        render();
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
+    }
+
+    onValue(moodJournalRef, snap => {
+        entries = snap.val() || {};
+        render();
+    });
+
+    if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
+    if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, WIN_ID); };
+    if (closeBtn) closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (w95Mgr.isMaximised(WIN_ID)) w95Mgr.toggleMaximise(win, WIN_ID);
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
+        if (btn) { btn.remove(); btn = null; }
+    };
+    win.addEventListener('mousedown', () => w95Mgr.focusWindow(WIN_ID));
+
+    makeDraggable(win, handle, WIN_ID);
+
+    w95Apps['moodjournal'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow(WIN_ID);
+    }};
+})();
 
 // ===== Pain Journal.exe =====
 (() => {
