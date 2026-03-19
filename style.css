@@ -3575,19 +3575,203 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 }
 
 /* ============================================================
-   PRESENCE.EXE WINDOW BODY
+   PROFILES.EXE WINDOW BODY
    ============================================================ */
-.presence-win-body {
-    padding: 10px 12px;
+.profiles-win-body {
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    min-height: 180px;
+}
+
+.profile-card {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    align-items: center;
+    padding: 8px 6px 10px;
+    gap: 4px;
+    text-align: center;
 }
 
-.pres-user {
-    padding: 8px 0;
+.profile-avatar-wrap {
+    width: 90px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2px;
 }
 
+.profile-avatar-wrap svg {
+    display: block;
+}
+
+.profile-name-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+}
+
+.profile-name {
+    font: bold 13px Tahoma, Verdana, Arial, sans-serif;
+    color: #000;
+}
+
+.pres-status {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    color: #444;
+}
+
+.pres-last {
+    font: 10px Tahoma, Verdana, Arial, sans-serif;
+    color: #808080;
+    min-height: 13px;
+}
+
+.profile-card-divider {
+    width: 1px;
+    background: #808080;
+    box-shadow: 1px 0 0 #fff;
+    margin: 6px 0;
+    align-self: stretch;
+}
+
+.profile-edit-btn {
+    margin-top: 4px;
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #404040;
+    border-bottom: 2px solid #404040;
+    padding: 3px 8px;
+    cursor: pointer;
+}
+
+.profile-edit-btn:active {
+    border-top: 2px solid #404040;
+    border-left: 2px solid #404040;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+}
+
+/* ============================================================
+   AVATAR EDITOR WINDOW
+   ============================================================ */
+.avatar-editor-body {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 6px;
+    max-height: calc(100vh - 120px);
+}
+
+.avatar-editor-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #808080;
+}
+
+.avatar-editor-preview {
+    flex-shrink: 0;
+    width: 90px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #d4d0c8;
+    border: 2px inset #808080;
+}
+
+.avatar-editor-meta {
+    font: bold 14px Tahoma, Verdana, Arial, sans-serif;
+    color: #000;
+}
+
+.avatar-editor-sections {
+    overflow-y: auto;
+    max-height: 310px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-right: 2px;
+}
+
+.avatar-trait-section {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.avatar-trait-label {
+    font: bold 10px Tahoma, Verdana, Arial, sans-serif;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.avatar-trait-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+.avatar-trait-btn {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #606060;
+    border-bottom: 2px solid #606060;
+    padding: 2px 7px;
+    cursor: pointer;
+    color: #000;
+}
+
+.avatar-trait-btn:active,
+.avatar-trait-btn.selected {
+    border-top: 2px solid #606060;
+    border-left: 2px solid #606060;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    background: #a0a0a0;
+}
+
+.avatar-swatch {
+    width: 20px;
+    height: 20px;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #606060;
+    border-bottom: 2px solid #606060;
+    cursor: pointer;
+    padding: 0;
+}
+
+.avatar-swatch:active,
+.avatar-swatch.selected {
+    border-top: 2px solid #606060;
+    border-left: 2px solid #606060;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    outline: 2px solid #000080;
+    outline-offset: 1px;
+}
+
+.avatar-editor-actions {
+    display: flex;
+    gap: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #808080;
+}
+
+/* Legacy class kept in case other parts of the page reference it */
+.pres-user { padding: 8px 0; }
 .pres-name {
     font: bold 12px Tahoma, Verdana, Arial, sans-serif;
     color: #000;
@@ -3596,20 +3780,6 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     gap: 4px;
     margin-bottom: 2px;
 }
-
-.pres-status {
-    font: 11px Tahoma, Verdana, Arial, sans-serif;
-    color: #444;
-    margin-left: 2px;
-}
-
-.pres-last {
-    font: 10px Tahoma, Verdana, Arial, sans-serif;
-    color: #808080;
-    margin-left: 2px;
-    min-height: 14px;
-}
-
 .pres-divider {
     height: 1px;
     background: #808080;

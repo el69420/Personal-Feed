@@ -1114,6 +1114,7 @@ function login(displayName, email) {
     applyIconPositions();
     setupTypingCleanup();
     setupPresence();
+    if (typeof window._profilesOnLogin === 'function') window._profilesOnLogin();
     startNowListening();
     showSection('feed');
     initAchievements();
@@ -7624,50 +7625,467 @@ const w95Apps = {};
   makeDraggable(winNew,  document.getElementById('w95-new-handle'),  'w95-win-new');
 })();
 
-// ===== Presence.exe Window =====
-(() => {
-  const win      = document.getElementById('w95-win-presence');
-  const minBtn   = document.getElementById('w95-presence-min');
-  const closeBtn = document.getElementById('w95-presence-close');
-  const handle   = document.getElementById('w95-presence-handle');
-  if (!win || !minBtn || !closeBtn || !handle) return;
+// ===== Profiles.exe – Avatar Engine =====
 
-  let btn = null;
+const PROF_SKIN = {
+    light:        '#FFE4C8',
+    medium_light: '#F5C8A0',
+    medium:       '#D4956A',
+    medium_dark:  '#A0603A',
+    dark:         '#5C3520',
+};
 
-  function showPresence() {
-    if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-presence', 'PRESENCE', () => {
-      if (win.classList.contains('is-hidden')) showPresence(); else hidePresence();
+const PROF_HAIR_COLOR = {
+    black:      '#1A1A1A',
+    dark_brown: '#2E1B0E',
+    brown:      '#6B3A2A',
+    blonde:     '#D4A840',
+    ginger:     '#B83A10',
+    maroon:     '#6E0B1A',
+    blue:       '#1A38B0',
+    purple:     '#6018A8',
+    pink:       '#D04090',
+    white:      '#EDEDEE',
+    grey:       '#8888A0',
+};
+
+const PROF_CLOTH_COLOR = {
+    grey:       '#7A7A7A',
+    navy:       '#1E3280',
+    black:      '#282828',
+    white:      '#F0F0F0',
+    teal:       '#1E7878',
+    maroon:     '#6E0B1A',
+    olive:      '#506028',
+    dusty_pink: '#B86070',
+};
+
+// All trait categories — add new options here freely, no other code changes needed
+const PROF_TRAIT_DEFS = [
+    { id: 'skin', label: 'Skin tone', type: 'swatch', options: [
+        { value: 'light',        color: '#FFE4C8', label: 'Light' },
+        { value: 'medium_light', color: '#F5C8A0', label: 'Medium light' },
+        { value: 'medium',       color: '#D4956A', label: 'Medium' },
+        { value: 'medium_dark',  color: '#A0603A', label: 'Medium dark' },
+        { value: 'dark',         color: '#5C3520', label: 'Dark' },
+    ]},
+    { id: 'hair', label: 'Hair style', type: 'chip', options: [
+        { value: 'none',          label: 'None' },
+        { value: 'short_straight',label: 'Short' },
+        { value: 'bob',           label: 'Bob' },
+        { value: 'long_curly',    label: 'Long curly' },
+        { value: 'shaggy',        label: 'Shaggy' },
+        { value: 'ponytail',      label: 'Ponytail' },
+        { value: 'bun',           label: 'Bun' },
+    ]},
+    { id: 'hair_color', label: 'Hair colour', type: 'swatch', options: [
+        { value: 'black',      color: '#1A1A1A', label: 'Black' },
+        { value: 'dark_brown', color: '#2E1B0E', label: 'Dark brown' },
+        { value: 'brown',      color: '#6B3A2A', label: 'Brown' },
+        { value: 'blonde',     color: '#D4A840', label: 'Blonde' },
+        { value: 'ginger',     color: '#B83A10', label: 'Ginger' },
+        { value: 'maroon',     color: '#6E0B1A', label: 'Maroon red' },
+        { value: 'blue',       color: '#1A38B0', label: 'Blue' },
+        { value: 'purple',     color: '#6018A8', label: 'Purple' },
+        { value: 'pink',       color: '#D04090', label: 'Pink' },
+        { value: 'white',      color: '#EDEDEE', label: 'White' },
+        { value: 'grey',       color: '#8888A0', label: 'Grey' },
+    ]},
+    { id: 'eyes', label: 'Eyes', type: 'chip', options: [
+        { value: 'normal', label: 'Normal' },
+        { value: 'closed', label: 'Closed' },
+        { value: 'sleepy', label: 'Sleepy' },
+    ]},
+    { id: 'glasses', label: 'Glasses', type: 'chip', options: [
+        { value: 'none',        label: 'None' },
+        { value: 'round',       label: 'Round' },
+        { value: 'rectangular', label: 'Rectangular' },
+    ]},
+    { id: 'face_pierce', label: 'Face piercings', type: 'multi', options: [
+        { value: 'septum',    label: 'Septum' },
+        { value: 'nostril_l', label: 'Left nostril' },
+        { value: 'nostril_r', label: 'Right nostril' },
+    ]},
+    { id: 'ear', label: 'Ear accessories', type: 'chip', options: [
+        { value: 'none',        label: 'None' },
+        { value: 'lobe_studs',  label: 'Lobe studs' },
+        { value: 'stretchers',  label: 'Stretchers' },
+        { value: 'hoops',       label: 'Hoops' },
+        { value: 'studs_hoops', label: 'Studs + Hoops' },
+    ]},
+    { id: 'clothing', label: 'Top', type: 'chip', options: [
+        { value: 'hoodie',  label: 'Hoodie' },
+        { value: 'tshirt',  label: 'T-shirt' },
+        { value: 'tank',    label: 'Tank' },
+        { value: 'sweater', label: 'Sweater' },
+    ]},
+    { id: 'clothing_color', label: 'Top colour', type: 'swatch', options: [
+        { value: 'grey',       color: '#7A7A7A', label: 'Grey' },
+        { value: 'navy',       color: '#1E3280', label: 'Navy' },
+        { value: 'black',      color: '#282828', label: 'Black' },
+        { value: 'white',      color: '#F0F0F0', label: 'White' },
+        { value: 'teal',       color: '#1E7878', label: 'Teal' },
+        { value: 'maroon',     color: '#6E0B1A', label: 'Maroon' },
+        { value: 'olive',      color: '#506028', label: 'Olive' },
+        { value: 'dusty_pink', color: '#B86070', label: 'Dusty pink' },
+    ]},
+];
+
+// User defaults — reflect real traits for El and Tero
+const PROF_DEFAULTS = {
+    El:   { skin: 'light',        hair: 'shaggy',     hair_color: 'maroon',     eyes: 'normal', glasses: 'none',        face_pierce: ['septum'], ear: 'studs_hoops', clothing: 'hoodie',  clothing_color: 'navy' },
+    Tero: { skin: 'medium_light', hair: 'long_curly', hair_color: 'dark_brown', eyes: 'normal', glasses: 'none',        face_pierce: [],         ear: 'none',        clothing: 'tshirt',  clothing_color: 'teal' },
+};
+
+function _profDarken(hex, amt) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    const r = Math.max(0, Math.round(((n >> 16) & 0xff) * (1 - amt)));
+    const g = Math.max(0, Math.round(((n >>  8) & 0xff) * (1 - amt)));
+    const b = Math.max(0, Math.round(( n        & 0xff) * (1 - amt)));
+    return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+
+function _profAvatarHairBack(style, H, HD, out) {
+    if (style === 'long_curly') {
+        out.push(`<path d="M28 54 Q16 70 17 88 Q20 96 26 94 Q30 84 28 68 Q30 58 32 54Z" fill="${H}"/>`);
+        out.push(`<path d="M72 54 Q84 70 83 88 Q80 96 74 94 Q70 84 72 68 Q70 58 68 54Z" fill="${H}"/>`);
+    } else if (style === 'shaggy') {
+        out.push(`<path d="M28 52 Q22 62 23 76 Q26 84 30 80 Q33 70 31 60 Q31 54 28 52Z" fill="${H}"/>`);
+        out.push(`<path d="M72 52 Q78 62 77 76 Q74 84 70 80 Q67 70 69 60 Q69 54 72 52Z" fill="${H}"/>`);
+    } else if (style === 'ponytail') {
+        out.push(`<path d="M53 22 Q58 32 60 48 Q62 64 63 78 Q64 88 60 90 Q56 92 54 84 Q52 70 50 56 Q50 38 50 22 Q51 20 53 22Z" fill="${H}"/>`);
+    }
+}
+
+function _profAvatarHairFront(style, H, HD, out) {
+    if (style === 'none') return;
+    const shapes = {
+        short_straight: `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q66 44 50 43 Q34 44 28 50Z" fill="${H}"/>`,
+        bob:            `<path d="M27 52 Q27 18 50 16 Q73 18 73 52 Q73 64 68 70 Q58 74 50 74 Q42 74 32 70 Q27 64 27 52Z" fill="${H}"/>`,
+        long_curly:     `<path d="M28 52 Q28 18 50 16 Q72 18 72 52 Q68 46 62 40 Q56 24 50 18 Q44 24 38 40 Q32 46 28 52Z" fill="${H}"/>
+                         <path d="M28 54 Q23 58 24 66 Q26 72 28 66 Q29 60 28 54Z" fill="${H}"/>
+                         <path d="M72 54 Q77 58 76 66 Q74 72 72 66 Q71 60 72 54Z" fill="${H}"/>
+                         <path d="M24 68 Q20 74 22 80 Q24 84 26 80 Q27 74 24 68Z" fill="${H}"/>
+                         <path d="M76 68 Q80 74 78 80 Q76 84 74 80 Q73 74 76 68Z" fill="${H}"/>`,
+        shaggy:         `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q68 44 62 40 Q56 36 50 34 Q44 36 38 40 Q32 44 28 50Z" fill="${H}"/>
+                         <path d="M28 50 Q23 44 22 50 Q21 56 24 58 Q26 58 27 54Z" fill="${H}"/>
+                         <path d="M72 50 Q77 44 78 50 Q79 56 76 58 Q74 58 73 54Z" fill="${H}"/>
+                         <path d="M34 18 Q30 12 26 16 Q24 20 28 22 Q32 22 34 18Z" fill="${H}"/>
+                         <path d="M50 14 Q48 8 50 6 Q52 8 50 14Z" fill="${H}"/>
+                         <path d="M66 18 Q70 12 74 16 Q76 20 72 22 Q68 22 66 18Z" fill="${H}"/>`,
+        ponytail:       `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q65 42 50 40 Q35 42 28 50Z" fill="${H}"/>
+                         <path d="M46 17 Q50 14 54 17 Q54 24 50 26 Q46 24 46 17Z" fill="${HD}"/>`,
+        bun:            `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q65 42 50 40 Q35 42 28 50Z" fill="${H}"/>
+                         <ellipse cx="50" cy="12" rx="10" ry="9" fill="${H}"/>
+                         <ellipse cx="50" cy="12" rx="6" ry="5" fill="${HD}"/>`,
+    };
+    if (shapes[style]) out.push(shapes[style]);
+}
+
+function _profAvatarBody(clothing, C, CS, skin, out) {
+    out.push(`<rect x="44" y="66" width="12" height="9" fill="${skin}" rx="2"/>`);
+    const shapes = {
+        hoodie:  `<path d="M26 76 Q18 80 14 100 L86 100 Q82 80 74 76 Q64 72 56 74 Q50 76 44 74 Q36 72 26 76Z" fill="${C}"/>
+                  <path d="M44 74 Q50 72 56 74 L57 80 Q50 82 43 80Z" fill="${CS}"/>`,
+        tshirt:  `<path d="M30 75 Q18 72 14 84 L20 90 Q28 80 32 80 L32 100 L68 100 L68 80 Q72 80 80 90 L86 84 Q82 72 70 75 Q62 72 50 73 Q38 72 30 75Z" fill="${C}"/>`,
+        tank:    `<path d="M36 76 L36 100 L64 100 L64 76 Q56 73 50 74 Q44 73 36 76Z" fill="${C}"/>`,
+        sweater: `<path d="M24 77 Q16 82 14 100 L86 100 Q84 82 76 77 Q64 73 50 74 Q36 73 24 77Z" fill="${C}"/>
+                  <path d="M44 74 Q50 72 56 74 L56 78 Q50 80 44 78Z" fill="${CS}"/>`,
+    };
+    out.push(shapes[clothing] || shapes.tshirt);
+}
+
+function _profAvatarEars(skin, skinSh, earStyle, out) {
+    out.push(`<ellipse cx="27" cy="48" rx="5" ry="7" fill="${skin}"/>`);
+    out.push(`<ellipse cx="73" cy="48" rx="5" ry="7" fill="${skin}"/>`);
+    out.push(`<ellipse cx="27" cy="48" rx="3" ry="5" fill="${skinSh}" opacity="0.35"/>`);
+    out.push(`<ellipse cx="73" cy="48" rx="3" ry="5" fill="${skinSh}" opacity="0.35"/>`);
+    const M = '#C8C8C8', MD = '#909090';
+    if (earStyle === 'lobe_studs') {
+        out.push(`<circle cx="24" cy="50" r="1.6" fill="${M}" stroke="${MD}" stroke-width="0.5"/>`);
+        out.push(`<circle cx="76" cy="50" r="1.6" fill="${M}" stroke="${MD}" stroke-width="0.5"/>`);
+        out.push(`<circle cx="24" cy="54" r="2"   fill="${M}" stroke="${MD}" stroke-width="0.5"/>`);
+        out.push(`<circle cx="76" cy="54" r="2"   fill="${M}" stroke="${MD}" stroke-width="0.5"/>`);
+    } else if (earStyle === 'stretchers') {
+        out.push(`<circle cx="26" cy="51" r="4.5" fill="${MD}" stroke="${M}" stroke-width="1.2"/>`);
+        out.push(`<circle cx="74" cy="51" r="4.5" fill="${MD}" stroke="${M}" stroke-width="1.2"/>`);
+        out.push(`<circle cx="26" cy="51" r="2.2" fill="${skin}"/>`);
+        out.push(`<circle cx="74" cy="51" r="2.2" fill="${skin}"/>`);
+    } else if (earStyle === 'hoops') {
+        out.push(`<path d="M23 56 Q19 63 25 65 Q31 63 27 56" fill="none" stroke="${M}" stroke-width="1.6"/>`);
+        out.push(`<path d="M77 56 Q81 63 75 65 Q69 63 73 56" fill="none" stroke="${M}" stroke-width="1.6"/>`);
+    } else if (earStyle === 'studs_hoops') {
+        out.push(`<circle cx="24" cy="50" r="1.8" fill="${M}" stroke="${MD}" stroke-width="0.5"/>`);
+        out.push(`<circle cx="76" cy="50" r="1.8" fill="${M}" stroke="${MD}" stroke-width="0.5"/>`);
+        out.push(`<path d="M23 56 Q19 63 25 65 Q31 63 27 56" fill="none" stroke="${M}" stroke-width="1.6"/>`);
+        out.push(`<path d="M77 56 Q81 63 75 65 Q69 63 73 56" fill="none" stroke="${M}" stroke-width="1.6"/>`);
+    }
+}
+
+function _profAvatarEyes(style, out) {
+    const EW = '#FFFFFF', ED = '#303040';
+    if (style === 'closed') {
+        out.push(`<path d="M37 44 Q42 42 47 44" fill="none" stroke="${ED}" stroke-width="1.5" stroke-linecap="round"/>`);
+        out.push(`<path d="M53 44 Q58 42 63 44" fill="none" stroke="${ED}" stroke-width="1.5" stroke-linecap="round"/>`);
+    } else if (style === 'sleepy') {
+        out.push(`<ellipse cx="42" cy="46" rx="5" ry="4" fill="${EW}"/>`);
+        out.push(`<ellipse cx="58" cy="46" rx="5" ry="4" fill="${EW}"/>`);
+        out.push(`<circle cx="42" cy="47" r="2.5" fill="${ED}"/>`);
+        out.push(`<circle cx="58" cy="47" r="2.5" fill="${ED}"/>`);
+        out.push(`<path d="M37 46 Q42 42 47 46" fill="#D4B098"/>`);
+        out.push(`<path d="M53 46 Q58 42 63 46" fill="#D4B098"/>`);
+    } else { // normal
+        out.push(`<ellipse cx="42" cy="46" rx="5.5" ry="5.5" fill="${EW}"/>`);
+        out.push(`<ellipse cx="58" cy="46" rx="5.5" ry="5.5" fill="${EW}"/>`);
+        out.push(`<circle cx="42" cy="46.5" r="3.2" fill="#4060A0"/>`);
+        out.push(`<circle cx="58" cy="46.5" r="3.2" fill="#4060A0"/>`);
+        out.push(`<circle cx="42" cy="46.5" r="1.6" fill="${ED}"/>`);
+        out.push(`<circle cx="58" cy="46.5" r="1.6" fill="${ED}"/>`);
+        out.push(`<circle cx="43.2" cy="45.0" r="0.9" fill="${EW}"/>`);
+        out.push(`<circle cx="59.2" cy="45.0" r="0.9" fill="${EW}"/>`);
+        out.push(`<path d="M37 43 Q42 40 47 43" fill="none" stroke="${ED}" stroke-width="1.2" stroke-linecap="round"/>`);
+        out.push(`<path d="M53 43 Q58 40 63 43" fill="none" stroke="${ED}" stroke-width="1.2" stroke-linecap="round"/>`);
+    }
+}
+
+function _profAvatarFaceDetails(skin, skinSh, out) {
+    // Nose
+    out.push(`<circle cx="47" cy="54" r="1.3" fill="${skinSh}" opacity="0.55"/>`);
+    out.push(`<circle cx="53" cy="54" r="1.3" fill="${skinSh}" opacity="0.55"/>`);
+    // Mouth
+    out.push(`<path d="M43 60 Q50 65 57 60" fill="none" stroke="#B07868" stroke-width="1.5" stroke-linecap="round"/>`);
+    // Blush
+    out.push(`<ellipse cx="33" cy="54" rx="5.5" ry="3" fill="#FF9090" opacity="0.18"/>`);
+    out.push(`<ellipse cx="67" cy="54" rx="5.5" ry="3" fill="#FF9090" opacity="0.18"/>`);
+}
+
+function _profAvatarGlasses(style, out) {
+    const S = '#404040';
+    if (style === 'round') {
+        out.push(`<circle cx="42" cy="46" r="7.5" fill="none" stroke="${S}" stroke-width="1.5"/>`);
+        out.push(`<circle cx="58" cy="46" r="7.5" fill="none" stroke="${S}" stroke-width="1.5"/>`);
+        out.push(`<line x1="49.5" y1="46" x2="50.5" y2="46" stroke="${S}" stroke-width="1.2"/>`);
+        out.push(`<line x1="34.5" y1="43" x2="29"   y2="42" stroke="${S}" stroke-width="1.2"/>`);
+        out.push(`<line x1="65.5" y1="43" x2="71"   y2="42" stroke="${S}" stroke-width="1.2"/>`);
+    } else if (style === 'rectangular') {
+        out.push(`<rect x="34.5" y="42" width="15" height="9" rx="1.5" fill="none" stroke="${S}" stroke-width="1.5"/>`);
+        out.push(`<rect x="50.5" y="42" width="15" height="9" rx="1.5" fill="none" stroke="${S}" stroke-width="1.5"/>`);
+        out.push(`<line x1="49.5" y1="46" x2="50.5" y2="46" stroke="${S}" stroke-width="1.2"/>`);
+        out.push(`<line x1="34.5" y1="44" x2="29"   y2="42" stroke="${S}" stroke-width="1.2"/>`);
+        out.push(`<line x1="65.5" y1="44" x2="71"   y2="42" stroke="${S}" stroke-width="1.2"/>`);
+    }
+}
+
+function buildAvatarSVG(t) {
+    const skin   = PROF_SKIN[t.skin]              || PROF_SKIN.light;
+    const hairC  = PROF_HAIR_COLOR[t.hair_color]  || PROF_HAIR_COLOR.brown;
+    const clothC = PROF_CLOTH_COLOR[t.clothing_color] || PROF_CLOTH_COLOR.grey;
+    const skinSh = _profDarken(skin,   0.15);
+    const hairSh = _profDarken(hairC,  0.22);
+    const clothSh= _profDarken(clothC, 0.22);
+    const layers = [];
+
+    _profAvatarHairBack(t.hair, hairC, hairSh, layers);
+    _profAvatarBody(t.clothing, clothC, clothSh, skin, layers);
+    _profAvatarEars(skin, skinSh, t.ear, layers);
+    layers.push(`<ellipse cx="50" cy="46" rx="22" ry="24" fill="${skin}"/>`);
+    _profAvatarHairFront(t.hair, hairC, hairSh, layers);
+    _profAvatarEyes(t.eyes, layers);
+    _profAvatarFaceDetails(skin, skinSh, layers);
+    if (t.glasses && t.glasses !== 'none') _profAvatarGlasses(t.glasses, layers);
+
+    const fp = Array.isArray(t.face_pierce) ? t.face_pierce : [];
+    if (fp.includes('septum'))    layers.push(`<path d="M47 58 Q50 61.5 53 58" fill="none" stroke="#C4C4C4" stroke-width="1.8" stroke-linecap="round"/>`);
+    if (fp.includes('nostril_l')) layers.push(`<circle cx="44" cy="56.5" r="1.6" fill="none" stroke="#C4C4C4" stroke-width="1.2"/>`);
+    if (fp.includes('nostril_r')) layers.push(`<circle cx="56" cy="56.5" r="1.6" fill="none" stroke="#C4C4C4" stroke-width="1.2"/>`);
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="90" height="90" aria-hidden="true">${layers.join('')}</svg>`;
+}
+
+function _profRandomTraits() {
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+    const draft = {};
+    PROF_TRAIT_DEFS.forEach(def => {
+        if (def.type === 'multi') {
+            // randomly include 0–2 options
+            const shuffled = [...def.options].sort(() => Math.random() - 0.5);
+            draft[def.id] = shuffled.slice(0, Math.floor(Math.random() * 3)).map(o => o.value);
+        } else {
+            draft[def.id] = pick(def.options).value;
+        }
     });
-    win.classList.remove('is-hidden');
-    w95Mgr.focusWindow('w95-win-presence');
-    localStorage.setItem('w95_presence_open', '1');
-  }
+    return draft;
+}
 
-  function hidePresence() {
-    win.classList.add('is-hidden');
-    if (w95Mgr.isActiveWin('w95-win-presence')) w95Mgr.focusWindow(null);
-    localStorage.setItem('w95_presence_open', '0');
-  }
+function _profRenderEditorSections(draft) {
+    return PROF_TRAIT_DEFS.map(def => {
+        const opts = def.options.map(opt => {
+            const sel = def.type === 'multi'
+                ? (Array.isArray(draft[def.id]) && draft[def.id].includes(opt.value))
+                : draft[def.id] === opt.value;
+            if (def.type === 'swatch') {
+                return `<button class="avatar-swatch${sel ? ' selected' : ''}" title="${opt.label}" style="background:${opt.color}" onclick="pfAvatarPick('${def.id}','${opt.value}',false)" type="button"></button>`;
+            }
+            const multi = def.type === 'multi';
+            return `<button class="avatar-trait-btn${sel ? ' selected' : ''}" onclick="pfAvatarPick('${def.id}','${opt.value}',${multi})" type="button">${opt.label}</button>`;
+        }).join('');
+        return `<div class="avatar-trait-section"><span class="avatar-trait-label">${def.label}</span><div class="avatar-trait-options">${opts}</div></div>`;
+    }).join('');
+}
 
-  function closePresence() {
-    win.classList.add('is-hidden');
-    if (w95Mgr.isActiveWin('w95-win-presence')) w95Mgr.focusWindow(null);
-    localStorage.setItem('w95_presence_open', '0');
-    if (btn) { btn.remove(); btn = null; }
-  }
+// ===== Profiles.exe Window =====
+(() => {
+    const win      = document.getElementById('w95-win-profiles');
+    const minBtn   = document.getElementById('w95-profiles-min');
+    const closeBtn = document.getElementById('w95-profiles-close');
+    const handle   = document.getElementById('w95-profiles-handle');
+    const edWin    = document.getElementById('w95-win-avatar-editor');
+    const edHandle = document.getElementById('w95-avatar-editor-handle');
+    const edClose  = document.getElementById('w95-avatar-editor-close');
+    if (!win || !minBtn || !closeBtn || !handle) return;
 
-  minBtn.onclick   = (e) => { e.stopPropagation(); hidePresence(); };
-  closeBtn.onclick = (e) => { e.stopPropagation(); closePresence(); };
+    const USERS = ['El', 'Tero'];
+    let btn = null;
+    const avatarData = { El: null, Tero: null };
+    let editorUser  = null;
+    let editorDraft = null;
 
-  win.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-presence'));
+    // ---- Window management ----
+    function showProfiles() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-profiles', 'PROFILES', () => {
+            if (win.classList.contains('is-hidden')) showProfiles(); else hideProfiles();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-profiles');
+        localStorage.setItem('w95_profiles_open', '1');
+        _updateEditButtons();
+    }
 
-  w95Apps['presence'] = { open: () => {
-    if (win.classList.contains('is-hidden')) showPresence(); else w95Mgr.focusWindow('w95-win-presence');
-  }};
+    function hideProfiles() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-profiles')) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_profiles_open', '0');
+    }
 
-  if (localStorage.getItem('w95_presence_open') === '1') showPresence();
+    function closeProfiles() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-profiles')) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_profiles_open', '0');
+        if (btn) { btn.remove(); btn = null; }
+    }
 
-  makeDraggable(win, handle, 'w95-win-presence');
+    function _updateEditButtons() {
+        USERS.forEach(u => {
+            const b = document.getElementById(`profile-edit-btn-${u}`);
+            if (!b) return;
+            if (u === currentUser) b.classList.remove('is-hidden');
+            else b.classList.add('is-hidden');
+        });
+    }
+
+    // ---- Avatar rendering ----
+    function _getTraits(user) {
+        return Object.assign({}, PROF_DEFAULTS[user] || PROF_DEFAULTS.El, avatarData[user] || {});
+    }
+
+    function _renderAllAvatars() {
+        USERS.forEach(u => {
+            const el = document.getElementById(`profile-avatar-${u}`);
+            if (el) el.innerHTML = buildAvatarSVG(_getTraits(u));
+        });
+    }
+
+    // ---- Firebase: load saved avatars ----
+    onValue(ref(database, 'profiles'), snap => {
+        const data = snap.val() || {};
+        USERS.forEach(u => { avatarData[u] = data[u]?.avatar || null; });
+        _renderAllAvatars();
+    });
+
+    // ---- Avatar editor ----
+    function _openEditor(user) {
+        if (!currentUser || user !== currentUser) return;
+        editorUser  = user;
+        editorDraft = Object.assign({}, _getTraits(user));
+        _refreshEditor();
+        edWin.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-avatar-editor');
+    }
+
+    function _closeEditor() {
+        edWin.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-avatar-editor')) w95Mgr.focusWindow(null);
+        editorUser  = null;
+        editorDraft = null;
+    }
+
+    function _refreshEditor() {
+        const prev = document.getElementById('avatar-editor-preview');
+        const secs = document.getElementById('avatar-editor-sections');
+        const meta = document.getElementById('avatar-editor-meta');
+        if (prev) prev.innerHTML = buildAvatarSVG(editorDraft);
+        if (secs) secs.innerHTML = _profRenderEditorSections(editorDraft);
+        if (meta) meta.textContent = editorUser || '';
+    }
+
+    function _pickTrait(traitId, value, multi) {
+        if (!editorDraft) return;
+        if (multi) {
+            const arr = Array.isArray(editorDraft[traitId]) ? [...editorDraft[traitId]] : [];
+            const idx = arr.indexOf(value);
+            if (idx >= 0) arr.splice(idx, 1); else arr.push(value);
+            editorDraft[traitId] = arr;
+        } else {
+            editorDraft[traitId] = value;
+        }
+        _refreshEditor();
+    }
+
+    async function _saveAvatar() {
+        if (!editorUser || !editorDraft) return;
+        try {
+            await set(ref(database, `profiles/${editorUser}/avatar`), editorDraft);
+            _closeEditor();
+            showToast('Avatar saved!');
+        } catch (e) {
+            showToast('Save failed — try again.');
+        }
+    }
+
+    function _randomiseAvatar() {
+        editorDraft = _profRandomTraits();
+        _refreshEditor();
+    }
+
+    // ---- Event bindings ----
+    minBtn.onclick   = (e) => { e.stopPropagation(); hideProfiles(); };
+    closeBtn.onclick = (e) => { e.stopPropagation(); closeProfiles(); };
+    win.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-profiles'));
+
+    if (edClose) edClose.onclick = (e) => { e.stopPropagation(); _closeEditor(); };
+    if (edWin)   edWin.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-avatar-editor'));
+
+    const saveBtn = document.getElementById('avatar-save-btn');
+    const randBtn = document.getElementById('avatar-randomise-btn');
+    if (saveBtn) saveBtn.onclick = _saveAvatar;
+    if (randBtn) randBtn.onclick = _randomiseAvatar;
+
+    // ---- App registry ----
+    w95Apps['profiles'] = { open: () => {
+        if (win.classList.contains('is-hidden')) showProfiles(); else w95Mgr.focusWindow('w95-win-profiles');
+    }};
+
+    // ---- Expose globals needed by inline onclick handlers ----
+    window.openAvatarEditor = _openEditor;
+    window.pfAvatarPick     = _pickTrait;
+
+    // ---- Called after login to show the correct edit button ----
+    window._profilesOnLogin = _updateEditButtons;
+
+    makeDraggable(win, handle, 'w95-win-profiles');
+    if (edWin && edHandle) makeDraggable(edWin, edHandle, 'w95-win-avatar-editor');
+
+    if (localStorage.getItem('w95_profiles_open') === '1') showProfiles();
 })();
 
 // Shared drag helper used by window IIFEs and initPixelCat (must be module-level).
@@ -14940,7 +15358,7 @@ function initPixelCat() {
                     'Jukebox.exe':      { type: 'app', icon: '⚙️', size: '20 KB', date: '03/08/2024', app: 'jukebox' },
                     'Console.exe':      { type: 'app', icon: '⚙️', size: '8 KB',  date: '03/08/2024', app: 'console' },
                     'Stats.exe':        { type: 'app', icon: '⚙️', size: '16 KB', date: '03/08/2024', app: 'stats' },
-                    'Presence.exe':     { type: 'app', icon: '⚙️', size: '10 KB', date: '03/08/2024', app: 'presence' },
+                    'Profiles.exe':     { type: 'app', icon: '⚙️', size: '14 KB', date: '03/08/2024', app: 'profiles' },
                     'Achievements.exe': { type: 'app', icon: '⚙️', size: '14 KB', date: '03/08/2024', app: 'achievements' },
                     'Scrapbook.exe':    { type: 'app', icon: '⚙️', size: '11 KB', date: '03/08/2024', app: 'scrapbook' },
                 }},
