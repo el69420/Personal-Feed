@@ -7750,13 +7750,11 @@ function _profAvatarHairBack(style, H, HD, out) {
         // Full bob silhouette drawn behind the face so the face stays visible
         out.push(`<path d="M26 50 Q20 54 20 64 Q20 72 26 73 Q36 75 50 75 Q64 75 74 73 Q80 72 80 64 Q80 54 74 50 Q67 56 50 57 Q33 56 26 50Z" fill="${H}"/>`);
     } else if (style === 'long_curly') {
-        // Single connected back shape — outer edge sweeps wide, inner edge scoops
-        // under the face so it reads as one loose mass, not two pigtails
-        out.push(`<path d="M28 52 Q12 58 10 74 Q10 87 18 90 Q34 93 50 93 Q66 93 82 90 Q90 87 90 74 Q88 58 72 52 Q67 57 50 58 Q33 57 28 52Z" fill="${H}"/>`);
+        // Wide back blob with wavy bottom edge to suggest curl texture
+        out.push(`<path d="M28 52 Q12 56 10 70 Q9 81 15 87 Q20 91 26 88 Q29 92 35 90 Q40 93 46 91 Q48 94 50 93 Q52 94 54 91 Q60 93 65 90 Q71 92 74 88 Q80 91 85 87 Q91 81 90 70 Q88 56 72 52 Q67 57 50 58 Q33 57 28 52Z" fill="${H}"/>`);
     } else if (style === 'shaggy') {
-        // Short chin-length cut: moderate width (x=19-81), rounded bottom at y=76,
-        // inner scoop leaves the face clear. Much shorter and less extreme than long_curly.
-        out.push(`<path d="M28 52 Q19 55 18 63 Q18 72 24 74 Q35 76 50 76 Q65 76 76 74 Q82 72 82 63 Q81 55 72 52 Q67 57 50 58 Q33 57 28 52Z" fill="${H}"/>`);
+        // Chin-to-shoulder back with slightly uneven bottom
+        out.push(`<path d="M28 52 Q19 55 18 63 Q17 71 23 74 Q30 76 38 75 Q44 77 50 76 Q56 77 62 75 Q70 76 77 74 Q83 71 82 63 Q81 55 72 52 Q67 57 50 58 Q33 57 28 52Z" fill="${H}"/>`);
     } else if (style === 'ponytail') {
         out.push(`<path d="M53 22 Q58 32 60 48 Q62 64 63 78 Q64 88 60 90 Q56 92 54 84 Q52 70 50 56 Q50 38 50 22 Q51 20 53 22Z" fill="${H}"/>`);
     }
@@ -7768,13 +7766,15 @@ function _profAvatarHairFront(style, H, HD, out) {
         short_straight: `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q66 44 50 43 Q34 44 28 50Z" fill="${H}"/>`,
         bob:            `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q66 44 50 43 Q34 44 28 50Z" fill="${H}"/>`,
         long_curly:     `<path d="M28 52 Q28 18 50 16 Q72 18 72 52 Q66 46 50 44 Q34 46 28 52Z" fill="${H}"/>
-                         <path d="M28 52 Q22 55 22 61 Q23 67 27 63 Q28 58 28 52Z" fill="${H}"/>
-                         <path d="M72 52 Q78 55 78 61 Q77 67 73 63 Q72 58 72 52Z" fill="${H}"/>
-                         <path d="M26 63 Q20 70 22 76 Q24 79 27 76 Q27 69 26 63Z" fill="${H}"/>
-                         <path d="M74 63 Q80 70 78 76 Q76 79 73 76 Q73 69 74 63Z" fill="${H}"/>`,
-        shaggy:         `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q65 42 58 40 Q53 38 50 39 Q47 38 42 40 Q35 42 28 50Z" fill="${H}"/>
-                         <path d="M28 50 Q18 53 17 62 Q17 70 23 69 Q27 64 27 57 Q27 53 28 50Z" fill="${H}"/>
-                         <path d="M72 50 Q82 53 83 62 Q83 70 77 69 Q73 64 73 57 Q73 53 72 50Z" fill="${H}"/>`,
+                         <path d="M28 52 Q17 56 16 65 Q15 74 21 73 Q25 69 25 61 Q26 55 28 52Z" fill="${H}"/>
+                         <path d="M72 52 Q83 56 84 65 Q85 74 79 73 Q75 69 75 61 Q74 55 72 52Z" fill="${H}"/>
+                         <path d="M21 71 Q14 79 16 86 Q18 90 23 88 Q26 83 24 75 Q22 72 21 71Z" fill="${H}"/>
+                         <path d="M79 71 Q86 79 84 86 Q82 90 77 88 Q74 83 76 75 Q78 72 79 71Z" fill="${H}"/>`,
+        shaggy:         `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q66 40 60 36 Q55 33 50 35 Q45 33 40 36 Q34 40 28 50Z" fill="${H}"/>
+                         <path d="M28 50 Q17 52 16 63 Q16 72 22 71 Q26 67 26 59 Q27 53 28 50Z" fill="${H}"/>
+                         <path d="M72 50 Q83 52 84 63 Q84 72 78 71 Q74 67 74 59 Q73 53 72 50Z" fill="${H}"/>
+                         <path d="M22 68 Q15 74 17 80 Q19 84 23 82 Q26 78 24 72 Q23 69 22 68Z" fill="${H}"/>
+                         <path d="M78 68 Q85 74 83 80 Q81 84 77 82 Q74 78 76 72 Q77 69 78 68Z" fill="${H}"/>`,
         ponytail:       `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q65 42 50 40 Q35 42 28 50Z" fill="${H}"/>
                          <path d="M46 17 Q50 14 54 17 Q54 24 50 26 Q46 24 46 17Z" fill="${HD}"/>`,
         bun:            `<path d="M28 50 Q28 18 50 16 Q72 18 72 50 Q65 42 50 40 Q35 42 28 50Z" fill="${H}"/>
