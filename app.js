@@ -8892,8 +8892,8 @@ const REWARD_REGISTRY = [
       swatchCss: 'linear-gradient(to bottom right,#4a5568 0%,#6b7280 50%,#2d3748 100%)' },
 
     // ---- Screensavers ---- (swatchCss used in the picker thumbnail)
-    { id: 'ss_petals',    type: REWARD_TYPE_SCREENSAVER, name: 'Falling Petals',  description: 'Slow cascade of flower petals',            icon: '[ss]',
-      swatchCss: 'linear-gradient(135deg,#ffb7c5 0%,#ff8fa3 50%,#c47c8e 100%)' },
+    { id: 'ss_petals',    type: REWARD_TYPE_SCREENSAVER, name: 'Northern Lights', description: 'Ribbons of colour ripple across the night sky in a slow aurora dance', icon: '[ss]',
+      swatchCss: 'linear-gradient(to bottom,#000510 0%,#003825 40%,#002a3a 70%,#050515 100%)' },
     { id: 'ss_starfield', type: REWARD_TYPE_SCREENSAVER, name: 'Starfield',       description: 'Flying through a field of stars',          icon: '[ss]',
       swatchCss: 'radial-gradient(ellipse at 50% 50%,#1a1a4a 0%,#000018 100%)' },
     { id: 'ss_bubbles',   type: REWARD_TYPE_SCREENSAVER, name: 'Underwater World', description: 'Drift through a deep-sea scene with fish, swaying seaweed, and rising bubbles', icon: '[ss]',
@@ -14389,69 +14389,83 @@ function initPixelCat() {
         }
     }
 
-    // ---- Falling Petals ----
-    const PETAL_COUNT = 55;
-    let petals = [], petalFrame = 0;
+    // ---- Aurora Borealis (Northern Lights) ----
+    let auroraFrame = 0;
+    const AURORA = { bands: [], stars: [] };
 
-    function initPetals() {
+    function initAurora() {
         const W = canvas.width, H = canvas.height;
-        petalFrame = 0;
-        petals = Array.from({ length: PETAL_COUNT }, () => ({
+        auroraFrame = 0;
+        AURORA.bands = [
+            { hue: 145, speed: 0.0022, amp: 0.09, freq: 2.1, phase: 0.0,  yBase: 0.28, bw: 0.14, alpha: 0.42 },
+            { hue: 168, speed: 0.0017, amp: 0.07, freq: 1.7, phase: 1.2,  yBase: 0.36, bw: 0.10, alpha: 0.35 },
+            { hue: 190, speed: 0.0028, amp: 0.11, freq: 2.5, phase: 2.4,  yBase: 0.21, bw: 0.12, alpha: 0.28 },
+            { hue: 270, speed: 0.0013, amp: 0.06, freq: 1.3, phase: 3.6,  yBase: 0.42, bw: 0.09, alpha: 0.25 },
+            { hue: 120, speed: 0.0035, amp: 0.08, freq: 3.0, phase: 5.1,  yBase: 0.17, bw: 0.08, alpha: 0.20 },
+        ];
+        AURORA.stars = Array.from({ length: 120 }, () => ({
             x: Math.random() * W,
-            y: Math.random() * H,
-            size: 5 + Math.random() * 9,
-            speed: 0.4 + Math.random() * 1.2,
-            drift: (Math.random() - 0.5) * 0.6,
-            rot: Math.random() * Math.PI * 2,
-            rotSpeed: (Math.random() - 0.5) * 0.04,
-            swayAmp: 0.6 + Math.random() * 1.8,
-            swayFreq: 0.012 + Math.random() * 0.022,
-            swayPhase: Math.random() * Math.PI * 2,
-            alpha: 0.55 + Math.random() * 0.45,
-            hue: 330 + (Math.random() - 0.5) * 30,
-            sat: 55 + Math.random() * 30,
-            lit: 70 + Math.random() * 20,
+            y: Math.random() * H * 0.72,
+            r: 0.3 + Math.random() * 1.1,
+            a: 0.3 + Math.random() * 0.7,
+            twinkleOffset: Math.random() * Math.PI * 2,
         }));
     }
 
-    function _drawPetal(p) {
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = `hsl(${p.hue},${p.sat}%,${p.lit}%)`;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, p.size, p.size * 0.48, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // Subtle vein
-        ctx.strokeStyle = `hsla(${p.hue},${p.sat - 10}%,${p.lit - 20}%,0.4)`;
-        ctx.lineWidth = 0.7;
-        ctx.beginPath();
-        ctx.moveTo(-p.size * 0.8, 0);
-        ctx.lineTo(p.size * 0.8, 0);
-        ctx.stroke();
-        ctx.restore();
-    }
-
-    function drawPetals() {
+    function drawAurora() {
         if (!active) return;
         const W = canvas.width, H = canvas.height;
-        petalFrame++;
+        auroraFrame++;
+
+        // Deep night sky
         const bg = ctx.createLinearGradient(0, 0, 0, H);
-        bg.addColorStop(0,   '#120818');
-        bg.addColorStop(0.5, '#1e0a22');
-        bg.addColorStop(1,   '#120818');
+        bg.addColorStop(0,   '#000510');
+        bg.addColorStop(0.6, '#020a18');
+        bg.addColorStop(1,   '#050515');
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, W, H);
-        for (const p of petals) {
-            p.y += p.speed;
-            p.x += p.drift + Math.sin(petalFrame * p.swayFreq + p.swayPhase) * p.swayAmp;
-            p.rot += p.rotSpeed;
-            if (p.y - p.size > H) { p.y = -p.size * 2; p.x = Math.random() * W; }
-            if (p.x < -p.size * 2) p.x = W + p.size;
-            if (p.x > W + p.size * 2) p.x = -p.size;
-            _drawPetal(p);
+
+        // Twinkling stars
+        for (const s of AURORA.stars) {
+            const twinkle = 0.5 + 0.5 * Math.sin(auroraFrame * 0.03 + s.twinkleOffset);
+            ctx.globalAlpha = s.a * twinkle;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fill();
         }
+        ctx.globalAlpha = 1;
+
+        // Aurora bands — additive blending for a glowing effect
+        ctx.globalCompositeOperation = 'lighter';
+        for (const band of AURORA.bands) {
+            const t = auroraFrame * band.speed + band.phase;
+            const yCenter = band.yBase * H + Math.sin(t * 0.5) * H * 0.04;
+            const bH = band.bw * H;
+
+            ctx.beginPath();
+            ctx.moveTo(0, yCenter + bH);
+            for (let x = 0; x <= W + 5; x += 5) {
+                const wave = Math.sin(x / W * Math.PI * band.freq + t) * bH * 0.6
+                           + Math.sin(x / W * Math.PI * band.freq * 0.4 + t * 1.3) * bH * 0.2;
+                ctx.lineTo(x, yCenter - bH * 0.3 + wave);
+            }
+            for (let x = W; x >= -5; x -= 5) {
+                const wave = Math.sin(x / W * Math.PI * band.freq + t) * bH * 0.6
+                           + Math.sin(x / W * Math.PI * band.freq * 0.4 + t * 1.3) * bH * 0.2;
+                ctx.lineTo(x, yCenter + bH * 0.7 + wave);
+            }
+            ctx.closePath();
+
+            const grad = ctx.createLinearGradient(0, yCenter - bH, 0, yCenter + bH);
+            grad.addColorStop(0,    `hsla(${band.hue},100%,65%,0)`);
+            grad.addColorStop(0.35, `hsla(${band.hue},100%,65%,${band.alpha})`);
+            grad.addColorStop(0.65, `hsla(${band.hue},100%,65%,${band.alpha})`);
+            grad.addColorStop(1,    `hsla(${band.hue},100%,65%,0)`);
+            ctx.fillStyle = grad;
+            ctx.fill();
+        }
+        ctx.globalCompositeOperation = 'source-over';
     }
 
     // ---- Bouncing Logo ----
@@ -14598,7 +14612,7 @@ function initPixelCat() {
         canvas.height = overlay.offsetHeight || window.innerHeight;
         const type = getType();
         if (type === 'ss_bubbles' || type === 'underwater') initUnderwater();
-        else if (type === 'ss_petals') initPetals();
+        else if (type === 'ss_petals') initAurora();
         else if (type === 'ss_bouncing_logo') initBouncingLogo();
         else if (type === 'ss_feed_slideshow') initFeedSlideshow();
         else initStars();
@@ -14616,14 +14630,14 @@ function initPixelCat() {
         resizeCanvas();
         const type = getType();
         if (type === 'ss_bubbles' || type === 'underwater') currentDrawFn = drawUnderwater;
-        else if (type === 'ss_petals') currentDrawFn = drawPetals;
+        else if (type === 'ss_petals') currentDrawFn = drawAurora;
         else if (type === 'ss_bouncing_logo') currentDrawFn = drawBouncingLogo;
         else if (type === 'ss_feed_slideshow') currentDrawFn = drawFeedSlideshow;
         else currentDrawFn = drawStarfield;
         overlay.classList.remove('is-hidden');
         if (!rmq.matches) {
             ctx.fillStyle = (type === 'ss_bubbles' || type === 'underwater') ? '#001628'
-                          : type === 'ss_petals' ? '#120818'
+                          : type === 'ss_petals' ? '#000510'
                           : '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawFrame();
