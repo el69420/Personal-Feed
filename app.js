@@ -9655,7 +9655,7 @@ const REWARD_REGISTRY = [
       swatchCss: 'linear-gradient(to bottom, #000510 0%, #040e30 60%, #01081a 100%)' },
 
     // Screensavers
-    { id: 'ss_feed_slideshow',   type: REWARD_TYPE_SCREENSAVER, name: 'Feed Slideshow',   description: 'Your shared links drift past like memories on a slow carousel',
+    { id: 'ss_feed_slideshow',   type: REWARD_TYPE_SCREENSAVER, name: 'Album Covers',   description: 'Album art from the jukebox drifts past in a slow, endless parade',
       swatchCss: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' },
     { id: 'ss_bouncing_logo',    type: REWARD_TYPE_SCREENSAVER, name: 'Bouncing Logo',    description: 'The classic. It almost hit the corner. You were there',
       swatchCss: 'linear-gradient(135deg, #000 0%, #111 50%, #222 100%)' },
@@ -15897,99 +15897,126 @@ function initPixelCat() {
         ctx.fillText('Personal Feed', BL.x, BL.y);
     }
 
-    // ---- Feed Slideshow ----
-    const FS = { cards: [], frame: 0, spacing: 0 };
-    const FS_PALETTES = [
-        { bg: '#1a1a2e', border: '#e94560', text: '#eee' },
-        { bg: '#16213e', border: '#0f3460', text: '#dce' },
-        { bg: '#0f3460', border: '#533483', text: '#eef' },
-        { bg: '#1a2a1a', border: '#4caf50', text: '#dfd' },
-        { bg: '#2a1a1a', border: '#e57373', text: '#fee' },
-    ];
+    // ---- Album Covers Screensaver ----
+    const AC = { tiles: [], frame: 0 };
+    const AC_FALLBACK_COLORS = ['#1a1a2e','#16213e','#0f3460','#533483','#1a2a1a','#2a1a1a','#0d1b2a','#2a1a2a'];
 
-    function _makeFeedCards() {
-        // Collect real feed items from the DOM if available, otherwise use placeholders
-        const items = [];
-        document.querySelectorAll('.feed-item .post-text, .feed-card .post-text, .timeline-item .text').forEach(el => {
-            const t = (el.textContent || '').trim().slice(0, 72);
-            if (t.length > 8) items.push(t);
-        });
-        if (items.length < 3) {
-            items.push(
-                'Sharing something wonderful today…',
-                'A link worth revisiting',
-                'This made me think of you',
-                'Found this and had to share',
-                'Worth a slow read',
-                'Something interesting from the feed',
-            );
+    async function _fetchAndApplyAlbumCovers() {
+        const results = [];
+        for (const username of Object.values(LASTFM_USERS)) {
+            try {
+                const lastfmUrl = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(username)}&api_key=${LASTFM_API_KEY}&format=json&limit=10`;
+                const proxyUrl  = `https://api.allorigins.win/raw?url=${encodeURIComponent(lastfmUrl)}`;
+                const r = await fetch(proxyUrl, { cache: 'no-store' });
+                if (!r.ok) continue;
+                const json = await r.json();
+                const tracks = json.recenttracks?.track;
+                if (!tracks) continue;
+                for (const t of (Array.isArray(tracks) ? tracks : [tracks])) {
+                    const images = t.image || [];
+                    const imgUrl = images[images.length - 1]?.['#text'] || '';
+                    if (imgUrl) results.push({ track: t.name || '—', artist: t.artist?.['#text'] || '', image: imgUrl });
+                }
+            } catch { /* ignore */ }
         }
-        return items;
+        if (!results.length || !AC.tiles.length) return;
+        // Apply fetched data to existing tiles
+        AC.tiles.forEach((tile, i) => {
+            const td = results[i % results.length];
+            tile.track  = td.track;
+            tile.artist = td.artist;
+            if (td.image) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => { tile.img = img; };
+                img.src = td.image;
+            }
+        });
     }
 
-    function initFeedSlideshow() {
+    function initAlbumCovers() {
         const W = canvas.width, H = canvas.height;
-        FS.frame = 0;
-        const items = _makeFeedCards();
-        const cardH = 90, cardW = 260, rows = Math.ceil(H / (cardH + 24)) + 1;
-        FS.cards = [];
-        FS.spacing = cardW + 40;
-        const cols = Math.ceil(W / FS.spacing) + 3;
+        AC.frame = 0;
+        AC.tiles = [];
+        const coverSize = 120, textH = 38, vGap = 16, hGap = 16;
+        const tileH = coverSize + textH;
+        const spacing = coverSize + hGap;
+        const rows = Math.ceil(H / (tileH + vGap)) + 1;
+        const cols = Math.ceil(W / spacing) + 3;
+        let idx = 0;
         for (let row = 0; row < rows; row++) {
-            const pal = FS_PALETTES[row % FS_PALETTES.length];
-            const rowSpeed = 0.35 + (row % 3) * 0.15;
+            const rowSpeed = 0.28 + (row % 3) * 0.11;
             const dir = row % 2 === 0 ? 1 : -1;
             for (let col = 0; col < cols; col++) {
-                FS.cards.push({
-                    x: col * FS.spacing + (row % 2 === 0 ? 0 : FS.spacing * 0.5),
-                    y: row * (cardH + 28) + 20,
-                    w: cardW, h: cardH,
-                    speed: rowSpeed * dir,
-                    text: items[(row * cols + col) % items.length],
-                    pal,
+                AC.tiles.push({
+                    x:       col * spacing + (row % 2 === 0 ? 0 : spacing * 0.5),
+                    y:       row * (tileH + vGap) + 10,
+                    w:       coverSize,
+                    coverH:  coverSize,
+                    textH,
+                    speed:   rowSpeed * dir,
+                    spacing,
+                    track:   '♪',
+                    artist:  '',
+                    img:     null,
+                    color:   AC_FALLBACK_COLORS[idx++ % AC_FALLBACK_COLORS.length],
                 });
             }
         }
+        _fetchAndApplyAlbumCovers();
     }
 
-    function drawFeedSlideshow() {
+    function drawAlbumCovers() {
         if (!active) return;
-        const W = canvas.width;
-        FS.frame++;
+        const W = canvas.width, H = canvas.height;
+        AC.frame++;
         ctx.fillStyle = '#0d0d1a';
-        ctx.fillRect(0, 0, W, canvas.height);
+        ctx.fillRect(0, 0, W, H);
 
-        for (const c of FS.cards) {
-            c.x += c.speed;
-            const totalW = FS.spacing * Math.ceil(W / FS.spacing + 3);
-            if (c.speed > 0 && c.x > W + c.w + 20)  c.x -= totalW;
-            if (c.speed < 0 && c.x < -c.w - 20)      c.x += totalW;
+        for (const t of AC.tiles) {
+            t.x += t.speed;
+            const totalW = t.spacing * (Math.ceil(W / t.spacing) + 3);
+            if (t.speed > 0 && t.x > W + t.w + 20) t.x -= totalW;
+            if (t.speed < 0 && t.x < -t.w - 20)    t.x += totalW;
 
-            // Card shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.35)';
-            ctx.fillRect(c.x + 4, c.y + 4, c.w, c.h);
-            // Card background
-            ctx.fillStyle = c.pal.bg;
-            ctx.fillRect(c.x, c.y, c.w, c.h);
-            // Accent bar
-            ctx.fillStyle = c.pal.border;
-            ctx.fillRect(c.x, c.y, 4, c.h);
-            // Card text
-            ctx.fillStyle = c.pal.text;
-            ctx.font = '13px sans-serif';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-            const words = c.text.split(' ');
-            let line = '', lineY = c.y + 12;
-            for (const word of words) {
-                const test = line ? line + ' ' + word : word;
-                if (ctx.measureText(test).width > c.w - 24 && line) {
-                    ctx.fillText(line, c.x + 14, lineY);
-                    line = word; lineY += 18;
-                    if (lineY > c.y + c.h - 10) break;
-                } else { line = test; }
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.45)';
+            ctx.fillRect(t.x + 3, t.y + 3, t.w, t.coverH);
+
+            // Album cover image or fallback
+            if (t.img && t.img.complete && t.img.naturalWidth > 0) {
+                ctx.drawImage(t.img, t.x, t.y, t.w, t.coverH);
+            } else {
+                ctx.fillStyle = t.color;
+                ctx.fillRect(t.x, t.y, t.w, t.coverH);
+                ctx.fillStyle = 'rgba(255,255,255,0.12)';
+                ctx.font = '38px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('♪', t.x + t.w / 2, t.y + t.coverH / 2);
             }
-            if (line && lineY <= c.y + c.h - 10) ctx.fillText(line, c.x + 14, lineY);
+
+            // Label strip below cover
+            ctx.fillStyle = 'rgba(0,0,0,0.72)';
+            ctx.fillRect(t.x, t.y + t.coverH, t.w, t.textH);
+
+            // Track name
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            let track = t.track;
+            while (track.length > 1 && ctx.measureText(track).width > t.w - 8) track = track.slice(0, -1);
+            if (track !== t.track) track = track.slice(0, -1) + '…';
+            ctx.fillText(track, t.x + t.w / 2, t.y + t.coverH + 5);
+
+            // Artist name
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            ctx.font = '9px sans-serif';
+            let artist = t.artist;
+            while (artist.length > 1 && ctx.measureText(artist).width > t.w - 8) artist = artist.slice(0, -1);
+            if (artist !== t.artist) artist = artist.slice(0, -1) + '…';
+            ctx.fillText(artist, t.x + t.w / 2, t.y + t.coverH + 20);
         }
     }
 
@@ -16001,7 +16028,7 @@ function initPixelCat() {
         if (type === 'ss_bubbles' || type === 'underwater') initUnderwater();
         else if (type === 'ss_petals') initPetals();
         else if (type === 'ss_bouncing_logo') initBouncingLogo();
-        else if (type === 'ss_feed_slideshow') initFeedSlideshow();
+        else if (type === 'ss_feed_slideshow') initAlbumCovers();
         else initStars();
     }
 
@@ -16019,7 +16046,7 @@ function initPixelCat() {
         if (type === 'ss_bubbles' || type === 'underwater') currentDrawFn = drawUnderwater;
         else if (type === 'ss_petals') currentDrawFn = drawPetals;
         else if (type === 'ss_bouncing_logo') currentDrawFn = drawBouncingLogo;
-        else if (type === 'ss_feed_slideshow') currentDrawFn = drawFeedSlideshow;
+        else if (type === 'ss_feed_slideshow') currentDrawFn = drawAlbumCovers;
         else currentDrawFn = drawStarfield;
         overlay.classList.remove('is-hidden');
         if (!rmq.matches) {
