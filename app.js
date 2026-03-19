@@ -19,6 +19,7 @@ const categoriesRef     = ref(database, 'categories');
 const wishlistBoardsRef = ref(database, 'wishlistBoards');
 const wishlistItemsRef  = ref(database, 'wishlistItems');
 const foodDiaryRef      = ref(database, 'foodDiary');
+const painJournalRef    = ref(database, 'painJournal');
 
 const API_BASE = ''; // Set to the deployed origin (e.g. 'https://your-api.example.com') for GitHub Pages use
 
@@ -8155,6 +8156,11 @@ function _profRenderEditorSections(draft) {
             } else {
                 await remove(ref(database, `profiles/${user}/pain`));
             }
+            // Log every change (set or clear) to the pain journal
+            await push(ref(painJournalRef, user), {
+                level: newLevel,   // null = cleared
+                ts: serverTimestamp(),
+            });
             _closePainPicker();
             showToast(newLevel !== null ? 'Pain level updated!' : 'Pain level cleared!');
         } catch (e) {
@@ -11329,6 +11335,7 @@ const SHORTCUTABLE_APPS = [
     { app: 'stats',        icon: '📊', name: 'Stats.exe' },
     { app: 'achievements', icon: '🏆', name: 'Achievements.exe' },
     { app: 'myComputer',   icon: '🖥️', name: 'My Computer' },
+    { app: 'painjournal',  icon: '🩹', name: 'Pain Journal.exe' },
 ];
 
 // Shows a picker dialog for selecting an app to create a shortcut to
@@ -17511,4 +17518,123 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
     });
 
     window._animWallpaper = { start, stop };
+})();
+
+// ===== Pain Journal.exe =====
+(() => {
+    const win      = document.getElementById('w95-win-painjournal');
+    const handle   = document.getElementById('w95-painjournal-handle');
+    const minBtn   = document.getElementById('w95-painjournal-min');
+    const maxBtn   = document.getElementById('w95-painjournal-max');
+    const closeBtn = document.getElementById('w95-painjournal-close');
+    const body     = document.getElementById('w95-painjournal-body');
+    if (!win || !handle || !body) return;
+
+    const WIN_ID = 'w95-win-painjournal';
+    let btn      = null;
+    let entries  = {};   // { El: { pushId: { level, ts }, … }, Tero: { … } }
+
+    // ---- Rendering ----
+    function _painLabel(lvl) {
+        if (lvl === null || lvl === undefined) return 'Cleared';
+        if (lvl === 0) return '0 — None';
+        if (lvl <= 3)  return `${lvl} — Mild`;
+        if (lvl <= 6)  return `${lvl} — Moderate`;
+        if (lvl <= 9)  return `${lvl} — Severe`;
+        return `${lvl} — Worst`;
+    }
+
+    function _painClass(lvl) {
+        if (lvl === null || lvl === undefined || lvl === 0) return 'pj-level-none';
+        if (lvl <= 3) return 'pj-level-low';
+        if (lvl <= 6) return 'pj-level-mid';
+        return 'pj-level-high';
+    }
+
+    function _fmtDate(ts) {
+        if (!ts) return '—';
+        const d = new Date(ts);
+        const days  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${hh}:${mm}`;
+    }
+
+    function render() {
+        // Flatten all entries from both users into a single sorted list
+        const rows = [];
+        for (const user of Object.keys(entries)) {
+            for (const [id, e] of Object.entries(entries[user] || {})) {
+                rows.push({ id, user, level: e.level ?? null, ts: e.ts || 0 });
+            }
+        }
+        rows.sort((a, b) => b.ts - a.ts);
+
+        if (rows.length === 0) {
+            body.innerHTML = '<div class="pj-empty">No entries yet.</div>';
+            return;
+        }
+
+        body.innerHTML = `
+            <div class="pj-table-wrap">
+                <table class="pj-table">
+                    <thead>
+                        <tr>
+                            <th>Date &amp; Time</th>
+                            <th>Who</th>
+                            <th>Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(r => `
+                            <tr>
+                                <td class="pj-ts">${_fmtDate(r.ts)}</td>
+                                <td class="pj-user">${r.user}</td>
+                                <td class="pj-level ${_painClass(r.level)}">${_painLabel(r.level)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
+    // ---- Window management ----
+    function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn(WIN_ID, 'PAIN JOURNAL', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow(WIN_ID);
+        render();
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
+    }
+
+    // ---- Firebase listener ----
+    onValue(painJournalRef, snap => {
+        entries = snap.val() || {};
+        render();
+    });
+
+    // ---- Event bindings ----
+    if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
+    if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, WIN_ID); };
+    if (closeBtn) closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (w95Mgr.isMaximised(WIN_ID)) w95Mgr.toggleMaximise(win, WIN_ID);
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
+        if (btn) { btn.remove(); btn = null; }
+    };
+    win.addEventListener('mousedown', () => w95Mgr.focusWindow(WIN_ID));
+
+    makeDraggable(win, handle, WIN_ID);
+
+    w95Apps['painjournal'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow(WIN_ID);
+    }};
 })();

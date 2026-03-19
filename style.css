@@ -3682,6 +3682,66 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     background: #a8a8a8;
 }
 
+/* ============================================================
+   PAIN JOURNAL WINDOW
+   ============================================================ */
+.painjournal-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.pj-table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.pj-table {
+    width: 100%;
+    border-collapse: collapse;
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+}
+
+.pj-table thead tr {
+    background: #000080;
+    color: #fff;
+}
+
+.pj-table th {
+    text-align: left;
+    padding: 3px 6px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.pj-table td {
+    padding: 3px 6px;
+    border-bottom: 1px solid #d0d0d0;
+    white-space: nowrap;
+}
+
+.pj-table tbody tr:hover {
+    background: #e8e8ff;
+}
+
+.pj-ts   { color: #444; }
+.pj-user { font-weight: bold; }
+
+.pj-level       { font-weight: bold; }
+.pj-level-none  { color: #808080; font-weight: normal; }
+.pj-level-low   { color: #2a7a2a; }
+.pj-level-mid   { color: #9a6a00; }
+.pj-level-high  { color: #b00000; }
+
+.pj-empty {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    color: #808080;
+    padding: 16px;
+    text-align: center;
+}
+
 .mood-picker-win-body {
     display: flex;
     flex-direction: column;
