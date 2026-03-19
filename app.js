@@ -8018,20 +8018,39 @@ function _profRenderEditorSections(draft) {
         });
     }
 
+    const mpWin    = document.getElementById('w95-win-mood-picker');
+    const mpHandle = document.getElementById('w95-mood-picker-handle');
+    const mpClose  = document.getElementById('w95-mood-picker-close');
+    let   mpUser   = null;
+
     function _openMoodPicker(user) {
         if (!currentUser || user !== currentUser) return;
-        const picker = document.getElementById(`mood-picker-${user}`);
-        if (!picker) return;
-        if (!picker.classList.contains('is-hidden')) {
-            picker.classList.add('is-hidden');
-            return;
+        // Position the picker window just above the profiles window.
+        // Use a fixed height estimate (titlebar ~28px + 12 items ~26px each + padding).
+        const MP_HEIGHT_EST = 380;
+        const profWin = document.getElementById('w95-win-profiles');
+        if (profWin) {
+            const r = profWin.getBoundingClientRect();
+            mpWin.style.left = r.left + 'px';
+            mpWin.style.top  = Math.max(0, r.top - MP_HEIGHT_EST - 4) + 'px';
         }
-        picker.innerHTML = MOODS.map(m =>
-            `<button class="mood-btn${moodData[user] === m.id ? ' is-active' : ''}"
-                     onclick="pfSetMood('${user}','${m.id}')"
-                     type="button">${m.emoji} ${m.label}</button>`
-        ).join('');
-        picker.classList.remove('is-hidden');
+        mpUser = user;
+        const list = document.getElementById('mood-picker-list');
+        if (list) {
+            list.innerHTML = MOODS.map(m =>
+                `<button class="mood-btn${moodData[user] === m.id ? ' is-active' : ''}"
+                         onclick="pfSetMood('${user}','${m.id}')"
+                         type="button">${m.emoji} ${m.label}</button>`
+            ).join('');
+        }
+        mpWin.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-mood-picker');
+    }
+
+    function _closeMoodPicker() {
+        mpWin.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-mood-picker')) w95Mgr.focusWindow(null);
+        mpUser = null;
     }
 
     async function _setMood(user, moodId) {
@@ -8043,13 +8062,16 @@ function _profRenderEditorSections(draft) {
             } else {
                 await remove(ref(database, `profiles/${user}/mood`));
             }
-            const picker = document.getElementById(`mood-picker-${user}`);
-            if (picker) picker.classList.add('is-hidden');
+            _closeMoodPicker();
             showToast(newMood ? 'Mood updated!' : 'Mood cleared!');
         } catch (e) {
             showToast('Save failed — try again.');
         }
     }
+
+    if (mpClose) mpClose.onclick = (e) => { e.stopPropagation(); _closeMoodPicker(); };
+    if (mpWin)   mpWin.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-mood-picker'));
+    if (mpWin && mpHandle) makeDraggable(mpWin, mpHandle, 'w95-win-mood-picker');
 
     // ---- Firebase: load saved avatars and moods ----
     onValue(ref(database, 'profiles'), snap => {

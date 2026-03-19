@@ -1434,7 +1434,6 @@
       <div class="pres-last" id="pres-last-El"></div>
       <button class="profile-edit-btn is-hidden" id="profile-edit-btn-El" onclick="openAvatarEditor('El')" type="button">Edit Avatar</button>
       <button class="profile-edit-btn is-hidden" id="profile-mood-btn-El" onclick="openMoodPicker('El')" type="button">Set Mood</button>
-      <div class="mood-picker is-hidden" id="mood-picker-El"></div>
     </div>
     <div class="profile-card-divider"></div>
     <div class="profile-card" id="profile-card-Tero">
@@ -1448,9 +1447,19 @@
       <div class="pres-last" id="pres-last-Tero"></div>
       <button class="profile-edit-btn is-hidden" id="profile-edit-btn-Tero" onclick="openAvatarEditor('Tero')" type="button">Edit Avatar</button>
       <button class="profile-edit-btn is-hidden" id="profile-mood-btn-Tero" onclick="openMoodPicker('Tero')" type="button">Set Mood</button>
-      <div class="mood-picker is-hidden" id="mood-picker-Tero"></div>
     </div>
   </div>
+</div>
+
+<!-- Mood Picker window -->
+<div id="w95-win-mood-picker" class="w95-window is-hidden" style="left:120px; top:80px; width:180px;">
+  <div class="w95-titlebar" id="w95-mood-picker-handle">
+    <div class="w95-title">&#128522; Set Mood</div>
+    <div class="w95-controls">
+      <button class="w95-control w95-control-close" id="w95-mood-picker-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body mood-picker-win-body" id="mood-picker-list"></div>
 </div>
 
 <!-- Avatar Editor window -->
