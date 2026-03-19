@@ -12452,6 +12452,16 @@ async function loadUserWallpaper() {
     const CAT_ACTION_STAT     = { feed: 'hunger', water: 'thirst', yarn: 'play' };
     const CAT_DEFAULTS        = { catName: '', hunger: 75, thirst: 75, play: 75 };
 
+    // Colour palettes for the desktop cat sprite (fur + accent colours)
+    const CAT_COLOUR_PALETTES = [
+        { id: 'blue',   name: 'Blue-grey', fur: '#C0C2D8', accent: '#E8829A' },
+        { id: 'ginger', name: 'Ginger',    fur: '#E8A87C', accent: '#D4604A' },
+        { id: 'black',  name: 'Black',     fur: '#3A3A4A', accent: '#9E7AB0' },
+        { id: 'cream',  name: 'Cream',     fur: '#EDD9A8', accent: '#E8829A' },
+        { id: 'white',  name: 'White',     fur: '#ECECEC', accent: '#F0A0B0' },
+        { id: 'tabby',  name: 'Brown',     fur: '#B8956A', accent: '#C87A5A' },
+    ];
+
     function applyCatDecay(stored) {
         const hoursElapsed = (Date.now() - (stored.lastUpdated || Date.now())) / 3_600_000;
         const d = hoursElapsed * CAT_DECAY_PER_HOUR;
@@ -12474,6 +12484,7 @@ async function loadUserWallpaper() {
         loadCatStats();
         renderCatAccessories();
         renderCatBehaviours();
+        renderCatColours();
         // Desktop cat notices Cat.exe being opened and walks toward it
         window._catController?.onCatOpen();
         if (_wasHiddenCat) _trackWindowOpen('cat');
@@ -12647,6 +12658,38 @@ async function loadUserWallpaper() {
                     renderCatBehaviours();
                 });
             }
+            grid.appendChild(item);
+        });
+    }
+
+    // ---- Render colour picker panel ----
+    function renderCatColours() {
+        const grid = document.getElementById('cat-colours-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        const selected = localStorage.getItem('catColour') || 'blue';
+        CAT_COLOUR_PALETTES.forEach(p => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'cat-colour-swatch' + (selected === p.id ? ' active' : '');
+            item.title = p.name;
+            item.setAttribute('aria-label', p.name);
+
+            const dot = document.createElement('span');
+            dot.className = 'cat-colour-dot';
+            dot.style.background = p.fur;
+            dot.style.boxShadow  = 'inset -1px -1px 0 ' + p.accent;
+            item.appendChild(dot);
+
+            const nameEl = document.createElement('span');
+            nameEl.textContent = p.name;
+            item.appendChild(nameEl);
+
+            item.addEventListener('click', () => {
+                localStorage.setItem('catColour', p.id);
+                window._catController?.setCatColour(p.id);
+                renderCatColours();
+            });
             grid.appendChild(item);
         });
     }
@@ -12967,7 +13010,10 @@ function initPixelCat() {
     // Palette: 0 = transparent | 1 = dark outline | 2 = fur | 3 = pink (ear-inner / nose)
     const S   = 5;                            // CSS pixels per cat-pixel → 40 × 40 canvas
     const CW  = 8, CH = 8;
-    const CLR = [null, '#2C2C3E', '#C0C2D8', '#E8829A'];
+    // CLR is mutable so the user can change fur/accent colour at runtime
+    const _initPaletteId = localStorage.getItem('catColour') || 'blue';
+    const _initPalette   = CAT_COLOUR_PALETTES.find(p => p.id === _initPaletteId) || CAT_COLOUR_PALETTES[0];
+    let CLR = [null, '#2C2C3E', _initPalette.fur, _initPalette.accent];
 
     // Ear tips at outer cols 1 & 6 form triangle ears; pink at row 1 = inner ear.
     // Eyes: dark pixel at cols 2 & 5 in the eye row.
@@ -14399,6 +14445,13 @@ function initPixelCat() {
             }
             // Brief surprise expression before walking over
             surpriseEnd = performance.now() + 700;
+        },
+
+        // Update the cat's fur/accent colours to the palette matching id.
+        // The change takes effect on the next animation frame automatically.
+        setCatColour(id) {
+            const p = CAT_COLOUR_PALETTES.find(q => q.id === id) || CAT_COLOUR_PALETTES[0];
+            CLR = [null, '#2C2C3E', p.fur, p.accent];
         },
     };
 }
