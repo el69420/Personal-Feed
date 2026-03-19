@@ -8201,6 +8201,47 @@ body.dark-mode .cat-unlock-item:hover { background: #333; }
 body.dark-mode .cat-unlock-item--locked { background: #1a1a1a; color: #888; }
 body.dark-mode .cat-unlock-item--locked:hover { background: #1a1a1a; }
 
+/* --- Cat colour picker --- */
+.cat-colours-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cat-colour-swatch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: 10px Tahoma, Verdana, Arial, sans-serif;
+  padding: 2px 6px 2px 4px;
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #808080;
+  border-bottom: 1px solid #808080;
+  background: #d4d0c8;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cat-colour-swatch:hover { background: #e0dcd4; }
+.cat-colour-swatch.active {
+  background: #000080;
+  color: #fff;
+  border-top: 1px solid #808080;
+  border-left: 1px solid #808080;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+}
+.cat-colour-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid #808080;
+  flex-shrink: 0;
+}
+body.dark-mode .cat-colour-swatch { background: #2a2a2a; color: #ccc; border-color: #555 #333 #333 #555; }
+body.dark-mode .cat-colour-swatch:hover { background: #333; }
+body.dark-mode .cat-colour-swatch.active { background: #000080; color: #fff; border-color: #555 #777 #777 #555; }
+
 /* ===== W95 Window Chrome — Dark Mode =====
    Darkens the Win95 chrome (window frames, titlebar, taskbar, menus, etc.)
    when dark mode is active but no desktop theme overrides these elements.
