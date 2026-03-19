@@ -9641,7 +9641,7 @@ const REWARD_REGISTRY = [
       css: 'linear-gradient(to bottom, #4a9fd6 0%, #87ceeb 100%)',
       swatchCss: 'linear-gradient(to bottom, #4a9fd6 0%, #f7a040 45%, #000c28 100%)' },
 
-    { id: 'wp_cat_monitor',       type: REWARD_TYPE_WALLPAPER, name: 'Cat Monitor',         description: 'A CRT screen in a dark room, watched over by a glowing-eyed cat',
+    { id: 'wp_cat_monitor',       type: REWARD_TYPE_WALLPAPER, name: 'Phosphor Glow',        description: 'The green glow of a CRT monitor humming quietly in a dark room',
       css: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3300 0%, #0a1800 50%, #030800 100%)',
       swatchCss: 'radial-gradient(ellipse 60% 40% at 50% 52%, #1a3300 0%, #030800 100%)' },
     { id: 'wp_infinite_desktop',  type: REWARD_TYPE_WALLPAPER, name: 'Infinite Desktop',    description: 'A vanishing-point grid stretching out forever into a violet void',
