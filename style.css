@@ -11205,6 +11205,63 @@ body[data-theme] .sys-props-tab--active {
   margin-right: 2px;
 }
 
+.fd-goals-section {
+  border-top: 1px solid var(--card-border, rgba(0,0,0,0.1));
+  padding: 8px 0 4px;
+  margin-top: 2px;
+}
+.fd-goals-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary, #555);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.fd-goal-row {
+  display: grid;
+  grid-template-columns: 76px 1fr 36px auto;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+.fd-goal-label {
+  font-size: 10px;
+  color: var(--text-secondary, #555);
+  white-space: nowrap;
+}
+.fd-goal-max {
+  opacity: 0.65;
+}
+.fd-goal-bar-wrap {
+  height: 5px;
+  background: var(--card-border, rgba(0,0,0,0.12));
+  border-radius: 3px;
+  overflow: hidden;
+}
+.fd-goal-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.fd-goal-bar-ok     { background: var(--accent, #6366f1); }
+.fd-goal-bar-warn   { background: #dd6b20; }
+.fd-goal-bar-danger { background: #e53e3e; }
+.fd-goal-pct {
+  font-size: 10px;
+  color: var(--text-secondary, #555);
+  text-align: right;
+}
+.fd-goal-rem {
+  font-size: 10px;
+  color: var(--text-secondary, #555);
+  white-space: nowrap;
+}
+.fd-goal-over {
+  color: #e53e3e;
+  font-weight: 600;
+}
+
 /* Dark mode */
 body.dark-mode .fd-status-error {
   background: rgba(200,30,30,0.15);

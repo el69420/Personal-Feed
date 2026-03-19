@@ -10642,6 +10642,14 @@ function renderAchievementsWindow() {
     let expandedDays = new Set();
 
     const MEAL_ICONS = { breakfast: '&#127749;', lunch: '&#127822;', dinner: '&#127857;', snack: '&#127863;' };
+
+    const DAILY_GOALS = [
+        { key: 'calories',  label: 'Calories', goal: 2000, unit: 'kcal' },
+        { key: 'protein_g', label: 'Protein',  goal: 140,  unit: 'g' },
+        { key: 'carbs_g',   label: 'Carbs',    goal: 215,  unit: 'g' },
+        { key: 'fat_g',     label: 'Fat',      goal: 65,   unit: 'g' },
+        { key: 'sat_fat_g', label: 'Sat fat',  goal: 15,   unit: 'g', isMax: true },
+    ];
     // Field definitions shared by the new-entry form and inline edit form
     const NUT_FIELDS = [
         { key: 'calories',  newId: 'fd-nut-cal',  editId: 'fd-ei-cal',  label: 'Calories', step: '1',   ph: 'kcal' },
@@ -10782,6 +10790,31 @@ function renderAchievementsWindow() {
         return `<div class="fd-day-total"><span class="fd-day-total-label">Total</span> ${parts.join(' · ')}</div>`;
     }
 
+    function dayGoalProgressHtml(entries) {
+        const totals = calcDayTotals(entries);
+        const rows = DAILY_GOALS.map(g => {
+            const val  = totals[g.key] ?? 0;
+            const pct  = Math.round(val / g.goal * 100);
+            const barW = Math.min(100, pct);
+            const rem  = Math.round((g.goal - val) * 10) / 10;
+            const over = rem < 0;
+            const barCls = over ? (g.isMax ? 'fd-goal-bar-danger' : 'fd-goal-bar-warn') : 'fd-goal-bar-ok';
+            const remStr = over
+                ? `${Math.abs(rem)}${g.unit} over${g.isMax ? ' limit' : ''}`
+                : `${rem}${g.unit} left`;
+            return `<div class="fd-goal-row">
+                <span class="fd-goal-label">${g.label}${g.isMax ? ' <span class="fd-goal-max">(max)</span>' : ''}</span>
+                <div class="fd-goal-bar-wrap"><div class="fd-goal-bar ${barCls}" style="width:${barW}%"></div></div>
+                <span class="fd-goal-pct">${pct}%</span>
+                <span class="fd-goal-rem${over ? ' fd-goal-over' : ''}">${remStr}</span>
+            </div>`;
+        });
+        return `<div class="fd-goals-section">
+            <div class="fd-goals-title">Daily progress</div>
+            ${rows.join('')}
+        </div>`;
+    }
+
     // ---- Entry card ----
     function renderEntryCard(entry, id) {
         const timeStr   = new Date(entry.eatenAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -10837,13 +10870,15 @@ function renderAchievementsWindow() {
         const todayPairs = mine.filter(([, e]) => new Date(e.eatenAt).toLocaleDateString('en-CA') === todayKey);
         const pastPairs  = mine.filter(([, e]) => new Date(e.eatenAt).toLocaleDateString('en-CA') !== todayKey);
 
+        const todayEntries = todayPairs.map(([, e]) => e);
         let html = `<div class="fd-day-header">Today</div>`;
         if (todayPairs.length) {
             html += todayPairs.map(([id, e]) => renderEntryCard(e, id)).join('');
-            html += dayTotalHtml(todayPairs.map(([, e]) => e));
+            html += dayTotalHtml(todayEntries);
         } else {
             html += `<div class="fd-empty">Nothing logged today yet.</div>`;
         }
+        html += dayGoalProgressHtml(todayEntries);
 
         if (pastPairs.length) {
             // Group by calendar day
