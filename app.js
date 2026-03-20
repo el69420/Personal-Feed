@@ -16390,6 +16390,8 @@ function initPixelCat() {
         if (!active) return;
         const W = canvas.width, H = canvas.height;
         AC.frame++;
+        // Lazy cache application: if data arrived after tiles were initialised, apply it now
+        if (_acCache.tracks.length && AC.tiles.some(t => !t.img)) _applyCacheToTiles();
         ctx.fillStyle = '#0d0d1a';
         ctx.fillRect(0, 0, W, H);
 

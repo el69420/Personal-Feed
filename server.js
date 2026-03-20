@@ -5,7 +5,7 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 
-const LASTFM_API_KEY = process.env.LASTFM_API_KEY || '';
+const LASTFM_API_KEY = process.env.LASTFM_API_KEY || '4d927af2241b4f77b711972fb2112329';
 const LASTFM_USERS = { el: 'elliotmakesart', tero: 'afduarte1' };
 
 // In-memory cache per user: { userKey: { data, fetchedAt } }
