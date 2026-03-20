@@ -4246,6 +4246,41 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     border-top: 1px solid #808080;
 }
 
+/* Tabbed avatar editor */
+.avatar-editor-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    border-bottom: 2px solid #808080;
+    padding-bottom: 0;
+}
+
+.avatar-tab-btn {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    padding: 3px 10px;
+    cursor: pointer;
+    color: #000;
+    position: relative;
+    top: 2px;
+    margin-bottom: 0;
+}
+
+.avatar-tab-btn:hover {
+    background: #d0d0d0;
+}
+
+.avatar-tab-btn.active {
+    background: #d4d0c8;
+    border-bottom-color: #d4d0c8;
+    font-weight: bold;
+    z-index: 1;
+}
+
 /* Legacy class kept in case other parts of the page reference it */
 .pres-user { padding: 8px 0; }
 .pres-name {
