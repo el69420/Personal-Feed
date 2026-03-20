@@ -7869,6 +7869,25 @@ function _profDarken(hex, amt) {
 
 // ---- Layer drawing functions (each pushes SVG fragments onto `out`) ----
 
+// Base body layer — always rendered beneath clothing.
+// Draws neck, upper torso/shoulders, and both upper arms in skin colour so
+// they remain visible regardless of which clothing style is chosen.
+function _profAvatarBaseBody(skin, skinSh, out) {
+    // Neck — rendered before the head ellipse so the chin naturally overlaps it
+    out.push(`<path d="M43 68 L42 79 Q50 82 58 79 L57 68Z" fill="${skin}"/>`);
+    // Left upper arm — drawn before torso so the shoulder area overlaps the arm top
+    out.push(`<path d="M21 79 Q11 87 11 100 L26 100 Q27 92 27 84 Q24 81 21 79Z" fill="${skin}"/>`);
+    // Right upper arm
+    out.push(`<path d="M79 79 Q89 87 89 100 L74 100 Q73 92 73 84 Q76 81 79 79Z" fill="${skin}"/>`);
+    // Torso / shoulders — wide trapezoid connecting neck to lower canvas
+    out.push(`<path d="M21 79 Q13 83 13 100 L87 100 Q87 83 79 79 Q67 75 50 77 Q33 75 21 79Z" fill="${skin}"/>`);
+    // Collarbone / chest shadow for depth
+    out.push(`<path d="M37 79 Q50 76 63 79 Q56 83 50 83 Q44 83 37 79Z" fill="${skinSh}" opacity="0.18"/>`);
+    // Arm-edge shading for roundness
+    out.push(`<path d="M21 79 Q13 83 11 91 Q14 88 18 88 Q18 84 21 79Z" fill="${skinSh}" opacity="0.2"/>`);
+    out.push(`<path d="M79 79 Q87 83 89 91 Q86 88 82 88 Q82 84 79 79Z" fill="${skinSh}" opacity="0.2"/>`);
+}
+
 function _profAvatarHairBack(style, H, HD, out) {
     if (style === 'bob') {
         out.push(`<path d="M26 50 Q20 54 20 64 Q20 72 26 73 Q36 75 50 75 Q64 75 74 73 Q80 72 80 64 Q80 54 74 50 Q67 56 50 57 Q33 56 26 50Z" fill="${H}"/>`);
@@ -7926,17 +7945,42 @@ function _profAvatarHairFront(style, H, HD, out) {
     }
 }
 
-function _profAvatarBody(clothing, C, CS, skin, out) {
-    out.push(`<rect x="44" y="66" width="12" height="9" fill="${skin}" rx="2"/>`);
-    const shapes = {
-        hoodie:  `<path d="M26 76 Q18 80 14 100 L86 100 Q82 80 74 76 Q64 72 56 74 Q50 76 44 74 Q36 72 26 76Z" fill="${C}"/>
-                  <path d="M44 74 Q50 72 56 74 L57 80 Q50 82 43 80Z" fill="${CS}"/>`,
-        tshirt:  `<path d="M30 75 Q18 72 14 84 L20 90 Q28 80 32 80 L32 100 L68 100 L68 80 Q72 80 80 90 L86 84 Q82 72 70 75 Q62 72 50 73 Q38 72 30 75Z" fill="${C}"/>`,
-        tank:    `<path d="M36 76 L36 100 L64 100 L64 76 Q56 73 50 74 Q44 73 36 76Z" fill="${C}"/>`,
-        sweater: `<path d="M24 77 Q16 82 14 100 L86 100 Q84 82 76 77 Q64 73 50 74 Q36 73 24 77Z" fill="${C}"/>
-                  <path d="M44 74 Q50 72 56 74 L56 78 Q50 80 44 78Z" fill="${CS}"/>`,
-    };
-    out.push(shapes[clothing] || shapes.tshirt);
+// Clothing overlay — rendered on top of the base body but beneath the head.
+// Each style covers only its natural area; the base body arms show through
+// where the clothing has no sleeves (tank) or short sleeves (tshirt).
+function _profAvatarClothing(style, C, CS, out) {
+    if (style === 'hoodie') {
+        // Full sleeves — completely cover both arms
+        out.push(`<path d="M21 79 Q11 87 11 100 L26 100 Q27 92 27 84 Q24 81 21 79Z" fill="${C}"/>`);
+        out.push(`<path d="M79 79 Q89 87 89 100 L74 100 Q73 92 73 84 Q76 81 79 79Z" fill="${C}"/>`);
+        // Torso — matches the base torso shape
+        out.push(`<path d="M27 79 Q17 83 15 100 L85 100 Q83 83 73 79 Q61 75 56 77 Q50 79 44 77 Q39 75 27 79Z" fill="${C}"/>`);
+        // Kangaroo-pocket / hood-fold seam detail
+        out.push(`<path d="M44 77 Q50 75 56 77 L57 83 Q50 85 43 83Z" fill="${CS}"/>`);
+    } else if (style === 'tshirt') {
+        // Short sleeves — end around mid-upper-arm, leaving forearms in skin
+        out.push(`<path d="M21 79 Q11 85 11 93 L26 93 Q27 87 27 83 Q24 81 21 79Z" fill="${C}"/>`);
+        out.push(`<path d="M79 79 Q89 85 89 93 L74 93 Q73 87 73 83 Q76 81 79 79Z" fill="${C}"/>`);
+        // Torso — slightly narrower than hoodie for fitted look
+        out.push(`<path d="M27 79 Q20 82 20 100 L80 100 Q80 82 73 79 Q61 75 50 77 Q39 75 27 79Z" fill="${C}"/>`);
+    } else if (style === 'tank') {
+        // Shoulder straps only — arms fully visible on both sides
+        out.push(`<rect x="39" y="73" width="6" height="8" fill="${C}" rx="2"/>`);
+        out.push(`<rect x="55" y="73" width="6" height="8" fill="${C}" rx="2"/>`);
+        // Narrow torso — leaves shoulder/arm skin visible on either side
+        out.push(`<path d="M39 79 Q33 83 33 100 L67 100 Q67 83 61 79 Q56 75 50 77 Q44 75 39 79Z" fill="${C}"/>`);
+    } else if (style === 'sweater') {
+        // Full sleeves — same coverage as hoodie
+        out.push(`<path d="M21 79 Q11 87 11 100 L26 100 Q27 92 27 84 Q24 81 21 79Z" fill="${C}"/>`);
+        out.push(`<path d="M79 79 Q89 87 89 100 L74 100 Q73 92 73 84 Q76 81 79 79Z" fill="${C}"/>`);
+        // Slightly wider/boxier torso silhouette vs hoodie
+        out.push(`<path d="M27 79 Q15 83 13 100 L87 100 Q85 83 73 79 Q61 75 50 77 Q39 75 27 79Z" fill="${C}"/>`);
+        // Ribbed collar detail
+        out.push(`<path d="M44 77 Q50 75 56 77 L56 81 Q50 83 44 81Z" fill="${CS}"/>`);
+    } else {
+        // Fallback — same as tshirt
+        out.push(`<path d="M27 79 Q20 82 20 100 L80 100 Q80 82 73 79 Q61 75 50 77 Q39 75 27 79Z" fill="${C}"/>`);
+    }
 }
 
 function _profAvatarEars(skin, skinSh, earMod, out) {
@@ -8077,11 +8121,15 @@ function buildAvatarSVG(rawParts) {
 
     const layers = [];
 
-    // Layer order: hairBack → body → ears → base face → face details → extras → glasses → piercings → hairFront → earrings
+    // Layer order (back → front):
+    //   hairBack → baseBody → clothing → ears → head → eyes → faceDetails
+    //   → extras → glasses → piercings → hairFront → earrings
     _profAvatarHairBack(hairSt, hairC, hairSh, layers);
-    _profAvatarBody(p.clothing?.style || 'hoodie', clothC, clothSh, skin, layers);
+    _profAvatarBaseBody(skin, skinSh, layers);
+    _profAvatarClothing(p.clothing?.style || 'hoodie', clothC, clothSh, layers);
     _profAvatarEars(skin, skinSh, earMod, layers);
-    layers.push(`<ellipse cx="50" cy="46" rx="22" ry="24" fill="${skin}"/>`);
+    // Head — slightly rounder (ry 23 vs old 24) for a softer, more natural look
+    layers.push(`<ellipse cx="50" cy="46" rx="22" ry="23" fill="${skin}"/>`);
     _profAvatarEyes(expr, eyeC, layers);
     _profAvatarFaceDetails(skin, skinSh, expr, layers);
     _profAvatarExtras(extras, layers);
