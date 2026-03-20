@@ -188,6 +188,9 @@
                 <button id="navSources" class="nav-btn">
                     [url] Sources
                 </button>
+                <button id="navBoards" class="nav-btn">
+                    [::] Boards
+                </button>
             </div>
         </div>
 
@@ -240,6 +243,20 @@
                     Make a new post
                 </button>
             </div>
+        </div>
+
+        <!-- Boards Section (moved from Scrapbook) -->
+        <div id="boardsSection" class="hidden">
+          <div class="boards-header">
+            <h2 class="boards-title">[::] Boards</h2>
+            <button class="btn-primary boards-action-btn" onclick="openCreateBoardModal()">+ New Board</button>
+          </div>
+          <div id="boardsList"></div>
+          <div id="boardDetail" class="hidden">
+            <button class="board-back-btn" onclick="closeBoardDetail()">&#8592; Back to boards</button>
+            <div id="boardDetailHeader" class="boards-header" style="margin-bottom:16px;"></div>
+            <div id="boardDetailPosts" class="space-y-5"></div>
+          </div>
         </div>
     </div>
 
@@ -434,10 +451,10 @@
 
     </div><!-- /#w95-win-feed -->
 
-    <!-- Scrapbook window -->
-    <div id="w95-win-scrapbook" class="w95-window is-hidden" style="left:220px;top:70px;width:420px;height:460px;">
+    <!-- Scrapbook window — memory resurfacing -->
+    <div id="w95-win-scrapbook" class="w95-window is-hidden" style="left:220px;top:70px;width:440px;height:500px;">
       <div class="w95-titlebar" id="w95-scrapbook-handle">
-        <div class="w95-title">&#128204; Scrapbook.exe</div>
+        <div class="w95-title">&#128444; Scrapbook.exe</div>
         <div class="w95-controls">
           <button class="w95-control" id="w95-scrapbook-min" type="button" aria-label="Minimise">_</button>
           <button class="w95-control" id="w95-scrapbook-max" type="button" aria-label="Maximise">&#9633;</button>
@@ -445,16 +462,12 @@
         </div>
       </div>
       <div class="w95-body w95-scrapbook-body" id="w95-scrapbook-body">
-        <div class="boards-header">
-          <h2 class="boards-title">[::] Boards</h2>
-          <button class="btn-primary boards-action-btn" onclick="openCreateBoardModal()">+ New Board</button>
+        <div class="boards-header" style="margin-bottom:12px;">
+          <h2 class="boards-title">&#x1F4C5; On This Day</h2>
+          <button class="btn-primary boards-action-btn" id="scrapbookRefreshBtn">&#x21BB; Refresh</button>
         </div>
-        <div id="boardsList"></div>
-        <div id="boardDetail" class="hidden">
-          <button class="board-back-btn" onclick="closeBoardDetail()">&#8592; Back to boards</button>
-          <div id="boardDetailHeader" class="boards-header" style="margin-bottom:16px;"></div>
-          <div id="boardDetailPosts" class="space-y-5"></div>
-        </div>
+        <p class="board-card-meta" style="margin-bottom:14px;font-size:0.78rem;">A handful of meaningful moments from our shared history.</p>
+        <div id="scrapbookMemories"></div>
       </div>
     </div>
 

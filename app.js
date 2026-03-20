@@ -1145,17 +1145,26 @@ window.logout = function() {
 function showSection(name) {
     currentSection = name;
     const isFeed = name === 'feed';
+    const isBoards = name === 'boards';
     document.getElementById('feedSection').classList.toggle('hidden', !isFeed);
     document.getElementById('filterButtons').classList.toggle('hidden', !isFeed);
     document.getElementById('searchWrap').classList.toggle('hidden', !isFeed);
+    if (!isFeed) document.getElementById('activeFiltersBanner')?.classList.add('hidden');
+    else updateActiveFiltersBanner();
+    document.getElementById('feedDivider')?.classList.toggle('hidden', !isFeed);
+    const boardsSection = document.getElementById('boardsSection');
+    if (boardsSection) boardsSection.classList.toggle('hidden', !isBoards);
+    if (isBoards) renderBoardsList();
+    // Update active state on Boards nav button
+    const navBoards = document.getElementById('navBoards');
+    if (navBoards) navBoards.classList.toggle('active', isBoards);
 }
 
 // ---- BOARDS ----
 function setupBoardsListener() {
     onValue(boardsRef, snap => {
         allBoards = snap.val() || {};
-        const sbWin = document.getElementById('w95-win-scrapbook');
-        if (sbWin && !sbWin.classList.contains('is-hidden')) renderBoardsList();
+        if (currentSection === 'boards') renderBoardsList();
     });
 }
 
@@ -1333,8 +1342,7 @@ window.confirmBoardDeletion = async function() {
     await remove(ref(database, `board_items/${boardId}`));
     await remove(ref(database, `boards/${boardId}`));
     closeModal(modal);
-    const sbWin = document.getElementById('w95-win-scrapbook');
-    if (sbWin && !sbWin.classList.contains('is-hidden')) closeBoardDetail();
+    if (currentSection === 'boards') closeBoardDetail();
     showToast('Board moved to Recycle Bin');
 };
 
@@ -5657,6 +5665,9 @@ document.getElementById('userIndicator')?.addEventListener('click', () => logout
 document.getElementById('navAddPost')?.addEventListener('click', () => openTypePickerModal());
 document.getElementById('navCollections')?.addEventListener('click', () => openCollectionsModal());
 document.getElementById('navSources')?.addEventListener('click', () => openSourcesModal());
+document.getElementById('navBoards')?.addEventListener('click', () => {
+    if (currentSection === 'boards') { showSection('feed'); } else { showSection('boards'); }
+});
 
 // Active filters banner
 document.getElementById('clearFiltersBtn')?.addEventListener('click', () => clearAllExtraFilters());
@@ -11049,6 +11060,140 @@ function renderAchievementsWindow() {
     }};
 })();
 
+// ===== Memory Resurfacing (Scrapbook) =====
+
+/**
+ * Score a candidate memory item. Higher = more interesting.
+ * Scoring is intentionally simple: no AI, just text + metadata signals.
+ */
+function scoreMemory(item) {
+    let score = 0;
+    const text = (item.text || item.body || item.note || item.subject || '');
+    // Longer content is more meaningful
+    score += Math.min(text.length / 60, 8);
+    // Emojis signal emotional content
+    if (/\p{Emoji_Presentation}|\p{Extended_Pictographic}/u.test(text)) score += 3;
+    // Repeated punctuation signals emphasis/excitement
+    if (/[!?]{2,}|\.{3,}/.test(text)) score += 2;
+    // Posts with images are rich
+    if (item.imageUrl || item.type === 'image') score += 4;
+    return score;
+}
+
+/**
+ * Pick a small set of memorable items from posts, letters, and chat.
+ * Prefers "on this day" items (same month+day in a past year),
+ * falls back to older items (> MIN_AGE_DAYS days old).
+ * Returns at most LIMIT items, sorted by score desc.
+ */
+function pickMemories(limit) {
+    limit = limit || 5;
+    const MIN_AGE_DAYS = 30;
+    const MIN_AGE_MS   = MIN_AGE_DAYS * 24 * 60 * 60 * 1000;
+    const now          = Date.now();
+    const todayMD      = (() => { const d = new Date(); return `${d.getMonth()}-${d.getDate()}`; })();
+
+    function isOnThisDay(ts) {
+        const d = new Date(ts);
+        return `${d.getMonth()}-${d.getDate()}` === todayMD && (now - ts) > 300 * 24 * 60 * 60 * 1000;
+    }
+    function isOldEnough(ts) { return (now - ts) > MIN_AGE_MS; }
+
+    const candidates = [];
+
+    // Posts
+    Object.values(allPosts || {}).forEach(post => {
+        if (!post || !post.timestamp) return;
+        const ts = post.timestamp;
+        if (!isOldEnough(ts)) return;
+        const onThisDay = isOnThisDay(ts);
+        const score = scoreMemory({ text: post.note || post.body || post.subject || '', imageUrl: post.imageUrl, type: post.type })
+                    + (onThisDay ? 6 : 0);
+        candidates.push({ kind: 'post', item: post, ts, score, onThisDay });
+    });
+
+    // Letters (only ones involving currentUser)
+    Object.values(allLetters || {}).forEach(letter => {
+        if (!letter || !letter.createdAt) return;
+        if (letter.from !== currentUser && letter.to !== currentUser) return;
+        const ts = letter.createdAt;
+        if (!isOldEnough(ts)) return;
+        const onThisDay = isOnThisDay(ts);
+        const score = scoreMemory({ text: (letter.body || '') + ' ' + (letter.subject || '') })
+                    + (onThisDay ? 6 : 0);
+        candidates.push({ kind: 'letter', item: letter, ts, score, onThisDay });
+    });
+
+    // Chat messages — only user messages (not system), long enough to be meaningful
+    (lastChatMessages || []).forEach(msg => {
+        if (!msg || msg.kind === 'system' || !msg.timestamp) return;
+        if (!isOldEnough(msg.timestamp)) return;
+        if ((msg.text || '').length < 30) return; // skip very short chat messages
+        const onThisDay = isOnThisDay(msg.timestamp);
+        const score = scoreMemory({ text: msg.text }) + (onThisDay ? 6 : 0);
+        candidates.push({ kind: 'chat', item: msg, ts: msg.timestamp, score, onThisDay });
+    });
+
+    // Prioritise "on this day" items, then sort by score desc
+    candidates.sort((a, b) => {
+        if (a.onThisDay !== b.onThisDay) return a.onThisDay ? -1 : 1;
+        return b.score - a.score;
+    });
+
+    // De-duplicate (same day) — spread across different dates when possible
+    const seenDates = new Set();
+    const picked = [];
+    for (const c of candidates) {
+        if (picked.length >= limit) break;
+        const dateKey = new Date(c.ts).toDateString();
+        if (seenDates.has(dateKey) && picked.length < limit - 1) continue; // allow last slot to repeat
+        seenDates.add(dateKey);
+        picked.push(c);
+    }
+    // If we still have room, fill from remaining (ignoring date spread)
+    if (picked.length < limit) {
+        for (const c of candidates) {
+            if (picked.length >= limit) break;
+            if (!picked.includes(c)) picked.push(c);
+        }
+    }
+    return picked;
+}
+
+function renderScrapbook() {
+    const container = document.getElementById('scrapbookMemories');
+    if (!container) return;
+    const memories = pickMemories(5);
+    if (memories.length === 0) {
+        container.innerHTML = '<div class="boards-empty">Nothing to surface yet — check back once you have some shared history!</div>';
+        return;
+    }
+    container.innerHTML = memories.map(({ kind, item, ts, onThisDay }) => {
+        const dateStr = exactTimestamp ? exactTimestamp(ts) : new Date(ts).toLocaleDateString();
+        const badge   = onThisDay ? '<span class="retro-badge" style="margin-right:4px;">On This Day</span>' : '';
+        let inner = '';
+        if (kind === 'post') {
+            if (item.type === 'image' && item.imageUrl) {
+                inner = `<img src="${safeText(item.imageUrl)}" style="max-width:100%;border-radius:4px;margin-bottom:6px;" loading="lazy">`;
+            }
+            const caption = safeText(item.note || item.body || item.heading || item.title || item.url || '');
+            if (caption) inner += `<div style="font-size:0.85rem;">${caption}</div>`;
+            const authorEmoji = (typeof AUTHOR_EMOJI !== 'undefined' && AUTHOR_EMOJI[item.author]) || '';
+            inner = `<div class="board-card-meta" style="margin-bottom:6px;">${badge}[post] ${authorEmoji} ${safeText(item.author || '')} &middot; ${dateStr}</div>` + inner;
+        } else if (kind === 'letter') {
+            const dir = item.from === currentUser ? `to ${safeText(item.to)}` : `from ${safeText(item.from)}`;
+            inner = `<div class="board-card-meta" style="margin-bottom:6px;">${badge}[letter] ${dir} &middot; ${dateStr}</div>`
+                  + `<div style="font-size:0.9rem;font-weight:600;margin-bottom:4px;">${safeText(item.subject || '(no subject)')}</div>`
+                  + `<div style="font-size:0.82rem;white-space:pre-wrap;max-height:80px;overflow:hidden;">${safeText((item.body || '').slice(0, 300))}</div>`;
+        } else if (kind === 'chat') {
+            const authorEmoji = (typeof AUTHOR_EMOJI !== 'undefined' && AUTHOR_EMOJI[item.author]) || '';
+            inner = `<div class="board-card-meta" style="margin-bottom:6px;">${badge}[chat] ${authorEmoji} ${safeText(item.author || '')} &middot; ${dateStr}</div>`
+                  + `<div style="font-size:0.85rem;white-space:pre-wrap;">${safeText((item.text || '').slice(0, 300))}</div>`;
+        }
+        return `<div class="board-card" style="margin-bottom:10px;">${inner}</div>`;
+    }).join('');
+}
+
 // ===== Win95 Scrapbook Window =====
 (() => {
     const win      = document.getElementById('w95-win-scrapbook');
@@ -11067,7 +11212,7 @@ function renderAchievementsWindow() {
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow('w95-win-scrapbook');
         localStorage.setItem('w95_scrapbook_open', '1');
-        renderBoardsList();
+        renderScrapbook();
     }
 
     function hide() {
@@ -11091,6 +11236,8 @@ function renderAchievementsWindow() {
     if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
 
     makeDraggable(win, handle, 'w95-win-scrapbook');
+
+    document.getElementById('scrapbookRefreshBtn')?.addEventListener('click', () => renderScrapbook());
 
     if (localStorage.getItem('w95_scrapbook_open') === '1') show();
 
