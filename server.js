@@ -36,12 +36,14 @@ app.get('/api/now-playing', async (req, res) => {
 
         const track = Array.isArray(tracks) ? tracks[0] : tracks;
         const nowPlaying = track['@attr']?.nowplaying === 'true';
+        const images = track.image || [];
         const data = {
             nowPlaying,
             artist:    track.artist?.['#text'] || '',
             track:     track.name || '',
             album:     track.album?.['#text'] || '',
-            image:     (track.image || []).find(i => i.size === 'medium')?.['#text'] || '',
+            image:     images.find(i => i.size === 'medium')?.['#text'] || '',
+            imageUrl:  [...images].reverse().find(i => i['#text'])?.['#text'] || '',
             timestamp: nowPlaying ? null : (track.date?.uts ? Number(track.date.uts) * 1000 : null),
         };
 

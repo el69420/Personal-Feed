@@ -1855,6 +1855,10 @@ async function pollNowListening() {
     ]);
     if (elData   !== null) renderNLCard('El',   elData);
     if (teroData !== null) renderNLCard('Tero', teroData);
+    // Feed track data into the screensaver album-cover cache
+    for (const d of [elData, teroData]) {
+        if (d?.track && d?.imageUrl) _injectTrackIntoAcCache({ track: d.track, artist: d.artist || '', imageUrl: d.imageUrl });
+    }
     // Let the cat window know if anyone is currently listening to music
     window._anyoneNowPlaying = !!(elData?.nowPlaying || teroData?.nowPlaying);
 }
@@ -1870,6 +1874,17 @@ function startNowListening() {
 
 // ---- Album cover pre-loader (feeds the screensaver) ----
 const _acCache = { tracks: [], images: [] };
+
+// Inject a single now-playing track into the screensaver cache (deduplicates by track+artist).
+function _injectTrackIntoAcCache(td) {
+    if (!td || !td.imageUrl) return;
+    const key = `${td.track}|${td.artist}`;
+    if (_acCache.tracks.some(t => `${t.track}|${t.artist}` === key)) return;
+    const img = new Image();
+    img.src = td.imageUrl;
+    _acCache.tracks = [..._acCache.tracks, td].slice(-20);
+    _acCache.images = [..._acCache.images, img].slice(-20);
+}
 
 async function prefetchAlbumCovers() {
     const results = [];
