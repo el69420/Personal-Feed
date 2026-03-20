@@ -7889,14 +7889,21 @@ function _profAvatarBaseBody(skin, skinSh, out) {
 }
 
 function _profAvatarHairBack(style, H, HD, out) {
-    if (style === 'bob') {
-        out.push(`<path d="M26 50 Q20 54 20 64 Q20 72 26 73 Q36 75 50 75 Q64 75 74 73 Q80 72 80 64 Q80 54 74 50 Q67 56 50 57 Q33 56 26 50Z" fill="${H}"/>`);
+    if (style === 'short_straight') {
+        // Close-cropped; back layer extends 2 px beyond head edge so sides wrap around
+        out.push(`<path d="M26 50 Q22 34 24 22 Q34 15 50 15 Q66 15 76 22 Q78 34 74 50 Q68 44 50 43 Q32 44 26 50Z" fill="${H}"/>`);
+    } else if (style === 'bob') {
+        // Normalized side anchors to x=28/72 (matches head edge)
+        out.push(`<path d="M28 50 Q22 54 22 64 Q22 72 28 73 Q38 75 50 75 Q62 75 72 73 Q78 72 78 64 Q78 54 72 50 Q66 56 50 57 Q34 56 28 50Z" fill="${H}"/>`);
     } else if (style === 'long_curly') {
         out.push(`<path d="M28 24 Q20 30 15 38 Q11 46 13 54 Q9 62 11 70 Q9 78 13 86 Q16 92 24 95 Q36 97 50 97 Q64 97 76 95 Q84 92 87 86 Q89 78 91 70 Q89 62 87 54 Q89 46 85 38 Q80 30 72 24 Q66 28 50 30 Q34 28 28 24Z" fill="${H}"/>`);
     } else if (style === 'shaggy') {
         out.push(`<path d="M26 24 Q16 30 12 40 Q8 50 10 60 Q8 70 12 78 Q14 84 22 86 Q34 88 50 87 Q66 88 78 86 Q86 84 88 78 Q92 70 90 60 Q92 50 88 40 Q84 30 74 24 Q68 28 50 30 Q32 28 26 24Z" fill="${H}"/>`);
     } else if (style === 'ponytail') {
         out.push(`<path d="M53 22 Q58 32 60 48 Q62 64 63 78 Q64 88 60 90 Q56 92 54 84 Q52 70 50 56 Q50 38 50 22 Q51 20 53 22Z" fill="${H}"/>`);
+    } else if (style === 'bun') {
+        // Hair pulled back; back layer wraps around sides like short_straight
+        out.push(`<path d="M26 50 Q22 34 24 22 Q34 15 50 15 Q66 15 76 22 Q78 34 74 50 Q68 44 50 43 Q32 44 26 50Z" fill="${H}"/>`);
     } else if (style === 'undercut') {
         // Shaved sides — only a rounded cap at the crown
         out.push(`<path d="M36 50 Q32 28 50 20 Q68 28 64 50 Q58 44 50 42 Q42 44 36 50Z" fill="${H}"/>`);
@@ -7948,38 +7955,41 @@ function _profAvatarHairFront(style, H, HD, out) {
 // Clothing overlay — rendered on top of the base body but beneath the head.
 // Each style covers only its natural area; the base body arms show through
 // where the clothing has no sleeves (tank) or short sleeves (tshirt).
+// All torso paths span x=21–79 at shoulder level to match the base body width,
+// and necklines are raised to y≈72 to overlap the neck base and prevent gaps.
 function _profAvatarClothing(style, C, CS, out) {
     if (style === 'hoodie') {
-        // Full sleeves — completely cover both arms
+        // Fitted sleeves — taper from shoulder to wrist
         out.push(`<path d="M21 79 Q11 87 11 100 L26 100 Q27 92 27 84 Q24 81 21 79Z" fill="${C}"/>`);
         out.push(`<path d="M79 79 Q89 87 89 100 L74 100 Q73 92 73 84 Q76 81 79 79Z" fill="${C}"/>`);
-        // Torso — matches the base torso shape
-        out.push(`<path d="M27 79 Q17 83 15 100 L85 100 Q83 83 73 79 Q61 75 56 77 Q50 79 44 77 Q39 75 27 79Z" fill="${C}"/>`);
-        // Kangaroo-pocket / hood-fold seam detail
-        out.push(`<path d="M44 77 Q50 75 56 77 L57 83 Q50 85 43 83Z" fill="${CS}"/>`);
+        // Torso — full shoulder width (x=21–79), neckline raised to y=72 for overlap
+        out.push(`<path d="M21 79 Q13 83 13 100 L87 100 Q87 83 79 79 Q67 73 57 72 Q50 70 43 72 Q33 73 21 79Z" fill="${C}"/>`);
+        // Hood-fold / drawstring seam detail at neckline
+        out.push(`<path d="M43 72 Q50 70 57 72 L58 78 Q50 80 42 78Z" fill="${CS}"/>`);
     } else if (style === 'tshirt') {
         // Short sleeves — end around mid-upper-arm, leaving forearms in skin
         out.push(`<path d="M21 79 Q11 85 11 93 L26 93 Q27 87 27 83 Q24 81 21 79Z" fill="${C}"/>`);
         out.push(`<path d="M79 79 Q89 85 89 93 L74 93 Q73 87 73 83 Q76 81 79 79Z" fill="${C}"/>`);
-        // Torso — slightly narrower than hoodie for fitted look
-        out.push(`<path d="M27 79 Q20 82 20 100 L80 100 Q80 82 73 79 Q61 75 50 77 Q39 75 27 79Z" fill="${C}"/>`);
+        // Torso — full shoulder width, fitted look, neckline raised to y=73
+        out.push(`<path d="M21 79 Q14 82 14 100 L86 100 Q86 82 79 79 Q67 74 57 73 Q50 71 43 73 Q33 74 21 79Z" fill="${C}"/>`);
     } else if (style === 'tank') {
         // Shoulder straps only — arms fully visible on both sides
-        out.push(`<rect x="39" y="73" width="6" height="8" fill="${C}" rx="2"/>`);
-        out.push(`<rect x="55" y="73" width="6" height="8" fill="${C}" rx="2"/>`);
+        out.push(`<rect x="39" y="72" width="6" height="9" fill="${C}" rx="2"/>`);
+        out.push(`<rect x="55" y="72" width="6" height="9" fill="${C}" rx="2"/>`);
         // Narrow torso — leaves shoulder/arm skin visible on either side
-        out.push(`<path d="M39 79 Q33 83 33 100 L67 100 Q67 83 61 79 Q56 75 50 77 Q44 75 39 79Z" fill="${C}"/>`);
+        out.push(`<path d="M39 79 Q33 83 33 100 L67 100 Q67 83 61 79 Q56 74 50 72 Q44 74 39 79Z" fill="${C}"/>`);
     } else if (style === 'sweater') {
-        // Full sleeves — same coverage as hoodie
-        out.push(`<path d="M21 79 Q11 87 11 100 L26 100 Q27 92 27 84 Q24 81 21 79Z" fill="${C}"/>`);
-        out.push(`<path d="M79 79 Q89 87 89 100 L74 100 Q73 92 73 84 Q76 81 79 79Z" fill="${C}"/>`);
-        // Slightly wider/boxier torso silhouette vs hoodie
-        out.push(`<path d="M27 79 Q15 83 13 100 L87 100 Q85 83 73 79 Q61 75 50 77 Q39 75 27 79Z" fill="${C}"/>`);
-        // Ribbed collar detail
-        out.push(`<path d="M44 77 Q50 75 56 77 L56 81 Q50 83 44 81Z" fill="${CS}"/>`);
+        // Baggier sleeves — visually distinct from hoodie's fitted sleeves
+        out.push(`<path d="M21 79 Q9 87 8 100 L27 100 Q28 91 28 83 Q25 81 21 79Z" fill="${C}"/>`);
+        out.push(`<path d="M79 79 Q91 87 92 100 L73 100 Q72 91 72 83 Q75 81 79 79Z" fill="${C}"/>`);
+        // Slightly boxier torso, same full shoulder width and neckline height as hoodie
+        out.push(`<path d="M21 79 Q13 83 13 100 L87 100 Q87 83 79 79 Q67 73 57 72 Q50 70 43 72 Q33 73 21 79Z" fill="${C}"/>`);
+        // Ribbed crew-neck collar — two rib lines for a knit texture
+        out.push(`<path d="M43 72 Q50 70 57 72 L57 77 Q50 79 43 77Z" fill="${CS}"/>`);
+        out.push(`<path d="M44 72 Q50 70.5 56 72 L56 74.5 Q50 75.5 44 74.5Z" fill="${CS}" opacity="0.55"/>`);
     } else {
         // Fallback — same as tshirt
-        out.push(`<path d="M27 79 Q20 82 20 100 L80 100 Q80 82 73 79 Q61 75 50 77 Q39 75 27 79Z" fill="${C}"/>`);
+        out.push(`<path d="M21 79 Q14 82 14 100 L86 100 Q86 82 79 79 Q67 74 57 73 Q50 71 43 73 Q33 74 21 79Z" fill="${C}"/>`);
     }
 }
 
