@@ -12188,3 +12188,53 @@ body.dark-mode .sl-tab-active {
 body.dark-mode .sl-item:hover { background: rgba(255,255,255,0.04); }
 body.dark-mode .sl-claim-other { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
 body.dark-mode .sl-presence-indicator { background: rgba(0,120,215,0.1); }
+/* Assign button (nominate other user) */
+.sl-assign-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 10px;
+  white-space: nowrap;
+  color: var(--text-secondary, #aaa);
+  border: 1px solid transparent;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.sl-item:hover .sl-assign-btn { opacity: 1; }
+.sl-assign-btn:hover { color: var(--text-primary, #555); background: rgba(0,0,0,0.06); }
+.sl-assign-active {
+  opacity: 1 !important;
+  color: #b06000;
+  background: rgba(176,96,0,0.08);
+  border-color: rgba(176,96,0,0.22);
+}
+.sl-assign-active:hover { background: rgba(176,96,0,0.14); }
+/* "For you" badge — shown to the nominee */
+.sl-assign-badge {
+  font-size: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.sl-assign-for-me {
+  color: #c05000;
+  background: rgba(192,80,0,0.1);
+  border-color: rgba(192,80,0,0.28);
+}
+.sl-assign-for-me:hover { background: rgba(192,80,0,0.16); }
+/* Row highlight when assigned to current user */
+.sl-item-for-me {
+  background: rgba(192,80,0,0.05) !important;
+}
+body.dark-mode .sl-item-for-me { background: rgba(192,80,0,0.08) !important; }
+body.dark-mode .sl-assign-active { color: #e08830; background: rgba(224,136,48,0.1); border-color: rgba(224,136,48,0.22); }
+body.dark-mode .sl-assign-for-me { color: #e09050; background: rgba(224,144,80,0.1); border-color: rgba(224,144,80,0.25); }

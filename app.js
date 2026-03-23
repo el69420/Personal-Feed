@@ -18427,13 +18427,26 @@ document.addEventListener('click', (e) => {
             const claimEl = item.claimedBy
                 ? `<span class="sl-claim-badge${claimedByMe ? ' sl-claim-mine' : ' sl-claim-other'}" data-action="claim-item" data-item-id="${_esc(item.id)}" title="${_esc(claimTitle)}" role="button" tabindex="0">&#x1F91A;${claimedByMe ? ' me' : ' ' + _esc(item.claimedBy)}</span>`
                 : `<button class="sl-claim-btn" data-action="claim-item" data-item-id="${_esc(item.id)}" type="button" title="${_esc(claimTitle)}">&#x1F91A;</button>`;
+            const other = _otherUser();
+            const isAssignedToMe    = item.assignedTo === currentUser;
+            const isAssignedToOther = item.assignedTo && !isAssignedToMe;
+            const assignChecked     = !!item.assignedTo;
+            const assignTitle = isAssignedToOther
+                ? `${_esc(item.assignedTo)} nominated — click to remove`
+                : isAssignedToMe
+                    ? 'You were nominated — click to clear'
+                    : `Nominate ${_esc(other)}`;
+            const assignEl = isAssignedToMe
+                ? `<span class="sl-assign-badge sl-assign-for-me" data-action="assign-item" data-item-id="${_esc(item.id)}" title="${assignTitle}" role="button" tabindex="0">&#9654; you</span>`
+                : `<button class="sl-assign-btn${assignChecked ? ' sl-assign-active' : ''}" data-action="assign-item" data-item-id="${_esc(item.id)}" type="button" title="${assignTitle}">${assignChecked ? '&#9745;' : '&#9744;'} ${_esc(assignChecked ? item.assignedTo : other)}</button>`;
             return `
-            <div class="sl-item${item.completed ? ' sl-item-done' : ''}${pri ? ` sl-item-pri-${_esc(pri)}` : ''}">
+            <div class="sl-item${item.completed ? ' sl-item-done' : ''}${pri ? ` sl-item-pri-${_esc(pri)}` : ''}${isAssignedToMe ? ' sl-item-for-me' : ''}">
                 <button class="sl-check" data-action="toggle-item" data-item-id="${_esc(item.id)}" type="button" title="${item.completed ? 'Mark incomplete' : 'Mark complete'}">${item.completed ? '&#9745;' : '&#9744;'}</button>
                 <button class="sl-pri-btn sl-pri-${_esc(pri || 'none')}" data-action="set-priority" data-item-id="${_esc(item.id)}" type="button" title="${_esc(priTitle)}">${_esc(priLabel)}</button>
                 <span class="sl-item-text">${_esc(item.text)}</span>
                 <span class="sl-item-by">by ${_esc(item.createdBy)}</span>
                 ${claimEl}
+                ${assignEl}
                 <button class="sl-edit" data-action="edit-item" data-item-id="${_esc(item.id)}" type="button" title="Edit">&#9998;</button>
                 <button class="sl-del" data-action="delete-item" data-item-id="${_esc(item.id)}" type="button" title="Delete">&#215;</button>
             </div>`;
@@ -18530,6 +18543,18 @@ document.addEventListener('click', (e) => {
         }
     }
 
+    function toggleAssign(itemId) {
+        if (!currentUser) return;
+        const item = allItems[itemId];
+        if (!item) return;
+        // Either user can clear the assignment; assigning always targets the other person
+        if (item.assignedTo) {
+            remove(ref(database, `shoppingItems/${activeId}/${itemId}/assignedTo`));
+        } else {
+            set(ref(database, `shoppingItems/${activeId}/${itemId}/assignedTo`), _otherUser());
+        }
+    }
+
     function promptNewList() {
         const name = prompt('List name:');
         if (!name || !name.trim() || !currentUser) return;
@@ -18586,6 +18611,7 @@ document.addEventListener('click', (e) => {
         else if (action === 'delete-item')  { remove(ref(database, `shoppingItems/${activeId}/${el.dataset.itemId}`)); }
         else if (action === 'set-priority') { setPriority(el.dataset.itemId); }
         else if (action === 'claim-item')   { toggleClaim(el.dataset.itemId); }
+        else if (action === 'assign-item')  { toggleAssign(el.dataset.itemId); }
     });
 
     body.addEventListener('keydown', e => {
