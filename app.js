@@ -1119,6 +1119,7 @@ function login(displayName, email) {
     applyIconPositions();
     setupTypingCleanup();
     setupPresence();
+    _dustCheckOnLogin();
     if (typeof window._profilesOnLogin === 'function') window._profilesOnLogin();
     startNowListening();
     showSection('feed');
@@ -4482,10 +4483,14 @@ function setupPresence() {
         if (_presState === 'offline') _presState = 'online';
     });
 
-    // Heartbeat every 30 s (keeps ts fresh so the other client knows we're still alive)
+    // Heartbeat every 30 s (keeps ts fresh so the other client knows we're still alive).
+    // Also updates lastActive so the dust-inactivity tracker stays current.
     clearInterval(_presHbInterval);
     _presHbInterval = setInterval(() => {
-        if (_presRef && _presState !== 'offline') update(_presRef, { ts: Date.now() });
+        if (_presRef && _presState !== 'offline') {
+            update(_presRef, { ts: Date.now() });
+            _dustWriteLastActive();
+        }
     }, 30_000);
 
     // Idle detection: go idle after 60 s of no mouse/key activity
@@ -4519,6 +4524,214 @@ function setupPresence() {
     onValue(ref(database, 'presence'), snap => {
         updatePresenceDots(snap.val() || {});
     });
+}
+
+// ---- DUST — per-user ambient inactivity effect (48 h threshold) ----
+//
+// Firebase paths used:
+//   lastActive/{user}   – { ts: number }  updated on login + heartbeat
+//   dustState/{user}    – { dirty: bool, dirtyTs: number }  per-user clean/dirty flag
+//   dustNotify/{user}   – { ts: number, cleaner: string }  one-shot "they tidied up" note
+//
+// Only the current user ever sees their own dust overlay; the other user receives
+// a brief toast when cleaning completes (shared awareness, not shared state).
+
+const DUST_INACTIVE_MS = 48 * 60 * 60 * 1000; // 48 hours before desktop goes dusty
+const DUST_CLEAN_MS    = 8_000;                 // 8 s of active drag-to-clean interaction
+
+let _dustRef        = null;  // Firebase ref for current user's dustState node
+let _dustNotifyRef  = null;  // Firebase ref for incoming notifications
+let _dustCanvas     = null;
+let _dustCtx        = null;
+let _dustInteractMs = 0;     // cumulative ms of active cleaning interaction
+let _dustLastTs     = null;  // timestamp of last pointer event (for delta tracking)
+let _dustResizeFn   = null;  // stored so we can remove on completion
+
+// Write the current time as this user's "last active" timestamp.
+// Called on login and piggybacked onto the presence heartbeat.
+function _dustWriteLastActive() {
+    if (!currentUser) return;
+    set(ref(database, `lastActive/${currentUser}`), { ts: Date.now() });
+}
+
+// Called from login() once currentUser is set.
+async function _dustCheckOnLogin() {
+    if (!currentUser) return;
+    _dustRef       = ref(database, `dustState/${currentUser}`);
+    _dustNotifyRef = ref(database, `dustNotify/${currentUser}`);
+
+    // Listen for "they tidied up" notifications sent by the other user.
+    // The write happens on their side; we receive it here and show a toast.
+    onValue(_dustNotifyRef, snap => {
+        const d = snap.val();
+        if (!d?.ts || !d?.cleaner) return;
+        // Only surface notifications that arrived in the last 10 minutes
+        // (guards against replaying stale data on reconnect).
+        if (Date.now() - d.ts < 10 * 60 * 1000) {
+            showToast(`${d.cleaner} tidied up ✦`);
+        }
+        // Consume — clear so it doesn't fire again on reconnect.
+        set(_dustNotifyRef, null);
+    });
+
+    const [lastActiveSnap, dustSnap] = await Promise.all([
+        get(ref(database, `lastActive/${currentUser}`)),
+        get(_dustRef),
+    ]);
+
+    const lastActiveTs = lastActiveSnap.val()?.ts ?? null;
+    const dustData     = dustSnap.val() || {};
+    const now          = Date.now();
+    const wasInactive  = lastActiveTs && (now - lastActiveTs) > DUST_INACTIVE_MS;
+
+    // Record this login as a new "last active" time.
+    _dustWriteLastActive();
+
+    if (dustData.dirty) {
+        // Dirty flag persisted from a previous session — show again.
+        _dustShowOverlay();
+    } else if (wasInactive) {
+        // First time back after 48 h — mark dirty and show.
+        await set(_dustRef, { dirty: true, dirtyTs: now });
+        _dustShowOverlay();
+    }
+}
+
+function _dustShowOverlay() {
+    const overlay = document.getElementById('dust-overlay');
+    if (!overlay || !overlay.classList.contains('is-hidden')) return;
+    overlay.classList.remove('is-hidden');
+
+    _dustCanvas = document.getElementById('dust-canvas');
+    if (!_dustCanvas) return;
+    _dustCtx = _dustCanvas.getContext('2d');
+
+    const resize = () => {
+        _dustCanvas.width  = window.innerWidth;
+        _dustCanvas.height = window.innerHeight;
+        _dustDrawInitial();
+    };
+    _dustResizeFn = resize;
+    resize();
+    window.addEventListener('resize', _dustResizeFn, { passive: true });
+
+    _dustCanvas.addEventListener('pointerdown', _dustOnPointer);
+    _dustCanvas.addEventListener('pointermove', _dustOnPointer);
+
+    // Show the hint badge after a brief settling delay.
+    setTimeout(() => {
+        document.getElementById('dust-badge')?.classList.add('visible');
+    }, 1500);
+}
+
+function _dustDrawInitial() {
+    const ctx = _dustCtx;
+    const w   = _dustCanvas.width;
+    const h   = _dustCanvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Very subtle base veil — barely perceptible sepia tint.
+    ctx.fillStyle = 'rgba(175, 155, 118, 0.13)';
+    ctx.fillRect(0, 0, w, h);
+
+    // Fine scattered specks (the actual "dust motes").
+    for (let i = 0; i < 700; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        const r = Math.random() * 1.6 + 0.3;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(150, 130, 95, ${Math.random() * 0.20 + 0.05})`;
+        ctx.fill();
+    }
+
+    // A handful of slightly larger soft clusters.
+    for (let i = 0; i < 35; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        const r = Math.random() * 7 + 2;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(140, 118, 85, ${Math.random() * 0.05 + 0.015})`;
+        ctx.fill();
+    }
+}
+
+function _dustOnPointer(e) {
+    if (!_dustCtx) return;
+    // Only register interaction while a button is held (or on pointerdown itself).
+    if (e.type === 'pointermove' && e.buttons === 0) return;
+
+    const now  = Date.now();
+    const rect = _dustCanvas.getBoundingClientRect();
+    const x    = (e.clientX - rect.left) * (_dustCanvas.width  / rect.width);
+    const y    = (e.clientY - rect.top)  * (_dustCanvas.height / rect.height);
+
+    // Erase dust under the pointer using a soft radial gradient brush.
+    _dustCtx.globalCompositeOperation = 'destination-out';
+    const grad = _dustCtx.createRadialGradient(x, y, 0, x, y, 60);
+    grad.addColorStop(0,    'rgba(0,0,0,0.95)');
+    grad.addColorStop(0.55, 'rgba(0,0,0,0.55)');
+    grad.addColorStop(1,    'rgba(0,0,0,0)');
+    _dustCtx.beginPath();
+    _dustCtx.arc(x, y, 60, 0, Math.PI * 2);
+    _dustCtx.fillStyle = grad;
+    _dustCtx.fill();
+    _dustCtx.globalCompositeOperation = 'source-over';
+
+    // Accumulate interaction time; cap deltas to 300 ms so gaps don't count.
+    if (_dustLastTs && now - _dustLastTs < 300) {
+        _dustInteractMs += now - _dustLastTs;
+    }
+    _dustLastTs = now;
+
+    // Drive the progress bar.
+    const pct  = Math.min(100, (_dustInteractMs / DUST_CLEAN_MS) * 100);
+    const fill = document.getElementById('dust-badge-fill');
+    if (fill) fill.style.width = `${pct}%`;
+
+    if (_dustInteractMs >= DUST_CLEAN_MS) {
+        _dustComplete();
+    }
+}
+
+function _dustComplete() {
+    if (!_dustRef) return;
+    _dustRef = null; // prevent double-fire
+
+    // Detach interaction listeners.
+    if (_dustCanvas) {
+        _dustCanvas.removeEventListener('pointerdown', _dustOnPointer);
+        _dustCanvas.removeEventListener('pointermove', _dustOnPointer);
+    }
+    if (_dustResizeFn) {
+        window.removeEventListener('resize', _dustResizeFn);
+        _dustResizeFn = null;
+    }
+    document.getElementById('dust-badge')?.classList.remove('visible');
+
+    // Fade the overlay out, then hide it.
+    const overlay = document.getElementById('dust-overlay');
+    if (overlay) {
+        overlay.classList.add('cleaning-done');
+        overlay.addEventListener('animationend', () => {
+            overlay.classList.add('is-hidden');
+            overlay.classList.remove('cleaning-done');
+        }, { once: true });
+    }
+
+    // Persist clean state for this user.
+    const dustRef = ref(database, `dustState/${currentUser}`);
+    set(dustRef, { dirty: false, dirtyTs: null });
+
+    // Notify the other user with a lightweight "they tidied up" message.
+    const other = _otherUser();
+    if (other !== 'you') {
+        set(ref(database, `dustNotify/${other}`), {
+            ts:      Date.now(),
+            cleaner: currentUser,
+        });
+    }
 }
 
 // ---- SLASH COMMANDS ----
