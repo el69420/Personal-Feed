@@ -18278,7 +18278,7 @@ document.addEventListener('click', (e) => {
     }};
 })();
 
-// ===== Shopping List.exe =====
+// ===== Lists.exe =====
 (() => {
     const WIN_ID   = 'w95-win-shoplist';
     const win      = document.getElementById(WIN_ID);
@@ -18291,10 +18291,18 @@ document.addEventListener('click', (e) => {
 
     let btn             = null;
     let allLists        = {};  // { listId: { name, createdBy, createdAt } }
-    let allItems        = {};  // { itemId: { text, completed, createdBy, createdAt } }
+    let allItems        = {};  // { itemId: { text, completed, priority, claimedBy, createdBy, createdAt } }
+    let listPresence    = {};  // { uid: { displayName, connectedAt } }
     let activeId        = null;
     let subscribedId    = null;
     let itemsUnsub      = null;
+    let presenceUnsub   = null;
+    let myPresenceRef   = null;
+
+    // priority cycle: null → optional → important → urgent → null
+    const PRIORITY_CYCLE = [null, 'optional', 'important', 'urgent'];
+    const PRIORITY_LABEL = { optional: '?', important: '!', urgent: '‼' };
+    const PRIORITY_TITLE = { optional: 'optional', important: 'important', urgent: 'urgent' };
 
     function _esc(s) {
         return String(s || '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -18329,11 +18337,33 @@ document.addEventListener('click', (e) => {
         });
     }
 
+    // ---- Firebase: presence for active list ----
+    function updatePresence(listId) {
+        if (myPresenceRef) { remove(myPresenceRef); myPresenceRef = null; }
+        if (presenceUnsub) { presenceUnsub(); presenceUnsub = null; }
+        listPresence = {};
+        if (!listId || !currentUserUid) return;
+        myPresenceRef = ref(database, `listPresence/${listId}/${currentUserUid}`);
+        onDisconnect(myPresenceRef).remove();
+        set(myPresenceRef, { displayName: currentUser || 'Someone', connectedAt: Date.now() });
+        presenceUnsub = onValue(ref(database, `listPresence/${listId}`), snap => {
+            listPresence = snap.val() || {};
+            renderPresence();
+        });
+    }
+
+    function clearPresence() {
+        if (myPresenceRef) { remove(myPresenceRef); myPresenceRef = null; }
+        if (presenceUnsub) { presenceUnsub(); presenceUnsub = null; }
+        listPresence = {};
+    }
+
     // ---- Render ----
     function render() {
         body.innerHTML = `
             <div class="sl-layout">
                 <div class="sl-tabs-row" id="sl-tabs-row"></div>
+                <div class="sl-presence-bar" id="sl-presence-bar"></div>
                 <div class="sl-add-row">
                     <input id="sl-item-input" class="sl-item-input" type="text" placeholder="Add item…" autocomplete="off" maxlength="200">
                     <button class="sl-add-btn" data-action="add-item" type="button">Add</button>
@@ -18355,6 +18385,17 @@ document.addEventListener('click', (e) => {
             `<button class="sl-tab sl-tab-new" data-action="new-list" type="button" title="New list">+</button>`;
     }
 
+    function renderPresence() {
+        const bar = document.getElementById('sl-presence-bar');
+        if (!bar) return;
+        const others = Object.entries(listPresence)
+            .filter(([uid]) => uid !== currentUserUid)
+            .map(([, v]) => v.displayName);
+        bar.innerHTML = others.length
+            ? `<span class="sl-presence-indicator">&#128065; ${_esc(others.join(', '))} also here</span>`
+            : '';
+    }
+
     function renderItems() {
         const list = document.getElementById('sl-items-list');
         if (!list) return;
@@ -18372,14 +18413,31 @@ document.addEventListener('click', (e) => {
             list.innerHTML = '<div class="sl-empty">No items yet — add one above.</div>';
             return;
         }
-        list.innerHTML = all.map(item => `
-            <div class="sl-item${item.completed ? ' sl-item-done' : ''}">
+        list.innerHTML = all.map(item => {
+            const pri = item.priority || null;
+            const priLabel = PRIORITY_LABEL[pri] || '·';
+            const priTitle = pri ? `Priority: ${PRIORITY_TITLE[pri]} — click to change` : 'Set priority (click to cycle)';
+            const claimedByMe    = item.claimedBy === currentUser;
+            const claimedByOther = item.claimedBy && !claimedByMe;
+            const claimTitle = claimedByMe
+                ? "You said you'll handle this — click to undo"
+                : claimedByOther
+                    ? `${item.claimedBy} will handle this — click to take it`
+                    : "I'll handle this";
+            const claimEl = item.claimedBy
+                ? `<span class="sl-claim-badge${claimedByMe ? ' sl-claim-mine' : ' sl-claim-other'}" data-action="claim-item" data-item-id="${_esc(item.id)}" title="${_esc(claimTitle)}" role="button" tabindex="0">&#x1F91A;${claimedByMe ? ' me' : ' ' + _esc(item.claimedBy)}</span>`
+                : `<button class="sl-claim-btn" data-action="claim-item" data-item-id="${_esc(item.id)}" type="button" title="${_esc(claimTitle)}">&#x1F91A;</button>`;
+            return `
+            <div class="sl-item${item.completed ? ' sl-item-done' : ''}${pri ? ` sl-item-pri-${_esc(pri)}` : ''}">
                 <button class="sl-check" data-action="toggle-item" data-item-id="${_esc(item.id)}" type="button" title="${item.completed ? 'Mark incomplete' : 'Mark complete'}">${item.completed ? '&#9745;' : '&#9744;'}</button>
+                <button class="sl-pri-btn sl-pri-${_esc(pri || 'none')}" data-action="set-priority" data-item-id="${_esc(item.id)}" type="button" title="${_esc(priTitle)}">${_esc(priLabel)}</button>
                 <span class="sl-item-text">${_esc(item.text)}</span>
                 <span class="sl-item-by">by ${_esc(item.createdBy)}</span>
-                <button class="sl-edit" data-action="edit-item" data-item-id="${_esc(item.id)}" type="button" title="Edit">✎</button>
+                ${claimEl}
+                <button class="sl-edit" data-action="edit-item" data-item-id="${_esc(item.id)}" type="button" title="Edit">&#9998;</button>
                 <button class="sl-del" data-action="delete-item" data-item-id="${_esc(item.id)}" type="button" title="Delete">&#215;</button>
-            </div>`).join('');
+            </div>`;
+        }).join('');
     }
 
     // ---- Actions ----
@@ -18404,7 +18462,6 @@ document.addEventListener('click', (e) => {
         const editBtn = itemEl.querySelector('.sl-edit');
         const delBtn  = itemEl.querySelector('.sl-del');
 
-        // Replace text span with an inline input
         const input = document.createElement('input');
         input.className = 'sl-item-edit-input';
         input.type = 'text';
@@ -18416,7 +18473,6 @@ document.addEventListener('click', (e) => {
         editBtn.style.display = 'none';
         delBtn.style.display  = 'none';
 
-        // Confirm button
         const saveBtn = document.createElement('button');
         saveBtn.className = 'sl-edit-save';
         saveBtn.type = 'button';
@@ -18424,7 +18480,6 @@ document.addEventListener('click', (e) => {
         saveBtn.textContent = '✓';
         delBtn.after(saveBtn);
 
-        // Cancel button
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'sl-edit-cancel';
         cancelBtn.type = 'button';
@@ -18437,13 +18492,11 @@ document.addEventListener('click', (e) => {
             if (newText && newText !== item.text) {
                 set(ref(database, `shoppingItems/${activeId}/${itemId}/text`), newText);
             } else {
-                renderItems(); // just re-render to restore original state
+                renderItems();
             }
         }
 
-        function cancel() {
-            renderItems();
-        }
+        function cancel() { renderItems(); }
 
         saveBtn.addEventListener('click', save);
         cancelBtn.addEventListener('click', cancel);
@@ -18453,14 +18506,39 @@ document.addEventListener('click', (e) => {
         });
     }
 
+    function setPriority(itemId) {
+        const item = allItems[itemId];
+        if (!item) return;
+        const current = item.priority || null;
+        const idx  = PRIORITY_CYCLE.indexOf(current);
+        const next = PRIORITY_CYCLE[(idx + 1) % PRIORITY_CYCLE.length];
+        if (next === null) {
+            remove(ref(database, `shoppingItems/${activeId}/${itemId}/priority`));
+        } else {
+            set(ref(database, `shoppingItems/${activeId}/${itemId}/priority`), next);
+        }
+    }
+
+    function toggleClaim(itemId) {
+        if (!currentUser) return;
+        const item = allItems[itemId];
+        if (!item) return;
+        if (item.claimedBy === currentUser) {
+            remove(ref(database, `shoppingItems/${activeId}/${itemId}/claimedBy`));
+        } else {
+            set(ref(database, `shoppingItems/${activeId}/${itemId}/claimedBy`), currentUser);
+        }
+    }
+
     function promptNewList() {
         const name = prompt('List name:');
         if (!name || !name.trim() || !currentUser) return;
         const newRef = push(shoppingListsRef);
         set(newRef, { name: name.trim(), createdBy: currentUser, createdAt: Date.now() });
         activeId = newRef.key;
-        subscribedId = null;  // force re-subscribe to the new list
+        subscribedId = null;
         subscribeItems(activeId);
+        updatePresence(activeId);
         renderTabs();
     }
 
@@ -18474,6 +18552,7 @@ document.addEventListener('click', (e) => {
         }
         remove(ref(database, `shoppingLists/${listId}`));
         remove(ref(database, `shoppingItems/${listId}`));
+        remove(ref(database, `listPresence/${listId}`));
     }
 
     function renameList(listId) {
@@ -18496,21 +18575,17 @@ document.addEventListener('click', (e) => {
                 activeId = id;
                 subscribedId = null;
                 subscribeItems(activeId);
+                updatePresence(activeId);
                 renderTabs();
             }
         }
-        else if (action === 'rename-list') { e.stopPropagation(); renameList(el.dataset.listId); }
-        else if (action === 'delete-list') { e.stopPropagation(); deleteList(el.dataset.listId); }
-        else if (action === 'toggle-item') {
-            const id = el.dataset.itemId;
-            set(ref(database, `shoppingItems/${activeId}/${id}/completed`), !allItems[id]?.completed);
-        }
-        else if (action === 'edit-item') {
-            editItem(el.dataset.itemId);
-        }
-        else if (action === 'delete-item') {
-            remove(ref(database, `shoppingItems/${activeId}/${el.dataset.itemId}`));
-        }
+        else if (action === 'rename-list')  { e.stopPropagation(); renameList(el.dataset.listId); }
+        else if (action === 'delete-list')  { e.stopPropagation(); deleteList(el.dataset.listId); }
+        else if (action === 'toggle-item')  { const id = el.dataset.itemId; set(ref(database, `shoppingItems/${activeId}/${id}/completed`), !allItems[id]?.completed); }
+        else if (action === 'edit-item')    { editItem(el.dataset.itemId); }
+        else if (action === 'delete-item')  { remove(ref(database, `shoppingItems/${activeId}/${el.dataset.itemId}`)); }
+        else if (action === 'set-priority') { setPriority(el.dataset.itemId); }
+        else if (action === 'claim-item')   { toggleClaim(el.dataset.itemId); }
     });
 
     body.addEventListener('keydown', e => {
@@ -18519,19 +18594,21 @@ document.addEventListener('click', (e) => {
 
     // ---- Window controls ----
     function show() {
-        if (!btn) btn = w95Mgr.addTaskbarBtn(WIN_ID, 'SHOPPING LIST', () => {
+        if (!btn) btn = w95Mgr.addTaskbarBtn(WIN_ID, 'LISTS', () => {
             if (win.classList.contains('is-hidden')) show(); else hide();
         });
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow(WIN_ID);
         localStorage.setItem('w95_shoplist_open', '1');
         render();
+        updatePresence(activeId);
     }
 
     function hide() {
         win.classList.add('is-hidden');
         if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
         localStorage.setItem('w95_shoplist_open', '0');
+        clearPresence();
     }
 
     function closeWin() {
@@ -18539,6 +18616,7 @@ document.addEventListener('click', (e) => {
         win.classList.add('is-hidden');
         if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
         localStorage.setItem('w95_shoplist_open', '0');
+        clearPresence();
         if (btn) { btn.remove(); btn = null; }
     }
 
