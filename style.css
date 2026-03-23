@@ -11871,6 +11871,15 @@ body.dark-mode .fd-status-error {
   padding: 1px 9px;
   color: var(--text-secondary, #666);
 }
+.sl-tab-ren {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  padding: 0 1px;
+  border-radius: 2px;
+}
+.sl-tab-ren:hover { color: #555; background: rgba(0,0,0,0.08); }
 .sl-tab-del {
   font-size: 13px;
   line-height: 1;

@@ -18239,7 +18239,7 @@ document.addEventListener('click', (e) => {
         const sorted = Object.entries(allLists).sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
         tabsRow.innerHTML = sorted.map(([id, l]) => `
             <button class="sl-tab${id === activeId ? ' sl-tab-active' : ''}" data-action="select-list" data-list-id="${_esc(id)}" type="button">
-                ${_esc(l.name)}${id === activeId ? `<span class="sl-tab-del" data-action="delete-list" data-list-id="${_esc(id)}" title="Delete list">×</span>` : ''}
+                ${_esc(l.name)}${id === activeId ? `<span class="sl-tab-ren" data-action="rename-list" data-list-id="${_esc(id)}" title="Rename list">✎</span><span class="sl-tab-del" data-action="delete-list" data-list-id="${_esc(id)}" title="Delete list">×</span>` : ''}
             </button>`).join('') +
             `<button class="sl-tab sl-tab-new" data-action="new-list" type="button" title="New list">+</button>`;
     }
@@ -18306,6 +18306,13 @@ document.addEventListener('click', (e) => {
         remove(ref(database, `shoppingItems/${listId}`));
     }
 
+    function renameList(listId) {
+        const current = allLists[listId]?.name || '';
+        const name = prompt('Rename list:', current);
+        if (!name || !name.trim() || name.trim() === current) return;
+        set(ref(database, `shoppingLists/${listId}/name`), name.trim());
+    }
+
     // ---- Event delegation on body ----
     body.addEventListener('click', e => {
         const el     = e.target.closest('[data-action]');
@@ -18322,6 +18329,7 @@ document.addEventListener('click', (e) => {
                 renderTabs();
             }
         }
+        else if (action === 'rename-list') { e.stopPropagation(); renameList(el.dataset.listId); }
         else if (action === 'delete-list') { e.stopPropagation(); deleteList(el.dataset.listId); }
         else if (action === 'toggle-item') {
             const id = el.dataset.itemId;
