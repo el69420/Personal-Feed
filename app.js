@@ -6501,6 +6501,30 @@ const w95Apps = {};
   // Bloom count thresholds to unlock each slot (index = slot number)
   const TILE_UNLOCK_THRESHOLDS = [0, 1, 5, 10, 15, 20, 25, 30];
 
+  // Base hue (degrees) for each plant type — used to tint collected flowers in the vase
+  const PLANT_FLOWER_HUE = {
+    sunflower:      50,
+    daisy:          58,
+    tulip:          345,
+    rose:           350,
+    orchid:         280,
+    lavender:       275,
+    twocolourbloom: 330,
+    mint:           155,
+    fern:           130,
+    wildflower:     310,
+  };
+
+  // Soft milestone messages shown as the vase fills
+  const VASE_MILESTONES = [
+    { count: 1,  text: 'the first flower has been placed' },
+    { count: 5,  text: 'the vase is starting to fill' },
+    { count: 10, text: 'it\'s getting cosy in there' },
+    { count: 20, text: 'the vase is getting crowded' },
+    { count: 30, text: 'flowers are starting to spill over' },
+    { count: 50, text: 'it is overflowing with colour' },
+  ];
+
   // Tracks which flower type to plant into an empty slot (set by global dropdown, never touches planted slots)
   let selectedFlower = 'sunflower';
 
@@ -6638,14 +6662,27 @@ const w95Apps = {};
     }
 
     // Tile status: flower name + stage + watered time
+    // Bloom tiles also get a small "gather" button to collect the flower into the vase
     const statusDiv = col.querySelector('.garden-tile-status-el');
     if (statusDiv) {
       const wateredAgo = tileData.lastWatered
         ? Math.round((Date.now() - tileData.lastWatered) / MS_HOUR) : null;
       const wateredText = wateredAgo === null ? 'never'
         : wateredAgo === 0 ? 'just now' : `${wateredAgo}h ago`;
-      statusDiv.textContent =
-        `${PLANT_LABELS[plantType] || plantType} · ${STAGE_LABELS[stage] || stage} · ${wateredText}`;
+      const baseText = `${PLANT_LABELS[plantType] || plantType} · ${STAGE_LABELS[stage] || stage} · ${wateredText}`;
+      if (stage === 'bloom') {
+        // Only re-render if content changed (avoids removing a mid-click disabled button)
+        const wanted = `<span>${baseText}</span><button class="garden-collect-btn w95-btn" data-tile="${n}">gather</button>`;
+        if (statusDiv.dataset.stage !== 'bloom') {
+          statusDiv.innerHTML = wanted;
+          statusDiv.dataset.stage = 'bloom';
+        }
+      } else {
+        if (statusDiv.dataset.stage === 'bloom' || statusDiv.textContent !== baseText) {
+          statusDiv.textContent = baseText;
+          statusDiv.dataset.stage = stage;
+        }
+      }
     }
 
     // Event overlays — stored events from Firebase plus client-computed mushroom
@@ -7146,6 +7183,116 @@ const w95Apps = {};
     sparkSound('post');
   }
 
+  // ---- Vase: collect flower from a blooming tile ----
+  const vaseRef = ref(database, 'garden/vase');
+
+  async function collectFlower(tileIndex) {
+    const snap = await get(gardenRef);
+    const st = snap.val();
+    if (!st) return;
+
+    const tile = (st.tiles || {})[String(tileIndex)];
+    if (!tile) { showToast('Nothing to collect here'); return; }
+
+    const stage = calculateStage(tile);
+    if (stage !== 'bloom') { showToast('This flower isn\'t ready yet'); return; }
+
+    const plantType = tile.flowerType || 'sunflower';
+    const baseHue   = PLANT_FLOWER_HUE[plantType] ?? 50;
+    const hue       = (baseHue + Math.floor(Math.random() * 60) - 30 + 360) % 360;
+    const size      = +(0.8 + Math.random() * 0.4).toFixed(2);
+
+    try {
+      const newFlowerRef = push(ref(database, 'garden/vase/flowers'));
+      await Promise.all([
+        set(newFlowerRef, {
+          type:        plantType,
+          collectedBy: currentUser,
+          collectedAt: Date.now(),
+          hue,
+          size,
+        }),
+        // Remove the tile so the slot resets to empty
+        set(ref(database, `garden/tiles/${tileIndex}`), null),
+      ]);
+
+      showToast('Gathered into the vase');
+      sparkSound('react');
+
+      // Check milestone based on current vase count
+      const vaseSnap   = await get(ref(database, 'garden/vase/flowers'));
+      const flowerCount = vaseSnap.exists() ? Object.keys(vaseSnap.val()).length : 0;
+      checkVaseMilestone(flowerCount);
+    } catch (e) {
+      console.error('collectFlower failed', e);
+      showToast('Could not collect. Please try again.');
+    }
+  }
+
+  // Show a soft milestone message when count crosses a threshold
+  function checkVaseMilestone(count) {
+    const milestone = VASE_MILESTONES.find(m => m.count === count);
+    if (!milestone) return;
+    const msgEl = document.getElementById('garden-vase-msg');
+    if (!msgEl) return;
+    msgEl.textContent = milestone.text;
+    msgEl.classList.add('garden-vase-msg--show');
+    // Also show as a gentle toast (no sound — keep it calm)
+    showToast(milestone.text);
+    setTimeout(() => msgEl.classList.remove('garden-vase-msg--show'), 12000);
+  }
+
+  // ---- Vase: render flowers into the vase element ----
+  function renderVase(vaseData) {
+    const vaseEl      = document.getElementById('garden-vase');
+    const flowersArea = document.getElementById('garden-vase-flowers');
+    if (!vaseEl || !flowersArea) return;
+
+    const allFlowers = vaseData?.flowers ? Object.values(vaseData.flowers) : [];
+    const count = allFlowers.length;
+
+    // Data attribute drives the fill state label (for future CSS hooks)
+    const fill = count === 0 ? 'empty'
+      : count <= 4  ? 'sparse'
+      : count <= 12 ? 'filling'
+      : count <= 24 ? 'full'
+      : 'overflow';
+    if (vaseEl.dataset.fill !== fill) vaseEl.dataset.fill = fill;
+
+    // Display up to 28 flowers visually (most recently collected)
+    const visible = allFlowers.slice(-28);
+    const total   = visible.length;
+
+    // Spread columns: each flower gets a slot index mod a fixed spread width
+    const spreadCols = Math.min(total, 14);
+    const colWidth   = spreadCols > 1 ? 36 / (spreadCols - 1) : 0;
+    // Heights cycle through 3 tiers so adjacent flowers differ
+    const heightTiers = [20, 26, 22, 28, 18, 24];
+
+    flowersArea.innerHTML = visible.map((f, i) => {
+      const col     = i % spreadCols;
+      const x       = spreadCols > 1 ? (col * colWidth - 18) : 0; // centred around 0
+      const h       = heightTiers[i % heightTiers.length] + Math.round((f.size || 1) * 3 - 1);
+      const rot     = ((col % 7) - 3) * 5; // –15 to +15 deg
+      const hue     = f.hue ?? 50;
+      const headPx  = Math.round(5 + (f.size || 1) * 3); // 6–9 px
+      // hsl colour: keep 65% sat, 55% light so it's visible but soft
+      const color   = `hsl(${hue},65%,55%)`;
+      return `<span class="garden-vase-flower" style="` +
+        `left:calc(50% + ${x}px);` +
+        `height:${h}px;` +
+        `transform:rotate(${rot}deg);` +
+        `--fcolor:${color};` +
+        `--fhead:${headPx}px` +
+        `"></span>`;
+    }).join('');
+  }
+
+  // Live vase listener — updates whenever a flower is collected by either user
+  onValue(vaseRef, (snap) => {
+    renderVase(snap.val());
+  });
+
   // Shared Water Garden button
   document.getElementById('garden-water-garden-btn')?.addEventListener('click', async () => {
     await waterGarden();
@@ -7158,6 +7305,15 @@ const w95Apps = {};
     btn.disabled = true;
     await plantSlot(Number(btn.dataset.tile));
     btn.disabled = false;
+  });
+
+  // Collect button delegation — gathers a blooming flower into the shared vase
+  tilesRowEl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.garden-collect-btn');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    await collectFlower(Number(btn.dataset.tile));
+    // tile will be re-rendered by the Firebase listener; no need to re-enable
   });
 
   // Talk to Garden button — fires directly, no text input needed
