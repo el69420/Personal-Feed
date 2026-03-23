@@ -18266,6 +18266,7 @@ document.addEventListener('click', (e) => {
                 <button class="sl-check" data-action="toggle-item" data-item-id="${_esc(item.id)}" type="button" title="${item.completed ? 'Mark incomplete' : 'Mark complete'}">${item.completed ? '&#9745;' : '&#9744;'}</button>
                 <span class="sl-item-text">${_esc(item.text)}</span>
                 <span class="sl-item-by">by ${_esc(item.createdBy)}</span>
+                <button class="sl-edit" data-action="edit-item" data-item-id="${_esc(item.id)}" type="button" title="Edit">✎</button>
                 <button class="sl-del" data-action="delete-item" data-item-id="${_esc(item.id)}" type="button" title="Delete">&#215;</button>
             </div>`).join('');
     }
@@ -18281,6 +18282,64 @@ document.addEventListener('click', (e) => {
         const newRef = push(ref(database, `shoppingItems/${activeId}`));
         await set(newRef, { text, completed: false, createdBy: currentUser, createdAt: Date.now() });
         input.focus();
+    }
+
+    function editItem(itemId) {
+        const item = allItems[itemId];
+        if (!item) return;
+        const itemEl = document.querySelector(`[data-action="edit-item"][data-item-id="${itemId}"]`)?.closest('.sl-item');
+        if (!itemEl) return;
+        const textEl = itemEl.querySelector('.sl-item-text');
+        const editBtn = itemEl.querySelector('.sl-edit');
+        const delBtn  = itemEl.querySelector('.sl-del');
+
+        // Replace text span with an inline input
+        const input = document.createElement('input');
+        input.className = 'sl-item-edit-input';
+        input.type = 'text';
+        input.value = item.text;
+        textEl.replaceWith(input);
+        input.focus();
+        input.select();
+
+        editBtn.style.display = 'none';
+        delBtn.style.display  = 'none';
+
+        // Confirm button
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'sl-edit-save';
+        saveBtn.type = 'button';
+        saveBtn.title = 'Save';
+        saveBtn.textContent = '✓';
+        delBtn.after(saveBtn);
+
+        // Cancel button
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'sl-edit-cancel';
+        cancelBtn.type = 'button';
+        cancelBtn.title = 'Cancel';
+        cancelBtn.textContent = '✕';
+        saveBtn.after(cancelBtn);
+
+        function save() {
+            const newText = input.value.trim();
+            if (newText && newText !== item.text) {
+                set(ref(database, `shoppingItems/${activeId}/${itemId}/text`), newText);
+            } else {
+                renderItems(); // just re-render to restore original state
+            }
+        }
+
+        function cancel() {
+            renderItems();
+        }
+
+        saveBtn.addEventListener('click', save);
+        cancelBtn.addEventListener('click', cancel);
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') save();
+            else if (e.key === 'Escape') cancel();
+        });
     }
 
     function promptNewList() {
@@ -18334,6 +18393,9 @@ document.addEventListener('click', (e) => {
         else if (action === 'toggle-item') {
             const id = el.dataset.itemId;
             set(ref(database, `shoppingItems/${activeId}/${id}/completed`), !allItems[id]?.completed);
+        }
+        else if (action === 'edit-item') {
+            editItem(el.dataset.itemId);
         }
         else if (action === 'delete-item') {
             remove(ref(database, `shoppingItems/${activeId}/${el.dataset.itemId}`));

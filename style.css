@@ -11978,6 +11978,48 @@ body.dark-mode .fd-status-error {
 }
 .sl-item:hover .sl-del { opacity: 1; }
 .sl-del:hover { color: #c00; }
+.sl-edit {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-secondary, #aaa);
+  flex-shrink: 0;
+  padding: 0 2px;
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.sl-item:hover .sl-edit { opacity: 1; }
+.sl-edit:hover { color: var(--accent, #0078d7); }
+.sl-item-edit-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 1px 4px;
+  border: 1px solid var(--accent, #0078d7);
+  border-radius: 2px;
+  background: var(--input-bg, #fff);
+  color: var(--text, #000);
+  outline: none;
+}
+.sl-edit-save,
+.sl-edit-cancel {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.sl-edit-save { color: #090; }
+.sl-edit-save:hover { color: #060; }
+.sl-edit-cancel { color: #c00; }
+.sl-edit-cancel:hover { color: #900; }
 .sl-empty {
   padding: 24px 12px;
   text-align: center;
