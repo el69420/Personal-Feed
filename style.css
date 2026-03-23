@@ -4065,6 +4065,85 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
     box-sizing: border-box;
 }
 
+/* ===== Pain Journal — Pattern Insight ===== */
+.pj-pattern-row td {
+    background: #f5f0fa;
+    border-bottom: 1px solid #ddd4f0;
+    padding: 5px 8px 6px 16px;
+    white-space: normal;
+}
+
+.pj-pattern-insight {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+}
+
+.pj-pattern-text {
+    color: #6840a0;
+    font-style: italic;
+    font-size: 11px;
+}
+
+.pj-care-note-existing {
+    margin-top: 5px;
+    padding: 3px 7px;
+    background: #ece0ff;
+    border-left: 3px solid #9a70d0;
+    color: #4a2880;
+    font-style: italic;
+    font-size: 11px;
+}
+
+.pj-care-note-wrap {
+    margin-top: 5px;
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.pj-care-note-input {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    border-top: 2px solid #808080;
+    border-left: 2px solid #808080;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    background: #fff;
+    padding: 2px 4px;
+    resize: none;
+    flex: 1;
+    box-sizing: border-box;
+    color: #333;
+}
+
+.pj-care-note-input::placeholder {
+    color: #aaa;
+    font-style: italic;
+}
+
+.pj-care-note-send {
+    font: 11px Tahoma, Verdana, Arial, sans-serif;
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #404040;
+    border-bottom: 2px solid #404040;
+    padding: 2px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.pj-care-note-send:active {
+    border-top: 2px solid #404040;
+    border-left: 2px solid #404040;
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+}
+
+.pj-care-note-send:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
 .mood-picker-win-body {
     display: flex;
     flex-direction: column;

@@ -19,7 +19,8 @@ const categoriesRef     = ref(database, 'categories');
 const wishlistBoardsRef = ref(database, 'wishlistBoards');
 const wishlistItemsRef  = ref(database, 'wishlistItems');
 const foodDiaryRef      = ref(database, 'foodDiary');
-const painJournalRef    = ref(database, 'painJournal');
+const painJournalRef     = ref(database, 'painJournal');
+const painPatternNotesRef = ref(database, 'painPatternNotes');
 const moodJournalRef    = ref(database, 'moodJournal');
 const shoppingListsRef  = ref(database, 'shoppingLists');
 
@@ -17908,8 +17909,9 @@ document.addEventListener('click', (e) => {
     if (!win || !handle || !body) return;
 
     const WIN_ID = 'w95-win-painjournal';
-    let btn     = null;
-    let entries = {};   // { El: { pushId: { level, locations, ts, editedAt?, editHistory? }, … }, … }
+    let btn          = null;
+    let entries      = {};   // { El: { pushId: { level, locations, ts, editedAt?, editHistory? }, … }, … }
+    let patternNotes = {};   // { ownerUser: { entryId: { note, ts, author } } }
 
     // ---- Helpers ----
     function _esc(s) {
@@ -17962,6 +17964,66 @@ document.addEventListener('click', (e) => {
         }).join('');
     }
 
+    // ---- Pattern detection ----
+    function _timeSlot(ts) {
+        const h = new Date(ts).getHours();
+        return h >= 6 && h < 12 ? 'morning' : h >= 12 && h < 18 ? 'afternoon' : 'evening';
+    }
+
+    function _locOverlap(a, b) {
+        const sa = new Set(Array.isArray(a) ? a : []);
+        return (Array.isArray(b) ? b : []).some(id => sa.has(id));
+    }
+
+    function _relativeDay(ts) {
+        const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const diff = Math.round((Date.now() - ts) / 86400000);
+        if (diff <= 0) return 'earlier today';
+        if (diff === 1) return 'yesterday';
+        if (diff <= 7)  return `last ${DAYS[new Date(ts).getDay()]}`;
+        return `on ${DAYS[new Date(ts).getDay()]}`;
+    }
+
+    function _detectPattern(latest, prevRows) {
+        const window30   = prevRows.slice(0, 29);
+        const latestDay  = new Date(latest.ts).getDay();
+        const latestSlot = _timeSlot(latest.ts);
+        const latestLocs = latest.locations || [];
+        // Same day-of-week + any location overlap
+        for (const prev of window30) {
+            if (new Date(prev.ts).getDay() === latestDay && _locOverlap(latestLocs, prev.locations))
+                return `this feels familiar… something similar happened ${_relativeDay(prev.ts)}`;
+        }
+        // Same time-of-day slot + any location overlap
+        for (const prev of window30) {
+            if (_timeSlot(prev.ts) === latestSlot && _locOverlap(latestLocs, prev.locations))
+                return `this feels familiar… similar symptoms in the ${latestSlot}`;
+        }
+        // High location overlap (Jaccard ≥ 0.5) across recent 10
+        if (latestLocs.length > 0) {
+            for (const prev of window30.slice(0, 10)) {
+                const pl = prev.locations || [];
+                if (!pl.length) continue;
+                const shared = latestLocs.filter(l => pl.includes(l)).length;
+                if (shared / new Set([...latestLocs, ...pl]).size >= 0.5)
+                    return 'this pattern has come up before';
+            }
+        }
+        return null;
+    }
+
+    async function _saveCareNote(ownerUser, entryId, noteText) {
+        try {
+            await set(ref(database, `painPatternNotes/${ownerUser}/${entryId}`), {
+                note:   noteText,
+                ts:     serverTimestamp(),
+                author: currentUser,
+            });
+        } catch (e) {
+            showToast('Could not save care note — try again.');
+        }
+    }
+
     // ---- Main render ----
     function render() {
         const rows = [];
@@ -17984,6 +18046,37 @@ document.addEventListener('click', (e) => {
             return;
         }
 
+        // Compute pattern insight for the most recent entry
+        let patternInsightHtml = '';
+        if (rows.length >= 2) {
+            const latest  = rows[0];
+            const pattern = _detectPattern(latest, rows.slice(1));
+            if (pattern) {
+                const existing = patternNotes?.[latest.user]?.[latest.id];
+                const noteHtml = existing
+                    ? `<div class="pj-care-note-existing">&#x1F90D; ${_esc(existing.note)}</div>`
+                    : '';
+                const canLeaveNote = currentUser && currentUser !== latest.user && !existing;
+                const inputHtml = canLeaveNote
+                    ? `<div class="pj-care-note-wrap">
+                            <textarea class="pj-care-note-input" rows="1" maxlength="200"
+                                placeholder="leave a care note…"
+                                data-user="${latest.user}" data-id="${latest.id}"></textarea
+                            ><button class="pj-care-note-send" type="button"
+                                data-user="${latest.user}" data-id="${latest.id}">send</button>
+                       </div>`
+                    : '';
+                patternInsightHtml = `<tr class="pj-pattern-row">
+                    <td colspan="5">
+                        <div class="pj-pattern-insight">
+                            <span class="pj-pattern-text">&#10022; ${_esc(pattern)}</span>
+                            ${noteHtml}${inputHtml}
+                        </div>
+                    </td>
+                </tr>`;
+            }
+        }
+
         body.innerHTML = `
             <div class="pj-table-wrap">
                 <table class="pj-table">
@@ -17995,14 +18088,14 @@ document.addEventListener('click', (e) => {
                         <th></th>
                     </tr></thead>
                     <tbody>
-                        ${rows.map(r => {
+                        ${rows.map((r, i) => {
                             const editedBadge = r.editedAt
                                 ? `<span class="pj-edited-tag" title="Last edited ${_fmtDate(r.editedAt)}">edited</span>`
                                 : '';
                             const editBtn = (r.user === currentUser)
                                 ? `<button class="pj-edit-btn" data-user="${r.user}" data-id="${r.id}" type="button">Edit</button>`
                                 : '';
-                            return `
+                            const rowHtml = `
                                 <tr>
                                     <td class="pj-ts">${_fmtDate(r.ts)} ${editedBadge}</td>
                                     <td class="pj-user">${_esc(r.user)}</td>
@@ -18011,6 +18104,7 @@ document.addEventListener('click', (e) => {
                                     <td class="pj-actions-cell">${editBtn}</td>
                                 </tr>
                                 ${r.editedAt ? _historyRows(r.editHistory) : ''}`;
+                            return i === 0 ? rowHtml + patternInsightHtml : rowHtml;
                         }).join('')}
                     </tbody>
                 </table>
@@ -18021,6 +18115,18 @@ document.addEventListener('click', (e) => {
                 const { user, id } = b.dataset;
                 const entry = entries[user]?.[id];
                 if (entry) _openEditDialog(user, id, entry);
+            });
+        });
+
+        body.querySelectorAll('.pj-care-note-send').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const { user, id } = btn.dataset;
+                const ta = body.querySelector(`.pj-care-note-input[data-user="${user}"][data-id="${id}"]`);
+                const note = ta?.value?.trim();
+                if (!note) return;
+                btn.disabled = true;
+                ta.disabled  = true;
+                await _saveCareNote(user, id, note);
             });
         });
     }
@@ -18142,9 +18248,14 @@ document.addEventListener('click', (e) => {
         if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
     }
 
-    // ---- Firebase listener ----
+    // ---- Firebase listeners ----
     onValue(painJournalRef, snap => {
         entries = snap.val() || {};
+        render();
+    });
+
+    onValue(painPatternNotesRef, snap => {
+        patternNotes = snap.val() || {};
         render();
     });
 
