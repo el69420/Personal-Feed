@@ -11466,6 +11466,8 @@ function renderScrapbook() {
     let editingId    = null;
     let expandedDays = new Set();
     let viewingUser  = null; // null = own diary; string = other user's diary (read-only)
+    let acSuggestions = [];
+    let acIndex       = -1;
 
     const MEAL_ICONS = { breakfast: '&#127749;', lunch: '&#127822;', dinner: '&#127857;', snack: '&#127863;' };
 
@@ -11534,6 +11536,64 @@ function renderScrapbook() {
     makeDraggable(win, handle, 'w95-win-fooddiary');
 
     // ---- App shell (rendered once on open) ----
+    // ---- Autocomplete helpers ----
+    function getSuggestions(query) {
+        if (!query) return [];
+        const q = query.toLowerCase();
+        const seen = new Map();
+        Object.values(allEntries).forEach(entry => {
+            if (entry.userId !== currentUser) return;
+            const key = entry.foodText.toLowerCase();
+            if (!seen.has(key) || entry.eatenAt > seen.get(key).eatenAt) {
+                seen.set(key, entry);
+            }
+        });
+        return Array.from(seen.values())
+            .filter(e => e.foodText.toLowerCase().includes(q))
+            .sort((a, b) => b.eatenAt - a.eatenAt)
+            .slice(0, 8);
+    }
+
+    function renderAutocomplete(suggestions) {
+        const ac = document.getElementById('fd-autocomplete');
+        if (!ac) return;
+        if (!suggestions.length) { ac.style.display = 'none'; ac.innerHTML = ''; return; }
+        ac.innerHTML = suggestions.map((s, i) => {
+            const nutParts = nutSummaryParts(s.nutrition);
+            return `<div class="fd-autocomplete-item${i === acIndex ? ' fd-ac-active' : ''}" data-ac-idx="${i}">
+                <div class="fd-ac-food">${safeText(s.foodText)}</div>
+                ${nutParts.length ? `<div class="fd-ac-nut">${nutParts.join(' · ')}</div>` : ''}
+            </div>`;
+        }).join('');
+        ac.style.display = 'block';
+    }
+
+    function applyAutocomplete(entry) {
+        const input = document.getElementById('fd-food-input');
+        if (input) input.value = entry.foodText;
+        const ac = document.getElementById('fd-autocomplete');
+        if (ac) { ac.style.display = 'none'; ac.innerHTML = ''; }
+        acIndex = -1;
+        acSuggestions = [];
+        if (entry.nutrition) {
+            if (!nutOpen) {
+                nutOpen = true;
+                const nutFields = document.getElementById('fd-nut-fields');
+                const nutBtn = document.getElementById('fd-nut-toggle-btn');
+                if (nutFields) nutFields.style.display = 'block';
+                if (nutBtn) nutBtn.innerHTML = '&#8722; Hide nutrition';
+            }
+            NUT_FIELDS.forEach(f => {
+                const el = document.getElementById(f.newId);
+                if (el) el.value = entry.nutrition[f.key] != null ? entry.nutrition[f.key] : '';
+            });
+        }
+        if (entry.mealType) {
+            const select = document.getElementById('fd-meal-select');
+            if (select) select.value = entry.mealType;
+        }
+    }
+
     function nutGridHtml(idProp, values) {
         return `<div class="fd-nut-grid">${NUT_FIELDS.map(f => `
             <div class="fd-nut-field">
@@ -11559,9 +11619,12 @@ function renderScrapbook() {
                     <div class="fd-form">
                         <div class="fd-field">
                             <label class="fd-label" for="fd-food-input">What did you eat?</label>
-                            <input id="fd-food-input" class="fd-input" type="text"
-                                placeholder="e.g. 2 eggs, toast, coffee"
-                                autocomplete="off" maxlength="300" />
+                            <div class="fd-autocomplete-wrap">
+                                <input id="fd-food-input" class="fd-input" type="text"
+                                    placeholder="e.g. 2 eggs, toast, coffee"
+                                    autocomplete="off" maxlength="300" />
+                                <div id="fd-autocomplete" class="fd-autocomplete" style="display:none;"></div>
+                            </div>
                         </div>
                         <div class="fd-field">
                             <label class="fd-label" for="fd-meal-select">Meal type <span class="fd-optional">(optional)</span></label>
@@ -11607,8 +11670,47 @@ function renderScrapbook() {
                 document.getElementById('fd-nut-toggle-btn').innerHTML = nutOpen ? '&#8722; Hide nutrition' : '&#43; Add nutrition';
             });
             document.getElementById('fd-submit-btn').addEventListener('click', handleSubmit);
+            document.getElementById('fd-food-input').addEventListener('input', () => {
+                acIndex = -1;
+                const query = document.getElementById('fd-food-input').value.trim();
+                acSuggestions = getSuggestions(query);
+                renderAutocomplete(acSuggestions);
+            });
             document.getElementById('fd-food-input').addEventListener('keydown', e => {
-                if (e.key === 'Enter') handleSubmit();
+                const ac = document.getElementById('fd-autocomplete');
+                const acVisible = ac && ac.style.display !== 'none';
+                if (e.key === 'ArrowDown' && acVisible) {
+                    e.preventDefault();
+                    acIndex = Math.min(acIndex + 1, acSuggestions.length - 1);
+                    renderAutocomplete(acSuggestions);
+                } else if (e.key === 'ArrowUp' && acVisible) {
+                    e.preventDefault();
+                    acIndex = Math.max(acIndex - 1, -1);
+                    renderAutocomplete(acSuggestions);
+                } else if (e.key === 'Escape' && acVisible) {
+                    ac.style.display = 'none';
+                    acIndex = -1;
+                } else if (e.key === 'Enter') {
+                    if (acIndex >= 0 && acSuggestions[acIndex]) {
+                        e.preventDefault();
+                        applyAutocomplete(acSuggestions[acIndex]);
+                    } else {
+                        handleSubmit();
+                    }
+                }
+            });
+            document.getElementById('fd-food-input').addEventListener('blur', () => {
+                setTimeout(() => {
+                    const ac = document.getElementById('fd-autocomplete');
+                    if (ac) { ac.style.display = 'none'; acIndex = -1; }
+                }, 150);
+            });
+            document.getElementById('fd-autocomplete').addEventListener('mousedown', e => {
+                const item = e.target.closest('.fd-autocomplete-item');
+                if (!item) return;
+                e.preventDefault();
+                const idx = parseInt(item.dataset.acIdx, 10);
+                if (!isNaN(idx) && acSuggestions[idx]) applyAutocomplete(acSuggestions[idx]);
             });
         } else {
             document.getElementById('fd-entries-list').addEventListener('click', handleEntryAction);

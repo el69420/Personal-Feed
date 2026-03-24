@@ -11992,7 +11992,52 @@ body[data-theme] .sys-props-tab--active {
   border-bottom-color: var(--win-bg, #f0f0f0);
 }
 
+/* Autocomplete dropdown */
+.fd-autocomplete-wrap {
+  position: relative;
+}
+.fd-autocomplete {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 200;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, rgba(0,0,0,0.15));
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  max-height: 180px;
+  overflow-y: auto;
+}
+.fd-autocomplete-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  line-height: 1.3;
+}
+.fd-autocomplete-item:hover,
+.fd-autocomplete-item.fd-ac-active {
+  background: var(--accent, #0078d4);
+  color: #fff;
+}
+.fd-ac-food {
+  font-size: 12px;
+  font-weight: 600;
+}
+.fd-ac-nut {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 1px;
+}
+.fd-autocomplete-item.fd-ac-active .fd-ac-nut {
+  opacity: 0.88;
+}
+
 /* Dark mode */
+body.dark-mode .fd-autocomplete {
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+}
 body.dark-mode .fd-status-error {
   background: rgba(200,30,30,0.15);
   color: #fca5a5;
