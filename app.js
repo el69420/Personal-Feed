@@ -4473,8 +4473,19 @@ function setupPresence() {
     // Re-register the onDisconnect handler every time the connection is established
     // (or re-established after a drop). Without this, a reconnect clears the server-side
     // handler and the user gets stuck showing as permanently online.
+    let _returnNoticeChecked = false;
     onValue(ref(database, '.info/connected'), snap => {
         if (!snap.val()) return; // currently disconnected — nothing to register
+        // Noticing: one-time check — did this user return after 48+ hours away?
+        if (!_returnNoticeChecked) {
+            _returnNoticeChecked = true;
+            get(_presRef).then(prev => {
+                const d = prev.val();
+                if (d?.ts && (Date.now() - d.ts) > 48 * 3_600_000) {
+                    window.noticingSystem?.emit('presence:returned');
+                }
+            }).catch(() => {});
+        }
         // Register server-side cleanup; serverTimestamp() is evaluated at disconnect time
         onDisconnect(_presRef).set({ state: 'offline', ts: serverTimestamp() });
         // Announce online
@@ -6379,8 +6390,11 @@ const w95Layout = (() => {
       winEl.style.width  = Math.max(cssMinW, Math.min(vw, data.w)) + 'px';
     }
     if (data.h) {
-      const cssMinH = parseFloat(getComputedStyle(winEl).minHeight) || 80;
-      winEl.style.height = Math.max(cssMinH, Math.min(vh, data.h)) + 'px';
+      const _cs = getComputedStyle(winEl);
+      const cssMinH = parseFloat(_cs.minHeight) || 80;
+      const cssMaxH = parseFloat(_cs.maxHeight);
+      const capH = isFinite(cssMaxH) ? Math.min(vh, cssMaxH) : vh;
+      winEl.style.height = Math.max(cssMinH, Math.min(capH, data.h)) + 'px';
     }
     const w    = data.w || winEl.offsetWidth  || 280;
     const h    = data.h || winEl.offsetHeight || 200;
@@ -6885,7 +6899,30 @@ const w95Apps = {};
       }
     }
     renderGarden(snap.val());
+    _checkGardenNotices(snap.val());
   });
+
+  // ---- Noticing: garden state checks ----
+  function _checkGardenNotices(state) {
+    if (!state || !window.noticingSystem) return;
+    const ns    = window.noticingSystem;
+    const now   = Date.now();
+    const MS_H  = 3_600_000;
+    const tiles = state.tiles || {};
+
+    // "this one's been waiting" — a tile last watered 24–48 h ago (past its prime, not yet wilted)
+    const anyWaiting = Object.values(tiles).some(t =>
+      t && t.lastWatered &&
+      (now - t.lastWatered) > 24 * MS_H &&
+      (now - t.lastWatered) < 48 * MS_H
+    );
+    if (anyWaiting) ns.emit('garden:plant_waiting');
+
+    // "this one's been well looked after" — both users watered today
+    const today    = new Date().toISOString().slice(0, 10);
+    const todayRec = (state.wateredByDay || {})[today] || {};
+    if (todayRec.el && todayRec.tero) ns.emit('garden:well_tended');
+  }
 
   // ---- Shared Water Garden button state ----
   function updateWaterGardenBtn() {
@@ -7236,6 +7273,19 @@ const w95Apps = {};
           const contributors = new Set(vaseFlowers.map(f => f.collectedBy).filter(Boolean));
           if (contributors.size >= 2) await unlockAchievement('flower_shared');
       }
+
+      // Noticing: "something new again" — first flower ever, or collected after a quiet period
+      if (flowerCount <= 1) {
+        window.noticingSystem?.emit('garden:something_new');
+      } else {
+        const allTs = Object.values(vaseSnap.val() || {})
+          .map(f => f.collectedAt || 0)
+          .sort((a, b) => a - b);
+        const prevLastTs = allTs[allTs.length - 2] || 0;
+        if (prevLastTs && (Date.now() - prevLastTs) > 48 * 3_600_000) {
+          window.noticingSystem?.emit('garden:something_new');
+        }
+      }
     } catch (e) {
       console.error('collectFlower failed', e);
       showToast('Could not collect. Please try again.');
@@ -7304,7 +7354,26 @@ const w95Apps = {};
   // Live vase listener — updates whenever a flower is collected by either user
   onValue(vaseRef, (snap) => {
     renderVase(snap.val());
+    _checkVaseNotices(snap.val());
   });
+
+  // ---- Noticing: vase state checks ----
+  function _checkVaseNotices(vaseData) {
+    if (!window.noticingSystem) return;
+    const ns      = window.noticingSystem;
+    const flowers = vaseData?.flowers ? Object.values(vaseData.flowers) : [];
+    const count   = flowers.length;
+
+    if (count === 0) {
+      ns.emit('garden:vase_quiet');
+      return;
+    }
+    // "it's been quiet here" — no new flower collected in the last 72 h
+    const lastTs = flowers.reduce((m, f) => Math.max(m, f.collectedAt || 0), 0);
+    if (lastTs && (Date.now() - lastTs) > 72 * 3_600_000) ns.emit('garden:vase_quiet');
+    // "it's getting crowded" — 20+ flowers
+    if (count >= 20) ns.emit('garden:vase_crowded');
+  }
 
   // Shared Water Garden button
   document.getElementById('garden-water-garden-btn')?.addEventListener('click', async () => {
@@ -7641,6 +7710,7 @@ const w95Apps = {};
 
   // ---- Show / hide ----
   function show() {
+    const wasHidden = win.classList.contains('is-hidden');
     if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-garden', 'GARDEN', () => {
       if (win.classList.contains('is-hidden')) show(); else hide();
     });
@@ -11654,6 +11724,8 @@ function renderScrapbook() {
     let editingId    = null;
     let expandedDays = new Set();
     let viewingUser  = null; // null = own diary; string = other user's diary (read-only)
+    let acSuggestions = [];
+    let acIndex       = -1;
 
     const MEAL_ICONS = { breakfast: '&#127749;', lunch: '&#127822;', dinner: '&#127857;', snack: '&#127863;' };
 
@@ -11722,6 +11794,64 @@ function renderScrapbook() {
     makeDraggable(win, handle, 'w95-win-fooddiary');
 
     // ---- App shell (rendered once on open) ----
+    // ---- Autocomplete helpers ----
+    function getSuggestions(query) {
+        if (!query) return [];
+        const q = query.toLowerCase();
+        const seen = new Map();
+        Object.values(allEntries).forEach(entry => {
+            if (entry.userId !== currentUser) return;
+            const key = entry.foodText.toLowerCase();
+            if (!seen.has(key) || entry.eatenAt > seen.get(key).eatenAt) {
+                seen.set(key, entry);
+            }
+        });
+        return Array.from(seen.values())
+            .filter(e => e.foodText.toLowerCase().includes(q))
+            .sort((a, b) => b.eatenAt - a.eatenAt)
+            .slice(0, 8);
+    }
+
+    function renderAutocomplete(suggestions) {
+        const ac = document.getElementById('fd-autocomplete');
+        if (!ac) return;
+        if (!suggestions.length) { ac.style.display = 'none'; ac.innerHTML = ''; return; }
+        ac.innerHTML = suggestions.map((s, i) => {
+            const nutParts = nutSummaryParts(s.nutrition);
+            return `<div class="fd-autocomplete-item${i === acIndex ? ' fd-ac-active' : ''}" data-ac-idx="${i}">
+                <div class="fd-ac-food">${safeText(s.foodText)}</div>
+                ${nutParts.length ? `<div class="fd-ac-nut">${nutParts.join(' · ')}</div>` : ''}
+            </div>`;
+        }).join('');
+        ac.style.display = 'block';
+    }
+
+    function applyAutocomplete(entry) {
+        const input = document.getElementById('fd-food-input');
+        if (input) input.value = entry.foodText;
+        const ac = document.getElementById('fd-autocomplete');
+        if (ac) { ac.style.display = 'none'; ac.innerHTML = ''; }
+        acIndex = -1;
+        acSuggestions = [];
+        if (entry.nutrition) {
+            if (!nutOpen) {
+                nutOpen = true;
+                const nutFields = document.getElementById('fd-nut-fields');
+                const nutBtn = document.getElementById('fd-nut-toggle-btn');
+                if (nutFields) nutFields.style.display = 'block';
+                if (nutBtn) nutBtn.innerHTML = '&#8722; Hide nutrition';
+            }
+            NUT_FIELDS.forEach(f => {
+                const el = document.getElementById(f.newId);
+                if (el) el.value = entry.nutrition[f.key] != null ? entry.nutrition[f.key] : '';
+            });
+        }
+        if (entry.mealType) {
+            const select = document.getElementById('fd-meal-select');
+            if (select) select.value = entry.mealType;
+        }
+    }
+
     function nutGridHtml(idProp, values) {
         return `<div class="fd-nut-grid">${NUT_FIELDS.map(f => `
             <div class="fd-nut-field">
@@ -11747,9 +11877,12 @@ function renderScrapbook() {
                     <div class="fd-form">
                         <div class="fd-field">
                             <label class="fd-label" for="fd-food-input">What did you eat?</label>
-                            <input id="fd-food-input" class="fd-input" type="text"
-                                placeholder="e.g. 2 eggs, toast, coffee"
-                                autocomplete="off" maxlength="300" />
+                            <div class="fd-autocomplete-wrap">
+                                <input id="fd-food-input" class="fd-input" type="text"
+                                    placeholder="e.g. 2 eggs, toast, coffee"
+                                    autocomplete="off" maxlength="300" />
+                                <div id="fd-autocomplete" class="fd-autocomplete" style="display:none;"></div>
+                            </div>
                         </div>
                         <div class="fd-field">
                             <label class="fd-label" for="fd-meal-select">Meal type <span class="fd-optional">(optional)</span></label>
@@ -11795,8 +11928,45 @@ function renderScrapbook() {
                 document.getElementById('fd-nut-toggle-btn').innerHTML = nutOpen ? '&#8722; Hide nutrition' : '&#43; Add nutrition';
             });
             document.getElementById('fd-submit-btn').addEventListener('click', handleSubmit);
+            document.getElementById('fd-food-input').addEventListener('input', () => {
+                acIndex = -1;
+                const query = document.getElementById('fd-food-input').value.trim();
+                acSuggestions = getSuggestions(query);
+                renderAutocomplete(acSuggestions);
+            });
             document.getElementById('fd-food-input').addEventListener('keydown', e => {
-                if (e.key === 'Enter') handleSubmit();
+                const ac = document.getElementById('fd-autocomplete');
+                const acVisible = ac && ac.style.display !== 'none';
+                if (e.key === 'ArrowDown' && acVisible) {
+                    e.preventDefault();
+                    acIndex = Math.min(acIndex + 1, acSuggestions.length - 1);
+                    renderAutocomplete(acSuggestions);
+                } else if (e.key === 'ArrowUp' && acVisible) {
+                    e.preventDefault();
+                    acIndex = Math.max(acIndex - 1, -1);
+                    renderAutocomplete(acSuggestions);
+                } else if (e.key === 'Escape' && acVisible) {
+                    ac.style.display = 'none';
+                    acIndex = -1;
+                } else if (e.key === 'Enter') {
+                    if (acIndex >= 0 && acSuggestions[acIndex]) {
+                        e.preventDefault();
+                        applyAutocomplete(acSuggestions[acIndex]);
+                    } else {
+                        handleSubmit();
+                    }
+                }
+            });
+            document.getElementById('fd-food-input').addEventListener('blur', () => {
+                const ac = document.getElementById('fd-autocomplete');
+                if (ac) { ac.style.display = 'none'; acIndex = -1; }
+            });
+            document.getElementById('fd-autocomplete').addEventListener('mousedown', e => {
+                const item = e.target.closest('.fd-autocomplete-item');
+                if (!item) return;
+                e.preventDefault();
+                const idx = parseInt(item.dataset.acIdx, 10);
+                if (!isNaN(idx) && acSuggestions[idx]) applyAutocomplete(acSuggestions[idx]);
             });
         } else {
             document.getElementById('fd-entries-list').addEventListener('click', handleEntryAction);
@@ -11867,11 +12037,19 @@ function renderScrapbook() {
         const mealLabel = entry.mealType ? `${MEAL_ICONS[entry.mealType] || ''} ${entry.mealType}` : '';
 
         if (editingId === id) {
+            const eatenDate = new Date(entry.eatenAt);
+            const hh = String(eatenDate.getHours()).padStart(2, '0');
+            const mm = String(eatenDate.getMinutes()).padStart(2, '0');
+            const timeValue = `${hh}:${mm}`;
             return `
                 <div class="fd-entry-card fd-entry-editing">
                     <div class="fd-entry-header">
                         <span class="fd-entry-food">${safeText(entry.foodText)}</span>
                         ${mealLabel ? `<span class="fd-entry-meal">${mealLabel}</span>` : ''}
+                    </div>
+                    <div class="fd-edit-time-row">
+                        <label class="fd-label" for="fd-ei-time">Time</label>
+                        <input id="fd-ei-time" class="fd-input" type="time" value="${timeValue}" />
                     </div>
                     <div class="fd-nut-fields" style="display:block;margin-top:6px;">
                         ${nutGridHtml('editId', entry.nutrition || {})}
@@ -12012,6 +12190,17 @@ function renderScrapbook() {
         NUT_FIELDS.forEach(f => { nutrition[f.key] = parseNum(f.editId); });
         const hasNutrition = Object.values(nutrition).some(v => v !== null);
 
+        // Read the edited time value and compute updated eatenAt timestamp
+        const timeInput = document.getElementById('fd-ei-time');
+        const entry = allEntries[editingId];
+        let eatenAt = entry ? entry.eatenAt : Date.now();
+        if (timeInput && timeInput.value && entry) {
+            const [h, m] = timeInput.value.split(':').map(Number);
+            const d = new Date(entry.eatenAt);
+            d.setHours(h, m, 0, 0);
+            eatenAt = d.getTime();
+        }
+
         // Clear the edit form immediately so the onValue re-render doesn't
         // race and re-show it before the await resolves.
         const id = editingId;
@@ -12019,7 +12208,7 @@ function renderScrapbook() {
         renderEntries();
 
         try {
-            await update(ref(database, `foodDiary/${id}`), { nutrition: hasNutrition ? nutrition : null });
+            await update(ref(database, `foodDiary/${id}`), { nutrition: hasNutrition ? nutrition : null, eatenAt });
         } catch (err) {
             console.error('Food diary edit error:', err);
             editingId = id; // restore so user can retry
@@ -14873,6 +15062,7 @@ function initPixelCat() {
             if (onlineCount >= 2 && !_bothOnlineFired) {
                 _bothOnlineFired = true;
                 fireCatEvent('heart');
+                window.noticingSystem?.emit('presence:both_online');
             }
         }
         if (onlineCount < 2) _bothOnlineFired = false; // reset so it can fire again next time
@@ -18790,12 +18980,66 @@ document.addEventListener('click', (e) => {
     onValue(painJournalRef, snap => {
         entries = snap.val() || {};
         render();
+        _checkPainNotices(entries);
     });
 
     onValue(painPatternNotesRef, snap => {
         patternNotes = snap.val() || {};
         render();
+        _checkPatternNoteNotice(patternNotes);
     });
+
+    // ---- Noticing: pain journal checks ----
+    function _checkPainNotices(allEntries) {
+        if (!window.noticingSystem || !currentUser) return;
+        const ns        = window.noticingSystem;
+        const myData    = allEntries[currentUser] || {};
+        const otherName = _otherUser();
+        const otherData = otherName !== 'you' ? (allEntries[otherName] || {}) : {};
+        const now       = Date.now();
+        const H48       = 48 * 3_600_000;
+        const D7        = 7  * 86_400_000;
+
+        // Recent entries (last 7 days, numeric level only)
+        const recent = Object.values(myData)
+            .filter(e => e && e.ts && e.level != null && (now - e.ts) < D7)
+            .sort((a, b) => a.ts - b.ts);
+
+        // "this feels familiar…" — same pain level appears 3+ times in last 7 days
+        if (recent.length >= 3) {
+            const counts = {};
+            recent.forEach(e => { counts[e.level] = (counts[e.level] || 0) + 1; });
+            if (Object.values(counts).some(c => c >= 3)) ns.emit('pain:pattern');
+        }
+
+        // "this seems lighter than before" — avg of last 3 entries lower than previous 3
+        if (recent.length >= 6) {
+            const avg = arr => arr.reduce((s, e) => s + e.level, 0) / arr.length;
+            if (avg(recent.slice(-3)) < avg(recent.slice(-6, -3)) - 1) ns.emit('pain:improving');
+        }
+
+        // "you've both been feeling this lately" — both had entries in last 48 h with similar level
+        const myH48 = Object.values(myData).filter(e => e && e.ts && e.level != null && (now - e.ts) < H48);
+        const otH48 = Object.values(otherData).filter(e => e && e.ts && e.level != null && (now - e.ts) < H48);
+        if (myH48.length && otH48.length) {
+            const similar = myH48.some(me => otH48.some(ot => Math.abs(me.level - ot.level) <= 2));
+            if (similar) ns.emit('pain:both_feeling');
+        }
+    }
+
+    function _checkPatternNoteNotice(notes) {
+        if (!window.noticingSystem || !currentUser) return;
+        const other = _otherUser();
+        if (other === 'you') return;
+        // "they left something here for you" — other user added a pattern note in the last 24 h
+        const H24 = 24 * 3_600_000;
+        const now = Date.now();
+        const left = Object.values(notes).some(userNotes =>
+            Object.values(typeof userNotes === 'object' && userNotes !== null ? userNotes : {})
+                .some(n => n && n.author === other && n.ts && (now - n.ts) < H24)
+        );
+        if (left) window.noticingSystem.emit('pain:left_something');
+    }
 
     // ---- Event bindings ----
     if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
@@ -18872,7 +19116,38 @@ document.addEventListener('click', (e) => {
         itemsUnsub = onValue(ref(database, `shoppingItems/${listId}`), snap => {
             allItems = snap.val() || {};
             if (!win.classList.contains('is-hidden')) renderItems();
+            _checkListNotices();
         });
+    }
+
+    // ---- Noticing: list state checks ----
+    function _checkListNotices() {
+        if (!window.noticingSystem || !currentUser) return;
+        const ns    = window.noticingSystem;
+        const items = Object.values(allItems).filter(Boolean);
+        if (!items.length) return;
+
+        // "nothing left for now" — all items completed; also counts as a tidy-up
+        if (items.every(i => i.completed)) {
+            ns.emit('list:all_done');
+            ns.emit('presence:tidied_up');
+            return;
+        }
+
+        // "this has been sitting here" — no item added in the last 72 h
+        const now         = Date.now();
+        const H72         = 72 * 3_600_000;
+        const mostRecent  = items.reduce((m, i) => Math.max(m, i.createdAt || 0), 0);
+        if (mostRecent && (now - mostRecent) > H72) ns.emit('list:sitting_here');
+
+        // "you were both thinking about this" — two different users added the same item text
+        const byUser = {};
+        items.forEach(i => {
+            if (!i.text || !i.createdBy) return;
+            const key = i.text.trim().toLowerCase();
+            (byUser[key] = byUser[key] || new Set()).add(i.createdBy);
+        });
+        if (Object.values(byUser).some(s => s.size >= 2)) ns.emit('list:both_thinking');
     }
 
     // ---- Firebase: presence for active list ----
@@ -19079,6 +19354,8 @@ document.addEventListener('click', (e) => {
         if (item.claimedBy === currentUser) {
             remove(ref(database, `shoppingItems/${activeId}/${itemId}/claimedBy`));
         } else {
+            // Noticing: "you both reached for this" — someone else already claimed it
+            if (item.claimedBy) window.noticingSystem?.emit('list:both_reached');
             set(ref(database, `shoppingItems/${activeId}/${itemId}/claimedBy`), currentUser);
             unlockAchievement('first_claim');
         }
