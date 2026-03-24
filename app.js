@@ -13528,6 +13528,18 @@ async function loadUserWallpaper() {
             }
             picker.appendChild(card);
         });
+
+        // Show locked count hint below picker
+        picker.querySelectorAll('.ss-locked-hint').forEach(e => e.remove());
+        const lockedCount = getAllRewardsByType(REWARD_TYPE_SCREENSAVER)
+            .filter(r => !isRewardUnlocked(r.id)).length;
+        if (lockedCount > 0) {
+            const hint = document.createElement('div');
+            hint.className = 'ss-locked-hint settings-hint';
+            hint.style.cssText = 'width:100%;margin-top:4px;';
+            hint.textContent = `🔒 ${lockedCount} more screensaver${lockedCount === 1 ? '' : 's'} available — earn achievements to unlock`;
+            picker.appendChild(hint);
+        }
     }
 
     // ---- Render reward sound packs in the Sound tab ----
