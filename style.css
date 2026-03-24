@@ -9345,6 +9345,141 @@ body[data-theme="theme_crt"] .w95-window {
   --input-border:   rgba(0, 100, 0, 0.55);
 }
 
+/* --- Garden Floor theme --- */
+body[data-theme="theme_garden_floor"] .w95-window,
+body[data-theme="theme_garden_floor"] .w95-body {
+  background-color: #0e2008 !important;
+  color: #c8e8a0 !important;
+}
+body[data-theme="theme_garden_floor"] .w95-titlebar {
+  background: linear-gradient(to right, #2a5010, #3d7020) !important;
+  color: #d8f0a8 !important;
+}
+body[data-theme="theme_garden_floor"] .window--active .w95-titlebar {
+  background: linear-gradient(to right, #3d7020, #5a9a30) !important;
+  color: #f0ffd8 !important;
+}
+body[data-theme="theme_garden_floor"] .w95-title { color: #c8e8a0; }
+body[data-theme="theme_garden_floor"] .w95-btn {
+  background: #182a0a !important;
+  color: #a8d070 !important;
+  border-color: #4a8020 #0a1804 #0a1804 #4a8020 !important;
+}
+body[data-theme="theme_garden_floor"] #w95-taskbar {
+  background: #081404 !important;
+  border-top-color: #1e3c0a !important;
+}
+body[data-theme="theme_garden_floor"] #w95-taskbar .w95-btn {
+  background: #101e06 !important;
+  color: #80c050 !important;
+}
+body[data-theme="theme_garden_floor"] input,
+body[data-theme="theme_garden_floor"] textarea,
+body[data-theme="theme_garden_floor"] select {
+  background: #0a1806 !important;
+  color: #a8d070 !important;
+  border-color: #2a5010 !important;
+}
+body[data-theme="theme_garden_floor"] .w95-window {
+  --text-primary:   #c8e8a0;
+  --text-secondary: #80b850;
+  --card-bg:        rgba(14, 32, 8, 0.97);
+  --section-bg:     rgba(8, 20, 4, 0.80);
+  --card-border:    rgba(74, 128, 32, 0.38);
+  --input-bg:       rgba(10, 24, 6, 0.95);
+  --input-border:   rgba(42, 80, 16, 0.60);
+}
+
+/* --- Golden Hour theme --- */
+body[data-theme="theme_golden"] .w95-window,
+body[data-theme="theme_golden"] .w95-body {
+  background-color: #221000 !important;
+  color: #f0d090 !important;
+}
+body[data-theme="theme_golden"] .w95-titlebar {
+  background: linear-gradient(to right, #804010, #b06020) !important;
+  color: #f8e8c0 !important;
+}
+body[data-theme="theme_golden"] .window--active .w95-titlebar {
+  background: linear-gradient(to right, #b06020, #d08030) !important;
+  color: #fff8e8 !important;
+}
+body[data-theme="theme_golden"] .w95-title { color: #f0d090; }
+body[data-theme="theme_golden"] .w95-btn {
+  background: #301800 !important;
+  color: #d0a050 !important;
+  border-color: #906030 #180c00 #180c00 #906030 !important;
+}
+body[data-theme="theme_golden"] #w95-taskbar {
+  background: #180c00 !important;
+  border-top-color: #402010 !important;
+}
+body[data-theme="theme_golden"] #w95-taskbar .w95-btn {
+  background: #201000 !important;
+  color: #b08040 !important;
+}
+body[data-theme="theme_golden"] input,
+body[data-theme="theme_golden"] textarea,
+body[data-theme="theme_golden"] select {
+  background: #180c00 !important;
+  color: #c89050 !important;
+  border-color: #704020 !important;
+}
+body[data-theme="theme_golden"] .w95-window {
+  --text-primary:   #f0d090;
+  --text-secondary: #c09050;
+  --card-bg:        rgba(34, 16, 0, 0.97);
+  --section-bg:     rgba(22, 10, 0, 0.80);
+  --card-border:    rgba(144, 80, 32, 0.40);
+  --input-bg:       rgba(20, 10, 0, 0.95);
+  --input-border:   rgba(112, 56, 16, 0.55);
+}
+
+/* --- Dusk theme --- */
+body[data-theme="theme_dusk"] .w95-window,
+body[data-theme="theme_dusk"] .w95-body {
+  background-color: #100c1c !important;
+  color: #ccc0e0 !important;
+}
+body[data-theme="theme_dusk"] .w95-titlebar {
+  background: linear-gradient(to right, #2e1f4a, #3e2860) !important;
+  color: #d8ccea !important;
+}
+body[data-theme="theme_dusk"] .window--active .w95-titlebar {
+  background: linear-gradient(to right, #4a3070, #603888) !important;
+  color: #f0ecff !important;
+}
+body[data-theme="theme_dusk"] .w95-title { color: #ccc0e0; }
+body[data-theme="theme_dusk"] .w95-btn {
+  background: #1c1430 !important;
+  color: #a898c8 !important;
+  border-color: #503870 #0c0818 #0c0818 #503870 !important;
+}
+body[data-theme="theme_dusk"] #w95-taskbar {
+  background: #0c0816 !important;
+  border-top-color: #1e1638 !important;
+}
+body[data-theme="theme_dusk"] #w95-taskbar .w95-btn {
+  background: #140e24 !important;
+  color: #9080b8 !important;
+}
+body[data-theme="theme_dusk"] input,
+body[data-theme="theme_dusk"] textarea,
+body[data-theme="theme_dusk"] select {
+  background: #120a20 !important;
+  color: #b0a0d0 !important;
+  border-color: #382858 !important;
+}
+body[data-theme="theme_dusk"] .w95-window {
+  --text-primary:   #ccc0e0;
+  --text-secondary: #9080b8;
+  --card-bg:        rgba(16, 12, 28, 0.97);
+  --section-bg:     rgba(10, 8, 20, 0.80);
+  --card-border:    rgba(80, 56, 112, 0.40);
+  --input-bg:       rgba(14, 10, 26, 0.95);
+  --input-border:   rgba(56, 40, 88, 0.55);
+}
+
 /* ============================================================
    EXTENDED THEME CHROME
    Secondary chrome elements (start menu, context menus, window

@@ -7223,6 +7223,19 @@ const w95Apps = {};
       const vaseSnap   = await get(ref(database, 'garden/vase/flowers'));
       const flowerCount = vaseSnap.exists() ? Object.keys(vaseSnap.val()).length : 0;
       checkVaseMilestone(flowerCount);
+
+      // Flower collection achievements
+      const myFlowerTotal = Number(localStorage.getItem('totalFlowersCollected') || 0) + 1;
+      localStorage.setItem('totalFlowersCollected', String(myFlowerTotal));
+      if (myFlowerTotal >= 1)  await unlockAchievement('first_flower');
+      if (myFlowerTotal >= 5)  await unlockAchievement('flower_five');
+      if (myFlowerTotal >= 12) await unlockAchievement('flower_twelve');
+      // Shared vase: check if both users have contributed
+      if (!unlockedAchievements.has('flower_shared') && vaseSnap.exists()) {
+          const vaseFlowers = Object.values(vaseSnap.val() || {});
+          const contributors = new Set(vaseFlowers.map(f => f.collectedBy).filter(Boolean));
+          if (contributors.size >= 2) await unlockAchievement('flower_shared');
+      }
     } catch (e) {
       console.error('collectFlower failed', e);
       showToast('Could not collect. Please try again.');
@@ -8714,6 +8727,29 @@ const PAIN_LOCATIONS = [
             });
             _closePainPicker();
             showToast(level !== null ? 'Pain level updated!' : 'Pain level cleared!');
+
+            // Pain journal achievements (only when actually logging a level, not clearing)
+            if (level !== null) {
+                await unlockAchievement('first_pain_entry');
+                const painToday = localDateStr();
+                let painDays = [];
+                try { painDays = JSON.parse(localStorage.getItem('painJournalDays') || '[]'); } catch(_) {}
+                if (!painDays.includes(painToday)) {
+                    painDays.push(painToday);
+                    localStorage.setItem('painJournalDays', JSON.stringify(painDays));
+                }
+                if (painDays.length >= 5) await unlockAchievement('pain_journal_days');
+                // Both-in-pain-journal check
+                if (!unlockedAchievements.has('both_in_pain_journal')) {
+                    try {
+                        const otherUser = currentUser === 'El' ? 'Tero' : 'El';
+                        const otherSnap = await get(child(painJournalRef, otherUser));
+                        if (otherSnap.exists() && Object.keys(otherSnap.val()).length > 0) {
+                            await unlockAchievement('both_in_pain_journal');
+                        }
+                    } catch(_) {}
+                }
+            }
         } catch (e) {
             showToast('Save failed — try again.');
         }
@@ -10021,6 +10057,118 @@ var ACHIEVEMENTS = [
         getProgress: () => unlockedAchievements.size,
         rewardIds:   ['cmd_linkstats', 'cmd_whoami'],
     },
+
+    // ---- Flower / Vase Collection ----
+    {
+        id:    'first_flower',
+        title: 'First Bloom',
+        desc:  'Collect your first flower into the vase',
+        icon:  '[✿]',
+        xp:    15,
+        tier:  'bronze',
+        rewardIds: ['wp_meadow'],
+    },
+    {
+        id:          'flower_five',
+        title:       'Little Bouquet',
+        desc:        'Collect 5 flowers into the vase',
+        icon:        '[✿✿]',
+        xp:          25,
+        tier:        'silver',
+        target:      5,
+        getProgress: () => Number(localStorage.getItem('totalFlowersCollected') || 0),
+        rewardIds:   ['theme_garden_floor'],
+    },
+    {
+        id:          'flower_twelve',
+        title:       'Full Vase',
+        desc:        'Gather enough flowers to fill the vase',
+        icon:        '[❀]',
+        xp:          40,
+        tier:        'gold',
+        target:      12,
+        getProgress: () => Number(localStorage.getItem('totalFlowersCollected') || 0),
+        rewardIds:   ['ss_fireflies'],
+    },
+    {
+        id:                  'flower_shared',
+        title:               'Tended Together',
+        desc:                'Both of you have added flowers to the vase',
+        icon:                '[✿✿]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  75,
+        rewardIds:           ['wp_morning_mist', 'theme_dusk'],
+    },
+
+    // ---- Pain Journal ----
+    {
+        id:    'first_pain_entry',
+        title: 'Checking In',
+        desc:  'Write your first pain journal entry',
+        icon:  '[♡]',
+        xp:    15,
+        tier:  'bronze',
+        rewardIds: ['ss_breathing'],
+    },
+    {
+        id:          'pain_journal_days',
+        title:       'A Record of Days',
+        desc:        'Log your pain on 5 different days',
+        icon:        '[♡♡]',
+        xp:          30,
+        tier:        'silver',
+        target:      5,
+        getProgress: () => { try { return JSON.parse(localStorage.getItem('painJournalDays') || '[]').length; } catch(_) { return 0; } },
+        rewardIds:   ['wp_amber_hour'],
+    },
+    {
+        id:                  'care_note_sent',
+        title:               'Thinking of You',
+        desc:                'Leave a care note in your partner\'s pain journal',
+        icon:                '[✉♡]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  50,
+        rewardIds:           ['theme_golden'],
+    },
+    {
+        id:                  'both_in_pain_journal',
+        title:               'You\'re Not Alone',
+        desc:                'Both of you have written in the pain journal',
+        icon:                '[♡♡]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  75,
+        rewardIds:           ['ss_snow'],
+    },
+
+    // ---- Lists Collaboration ----
+    {
+        id:    'first_list_item',
+        title: 'On the List',
+        desc:  'Add your first item to a shared list',
+        icon:  '[✓]',
+        xp:    10,
+        tier:  'bronze',
+    },
+    {
+        id:    'first_claim',
+        title: 'I\'ve Got It',
+        desc:  'Claim an item on a shared list',
+        icon:  '[✋]',
+        xp:    15,
+        tier:  'bronze',
+    },
+    {
+        id:                  'list_together',
+        title:               'On It Together',
+        desc:                'Both of you are looking at the same list at the same time',
+        icon:                '[✓✓]',
+        hiddenUntilUnlocked: true,
+        tier:                'mythic',
+        xp:                  100,
+    },
 ];
 
 // ---- XP / Level helpers ----
@@ -10186,6 +10334,50 @@ const REWARD_REGISTRY = [
     // Console commands (second set — unlocked by Power User)
     { id: 'cmd_linkstats',  type: REWARD_TYPE_CONSOLE_COMMAND, name: '/linkstats', description: 'Show your link-sharing history and top domains', icon: '[>_]' },
     { id: 'cmd_whoami',     type: REWARD_TYPE_CONSOLE_COMMAND, name: '/whoami',    description: 'Your full profile: level, XP, stats, and hidden lore', icon: '[>_]' },
+
+    // ---- Flower / Pain Journal / Lists rewards ----
+
+    // Wallpapers
+    { id: 'wp_meadow', type: REWARD_TYPE_WALLPAPER, name: 'Wildflower Meadow',
+      description: 'A soft field of green and gold, like late afternoon light through grass',
+      css: 'linear-gradient(to bottom, #c8dda0 0%, #a8c870 25%, #7aab3a 55%, #5a8f20 80%, #3d6f10 100%)',
+      swatchCss: 'linear-gradient(to bottom, #c8dda0 0%, #7aab3a 50%, #3d6f10 100%)' },
+
+    { id: 'wp_morning_mist', type: REWARD_TYPE_WALLPAPER, name: 'Morning Mist',
+      description: 'The hour before the garden wakes — pale blue, pale gold, and very quiet',
+      css: 'linear-gradient(160deg, #e0ecf8 0%, #c8def0 30%, #d4eaf4 55%, #f0e8d4 80%, #ece0c8 100%)',
+      swatchCss: 'linear-gradient(160deg, #e0ecf8 0%, #c8def0 40%, #ece0c8 100%)' },
+
+    { id: 'wp_amber_hour', type: REWARD_TYPE_WALLPAPER, name: 'Amber Hour',
+      description: 'The last warm hour before the evening — everything turns gold for a moment',
+      css: 'linear-gradient(to bottom, #f4c66a 0%, #e8a030 30%, #c06818 65%, #7a3a08 100%)',
+      swatchCss: 'linear-gradient(to bottom, #f4c66a 0%, #e8a030 40%, #7a3a08 100%)' },
+
+    // Screensavers
+    { id: 'ss_fireflies', type: REWARD_TYPE_SCREENSAVER, name: 'Fireflies',
+      description: 'Small lights drift and pulse in a warm summer dark',
+      swatchCss: 'radial-gradient(ellipse at 40% 60%, #1a280a 0%, #0a1400 60%, #050800 100%)' },
+
+    { id: 'ss_breathing', type: REWARD_TYPE_SCREENSAVER, name: 'Still Moment',
+      description: 'A slow, soft pulse. Breathe in. Breathe out',
+      swatchCss: 'radial-gradient(circle, #6890b0 0%, #405070 50%, #202838 100%)' },
+
+    { id: 'ss_snow', type: REWARD_TYPE_SCREENSAVER, name: 'Snowfall',
+      description: 'Quiet snow on a still night — the kind that makes everything feel muffled and soft',
+      swatchCss: 'linear-gradient(to bottom, #0a1428 0%, #182540 50%, #0e1830 100%)' },
+
+    // Desktop themes
+    { id: 'theme_garden_floor', type: REWARD_TYPE_DESKTOP_THEME, name: 'Garden Floor',
+      description: 'Earthy greens and warm wood tones — like stepping outside in the morning',
+      swatchCss: 'linear-gradient(135deg, #4a7a28 0%, #2a5010 50%, #1a3808 100%)' },
+
+    { id: 'theme_golden', type: REWARD_TYPE_DESKTOP_THEME, name: 'Golden Hour',
+      description: 'Warm amber and honey — the whole UI bathed in late afternoon light',
+      swatchCss: 'linear-gradient(135deg, #c87820 0%, #a05010 50%, #703008 100%)' },
+
+    { id: 'theme_dusk', type: REWARD_TYPE_DESKTOP_THEME, name: 'Dusk',
+      description: 'Soft violet-grey — the colour of the sky just after the sun sets',
+      swatchCss: 'linear-gradient(135deg, #5a4870 0%, #3a2858 50%, #20183a 100%)' },
 ];
 
 // ---- Reward unlock state ----
@@ -16535,6 +16727,173 @@ function initPixelCat() {
         ctx.fillText('Personal Feed', BL.x, BL.y);
     }
 
+    // ---- Fireflies ----
+    let fireflies = [], fireflyFrame = 0;
+    const FIREFLY_COUNT = 60;
+
+    function initFireflies() {
+        const W = canvas.width, H = canvas.height;
+        fireflyFrame = 0;
+        fireflies = Array.from({ length: FIREFLY_COUNT }, () => ({
+            x:         Math.random() * W,
+            y:         Math.random() * H,
+            vx:        (Math.random() - 0.5) * 0.4,
+            vy:        (Math.random() - 0.5) * 0.3,
+            pulsePhase: Math.random() * Math.PI * 2,
+            pulseSpeed: 0.018 + Math.random() * 0.025,
+            radius:    1.5 + Math.random() * 2,
+            hue:       70 + Math.random() * 30,   // yellow-green
+        }));
+    }
+
+    function drawFireflies() {
+        if (!active) return;
+        const W = canvas.width, H = canvas.height;
+        fireflyFrame++;
+
+        // Dark warm background
+        ctx.fillStyle = 'rgba(4, 12, 2, 0.22)';
+        ctx.fillRect(0, 0, W, H);
+
+        for (const f of fireflies) {
+            f.x += f.vx + Math.sin(fireflyFrame * 0.011 + f.pulsePhase) * 0.3;
+            f.y += f.vy + Math.cos(fireflyFrame * 0.009 + f.pulsePhase * 1.3) * 0.2;
+            if (f.x < -10) f.x = W + 10;
+            if (f.x > W + 10) f.x = -10;
+            if (f.y < -10) f.y = H + 10;
+            if (f.y > H + 10) f.y = -10;
+
+            const pulse = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(fireflyFrame * f.pulseSpeed + f.pulsePhase));
+            const alpha = pulse;
+            const r = f.radius * (0.8 + 0.4 * pulse);
+
+            // Glow halo
+            const grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r * 5);
+            grad.addColorStop(0, `hsla(${f.hue},90%,75%,${alpha * 0.55})`);
+            grad.addColorStop(1, `hsla(${f.hue},90%,60%,0)`);
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, r * 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Core dot
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = `hsl(${f.hue},95%,88%)`;
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    // ---- Still Moment (breathing) ----
+    let breathFrame = 0;
+
+    function initBreathing() {
+        breathFrame = 0;
+    }
+
+    function drawBreathing() {
+        if (!active) return;
+        const W = canvas.width, H = canvas.height;
+        breathFrame++;
+
+        // Very slow cycle: ~8 s in, ~8 s out at 60fps
+        const cycle = (breathFrame % 960) / 960;   // 0→1 over 16 s
+        const phase = Math.sin(cycle * Math.PI * 2); // -1 → +1 → -1
+        const t = (phase + 1) / 2;                   // 0 → 1 → 0 (inhale→exhale)
+
+        // Background: shifts from deep slate to soft blue-grey
+        const bgHue = 215 + t * 8;
+        const bgLit = 12 + t * 6;
+        ctx.fillStyle = `hsl(${bgHue},30%,${bgLit}%)`;
+        ctx.fillRect(0, 0, W, H);
+
+        const cx = W / 2, cy = H / 2;
+        const minR = Math.min(W, H) * 0.08;
+        const maxR = Math.min(W, H) * 0.22;
+        const r = minR + (maxR - minR) * t;
+
+        // Outer glow rings
+        for (let i = 3; i >= 1; i--) {
+            const gr = r * (1 + i * 0.6);
+            const ga = (0.06 / i) * t;
+            const ring = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, gr);
+            ring.addColorStop(0, `rgba(160,200,240,${ga})`);
+            ring.addColorStop(1, 'rgba(160,200,240,0)');
+            ctx.fillStyle = ring;
+            ctx.beginPath();
+            ctx.arc(cx, cy, gr, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Main circle
+        const grad = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.2, r * 0.1, cx, cy, r);
+        grad.addColorStop(0, `hsla(210,60%,${60 + t * 20}%,${0.6 + t * 0.3})`);
+        grad.addColorStop(1, `hsla(220,50%,${35 + t * 15}%,${0.5 + t * 0.2})`);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Instruction text
+        const label = t < 0.45 ? 'breathe in' : t > 0.55 ? 'breathe out' : '';
+        if (label) {
+            ctx.globalAlpha = Math.min(1, (Math.abs(t - 0.5) < 0.05 ? 0 : 1) * Math.min(t * 5, (1 - t) * 5, 1));
+            ctx.fillStyle = 'rgba(200,220,240,0.55)';
+            ctx.font = `${Math.round(Math.min(W, H) * 0.022)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(label, cx, cy + r + Math.min(W, H) * 0.06);
+            ctx.globalAlpha = 1;
+            ctx.textAlign = 'left';
+        }
+    }
+
+    // ---- Snowfall ----
+    let snowflakes = [], snowFrame = 0;
+    const SNOW_COUNT = 120;
+
+    function initSnow() {
+        const W = canvas.width, H = canvas.height;
+        snowFrame = 0;
+        snowflakes = Array.from({ length: SNOW_COUNT }, () => ({
+            x:        Math.random() * W,
+            y:        Math.random() * H,
+            r:        1 + Math.random() * 3.5,
+            speed:    0.25 + Math.random() * 0.8,
+            drift:    (Math.random() - 0.5) * 0.4,
+            swayAmp:  0.3 + Math.random() * 0.8,
+            swayFreq: 0.008 + Math.random() * 0.015,
+            swayPhase: Math.random() * Math.PI * 2,
+            alpha:    0.4 + Math.random() * 0.5,
+        }));
+    }
+
+    function drawSnow() {
+        if (!active) return;
+        const W = canvas.width, H = canvas.height;
+        snowFrame++;
+
+        // Deep night-blue gradient background
+        ctx.fillStyle = 'rgba(8, 18, 38, 0.25)';
+        ctx.fillRect(0, 0, W, H);
+
+        for (const s of snowflakes) {
+            s.y += s.speed;
+            s.x += s.drift + Math.sin(snowFrame * s.swayFreq + s.swayPhase) * s.swayAmp;
+            if (s.y > H + s.r) { s.y = -s.r; s.x = Math.random() * W; }
+            if (s.x > W + s.r) s.x = -s.r;
+            if (s.x < -s.r) s.x = W + s.r;
+
+            ctx.globalAlpha = s.alpha;
+            ctx.fillStyle = '#d8eaff';
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
     // ---- Album Covers Screensaver ----
     const AC = { tiles: [], frame: 0 };
     const AC_FALLBACK_COLORS = ['#1a1a2e','#16213e','#0f3460','#533483','#1a2a1a','#2a1a1a','#0d1b2a','#2a1a2a'];
@@ -16650,6 +17009,9 @@ function initPixelCat() {
         else if (type === 'ss_petals') initPetals();
         else if (type === 'ss_bouncing_logo') initBouncingLogo();
         else if (type === 'ss_feed_slideshow') initAlbumCovers();
+        else if (type === 'ss_fireflies') initFireflies();
+        else if (type === 'ss_breathing') initBreathing();
+        else if (type === 'ss_snow') initSnow();
         else initStars();
     }
 
@@ -16668,11 +17030,17 @@ function initPixelCat() {
         else if (type === 'ss_petals') currentDrawFn = drawPetals;
         else if (type === 'ss_bouncing_logo') currentDrawFn = drawBouncingLogo;
         else if (type === 'ss_feed_slideshow') currentDrawFn = drawAlbumCovers;
+        else if (type === 'ss_fireflies') currentDrawFn = drawFireflies;
+        else if (type === 'ss_breathing') currentDrawFn = drawBreathing;
+        else if (type === 'ss_snow') currentDrawFn = drawSnow;
         else currentDrawFn = drawStarfield;
         overlay.classList.remove('is-hidden');
         if (!rmq.matches) {
             ctx.fillStyle = (type === 'ss_bubbles' || type === 'underwater') ? '#001628'
                           : type === 'ss_petals' ? '#120818'
+                          : type === 'ss_fireflies' ? '#040c02'
+                          : type === 'ss_breathing' ? '#111a22'
+                          : type === 'ss_snow' ? '#081226'
                           : '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawFrame();
@@ -18175,6 +18543,7 @@ document.addEventListener('click', (e) => {
                 ts:     serverTimestamp(),
                 author: currentUser,
             });
+            await unlockAchievement('care_note_sent');
         } catch (e) {
             showToast('Could not save care note — try again.');
         }
@@ -18550,6 +18919,7 @@ document.addEventListener('click', (e) => {
         bar.innerHTML = others.length
             ? `<span class="sl-presence-indicator">&#128065; ${_esc(others.join(', '))} also here</span>`
             : '';
+        if (others.length > 0) unlockAchievement('list_together');
     }
 
     function renderItems() {
@@ -18620,6 +18990,7 @@ document.addEventListener('click', (e) => {
         const newRef = push(ref(database, `shoppingItems/${activeId}`));
         await set(newRef, { text, completed: false, createdBy: currentUser, createdAt: Date.now() });
         input.focus();
+        unlockAchievement('first_list_item');
     }
 
     function editItem(itemId) {
@@ -18696,6 +19067,7 @@ document.addEventListener('click', (e) => {
             remove(ref(database, `shoppingItems/${activeId}/${itemId}/claimedBy`));
         } else {
             set(ref(database, `shoppingItems/${activeId}/${itemId}/claimedBy`), currentUser);
+            unlockAchievement('first_claim');
         }
     }
 
