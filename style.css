@@ -8701,8 +8701,10 @@ body.dark-mode .sys-props-hr {
 
 /* --- Screensaver picker reward card (locked variant) --- */
 .ss-picker-card--locked {
-  opacity: 0.65;
+  opacity: 0.72;
   cursor: default;
+  outline: 1px dashed rgba(128,128,128,0.5);
+  outline-offset: -2px;
 }
 .ss-picker-card--locked input { pointer-events: none; }
 .ss-picker-card--locked .ss-picker-name {
@@ -11675,6 +11677,11 @@ body[data-theme] .settings-about-footer {
 body[data-theme] .ss-picker-card {
   background: var(--theme-chrome-dk) !important;
   color: var(--theme-text) !important;
+  border-color: var(--theme-bevel-hi) var(--theme-bevel-sh) var(--theme-bevel-sh) var(--theme-bevel-hi) !important;
+}
+body[data-theme] .ss-picker-card--locked {
+  background: color-mix(in srgb, var(--theme-chrome-dk) 80%, var(--theme-chrome) 20%) !important;
+  outline-color: var(--theme-bevel-sh);
 }
 body[data-theme] .ss-picker-card:has(input:checked) {
   background: var(--theme-chrome) !important;
