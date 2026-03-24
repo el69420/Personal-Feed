@@ -11779,11 +11779,19 @@ function renderScrapbook() {
         const mealLabel = entry.mealType ? `${MEAL_ICONS[entry.mealType] || ''} ${entry.mealType}` : '';
 
         if (editingId === id) {
+            const eatenDate = new Date(entry.eatenAt);
+            const hh = String(eatenDate.getHours()).padStart(2, '0');
+            const mm = String(eatenDate.getMinutes()).padStart(2, '0');
+            const timeValue = `${hh}:${mm}`;
             return `
                 <div class="fd-entry-card fd-entry-editing">
                     <div class="fd-entry-header">
                         <span class="fd-entry-food">${safeText(entry.foodText)}</span>
                         ${mealLabel ? `<span class="fd-entry-meal">${mealLabel}</span>` : ''}
+                    </div>
+                    <div class="fd-edit-time-row">
+                        <label class="fd-label" for="fd-ei-time">Time</label>
+                        <input id="fd-ei-time" class="fd-input" type="time" value="${timeValue}" />
                     </div>
                     <div class="fd-nut-fields" style="display:block;margin-top:6px;">
                         ${nutGridHtml('editId', entry.nutrition || {})}
@@ -11924,6 +11932,17 @@ function renderScrapbook() {
         NUT_FIELDS.forEach(f => { nutrition[f.key] = parseNum(f.editId); });
         const hasNutrition = Object.values(nutrition).some(v => v !== null);
 
+        // Read the edited time value and compute updated eatenAt timestamp
+        const timeInput = document.getElementById('fd-ei-time');
+        const entry = allEntries[editingId];
+        let eatenAt = entry ? entry.eatenAt : Date.now();
+        if (timeInput && timeInput.value && entry) {
+            const [h, m] = timeInput.value.split(':').map(Number);
+            const d = new Date(entry.eatenAt);
+            d.setHours(h, m, 0, 0);
+            eatenAt = d.getTime();
+        }
+
         // Clear the edit form immediately so the onValue re-render doesn't
         // race and re-show it before the await resolves.
         const id = editingId;
@@ -11931,7 +11950,7 @@ function renderScrapbook() {
         renderEntries();
 
         try {
-            await update(ref(database, `foodDiary/${id}`), { nutrition: hasNutrition ? nutrition : null });
+            await update(ref(database, `foodDiary/${id}`), { nutrition: hasNutrition ? nutrition : null, eatenAt });
         } catch (err) {
             console.error('Food diary edit error:', err);
             editingId = id; // restore so user can retry

@@ -11866,6 +11866,18 @@ body[data-theme] .sys-props-tab--active {
   border-color: var(--accent, #0080c0);
 }
 
+.fd-edit-time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.fd-edit-time-row .fd-label {
+  margin: 0;
+  white-space: nowrap;
+}
+
 .fd-edit-actions {
   display: flex;
   gap: 6px;
