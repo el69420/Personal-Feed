@@ -10303,7 +10303,7 @@ const REWARD_REGISTRY = [
       swatchCss: 'linear-gradient(to bottom,#c8e6a0 0%,#8ec84a 30%,#1e6010 100%)' },
     { id: 'wp_cozy_rain', type: REWARD_TYPE_WALLPAPER, name: 'Cozy Rain',     description: 'Rainy window with warm light inside',     icon: '[wp]',
       css: 'linear-gradient(to bottom right,#2d3a4a 0%,#3d4f62 30%,#6a5030 60%,#b07828 80%,#c89838 100%)',
-      swatchCss: 'linear-gradient(to bottom right,#2d3a4a 0%,#6a5030 55%,#c89838 100%)' },
+      swatchCss: 'linear-gradient(to bottom right,#2d3a4a 0%,#6a5030 55%,#c89838 100%)', animated: true },
 
     // ---- Screensavers ---- (swatchCss used in the picker thumbnail)
     { id: 'ss_petals',    type: REWARD_TYPE_SCREENSAVER, name: 'Falling Petals',  description: 'Slow cascade of flower petals',            icon: '[ss]',
@@ -19973,6 +19973,99 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         }
     }
 
+    // ---- Cozy Rain ----
+    const RAIN_DROPS  = [];
+    const COND_DROPS  = [];  // condensation drops on glass
+
+    function initCozyRain() {
+        const W = canvas.width, H = canvas.height;
+        RAIN_DROPS.length = 0;
+        COND_DROPS.length = 0;
+
+        for (let i = 0; i < 130; i++) {
+            RAIN_DROPS.push({
+                x:     Math.random() * (W + 120) - 60,
+                y:     Math.random() * H * 1.5 - H * 0.5,
+                speed: 5 + Math.random() * 7,
+                len:   12 + Math.random() * 24,
+                alpha: 0.12 + Math.random() * 0.30,
+                dx:    -(0.35 + Math.random() * 0.30),  // slight wind angle
+            });
+        }
+
+        for (let i = 0; i < 20; i++) {
+            COND_DROPS.push({
+                xr:   0.04 + Math.random() * 0.92,  // relative x
+                yr:   0.05 + Math.random() * 0.80,  // relative y
+                r:    2.5 + Math.random() * 5,
+                vy:   0.0015 + Math.random() * 0.0035,
+                alpha: 0.25 + Math.random() * 0.35,
+            });
+        }
+    }
+
+    function animateCozyRain() {
+        const W = canvas.width, H = canvas.height;
+
+        // Stormy dark sky, warm amber glow at bottom (indoor light)
+        const sky = ctx.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0,    '#151d28');
+        sky.addColorStop(0.42, '#243040');
+        sky.addColorStop(0.72, '#3a2a18');
+        sky.addColorStop(1,    '#5c3c0a');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+
+        // Warm candlelight glow emanating from below
+        const warmGlow = ctx.createRadialGradient(W * 0.5, H * 1.05, 0, W * 0.5, H * 0.65, W * 0.72);
+        warmGlow.addColorStop(0,    'rgba(210, 145, 35, 0.28)');
+        warmGlow.addColorStop(0.40, 'rgba(170, 95, 20, 0.13)');
+        warmGlow.addColorStop(1,    'transparent');
+        ctx.fillStyle = warmGlow;
+        ctx.fillRect(0, H * 0.25, W, H * 0.75);
+
+        // Rain streaks
+        for (const d of RAIN_DROPS) {
+            d.x += d.dx;
+            d.y += d.speed;
+            if (d.y > H + 30) {
+                d.y = -d.len - Math.random() * 80;
+                d.x = Math.random() * (W + 120) - 60;
+            }
+            if (d.x < -30) d.x = W + Math.random() * 60;
+
+            ctx.save();
+            ctx.globalAlpha  = d.alpha;
+            ctx.strokeStyle  = '#9bbcd8';
+            ctx.lineWidth    = 1;
+            ctx.lineCap      = 'round';
+            ctx.beginPath();
+            ctx.moveTo(d.x, d.y);
+            ctx.lineTo(d.x - d.dx * (d.len / d.speed), d.y - d.len);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Condensation drops sliding slowly down the glass
+        for (const cd of COND_DROPS) {
+            cd.yr += cd.vy;
+            if (cd.yr > 0.96) { cd.yr = 0.04 + Math.random() * 0.12; cd.xr = 0.04 + Math.random() * 0.92; }
+
+            const gx = cd.xr * W, gy = cd.yr * H;
+            ctx.save();
+            ctx.globalAlpha = cd.alpha;
+            const dg = ctx.createRadialGradient(gx - cd.r * 0.2, gy - cd.r * 0.35, 0, gx, gy, cd.r);
+            dg.addColorStop(0,   'rgba(210, 230, 255, 0.85)');
+            dg.addColorStop(0.7, 'rgba(150, 185, 230, 0.30)');
+            dg.addColorStop(1,   'rgba(120, 160, 210, 0.05)');
+            ctx.fillStyle = dg;
+            ctx.beginPath();
+            ctx.ellipse(gx, gy, cd.r * 0.65, cd.r, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
     // ---- Core animation loop ----
     function tick() {
         if (!activeId) return;
@@ -19981,6 +20074,7 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         else if (activeId === 'wp_anim_forest')   animateForest();
         else if (activeId === 'wp_anim_nightsky') animateNightSky();
         else if (activeId === 'wp_anim_daynight') animateDayNight();
+        else if (activeId === 'wp_cozy_rain')     animateCozyRain();
         rafId = requestAnimationFrame(tick);
     }
 
@@ -19995,6 +20089,7 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         else if (id === 'wp_anim_forest')   initForest();
         else if (id === 'wp_anim_nightsky') initNightSky();
         else if (id === 'wp_anim_daynight') initDayNight();
+        else if (id === 'wp_cozy_rain')     initCozyRain();
         rafId = requestAnimationFrame(tick);
     }
 
@@ -20013,6 +20108,7 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         else if (activeId === 'wp_anim_forest')   initForest();
         else if (activeId === 'wp_anim_nightsky') initNightSky();
         else if (activeId === 'wp_anim_daynight') initDayNight();
+        else if (activeId === 'wp_cozy_rain')     initCozyRain();
     });
 
     window._animWallpaper = { start, stop };
