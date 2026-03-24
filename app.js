@@ -8562,6 +8562,7 @@ const PAIN_LOCATIONS = [
         w95Mgr.focusWindow('w95-win-profiles');
         localStorage.setItem('w95_profiles_open', '1');
         _updateEditButtons();
+        _renderAllAvatars();
     }
 
     function hideProfiles() {
@@ -8828,6 +8829,9 @@ const PAIN_LOCATIONS = [
     if (ppClose) ppClose.onclick = (e) => { e.stopPropagation(); _closePainPicker(); };
     if (ppWin)   ppWin.addEventListener('mousedown', () => w95Mgr.focusWindow('w95-win-pain-picker'));
     if (ppWin && ppHandle) makeDraggable(ppWin, ppHandle, 'w95-win-pain-picker');
+
+    // Render default avatars immediately so they show even before Firebase responds
+    _renderAllAvatars();
 
     // ---- Firebase: load saved avatars, moods and pain ----
     onValue(ref(database, 'profiles'), snap => {
