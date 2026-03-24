@@ -10302,8 +10302,8 @@ const REWARD_REGISTRY = [
       css: 'linear-gradient(to bottom,#c8e6a0 0%,#8ec84a 25%,#4a9f2a 55%,#1e6010 100%)',
       swatchCss: 'linear-gradient(to bottom,#c8e6a0 0%,#8ec84a 30%,#1e6010 100%)' },
     { id: 'wp_cozy_rain', type: REWARD_TYPE_WALLPAPER, name: 'Cozy Rain',     description: 'Rainy window with warm light inside',     icon: '[wp]',
-      css: 'linear-gradient(to bottom right,#4a5568 0%,#6b7280 40%,#374151 80%,#2d3748 100%)',
-      swatchCss: 'linear-gradient(to bottom right,#4a5568 0%,#6b7280 50%,#2d3748 100%)' },
+      css: 'linear-gradient(to bottom right,#2d3a4a 0%,#3d4f62 30%,#6a5030 60%,#b07828 80%,#c89838 100%)',
+      swatchCss: 'linear-gradient(to bottom right,#2d3a4a 0%,#6a5030 55%,#c89838 100%)' },
 
     // ---- Screensavers ---- (swatchCss used in the picker thumbnail)
     { id: 'ss_petals',    type: REWARD_TYPE_SCREENSAVER, name: 'Falling Petals',  description: 'Slow cascade of flower petals',            icon: '[ss]',
