@@ -10302,7 +10302,7 @@ const REWARD_REGISTRY = [
       css: 'linear-gradient(to bottom,#c8e6a0 0%,#8ec84a 25%,#4a9f2a 55%,#1e6010 100%)',
       swatchCss: 'linear-gradient(to bottom,#c8e6a0 0%,#8ec84a 30%,#1e6010 100%)' },
     { id: 'wp_cozy_rain', type: REWARD_TYPE_WALLPAPER, name: 'Cozy Rain',     description: 'Rainy window with warm light inside',     icon: '[wp]',
-      css: 'linear-gradient(to bottom right,#2d3a4a 0%,#3d4f62 30%,#6a5030 60%,#b07828 80%,#c89838 100%)',
+      css: 'linear-gradient(to bottom,#14192a 0%,#1e2535 25%,#3a2a18 60%,#6b3e0c 80%,#8c5010 100%)',
       swatchCss: 'linear-gradient(to bottom right,#2d3a4a 0%,#6a5030 55%,#c89838 100%)', animated: true },
 
     // ---- Screensavers ---- (swatchCss used in the picker thumbnail)
@@ -20007,17 +20007,8 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
     function animateCozyRain() {
         const W = canvas.width, H = canvas.height;
 
-        // Stormy dark sky, warm amber glow at bottom (indoor light).
-        // Route via near-black neutrals so no hue band is visible.
-        const sky = ctx.createLinearGradient(0, 0, 0, H);
-        sky.addColorStop(0,    '#14192a');  // dark blue-black
-        sky.addColorStop(0.22, '#161a22');  // draining blue, almost neutral
-        sky.addColorStop(0.38, '#17181c');  // near-black neutral
-        sky.addColorStop(0.52, '#181610');  // faint warmth
-        sky.addColorStop(0.68, '#2a1a08');  // warm dark
-        sky.addColorStop(1,    '#5c3c0a');  // amber glow
-        ctx.fillStyle = sky;
-        ctx.fillRect(0, 0, W, H);
+        // Clear to transparent — background comes from the desktop CSS gradient
+        ctx.clearRect(0, 0, W, H);
 
         // Warm candlelight glow emanating from below
         const warmGlow = ctx.createRadialGradient(W * 0.5, H * 1.05, 0, W * 0.5, H * 0.65, W * 0.72);
