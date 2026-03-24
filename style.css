@@ -11680,8 +11680,8 @@ body[data-theme] .ss-picker-card {
   border-color: var(--theme-bevel-hi) var(--theme-bevel-sh) var(--theme-bevel-sh) var(--theme-bevel-hi) !important;
 }
 body[data-theme] .ss-picker-card--locked {
-  background: color-mix(in srgb, var(--theme-chrome-dk) 80%, var(--theme-chrome) 20%) !important;
-  outline-color: var(--theme-bevel-sh);
+  background: var(--theme-chrome) !important;
+  outline-color: var(--theme-bevel-hi);
 }
 body[data-theme] .ss-picker-card:has(input:checked) {
   background: var(--theme-chrome) !important;

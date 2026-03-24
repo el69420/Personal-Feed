@@ -13667,7 +13667,6 @@ async function loadUserWallpaper() {
             const card = document.createElement('label');
             card.className = 'ss-picker-card ss-picker-card--reward' +
                 (unlocked ? '' : ' ss-picker-card--locked');
-            if (!unlocked) card.style.cssText = 'border:3px solid red !important;background:#330000 !important;';
             card.title = unlocked ? rs.name : `🔒 ${rs.name} — ${rs.description}`;
 
             const radio = document.createElement('input');
