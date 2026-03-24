@@ -4473,8 +4473,19 @@ function setupPresence() {
     // Re-register the onDisconnect handler every time the connection is established
     // (or re-established after a drop). Without this, a reconnect clears the server-side
     // handler and the user gets stuck showing as permanently online.
+    let _returnNoticeChecked = false;
     onValue(ref(database, '.info/connected'), snap => {
         if (!snap.val()) return; // currently disconnected — nothing to register
+        // Noticing: one-time check — did this user return after 48+ hours away?
+        if (!_returnNoticeChecked) {
+            _returnNoticeChecked = true;
+            get(_presRef).then(prev => {
+                const d = prev.val();
+                if (d?.ts && (Date.now() - d.ts) > 48 * 3_600_000) {
+                    window.noticingSystem?.emit('presence:returned');
+                }
+            }).catch(() => {});
+        }
         // Register server-side cleanup; serverTimestamp() is evaluated at disconnect time
         onDisconnect(_presRef).set({ state: 'offline', ts: serverTimestamp() });
         // Announce online
@@ -6888,7 +6899,30 @@ const w95Apps = {};
       }
     }
     renderGarden(snap.val());
+    _checkGardenNotices(snap.val());
   });
+
+  // ---- Noticing: garden state checks ----
+  function _checkGardenNotices(state) {
+    if (!state || !window.noticingSystem) return;
+    const ns    = window.noticingSystem;
+    const now   = Date.now();
+    const MS_H  = 3_600_000;
+    const tiles = state.tiles || {};
+
+    // "this one's been waiting" — a tile last watered 24–48 h ago (past its prime, not yet wilted)
+    const anyWaiting = Object.values(tiles).some(t =>
+      t && t.lastWatered &&
+      (now - t.lastWatered) > 24 * MS_H &&
+      (now - t.lastWatered) < 48 * MS_H
+    );
+    if (anyWaiting) ns.emit('garden:plant_waiting');
+
+    // "this one's been well looked after" — both users watered today
+    const today    = new Date().toISOString().slice(0, 10);
+    const todayRec = (state.wateredByDay || {})[today] || {};
+    if (todayRec.el && todayRec.tero) ns.emit('garden:well_tended');
+  }
 
   // ---- Shared Water Garden button state ----
   function updateWaterGardenBtn() {
@@ -7226,6 +7260,19 @@ const w95Apps = {};
       const vaseSnap   = await get(ref(database, 'garden/vase/flowers'));
       const flowerCount = vaseSnap.exists() ? Object.keys(vaseSnap.val()).length : 0;
       checkVaseMilestone(flowerCount);
+
+      // Noticing: "something new again" — first flower ever, or collected after a quiet period
+      if (flowerCount <= 1) {
+        window.noticingSystem?.emit('garden:something_new');
+      } else {
+        const allTs = Object.values(vaseSnap.val() || {})
+          .map(f => f.collectedAt || 0)
+          .sort((a, b) => a - b);
+        const prevLastTs = allTs[allTs.length - 2] || 0;
+        if (prevLastTs && (Date.now() - prevLastTs) > 48 * 3_600_000) {
+          window.noticingSystem?.emit('garden:something_new');
+        }
+      }
     } catch (e) {
       console.error('collectFlower failed', e);
       showToast('Could not collect. Please try again.');
@@ -7294,7 +7341,26 @@ const w95Apps = {};
   // Live vase listener — updates whenever a flower is collected by either user
   onValue(vaseRef, (snap) => {
     renderVase(snap.val());
+    _checkVaseNotices(snap.val());
   });
+
+  // ---- Noticing: vase state checks ----
+  function _checkVaseNotices(vaseData) {
+    if (!window.noticingSystem) return;
+    const ns      = window.noticingSystem;
+    const flowers = vaseData?.flowers ? Object.values(vaseData.flowers) : [];
+    const count   = flowers.length;
+
+    if (count === 0) {
+      ns.emit('garden:vase_quiet');
+      return;
+    }
+    // "it's been quiet here" — no new flower collected in the last 72 h
+    const lastTs = flowers.reduce((m, f) => Math.max(m, f.collectedAt || 0), 0);
+    if (lastTs && (Date.now() - lastTs) > 72 * 3_600_000) ns.emit('garden:vase_quiet');
+    // "it's getting crowded" — 20+ flowers
+    if (count >= 20) ns.emit('garden:vase_crowded');
+  }
 
   // Shared Water Garden button
   document.getElementById('garden-water-garden-btn')?.addEventListener('click', async () => {
@@ -14791,6 +14857,7 @@ function initPixelCat() {
             if (onlineCount >= 2 && !_bothOnlineFired) {
                 _bothOnlineFired = true;
                 fireCatEvent('heart');
+                window.noticingSystem?.emit('presence:both_online');
             }
         }
         if (onlineCount < 2) _bothOnlineFired = false; // reset so it can fire again next time
@@ -18531,12 +18598,66 @@ document.addEventListener('click', (e) => {
     onValue(painJournalRef, snap => {
         entries = snap.val() || {};
         render();
+        _checkPainNotices(entries);
     });
 
     onValue(painPatternNotesRef, snap => {
         patternNotes = snap.val() || {};
         render();
+        _checkPatternNoteNotice(patternNotes);
     });
+
+    // ---- Noticing: pain journal checks ----
+    function _checkPainNotices(allEntries) {
+        if (!window.noticingSystem || !currentUser) return;
+        const ns        = window.noticingSystem;
+        const myData    = allEntries[currentUser] || {};
+        const otherName = _otherUser();
+        const otherData = otherName !== 'you' ? (allEntries[otherName] || {}) : {};
+        const now       = Date.now();
+        const H48       = 48 * 3_600_000;
+        const D7        = 7  * 86_400_000;
+
+        // Recent entries (last 7 days, numeric level only)
+        const recent = Object.values(myData)
+            .filter(e => e && e.ts && e.level != null && (now - e.ts) < D7)
+            .sort((a, b) => a.ts - b.ts);
+
+        // "this feels familiar…" — same pain level appears 3+ times in last 7 days
+        if (recent.length >= 3) {
+            const counts = {};
+            recent.forEach(e => { counts[e.level] = (counts[e.level] || 0) + 1; });
+            if (Object.values(counts).some(c => c >= 3)) ns.emit('pain:pattern');
+        }
+
+        // "this seems lighter than before" — avg of last 3 entries lower than previous 3
+        if (recent.length >= 6) {
+            const avg = arr => arr.reduce((s, e) => s + e.level, 0) / arr.length;
+            if (avg(recent.slice(-3)) < avg(recent.slice(-6, -3)) - 1) ns.emit('pain:improving');
+        }
+
+        // "you've both been feeling this lately" — both had entries in last 48 h with similar level
+        const myH48 = Object.values(myData).filter(e => e && e.ts && e.level != null && (now - e.ts) < H48);
+        const otH48 = Object.values(otherData).filter(e => e && e.ts && e.level != null && (now - e.ts) < H48);
+        if (myH48.length && otH48.length) {
+            const similar = myH48.some(me => otH48.some(ot => Math.abs(me.level - ot.level) <= 2));
+            if (similar) ns.emit('pain:both_feeling');
+        }
+    }
+
+    function _checkPatternNoteNotice(notes) {
+        if (!window.noticingSystem || !currentUser) return;
+        const other = _otherUser();
+        if (other === 'you') return;
+        // "they left something here for you" — other user added a pattern note in the last 24 h
+        const H24 = 24 * 3_600_000;
+        const now = Date.now();
+        const left = Object.values(notes).some(userNotes =>
+            Object.values(typeof userNotes === 'object' && userNotes !== null ? userNotes : {})
+                .some(n => n && n.author === other && n.ts && (now - n.ts) < H24)
+        );
+        if (left) window.noticingSystem.emit('pain:left_something');
+    }
 
     // ---- Event bindings ----
     if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
@@ -18613,7 +18734,38 @@ document.addEventListener('click', (e) => {
         itemsUnsub = onValue(ref(database, `shoppingItems/${listId}`), snap => {
             allItems = snap.val() || {};
             if (!win.classList.contains('is-hidden')) renderItems();
+            _checkListNotices();
         });
+    }
+
+    // ---- Noticing: list state checks ----
+    function _checkListNotices() {
+        if (!window.noticingSystem || !currentUser) return;
+        const ns    = window.noticingSystem;
+        const items = Object.values(allItems).filter(Boolean);
+        if (!items.length) return;
+
+        // "nothing left for now" — all items completed; also counts as a tidy-up
+        if (items.every(i => i.completed)) {
+            ns.emit('list:all_done');
+            ns.emit('presence:tidied_up');
+            return;
+        }
+
+        // "this has been sitting here" — no item added in the last 72 h
+        const now         = Date.now();
+        const H72         = 72 * 3_600_000;
+        const mostRecent  = items.reduce((m, i) => Math.max(m, i.createdAt || 0), 0);
+        if (mostRecent && (now - mostRecent) > H72) ns.emit('list:sitting_here');
+
+        // "you were both thinking about this" — two different users added the same item text
+        const byUser = {};
+        items.forEach(i => {
+            if (!i.text || !i.createdBy) return;
+            const key = i.text.trim().toLowerCase();
+            (byUser[key] = byUser[key] || new Set()).add(i.createdBy);
+        });
+        if (Object.values(byUser).some(s => s.size >= 2)) ns.emit('list:both_thinking');
     }
 
     // ---- Firebase: presence for active list ----
@@ -18818,6 +18970,8 @@ document.addEventListener('click', (e) => {
         if (item.claimedBy === currentUser) {
             remove(ref(database, `shoppingItems/${activeId}/${itemId}/claimedBy`));
         } else {
+            // Noticing: "you both reached for this" — someone else already claimed it
+            if (item.claimedBy) window.noticingSystem?.emit('list:both_reached');
             set(ref(database, `shoppingItems/${activeId}/${itemId}/claimedBy`), currentUser);
         }
     }
