@@ -20010,8 +20010,9 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         // Stormy dark sky, warm amber glow at bottom (indoor light)
         const sky = ctx.createLinearGradient(0, 0, 0, H);
         sky.addColorStop(0,    '#151d28');
-        sky.addColorStop(0.42, '#243040');
-        sky.addColorStop(0.72, '#3a2a18');
+        sky.addColorStop(0.30, '#1e2b3a');
+        sky.addColorStop(0.52, '#2e2820');
+        sky.addColorStop(0.70, '#3d2a14');
         sky.addColorStop(1,    '#5c3c0a');
         ctx.fillStyle = sky;
         ctx.fillRect(0, 0, W, H);
