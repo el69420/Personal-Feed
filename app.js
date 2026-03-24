@@ -11700,10 +11700,8 @@ function renderScrapbook() {
                 }
             });
             document.getElementById('fd-food-input').addEventListener('blur', () => {
-                setTimeout(() => {
-                    const ac = document.getElementById('fd-autocomplete');
-                    if (ac) { ac.style.display = 'none'; acIndex = -1; }
-                }, 150);
+                const ac = document.getElementById('fd-autocomplete');
+                if (ac) { ac.style.display = 'none'; acIndex = -1; }
             });
             document.getElementById('fd-autocomplete').addEventListener('mousedown', e => {
                 const item = e.target.closest('.fd-autocomplete-item');

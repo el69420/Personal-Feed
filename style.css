@@ -12009,11 +12009,14 @@ body[data-theme] .sys-props-tab--active {
   box-shadow: 0 4px 10px rgba(0,0,0,0.12);
   max-height: 180px;
   overflow-y: auto;
+  /* Allow clicks to pass through the dropdown background to elements below */
+  pointer-events: none;
 }
 .fd-autocomplete-item {
   padding: 6px 10px;
   cursor: pointer;
   line-height: 1.3;
+  pointer-events: auto;
 }
 .fd-autocomplete-item:hover,
 .fd-autocomplete-item.fd-ac-active {
