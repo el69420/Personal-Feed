@@ -20007,13 +20007,15 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
     function animateCozyRain() {
         const W = canvas.width, H = canvas.height;
 
-        // Stormy dark sky, warm amber glow at bottom (indoor light)
+        // Stormy dark sky, warm amber glow at bottom (indoor light).
+        // Route via near-black neutrals so no hue band is visible.
         const sky = ctx.createLinearGradient(0, 0, 0, H);
-        sky.addColorStop(0,    '#151d28');
-        sky.addColorStop(0.30, '#1e2b3a');
-        sky.addColorStop(0.52, '#2e2820');
-        sky.addColorStop(0.70, '#3d2a14');
-        sky.addColorStop(1,    '#5c3c0a');
+        sky.addColorStop(0,    '#14192a');  // dark blue-black
+        sky.addColorStop(0.22, '#161a22');  // draining blue, almost neutral
+        sky.addColorStop(0.38, '#17181c');  // near-black neutral
+        sky.addColorStop(0.52, '#181610');  // faint warmth
+        sky.addColorStop(0.68, '#2a1a08');  // warm dark
+        sky.addColorStop(1,    '#5c3c0a');  // amber glow
         ctx.fillStyle = sky;
         ctx.fillRect(0, 0, W, H);
 
