@@ -12336,3 +12336,27 @@ body.dark-mode .sl-presence-indicator { background: rgba(0,120,215,0.1); }
 body.dark-mode .sl-item-for-me { background: rgba(192,80,0,0.08) !important; }
 body.dark-mode .sl-assign-active { color: #e08830; background: rgba(224,136,48,0.1); border-color: rgba(224,136,48,0.22); }
 body.dark-mode .sl-assign-for-me { color: #e09050; background: rgba(224,144,80,0.1); border-color: rgba(224,144,80,0.25); }
+
+/* ============================================================
+   NOTICING SYSTEM
+   Subtle ambient messages — quieter and more ephemeral than toasts.
+   ============================================================ */
+#noticing-msg {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-style: italic;
+  color: rgba(100, 90, 80, 0.65);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  z-index: 8000;
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 1.2s ease;
+  user-select: none;
+}
+#noticing-msg.noticing--in  { opacity: 1; transition: opacity 1.2s ease; }
+#noticing-msg.noticing--out { opacity: 0; transition: opacity 1.8s ease; }
+body.dark-mode #noticing-msg { color: rgba(210, 200, 185, 0.45); }
