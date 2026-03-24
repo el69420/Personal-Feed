@@ -7628,6 +7628,7 @@ const w95Apps = {};
 
   // ---- Show / hide ----
   function show() {
+    const wasHidden = win.classList.contains('is-hidden');
     if (!btn) btn = w95Mgr.addTaskbarBtn('w95-win-garden', 'GARDEN', () => {
       if (win.classList.contains('is-hidden')) show(); else hide();
     });
