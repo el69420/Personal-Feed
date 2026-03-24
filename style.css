@@ -5365,9 +5365,9 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ===== Our Garden ===== */
-#w95-win-garden{width:860px;min-width:750px;min-height:310px;max-height:min(560px,calc(100vh - 40px));display:flex;flex-direction:column;}
+#w95-win-garden{width:960px;min-width:880px;height:400px;min-height:310px;max-height:min(500px,calc(100vh - 40px));display:flex;flex-direction:column;}
 .garden-top{display:flex;flex:1;min-height:0;align-items:stretch;gap:12px;}
-.garden-info{width:120px;flex-shrink:0;}
+.garden-info{width:120px;flex-shrink:0;overflow:hidden;}
 .garden-info .garden-plant-row{flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:4px;}
 .garden-info .garden-streak{text-align:left;}
 /* soil-tile is now a transparent flex area within the shared bed; the bed itself carries the soil visuals */

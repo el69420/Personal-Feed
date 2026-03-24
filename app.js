@@ -6379,8 +6379,11 @@ const w95Layout = (() => {
       winEl.style.width  = Math.max(cssMinW, Math.min(vw, data.w)) + 'px';
     }
     if (data.h) {
-      const cssMinH = parseFloat(getComputedStyle(winEl).minHeight) || 80;
-      winEl.style.height = Math.max(cssMinH, Math.min(vh, data.h)) + 'px';
+      const _cs = getComputedStyle(winEl);
+      const cssMinH = parseFloat(_cs.minHeight) || 80;
+      const cssMaxH = parseFloat(_cs.maxHeight);
+      const capH = isFinite(cssMaxH) ? Math.min(vh, cssMaxH) : vh;
+      winEl.style.height = Math.max(cssMinH, Math.min(capH, data.h)) + 'px';
     }
     const w    = data.w || winEl.offsetWidth  || 280;
     const h    = data.h || winEl.offsetHeight || 200;
