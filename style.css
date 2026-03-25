@@ -420,7 +420,7 @@ body.dark-mode #scrollTopBtn {
 }
 
 .post-header {
-    padding: 9px 14px;
+    padding: 6px 12px;
     background: var(--section-bg);
     border-bottom: 1px solid var(--card-border);
     display: flex;
@@ -437,7 +437,7 @@ body.dark-mode #scrollTopBtn {
 }
 
 .post-note {
-    padding: 8px 14px;
+    padding: 6px 12px;
     background: linear-gradient(to right, rgba(0, 128, 128, 0.07), rgba(0, 160, 160, 0.05));
     border-left: 3px solid #008080;
     display: flex;
@@ -992,7 +992,7 @@ body.dark-mode .watch-later-btn.active {
 }
 
 .post-actions {
-    padding: 7px 14px;
+    padding: 5px 12px;
     background: var(--section-bg);
     border-top: 1px solid var(--card-border);
     display: flex;
@@ -3270,7 +3270,7 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 
 /* Text post content in feed */
 .post-text-content {
-    padding: 14px 18px 10px;
+    padding: 10px 14px 8px;
 }
 .post-text-heading {
     font-family: 'Nunito', sans-serif;
