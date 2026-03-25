@@ -5501,7 +5501,7 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
   border-right:2px solid #fff;
   border-bottom:2px solid #fff;
   padding:4px;
-  min-height:150px;
+  min-height:120px;
 }
 .garden-tile-col{
   flex:1;
@@ -6420,241 +6420,241 @@ body.dark-mode .garden-actions-bar{
 
 /* Default / Sunflower: golden face with 8 radiating petal lobes */
 .garden-plant--bloom {
-  width: 5px; height: 44px;
+  width: 4px; height: 35px;
   background: linear-gradient(to top, #2a7a2a, #3c9a30);
-  bottom: 8px;
+  bottom: 6px;
 }
 .garden-plant--bloom::before {
   content: ''; position: absolute;
-  width: 9px; height: 9px;
+  width: 7px; height: 7px;
   background: #ffcc00;
   border-radius: 50%;
-  top: -19px; left: -2px;
+  top: -15px; left: -1.5px;
   box-shadow:
-    0   -14px 0 4px #ffd700,
-    9px  -9px 0 3px #ffcc00,
-    14px  0   0 3px #ffd700,
-    9px   9px 0 3px #ffcc00,
-    0    14px 0 4px #ffd700,
-   -9px   9px 0 3px #ffcc00,
-   -14px  0   0 3px #ffd700,
-   -9px  -9px 0 3px #ffcc00;
+    0   -11px 0 3px #ffd700,
+    7px  -7px 0 2px #ffcc00,
+    11px  0   0 2px #ffd700,
+    7px   7px 0 2px #ffcc00,
+    0    11px 0 3px #ffd700,
+   -7px   7px 0 2px #ffcc00,
+   -11px  0   0 2px #ffd700,
+   -7px  -7px 0 2px #ffcc00;
 }
 .garden-plant--bloom::after {
   content: ''; position: absolute;
-  width: 13px; height: 13px;
+  width: 10px; height: 10px;
   background: #5a2800;
   border-radius: 50%;
-  top: -22px; left: -4px;
+  top: -17px; left: -3px;
   box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 /* Daisy: white-cream petal ring, warm yellow disc */
 .garden-plant--bloom.garden-plant--type-daisy {
   background: linear-gradient(to top, #2a7a2a, #4aaa44);
-  width: 4px; height: 36px;
+  width: 3px; height: 29px;
 }
 .garden-plant--bloom.garden-plant--type-daisy::before {
-  width: 5px; height: 5px;
+  width: 4px; height: 4px;
   background: #f8f8f2;
   border: none;
   border-radius: 50%;
-  top: -18px; left: -0.5px;
+  top: -14px; left: -0.5px;
   box-shadow:
-     0   -11px 0 3px #f8f8f0,
-     7px  -7px 0 3px #f0f0e8,
-    11px   0   0 3px #f8f8f0,
-     7px   7px 0 3px #f0f0e8,
-     0    11px 0 3px #f8f8f0,
-    -7px   7px 0 3px #f0f0e8,
-   -11px   0   0 3px #f8f8f0,
-    -7px  -7px 0 3px #f0f0e8;
+     0   -9px 0 2px #f8f8f0,
+     6px  -6px 0 2px #f0f0e8,
+     9px   0   0 2px #f8f8f0,
+     6px   6px 0 2px #f0f0e8,
+     0     9px 0 2px #f8f8f0,
+    -6px   6px 0 2px #f0f0e8,
+    -9px   0   0 2px #f8f8f0,
+    -6px  -6px 0 2px #f0f0e8;
 }
 .garden-plant--bloom.garden-plant--type-daisy::after {
-  width: 9px; height: 9px;
+  width: 7px; height: 7px;
   background: #ffe000;
   border-radius: 50%;
-  top: -20px; left: -2px;
+  top: -16px; left: -1.5px;
   box-shadow: 0 0 3px 1px rgba(255,180,0,0.4);
 }
 
 /* Tulip: elegant tall closed cup, subtle inner highlight */
 .garden-plant--bloom.garden-plant--type-tulip {
   background: linear-gradient(to top, #2a8a30, #3da040);
-  width: 5px; height: 50px;
+  width: 4px; height: 40px;
 }
 .garden-plant--bloom.garden-plant--type-tulip::before {
-  width: 17px; height: 25px;
+  width: 14px; height: 20px;
   background: linear-gradient(160deg, #ee1144, #cc0033);
   border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
-  top: -25px; left: -6px;
-  box-shadow: -4px 4px 0 2px rgba(170,0,35,0.6), 4px 4px 0 2px rgba(170,0,35,0.6);
+  top: -20px; left: -5px;
+  box-shadow: -3px 3px 0 2px rgba(170,0,35,0.6), 3px 3px 0 2px rgba(170,0,35,0.6);
 }
 .garden-plant--bloom.garden-plant--type-tulip::after {
-  width: 7px; height: 13px;
+  width: 6px; height: 10px;
   background: rgba(255,120,150,0.55);
   border-radius: 50% 50% 20% 20%;
-  top: -24px; left: -1px;
+  top: -19px; left: -1px;
 }
 
 /* Rose: layered romantic petal cluster with outer lobes */
 .garden-plant--bloom.garden-plant--type-rose {
   background: linear-gradient(to top, #2a5a28, #3a7a35);
-  width: 5px; height: 42px;
+  width: 4px; height: 34px;
 }
 .garden-plant--bloom.garden-plant--type-rose::before {
-  width: 18px; height: 18px;
+  width: 14px; height: 14px;
   background: #cc0022;
   border-radius: 50% 50% 40% 40%;
-  top: -18px; left: -6.5px;
+  top: -14px; left: -5px;
   box-shadow:
-   -7px 5px 0 3px #aa001a,
-    7px 5px 0 3px #aa001a,
-    0    7px 0 4px #bb001f,
-   -4px -3px 0 2px #cc0022,
-    4px -3px 0 2px #cc0022;
+   -6px 4px 0 2px #aa001a,
+    6px 4px 0 2px #aa001a,
+    0    6px 0 3px #bb001f,
+   -3px -2px 0 2px #cc0022,
+    3px -2px 0 2px #cc0022;
 }
 .garden-plant--bloom.garden-plant--type-rose::after {
-  width: 10px; height: 10px;
+  width: 8px; height: 8px;
   background: #ff2244;
   border-radius: 50%;
-  top: -14px; left: -2.5px;
+  top: -11px; left: -2px;
   box-shadow: -2px -2px 0 1px #ff4466, 2px -2px 0 1px #cc0033, 0 2px 0 1px #ee1133;
 }
 
 /* Orchid: wide butterfly wings + distinctive bright lip (labellum) */
 .garden-plant--bloom.garden-plant--type-orchid {
   background: linear-gradient(to top, #2a7a30, #3a9038);
-  width: 4px; height: 44px;
+  width: 3px; height: 35px;
 }
 .garden-plant--bloom.garden-plant--type-orchid::before {
-  width: 28px; height: 11px;
+  width: 22px; height: 9px;
   background: #8822cc;
   border-radius: 50%;
-  top: -22px; left: -12px;
-  box-shadow: -9px 8px 0 5px #6611aa, 9px 8px 0 5px #6611aa;
+  top: -18px; left: -10px;
+  box-shadow: -7px 6px 0 4px #6611aa, 7px 6px 0 4px #6611aa;
 }
 .garden-plant--bloom.garden-plant--type-orchid::after {
-  width: 8px; height: 13px;
+  width: 6px; height: 10px;
   background: linear-gradient(to bottom, #ff88ee, #cc55cc);
   border-radius: 50% 50% 30% 30%;
-  top: -22px; left: -2px;
+  top: -18px; left: -1.5px;
   box-shadow: 0 0 5px 2px rgba(200,100,255,0.35);
 }
 
 /* Lavender: tall spike with side bud-clusters via box-shadow */
 .garden-plant--bloom.garden-plant--type-lavender {
   background: linear-gradient(to top, #6a5a7a, #8a6a9a);
-  width: 3px; height: 54px;
+  width: 3px; height: 43px;
 }
 .garden-plant--bloom.garden-plant--type-lavender::before {
-  width: 7px; height: 28px;
+  width: 6px; height: 22px;
   background: #9966cc;
   border-radius: 50% 50% 0 0;
-  top: -27px; left: -2px;
+  top: -22px; left: -1.5px;
   box-shadow:
-    5px  2px 0 3px #aa77dd,
-   -5px  2px 0 3px #aa77dd,
-    5px  9px 0 2px #9966cc,
-   -5px  9px 0 2px #9966cc,
-    5px 16px 0 2px #8855bb,
-   -5px 16px 0 2px #8855bb;
+    4px  2px 0 2px #aa77dd,
+   -4px  2px 0 2px #aa77dd,
+    4px  7px 0 2px #9966cc,
+   -4px  7px 0 2px #9966cc,
+    4px 13px 0 1px #8855bb,
+   -4px 13px 0 1px #8855bb;
 }
 .garden-plant--bloom.garden-plant--type-lavender::after {
-  width: 5px; height: 7px;
+  width: 4px; height: 6px;
   background: #ddbfff;
   border-radius: 50%;
-  top: -26px; left: -1px;
+  top: -21px; left: -0.5px;
 }
 
 /* Two-colour bloom: bold split teardrop petals */
 .garden-plant--bloom.garden-plant--type-twocolourbloom {
   background: linear-gradient(to top, #2a8a30, #3aaa3a);
-  width: 4px; height: 44px;
+  width: 3px; height: 35px;
 }
 .garden-plant--bloom.garden-plant--type-twocolourbloom::before {
-  width: 13px; height: 26px;
+  width: 10px; height: 21px;
   background: #ee2266;
   border-radius: 50% 0 50% 50%;
-  top: -26px; left: -13px;
-  box-shadow: 0 -4px 0 3px #cc1144;
+  top: -21px; left: -10px;
+  box-shadow: 0 -3px 0 2px #cc1144;
 }
 .garden-plant--bloom.garden-plant--type-twocolourbloom::after {
-  width: 13px; height: 26px;
+  width: 10px; height: 21px;
   background: #ffcc00;
   border-radius: 0 50% 50% 50%;
-  top: -26px; left: 2px;
-  box-shadow: 0 -4px 0 3px #dd9900;
+  top: -21px; left: 2px;
+  box-shadow: 0 -3px 0 2px #dd9900;
 }
 
 /* Mint: bushy round cluster with side lobes */
 .garden-plant--bloom.garden-plant--type-mint {
   background: linear-gradient(to top, #1a6040, #2a8858);
-  width: 5px; height: 38px;
+  width: 4px; height: 30px;
 }
 .garden-plant--bloom.garden-plant--type-mint::before {
-  width: 22px; height: 18px;
+  width: 18px; height: 14px;
   background: #44bb88;
   border-radius: 50%;
-  top: -18px; left: -8.5px;
-  box-shadow: 9px -5px 0 4px #55cc99, -9px -5px 0 3px #33aa77, 0 -8px 0 3px #44bb88;
+  top: -14px; left: -7px;
+  box-shadow: 7px -4px 0 3px #55cc99, -7px -4px 0 3px #33aa77, 0 -6px 0 2px #44bb88;
 }
 .garden-plant--bloom.garden-plant--type-mint::after {
-  width: 12px; height: 9px;
+  width: 10px; height: 7px;
   background: #aaffdd;
   border-radius: 50%;
-  top: -20px; left: -3.5px;
+  top: -16px; left: -3px;
 }
 
 /* Fern: dramatic asymmetric arching fronds with sub-frondlets */
 .garden-plant--bloom.garden-plant--type-fern {
   background: linear-gradient(to top, #2a5a20, #3a7028);
-  width: 4px; height: 46px;
+  width: 3px; height: 37px;
 }
 .garden-plant--bloom.garden-plant--type-fern::before {
-  width: 26px; height: 14px;
+  width: 21px; height: 11px;
   background: #2a5a2a;
   border-radius: 0 80% 0 80%;
-  top: -12px; left: -21px;
+  top: -10px; left: -17px;
   transform: rotate(-14deg);
   transform-origin: right center;
-  box-shadow: 7px -12px 0 4px #317731, 13px -21px 0 3px #296029;
+  box-shadow: 6px -10px 0 3px #317731, 10px -17px 0 2px #296029;
 }
 .garden-plant--bloom.garden-plant--type-fern::after {
-  width: 20px; height: 12px;
+  width: 16px; height: 10px;
   background: #338833;
   border-radius: 80% 0 80% 0;
-  top: -23px; left: 2px;
+  top: -18px; left: 2px;
   transform: rotate(14deg);
   transform-origin: left center;
-  box-shadow: -5px -11px 0 3px #4a9a4a;
+  box-shadow: -4px -9px 0 2px #4a9a4a;
 }
 
 /* Wildflower: energetic 8-point star-burst */
 .garden-plant--bloom.garden-plant--type-wildflower {
   background: linear-gradient(to top, #2a8a30, #4aaa44);
-  width: 4px; height: 35px;
+  width: 3px; height: 28px;
 }
 .garden-plant--bloom.garden-plant--type-wildflower::before {
-  width: 6px; height: 6px;
+  width: 5px; height: 5px;
   background: #ff88cc;
   border-radius: 50%;
-  top: -19px; left: -1px;
+  top: -15px; left: -1px;
   box-shadow:
-     0   -12px 0 3px #ff99cc,
-     8px  -8px 0 2px #ffaadd,
-    12px   0   0 2px #ff88cc,
-     8px   8px 0 2px #ffaadd,
-     0    12px 0 3px #ff99cc,
-    -8px   8px 0 2px #ffaadd,
-   -12px   0   0 2px #ff88cc,
-    -8px  -8px 0 2px #ffaadd;
+     0   -9px 0 2px #ff99cc,
+     6px  -6px 0 2px #ffaadd,
+     9px   0   0 2px #ff88cc,
+     6px   6px 0 2px #ffaadd,
+     0     9px 0 2px #ff99cc,
+    -6px   6px 0 2px #ffaadd,
+    -9px   0   0 2px #ff88cc,
+    -6px  -6px 0 2px #ffaadd;
 }
 .garden-plant--bloom.garden-plant--type-wildflower::after {
-  width: 8px; height: 8px;
+  width: 6px; height: 6px;
   background: #cc44aa;
   border-radius: 50%;
-  top: -20px; left: -2px;
+  top: -16px; left: -1.5px;
   box-shadow: 0 0 4px 2px rgba(200,80,200,0.4);
 }
 
