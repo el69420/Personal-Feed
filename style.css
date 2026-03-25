@@ -1312,6 +1312,10 @@ body.dark-mode .coll-pick-btn.selected { color: #00cccc; }
     border: 1px solid var(--card-border);
     position: relative;
     z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
 }
 
 .modal-x {
@@ -3133,6 +3137,11 @@ select { cursor: pointer; }
     display: flex;
     gap: 10px;
     margin-top: 14px;
+    position: sticky;
+    bottom: 0;
+    background: var(--card-bg);
+    padding-bottom: 2px;
+    flex-shrink: 0;
 }
 .modal-actions > * { flex: 1; }
 
@@ -3177,6 +3186,11 @@ select { cursor: pointer; }
     margin-top: 12px;
     display: flex;
     justify-content: flex-end;
+    position: sticky;
+    bottom: 0;
+    background: var(--card-bg);
+    padding-bottom: 2px;
+    flex-shrink: 0;
 }
 
 /* ============================================================
@@ -7384,6 +7398,8 @@ body.dark-mode .ss-picker-name {
 /* The action-buttons row border at the bottom of settings */
 .settings-action-row {
   border-top: 1px solid #808080;
+  padding: 6px 10px 8px;
+  flex-shrink: 0;
 }
 body.dark-mode .settings-action-row {
   border-top-color: #222 !important;
