@@ -6416,6 +6416,7 @@ const w95Layout = (() => {
     if (Math.round(left) !== Math.round(r.left)) winEl.style.left = left + 'px';
     if (Math.round(top)  !== Math.round(r.top))  winEl.style.top  = top  + 'px';
     if (r.height > vh) winEl.style.height = vh + 'px';
+    if (r.width  > vw) winEl.style.width  = vw + 'px';
   }
 
   return { save, saveMaxState, restore, clamp };
@@ -9030,11 +9031,13 @@ window.addEventListener('mousemove', (e) => {
   const dx = e.clientX - startX;
   const dy = e.clientY - startY;
   const MIN_W = 200, MIN_H = 80;
+  const MAX_W = document.documentElement.clientWidth;
+  const MAX_H = document.documentElement.clientHeight - 40;
   let newW = startW, newH = startH, newL = startL, newT = startT;
-  if (dir.includes('e')) newW = Math.max(MIN_W, startW + dx);
-  if (dir.includes('s')) newH = Math.max(MIN_H, startH + dy);
-  if (dir.includes('w')) { newW = Math.max(MIN_W, startW - dx); newL = startL + startW - newW; }
-  if (dir.includes('n')) { newH = Math.max(MIN_H, startH - dy); newT = startT + startH - newH; }
+  if (dir.includes('e')) newW = Math.min(MAX_W, Math.max(MIN_W, startW + dx));
+  if (dir.includes('s')) newH = Math.min(MAX_H, Math.max(MIN_H, startH + dy));
+  if (dir.includes('w')) { newW = Math.min(MAX_W, Math.max(MIN_W, startW - dx)); newL = startL + startW - newW; }
+  if (dir.includes('n')) { newH = Math.min(MAX_H, Math.max(MIN_H, startH - dy)); newT = startT + startH - newH; }
   winEl.style.width  = newW + 'px';
   winEl.style.height = newH + 'px';
   winEl.style.left   = newL + 'px';
