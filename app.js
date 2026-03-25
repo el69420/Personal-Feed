@@ -7332,6 +7332,7 @@ const w95Apps = {};
     // Heights cycle through 3 tiers so adjacent flowers differ
     const heightTiers = [20, 26, 22, 28, 18, 24];
 
+    let maxFlowerHeight = 4;
     flowersArea.innerHTML = visible.map((f, i) => {
       const col     = i % spreadCols;
       const x       = spreadCols > 1 ? (col * colWidth - 18) : 0; // centred around 0
@@ -7341,6 +7342,7 @@ const w95Apps = {};
       const headPx  = Math.round(5 + (f.size || 1) * 3); // 6–9 px
       // hsl colour: keep 65% sat, 55% light so it's visible but soft
       const color   = `hsl(${hue},65%,55%)`;
+      if (h + headPx > maxFlowerHeight) maxFlowerHeight = h + headPx;
       return `<span class="garden-vase-flower" style="` +
         `left:calc(50% + ${x}px);` +
         `height:${h}px;` +
@@ -7349,6 +7351,7 @@ const w95Apps = {};
         `--fhead:${headPx}px` +
         `"></span>`;
     }).join('');
+    flowersArea.style.height = maxFlowerHeight + 'px';
   }
 
   // Live vase listener — updates whenever a flower is collected by either user
