@@ -5472,6 +5472,47 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
   border-radius:0 0 50% 50%;
 }
 
+/* harvested: short stubby cut stalk — the plant was just gathered */
+.garden-plant--harvested{
+  width:5px;height:12px;
+  background:#5a7a3a;
+  bottom:4px;
+  border-radius:2px 2px 0 0;
+  opacity:0.7;
+}
+.garden-plant--harvested::before{
+  content:'';position:absolute;
+  width:8px;height:4px;
+  background:#6a8a40;
+  top:-3px;left:-2px;
+  border-radius:50% 50% 0 0;
+  transform:rotate(-20deg);
+}
+
+/* regrowing: small bright fresh shoot emerging from the cut stem */
+.garden-plant--regrowing{
+  width:4px;height:18px;
+  background:#4a9a3a;
+  bottom:4px;
+  border-radius:2px 2px 0 0;
+}
+.garden-plant--regrowing::before{
+  content:'';position:absolute;
+  width:10px;height:8px;
+  background:#6abf40;
+  top:-7px;left:-3px;
+  border-radius:50% 50% 30% 30%;
+  transform:rotate(-15deg);
+}
+.garden-plant--regrowing::after{
+  content:'';position:absolute;
+  width:8px;height:6px;
+  background:#88dd60;
+  top:-5px;left:2px;
+  border-radius:50% 50% 30% 30%;
+  transform:rotate(20deg);
+}
+
 .garden-status{
   margin-top:10px;
   font:11px Tahoma,Verdana,Arial,sans-serif;
@@ -6003,6 +6044,16 @@ body.dark-mode .garden-journal-msg{color:#d0d0d0;}
   transform:translateX(-50%) scale(0.88);
   transform-origin:50% 100%;
   filter:drop-shadow(0 1px 2px rgba(0,0,0,0.25)) grayscale(25%);
+}
+.garden-plant--harvested{
+  transform:translateX(-50%) scale(0.85);
+  transform-origin:50% 100%;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,0.20));
+}
+.garden-plant--regrowing{
+  transform:translateX(-50%) scale(0.95);
+  transform-origin:50% 100%;
+  filter:drop-shadow(0 1px 3px rgba(60,140,40,0.35));
 }
 
 /* Growth sparkle on stage transition — skipped when reduced-motion is preferred */
@@ -6891,6 +6942,78 @@ body.dark-mode .garden-plant--bud {
   width: 100%;
 }
 .garden-vase-msg--show { opacity: 1; }
+
+/* Vase style label — shows unlocked vase name below the milestone message */
+.garden-vase-style-label {
+  font: 10px Tahoma, Verdana, Arial, sans-serif;
+  color: #888;
+  text-align: center;
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+
+/* ---- Vase style overrides via data-vase-style ---- */
+/* Terracotta: warm ochre-orange clay */
+#garden-vase[data-vase-style="terracotta"] .garden-vase-rim  { background: #b85a28; box-shadow: 0 1px 0 #8a3e1a; }
+#garden-vase[data-vase-style="terracotta"] .garden-vase-neck { background: linear-gradient(to right, #a84e22, #cc6a38, #a84e22); }
+#garden-vase[data-vase-style="terracotta"] .garden-vase-bowl { background: linear-gradient(160deg, #cc6a38 0%, #a85030 50%, #b86030 100%); }
+
+/* Blue porcelain: white-blue glaze */
+#garden-vase[data-vase-style="blue"] .garden-vase-rim  { background: #dae8f4; box-shadow: 0 1px 0 #9ac0d8; border: 1px solid #8aaccc; }
+#garden-vase[data-vase-style="blue"] .garden-vase-neck { background: linear-gradient(to right, #c8e0f0, #eaf4ff, #c8e0f0); }
+#garden-vase[data-vase-style="blue"] .garden-vase-bowl {
+  background: linear-gradient(160deg, #e8f4ff 0%, #c0d8ee 40%, #d4eaf8 100%);
+  box-shadow: inset -3px -2px 0 rgba(100,160,210,0.2), inset 3px 2px 0 rgba(255,255,255,0.35);
+}
+
+/* Golden: warm hammered gold */
+#garden-vase[data-vase-style="golden"] .garden-vase-rim  { background: #c89830; box-shadow: 0 1px 0 #a07820; }
+#garden-vase[data-vase-style="golden"] .garden-vase-neck { background: linear-gradient(to right, #b08828, #e8c050, #b08828); }
+#garden-vase[data-vase-style="golden"] .garden-vase-bowl {
+  background: linear-gradient(160deg, #e8c050 0%, #c09030 50%, #d4a840 100%);
+  box-shadow: inset -3px -2px 0 rgba(0,0,0,0.10), inset 3px 2px 0 rgba(255,230,100,0.25);
+}
+
+/* Crystal: clear glass shimmer */
+#garden-vase[data-vase-style="crystal"] .garden-vase-rim  { background: rgba(200,230,250,0.7); border: 1px solid rgba(180,220,240,0.8); box-shadow: 0 1px 0 rgba(160,200,220,0.5); }
+#garden-vase[data-vase-style="crystal"] .garden-vase-neck { background: linear-gradient(to right, rgba(200,230,255,0.5), rgba(240,250,255,0.7), rgba(200,230,255,0.5)); }
+#garden-vase[data-vase-style="crystal"] .garden-vase-bowl {
+  background: linear-gradient(160deg, rgba(220,240,255,0.65) 0%, rgba(190,220,245,0.55) 50%, rgba(210,235,255,0.6) 100%);
+  box-shadow: inset -3px -2px 0 rgba(160,200,240,0.15), inset 3px 2px 0 rgba(255,255,255,0.35);
+  border: 1px solid rgba(180,215,240,0.4);
+}
+
+/* ---- Rarity glow effects on vase flowers ---- */
+.garden-vase-flower--uncommon::before {
+  box-shadow: inset -1px -1px 0 rgba(0,0,0,0.15), inset 1px 1px 0 rgba(255,255,255,0.2),
+              0 0 4px rgba(200,200,60,0.55);
+}
+.garden-vase-flower--rare::before {
+  box-shadow: inset -1px -1px 0 rgba(0,0,0,0.15), inset 1px 1px 0 rgba(255,255,255,0.25),
+              0 0 6px rgba(180,80,255,0.65), 0 0 10px rgba(180,80,255,0.25);
+}
+.garden-vase-flower--special::before {
+  box-shadow: inset -1px -1px 0 rgba(0,0,0,0.10), inset 1px 1px 0 rgba(255,255,255,0.4),
+              0 0 8px rgba(255,210,60,0.9), 0 0 14px rgba(255,180,20,0.45);
+  animation: vase-flower-pulse 2.4s ease-in-out infinite;
+}
+@keyframes vase-flower-pulse {
+  0%,100% { box-shadow: inset -1px -1px 0 rgba(0,0,0,0.10), inset 1px 1px 0 rgba(255,255,255,0.4), 0 0 8px rgba(255,210,60,0.9), 0 0 14px rgba(255,180,20,0.45); }
+  50%     { box-shadow: inset -1px -1px 0 rgba(0,0,0,0.10), inset 1px 1px 0 rgba(255,255,255,0.4), 0 0 12px rgba(255,220,80,1.0), 0 0 20px rgba(255,190,40,0.6); }
+}
+@media(prefers-reduced-motion:reduce){
+  .garden-vase-flower--special::before { animation:none; }
+}
+
+/* Vase flower tooltip on hover (mirrors critter tooltip pattern) */
+.garden-vase-flower {
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+.garden-vase-flower:hover::before {
+  filter: brightness(1.25);
+}
+
 /* Collect button on blooming tiles */
 .garden-collect-btn {
   font-size: 9px !important;

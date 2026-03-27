@@ -5917,6 +5917,19 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 // ===== System Properties dialog with Update History =====
 const UPDATE_HISTORY = [
     {
+        date: '27-03-26',
+        label: 'Garden Rewards',
+        items: [
+            'Plants now cycle through a full lifecycle — seedling → growing → budding → blooming → just gathered → regrowing — then start again from the root instead of resetting the slot.',
+            'Flowers collected into the vase now carry a rarity tier: Common, Uncommon, Rare, and Special. Rarity is influenced by both users watering the same day, watering streaks, special moonflower/shooting star events, and the base plant type.',
+            'Rare and special flowers glow in the vase — uncommon flowers shimmer softly, rare ones glow violet, and special ones pulse gold. Click any flower in the vase to inspect its name, rarity, who gathered it, and when.',
+            'The vase now has unlockable styles: Terracotta, Blue Porcelain, Golden, and Crystal — each earned through garden achievements and automatically applied when unlocked.',
+            'A vase style label appears beneath the milestone message when a non-default style is active.',
+            'Six new garden achievements added: First Bloom, Rare Find, Growing Collection (10 flowers), Full Bouquet (25 flowers), Overflowing (50 flowers), In Bloom Together (both water on a day a plant blooms), and Spilling Over (30 in the vase).',
+            'New unlockable rewards tied to garden progress: four vase styles, terracotta pots, wind chimes, stepping stones, a little birdhouse, fairy lights, a Garden at Night screensaver, Peak Bloom wallpaper, and a Garden Bloom desktop theme.',
+        ]
+    },
+    {
         date: '19-03-26',
         label: 'Food Diary',
         items: [
@@ -6511,7 +6524,7 @@ const w95Apps = {};
     { streak: 7,  id: 'lavender' },
     { streak: 14, id: 'twocolourbloom' },
   ];
-  const STAGE_LABELS    = { seed: 'Seed', sprout: 'Sprout', bud: 'Bud', bloom: 'Bloom', wilted: 'Wilted' };
+  const STAGE_LABELS    = { seed: 'Seedling', sprout: 'Growing', bud: 'Budding', bloom: 'Blooming', wilted: 'Wilted', harvested: 'Just Gathered', regrowing: 'Regrowing' };
   const TOTAL_SLOTS = 8;
   // Bloom count thresholds to unlock each slot (index = slot number)
   const TILE_UNLOCK_THRESHOLDS = [0, 1, 5, 10, 15, 20, 25, 30];
@@ -6530,6 +6543,49 @@ const w95Apps = {};
     wildflower:     310,
   };
 
+  // Flower rarity tiers — base rarity per plant type, upgradeable via conditions
+  const FLOWER_RARITY = {
+    sunflower:      'common',
+    daisy:          'common',
+    lavender:       'common',
+    mint:           'common',
+    fern:           'common',
+    tulip:          'uncommon',
+    rose:           'uncommon',
+    wildflower:     'uncommon',
+    orchid:         'rare',
+    twocolourbloom: 'rare',
+  };
+  const RARITY_ORDER  = ['common', 'uncommon', 'rare', 'special'];
+  const RARITY_LABELS = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', special: 'Special' };
+
+  // Determine rarity of a flower at collect time based on tile events + garden state
+  function determineFlowerRarity(tile, gardenState) {
+    const base   = FLOWER_RARITY[tile.flowerType || 'sunflower'] || 'common';
+    const events = Array.isArray(tile.events) ? tile.events : [];
+
+    // Special events guarantee the top tier
+    if (events.includes('moonflowerVariant') || events.includes('shootingStar')) return 'special';
+
+    const today     = new Date().toISOString().slice(0, 10);
+    const todayRec  = (gardenState.wateredByDay || {})[today] || {};
+    const bothToday = GARDEN_COOP_USERS.every(u => todayRec[u]);
+    const streak    = gardenState.wateringStreak || 0;
+
+    let idx = RARITY_ORDER.indexOf(base);
+    if (idx < 0) idx = 0;
+
+    // Both users watered today → 35 % chance to upgrade one tier
+    if (bothToday && Math.random() < 0.35) idx = Math.min(idx + 1, 2);
+    // Long streak bonus: 7-day streak → extra 20 % bump; 14-day → chance at special
+    if (streak >= 7  && Math.random() < 0.20) idx = Math.min(idx + 1, 2);
+    if (streak >= 14 && idx >= 2 && Math.random() < 0.15) idx = 3;
+    // Returning after absence: plant was regrowing (harvestedAt set) → slight boost
+    if (tile.harvestedAt && Math.random() < 0.15) idx = Math.min(idx + 1, 2);
+
+    return RARITY_ORDER[idx];
+  }
+
   // Soft milestone messages shown as the vase fills
   const VASE_MILESTONES = [
     { count: 1,  text: 'the first flower has been placed' },
@@ -6543,10 +6599,19 @@ const w95Apps = {};
   // Tracks which flower type to plant into an empty slot (set by global dropdown, never touches planted slots)
   let selectedFlower = 'sunflower';
 
-  // ---- calculateStage: unchanged ----
+  // ---- calculateStage ----
   function calculateStage(state) {
     const now = Date.now();
-    const { plantedAt, lastWatered } = state;
+    const { plantedAt, lastWatered, harvestedAt } = state;
+
+    // Regrowing lifecycle: plant cycles after harvest instead of resetting to empty
+    if (harvestedAt) {
+      const hAgo = (now - harvestedAt) / MS_HOUR;
+      if (hAgo < 2)  return 'harvested';   // brief "just gathered" window
+      if (hAgo < 24) return 'regrowing';   // fresh shoots emerging
+      // After 24h: fall into normal lifecycle (plantedAt = harvestedAt)
+    }
+
     const ageHrs = (now - plantedAt) / MS_HOUR;
     const wateredHrsAgo = lastWatered ? (now - lastWatered) / MS_HOUR : Infinity;
 
@@ -6676,26 +6741,32 @@ const w95Apps = {};
       plantDiv.dataset.prevStage = stage;
     }
 
-    // Tile status: flower name + stage + watered time
-    // Bloom tiles also get a small "gather" button to collect the flower into the vase
+    // Tile status: flower name + stage + watered time (+ rarity hint on special events)
+    // Blooming tiles also get a small "gather" button to collect the flower into the vase
     const statusDiv = col.querySelector('.garden-tile-status-el');
     if (statusDiv) {
       const wateredAgo = tileData.lastWatered
         ? Math.round((Date.now() - tileData.lastWatered) / MS_HOUR) : null;
       const wateredText = wateredAgo === null ? 'never'
         : wateredAgo === 0 ? 'just now' : `${wateredAgo}h ago`;
-      const baseText = `${PLANT_LABELS[plantType] || plantType} · ${STAGE_LABELS[stage] || stage} · ${wateredText}`;
+      // Show rarity hint on bloom tiles that have special events
+      const events = Array.isArray(tileData.events) ? tileData.events : [];
+      const hasSpecialEvent = events.includes('moonflowerVariant') || events.includes('shootingStar');
+      const rarityHint = (stage === 'bloom' && hasSpecialEvent) ? ' · ★ special' : '';
+      const baseText = `${PLANT_LABELS[plantType] || plantType} · ${STAGE_LABELS[stage] || stage}${rarityHint} · ${wateredText}`;
       if (stage === 'bloom') {
         // Only re-render if content changed (avoids removing a mid-click disabled button)
         const wanted = `<span>${baseText}</span><button class="garden-collect-btn w95-btn" data-tile="${n}">gather</button>`;
-        if (statusDiv.dataset.stage !== 'bloom') {
+        if (statusDiv.dataset.stage !== 'bloom' || (hasSpecialEvent && !statusDiv.dataset.special)) {
           statusDiv.innerHTML = wanted;
           statusDiv.dataset.stage = 'bloom';
+          statusDiv.dataset.special = hasSpecialEvent ? '1' : '';
         }
       } else {
         if (statusDiv.dataset.stage === 'bloom' || statusDiv.textContent !== baseText) {
           statusDiv.textContent = baseText;
           statusDiv.dataset.stage = stage;
+          statusDiv.dataset.special = '';
         }
       }
     }
@@ -7004,6 +7075,10 @@ const w95Apps = {};
       // Exploration unlocks checked once per water press
       const withExplore = await computeExploreUnlocks(state.unlockedPlants ?? []);
 
+      // Capture pre-transaction bloom counts to detect first-bloom + coop-bloom unlocks
+      const prevBlooms     = state.totalBlooms  || 0;
+      const prevCoopBlooms = state.coopBlooms   || 0;
+
       const txResult = await runTransaction(gardenRef, (currentState) => {
         if (!currentState) return currentState;
 
@@ -7056,6 +7131,7 @@ const w95Apps = {};
         let newSharedStreak  = sharedStreak;
         let newLastSharedDay = lastSharedDay;
 
+        let bothWateredToday = false;
         if (whoIsWatering && GARDEN_COOP_USERS.includes(whoIsWatering)) {
           if (!newWateredByDay[today]) newWateredByDay[today] = {};
           newWateredByDay[today][whoIsWatering] = true;
@@ -7065,8 +7141,8 @@ const w95Apps = {};
             if (day !== today && day !== yesterday) delete newWateredByDay[day];
           }
 
-          const todayRecord      = newWateredByDay[today] || {};
-          const bothWateredToday = GARDEN_COOP_USERS.every(u => todayRecord[u]);
+          const todayRecord = newWateredByDay[today] || {};
+          bothWateredToday  = GARDEN_COOP_USERS.every(u => todayRecord[u]);
 
           if (bothWateredToday && lastSharedDay !== today) {
             newSharedStreak  = lastSharedDay === yesterday ? sharedStreak + 1 : 1;
@@ -7094,6 +7170,7 @@ const w95Apps = {};
 
         // ---- Update all occupied tiles + count new blooms ----
         let newTotalBlooms = currentState.totalBlooms || 0;
+        let newCoopBlooms  = currentState.coopBlooms  || 0;
         const newTiles = { ...txTiles };
 
         for (const [tileStr, txTile] of occupiedEntries) {
@@ -7115,7 +7192,11 @@ const w95Apps = {};
 
           const oldStage = calculateStage(txTile);
           const newStage = calculateStage({ ...txTile, lastWatered: now });
-          if (oldStage !== 'bloom' && newStage === 'bloom') newTotalBlooms++;
+          if (oldStage !== 'bloom' && newStage === 'bloom') {
+            newTotalBlooms++;
+            // Track blooms where both users helped (coop bloom)
+            if (bothWateredToday) newCoopBlooms++;
+          }
 
           newTiles[tileStr] = { ...txTile, lastWatered: now, events: tileEvents };
         }
@@ -7134,6 +7215,7 @@ const w95Apps = {};
           wateredByDay:      newWateredByDay,
           lastWateredByUser: newLastWateredByUser,
           totalBlooms:       newTotalBlooms,
+          coopBlooms:        newCoopBlooms,
           unlockedTiles:     newUnlockedTiles,
           tiles:             newTiles,
         };
@@ -7157,6 +7239,14 @@ const w95Apps = {};
       }
 
       if ((finalState?.wateringStreak || 0) >= 3) unlockAchievement('water_3_days');
+
+      // Garden bloom achievements
+      if (prevBlooms === 0 && (finalState?.totalBlooms || 0) > 0) {
+        await unlockAchievement('garden_first_bloom');
+      }
+      if ((finalState?.coopBlooms || 0) > prevCoopBlooms) {
+        await unlockAchievement('garden_coop_bloom');
+      }
 
       // Per-user watering count → first_sprout + watering_can
       totalWaterings++;
@@ -7239,6 +7329,13 @@ const w95Apps = {};
     const baseHue   = PLANT_FLOWER_HUE[plantType] ?? 50;
     const hue       = (baseHue + Math.floor(Math.random() * 60) - 30 + 360) % 360;
     const size      = +(0.8 + Math.random() * 0.4).toFixed(2);
+    const rarity    = determineFlowerRarity(tile, st);
+    const now       = Date.now();
+
+    // Rarity feedback
+    const rarityMsg = rarity === 'special'   ? ' ★ Special flower!' :
+                      rarity === 'rare'       ? ' — a rare one!' :
+                      rarity === 'uncommon'   ? ' — looking lovely!' : '';
 
     try {
       const newFlowerRef = push(ref(database, 'garden/vase/flowers'));
@@ -7246,19 +7343,25 @@ const w95Apps = {};
         set(newFlowerRef, {
           type:        plantType,
           collectedBy: currentUser,
-          collectedAt: Date.now(),
+          collectedAt: now,
           hue,
           size,
+          rarity,
         }),
-        // Remove the tile so the slot resets to empty
-        set(ref(database, `garden/tiles/${tileIndex}`), null),
+        // Reset the tile to regrowing state so the plant cycles instead of disappearing
+        update(ref(database, `garden/tiles/${tileIndex}`), {
+          plantedAt:   now,
+          lastWatered: null,
+          harvestedAt: now,
+          events:      [],
+        }),
       ]);
 
-      showToast('Gathered into the vase');
+      showToast(`Gathered into the vase${rarityMsg}`);
       sparkSound('react');
 
       // Check milestone based on current vase count
-      const vaseSnap   = await get(ref(database, 'garden/vase/flowers'));
+      const vaseSnap    = await get(ref(database, 'garden/vase/flowers'));
       const flowerCount = vaseSnap.exists() ? Object.keys(vaseSnap.val()).length : 0;
       checkVaseMilestone(flowerCount);
 
@@ -7267,13 +7370,20 @@ const w95Apps = {};
       localStorage.setItem('totalFlowersCollected', String(myFlowerTotal));
       if (myFlowerTotal >= 1)  await unlockAchievement('first_flower');
       if (myFlowerTotal >= 5)  await unlockAchievement('flower_five');
+      if (myFlowerTotal >= 10) await unlockAchievement('garden_flowers_10');
       if (myFlowerTotal >= 12) await unlockAchievement('flower_twelve');
+      if (myFlowerTotal >= 25) await unlockAchievement('garden_flowers_25');
+      if (myFlowerTotal >= 50) await unlockAchievement('garden_flowers_50');
       // Shared vase: check if both users have contributed
       if (!unlockedAchievements.has('flower_shared') && vaseSnap.exists()) {
           const vaseFlowers = Object.values(vaseSnap.val() || {});
           const contributors = new Set(vaseFlowers.map(f => f.collectedBy).filter(Boolean));
           if (contributors.size >= 2) await unlockAchievement('flower_shared');
       }
+      // Vase overflow milestone (30 flowers)
+      if (flowerCount >= 30) await unlockAchievement('garden_vase_overflow');
+      // Rare flower achievement
+      if (rarity === 'rare' || rarity === 'special') await unlockAchievement('garden_rare_flower');
 
       // Noticing: "something new again" — first flower ever, or collected after a quiet period
       if (flowerCount <= 1) {
@@ -7306,6 +7416,15 @@ const w95Apps = {};
     setTimeout(() => msgEl.classList.remove('garden-vase-msg--show'), 12000);
   }
 
+  // Returns the highest-tier unlocked vase style id (or 'default')
+  function getActiveVaseStyle() {
+    const styles = ['vase_style_crystal', 'vase_style_golden', 'vase_style_blue', 'vase_style_terracotta'];
+    for (const s of styles) {
+      if (isRewardUnlocked(s)) return s.replace('vase_style_', '');
+    }
+    return 'default';
+  }
+
   // ---- Vase: render flowers into the vase element ----
   function renderVase(vaseData) {
     const vaseEl      = document.getElementById('garden-vase');
@@ -7315,13 +7434,24 @@ const w95Apps = {};
     const allFlowers = vaseData?.flowers ? Object.values(vaseData.flowers) : [];
     const count = allFlowers.length;
 
-    // Data attribute drives the fill state label (for future CSS hooks)
+    // Data attribute drives CSS fill-state + vase style
     const fill = count === 0 ? 'empty'
       : count <= 4  ? 'sparse'
       : count <= 12 ? 'filling'
       : count <= 24 ? 'full'
       : 'overflow';
     if (vaseEl.dataset.fill !== fill) vaseEl.dataset.fill = fill;
+
+    const style = getActiveVaseStyle();
+    if (vaseEl.dataset.vaseStyle !== style) vaseEl.dataset.vaseStyle = style;
+
+    // Update style label beneath the vase
+    const styleLabel = document.getElementById('garden-vase-style-label');
+    if (styleLabel) {
+      const styleNames = { default: '', terracotta: 'Terracotta Vase', blue: 'Blue Porcelain Vase', golden: 'Golden Vase', crystal: 'Crystal Vase' };
+      styleLabel.textContent = styleNames[style] || '';
+      styleLabel.style.display = style === 'default' ? 'none' : '';
+    }
 
     // Display up to 28 flowers visually (most recently collected)
     const visible = allFlowers.slice(-28);
@@ -7330,21 +7460,36 @@ const w95Apps = {};
     // Spread columns: each flower gets a slot index mod a fixed spread width
     const spreadCols = Math.min(total, 14);
     const colWidth   = spreadCols > 1 ? 36 / (spreadCols - 1) : 0;
-    // Heights cycle through 3 tiers so adjacent flowers differ
+    // Heights cycle through tiers so adjacent flowers differ
     const heightTiers = [20, 26, 22, 28, 18, 24];
 
     let maxFlowerHeight = 4;
     flowersArea.innerHTML = visible.map((f, i) => {
       const col     = i % spreadCols;
-      const x       = spreadCols > 1 ? (col * colWidth - 18) : 0; // centred around 0
+      const x       = spreadCols > 1 ? (col * colWidth - 18) : 0;
       const h       = heightTiers[i % heightTiers.length] + Math.round((f.size || 1) * 3 - 1);
-      const rot     = ((col % 7) - 3) * 5; // –15 to +15 deg
+      const rot     = ((col % 7) - 3) * 5;
       const hue     = f.hue ?? 50;
-      const headPx  = Math.round(5 + (f.size || 1) * 3); // 6–9 px
-      // hsl colour: keep 65% sat, 55% light so it's visible but soft
-      const color   = `hsl(${hue},65%,55%)`;
+      const rarity  = f.rarity || 'common';
+      // Rare/special flowers are slightly larger and brighter
+      const sizeBoost = rarity === 'special' ? 3 : rarity === 'rare' ? 2 : rarity === 'uncommon' ? 1 : 0;
+      const headPx  = Math.round(5 + (f.size || 1) * 3) + sizeBoost;
+      const sat     = rarity === 'special' ? 90 : rarity === 'rare' ? 80 : 65;
+      const lit     = rarity === 'special' ? 65 : rarity === 'rare' ? 60 : 55;
+      const color   = `hsl(${hue},${sat}%,${lit}%)`;
       if (h + headPx > maxFlowerHeight) maxFlowerHeight = h + headPx;
-      return `<span class="garden-vase-flower" style="` +
+      const typeLabel   = PLANT_LABELS[f.type] || (f.type || '?');
+      const rarityLabel = RARITY_LABELS[rarity] || rarity;
+      const whoLabel    = f.collectedBy || '?';
+      const whenLabel   = f.collectedAt ? timeAgo(f.collectedAt) : '';
+      const tooltip     = `${typeLabel} · ${rarityLabel} · ${whoLabel}${whenLabel ? ' · ' + whenLabel : ''}`;
+      return `<span class="garden-vase-flower garden-vase-flower--${rarity}" ` +
+        `data-flower-type="${f.type || ''}" ` +
+        `data-rarity="${rarity}" ` +
+        `data-collected-by="${f.collectedBy || ''}" ` +
+        `data-collected-at="${f.collectedAt || ''}" ` +
+        `title="${tooltip}" ` +
+        `style="` +
         `left:calc(50% + ${x}px);` +
         `height:${h}px;` +
         `transform:rotate(${rot}deg);` +
@@ -7354,6 +7499,19 @@ const w95Apps = {};
     }).join('');
     flowersArea.style.height = maxFlowerHeight + 'px';
   }
+
+  // ---- Flower inspection: click a vase flower to see its details ----
+  document.getElementById('garden-vase-flowers')?.addEventListener('click', (e) => {
+    const fl = e.target.closest('.garden-vase-flower');
+    if (!fl) return;
+    const type    = fl.dataset.flowerType || '?';
+    const rarity  = fl.dataset.rarity || 'common';
+    const who     = fl.dataset.collectedBy || '?';
+    const when    = fl.dataset.collectedAt ? timeAgo(Number(fl.dataset.collectedAt)) : '';
+    const label   = `${PLANT_LABELS[type] || type} · ${RARITY_LABELS[rarity] || rarity} · by ${who}${when ? ' · ' + when : ''}`;
+    showToast(label);
+    sparkSound('react');
+  });
 
   // Live vase listener — updates whenever a flower is collected by either user
   onValue(vaseRef, (snap) => {
@@ -10181,6 +10339,81 @@ var ACHIEVEMENTS = [
         rewardIds:           ['wp_morning_mist', 'theme_dusk'],
     },
 
+    // ---- Garden progression: blooms + rarity ----
+    {
+        id:    'garden_first_bloom',
+        title: 'First Bloom',
+        desc:  'Watch a plant reach full bloom for the first time',
+        icon:  '[✿]',
+        xp:    20,
+        tier:  'bronze',
+        rewardIds: ['vase_style_terracotta'],
+    },
+    {
+        id:    'garden_rare_flower',
+        title: 'Rare Find',
+        desc:  'Collect a rare or special flower into the vase',
+        icon:  '[★✿]',
+        xp:    40,
+        tier:  'gold',
+        hiddenUntilUnlocked: true,
+        rewardIds: ['vase_style_golden', 'garden_windchimes'],
+    },
+    {
+        id:          'garden_flowers_10',
+        title:       'Growing Collection',
+        desc:        'Gather 10 flowers into the vase',
+        icon:        '[10✿]',
+        xp:          25,
+        tier:        'silver',
+        target:      10,
+        getProgress: () => Number(localStorage.getItem('totalFlowersCollected') || 0),
+        rewardIds:   ['vase_style_blue', 'garden_stepping_stones'],
+    },
+    {
+        id:          'garden_flowers_25',
+        title:       'Full Bouquet',
+        desc:        'Gather 25 flowers into the vase',
+        icon:        '[25✿]',
+        xp:          50,
+        tier:        'gold',
+        target:      25,
+        getProgress: () => Number(localStorage.getItem('totalFlowersCollected') || 0),
+        rewardIds:   ['garden_birdhouse', 'theme_garden_bloom'],
+    },
+    {
+        id:          'garden_flowers_50',
+        title:       'Overflowing',
+        desc:        'Gather 50 flowers into the vase',
+        icon:        '[50✿]',
+        xp:          100,
+        tier:        'gold',
+        target:      50,
+        getProgress: () => Number(localStorage.getItem('totalFlowersCollected') || 0),
+        rewardIds:   ['vase_style_crystal', 'wp_bloom_pink'],
+    },
+    {
+        id:                  'garden_coop_bloom',
+        title:               'In Bloom Together',
+        desc:                'A plant blooms on a day you both watered',
+        icon:                '[✿✿✿]',
+        xp:                  75,
+        tier:                'mythic',
+        hiddenUntilUnlocked: true,
+        rewardIds:           ['garden_pot_terracotta', 'ss_garden_night'],
+    },
+    {
+        id:          'garden_vase_overflow',
+        title:       'Spilling Over',
+        desc:        'Fill the vase with 30 or more flowers',
+        icon:        '[❀❀]',
+        xp:          60,
+        tier:        'gold',
+        target:      30,
+        getProgress: () => Number(localStorage.getItem('totalFlowersCollected') || 0),
+        rewardIds:   ['garden_fairy_lights'],
+    },
+
     // ---- Pain Journal ----
     {
         id:    'first_pain_entry',
@@ -10410,6 +10643,44 @@ const REWARD_REGISTRY = [
     { id: 'garden_butterflies',  type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Garden Butterflies', description: 'Painted wings drift between the blooms in the morning light', icon: '[G]' },
     { id: 'garden_rain',         type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Gentle Rain',         description: 'A soft patter on the leaves. The kind you want to stay in',   icon: '[G]' },
     { id: 'garden_frogs',        type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Frog Friends',        description: 'They appeared overnight. They seem content. All is well',      icon: '[G]' },
+
+    // ---- Vase styles (unlocked via flower collection + bloom achievements) ----
+    { id: 'vase_style_terracotta', type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Terracotta Vase',
+      description: 'A warm clay vase — the first bloom deserves somewhere beautiful to live', icon: '[V]' },
+    { id: 'vase_style_blue',       type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Blue Porcelain Vase',
+      description: 'Hand-painted blue-and-white glaze. Elegant, quiet, full of flowers', icon: '[V]' },
+    { id: 'vase_style_golden',     type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Golden Vase',
+      description: 'Warm hammered gold — for days when something rare turns up in the garden', icon: '[V]' },
+    { id: 'vase_style_crystal',    type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Crystal Vase',
+      description: 'Clear as glass, catching the light. A vase for a very full garden', icon: '[V]' },
+
+    // ---- Garden cosmetics (pots, decorations) ----
+    { id: 'garden_pot_terracotta', type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Terracotta Pots',
+      description: 'Small sun-baked pots dotted between the planting beds', icon: '[G]' },
+    { id: 'garden_windchimes',     type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Wind Chimes',
+      description: 'Soft metallic notes when the garden breeze picks up', icon: '[G]' },
+    { id: 'garden_stepping_stones', type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Stepping Stones',
+      description: 'Flat mossy stones along the edge of the flower beds', icon: '[G]' },
+    { id: 'garden_birdhouse',      type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Little Birdhouse',
+      description: 'A hand-painted wooden house. Something moved in almost immediately', icon: '[G]' },
+    { id: 'garden_fairy_lights',   type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Fairy Lights',
+      description: 'Tiny warm bulbs strung between the garden posts — best at dusk', icon: '[G]' },
+
+    // ---- Screensaver ----
+    { id: 'ss_garden_night',       type: REWARD_TYPE_SCREENSAVER,   name: 'Garden at Night',
+      description: 'Fireflies, moonlight, and a quiet breeze through the blooms',
+      swatchCss: 'radial-gradient(ellipse at 50% 80%, #0a1a08 0%, #05100a 50%, #020808 100%)' },
+
+    // ---- Wallpapers ----
+    { id: 'wp_bloom_pink',         type: REWARD_TYPE_WALLPAPER,     name: 'Peak Bloom',
+      description: 'Soft pink, the exact colour of a petal pressed between two pages',
+      css: 'linear-gradient(160deg,#ffe8f4 0%,#ffc8e4 30%,#f8a8cc 60%,#f088b0 100%)',
+      swatchCss: 'linear-gradient(160deg,#ffe8f4 0%,#f088b0 100%)' },
+
+    // ---- Desktop themes ----
+    { id: 'theme_garden_bloom',    type: REWARD_TYPE_DESKTOP_THEME, name: 'Garden Bloom',
+      description: 'Fresh greens and petal pinks — the whole interface in full flower',
+      swatchCss: 'linear-gradient(135deg, #3a7a28 0%, #78b844 40%, #f4c0d0 100%)' },
 
     // Console commands (second set — unlocked by Power User)
     { id: 'cmd_linkstats',  type: REWARD_TYPE_CONSOLE_COMMAND, name: '/linkstats', description: 'Show your link-sharing history and top domains', icon: '[>_]' },
