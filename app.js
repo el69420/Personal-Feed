@@ -6003,7 +6003,7 @@ const UPDATE_HISTORY = [
             'If you try to call the cat onto a window that is too close to the top of the screen, it now shows a small "no room up here!" message instead of silently doing nothing.',
             'The pixel cat was attempting to jump onto windows that did not have enough space above them for it to perch, causing it to disappear or glitch — it now checks for clearance before jumping.',
             'Windows that were wider than the viewport could get stuck or lose their saved size when dragged — dragging now snaps them correctly and width is restored on next open.',
-            'The garden window could be resized too narrow, hiding some plant tiles — a minimum width is now enforced so all 8 columns remain visible at all times.',
+            'The garden window layout was redesigned to use a 4×2 tile grid, halving the default window size while keeping all information visible.',
             'Achievements earned and console commands unlocked now also appear as entries in the taskbar notifications panel, giving you a persistent record alongside the popup.',
             'Window dragging behaviour was overhauled for a smoother feel, the internal scroll structure inside windows was refactored, scrollbars are now subtler, and font sizes scale correctly at different viewport sizes.',
             'The "Rainy Day" achievement (earned by visiting while it is raining) was incorrectly showing its unlock popup on every page refresh instead of just once — fixed.',
@@ -13491,13 +13491,13 @@ document.querySelectorAll('.w95-window').forEach(win => {
 
 // ===== Window layout restore + resize persistence =====
 (function () {
-    // One-time migration: reset garden window width if it was saved at the old
-    // full-screen default (≥ 800 px) so the compact new default takes effect.
+    // One-time migration: reset garden window size if it was saved at the old
+    // wide default (≥ 400 px) so the half-size new default takes effect.
     (function _resetOversizedGarden() {
         try {
             const key  = 'w95_layout_w95-win-garden';
             const data = JSON.parse(localStorage.getItem(key) || 'null');
-            if (data && data.w >= 800) {
+            if (data && data.w >= 400) {
                 localStorage.setItem(key, JSON.stringify({ ...data, w: null, h: null }));
             }
         } catch (e) {}
