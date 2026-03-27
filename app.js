@@ -6598,6 +6598,8 @@ const w95Apps = {};
 
   // Tracks which flower type to plant into an empty slot (set by global dropdown, never touches planted slots)
   let selectedFlower = 'sunflower';
+  let _unlockedPlants = ['sunflower'];
+  let _pendingPlantTile = null;
 
   // ---- calculateStage ----
   function calculateStage(state) {
@@ -6790,47 +6792,11 @@ const w95Apps = {};
     }
   }
 
-  // ---- renderPlantSelector: global dropdown in the info panel for choosing which flower to plant ----
+  // ---- renderPlantSelector: plant selection now happens via popup; just track unlocked plants ----
   function renderPlantSelector(unlockedPlants) {
     const plantRowEl = document.getElementById('gpr-0');
-    if (!plantRowEl) return;
-    const effectiveUnlocks = unlockedPlants.filter(id => id !== 'sunflower');
-    if (effectiveUnlocks.length === 0) {
-      if (!plantRowEl.querySelector('.garden-label')) {
-        plantRowEl.innerHTML =
-          `<span class="garden-label">Plant: ${PLANT_LABELS.sunflower}</span>` +
-          `<div class="garden-help">Water daily to unlock more</div>`;
-      }
-      selectedFlower = 'sunflower';
-    } else {
-      let sel = plantRowEl.querySelector('select');
-      if (!sel) {
-        plantRowEl.innerHTML =
-          `<label for="gps-plant" class="garden-label">Plant:</label>` +
-          `<select id="gps-plant" class="w95-select"></select>`;
-        sel = plantRowEl.querySelector('select');
-        sel.onchange = () => { selectedFlower = sel.value; };
-      }
-      // Rebuild options only when the list changes (avoids dismissing open dropdown)
-      const expectedCount = 1 + effectiveUnlocks.length;
-      if (sel.options.length !== expectedCount) {
-        sel.innerHTML = `<option value="sunflower">${PLANT_LABELS.sunflower}</option>`;
-        for (const id of unlockedPlants) {
-          if (id === 'sunflower') continue;
-          if (PLANT_LABELS[id]) {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.textContent = PLANT_LABELS[id];
-            sel.appendChild(opt);
-          }
-        }
-      }
-      // Keep dropdown in sync with selectedFlower (without overriding user's in-progress choice)
-      if (!Array.from(sel.options).some(o => o.value === selectedFlower)) {
-        selectedFlower = 'sunflower';
-      }
-      sel.value = selectedFlower;
-    }
+    if (plantRowEl) plantRowEl.innerHTML = '';
+    _unlockedPlants = ['sunflower', ...unlockedPlants.filter(id => id !== 'sunflower')];
   }
 
   // ---- renderGarden: drives the 8 slots + streak rows ----
@@ -7279,6 +7245,28 @@ const w95Apps = {};
     }
   }
 
+  // ---- Plant picker popup ----
+  function openPlantPicker(tileIndex) {
+    _pendingPlantTile = tileIndex;
+    const grid = document.getElementById('plant-picker-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (const id of _unlockedPlants) {
+      const btn = document.createElement('button');
+      btn.className = 'type-picker-btn';
+      btn.dataset.plant = id;
+      btn.innerHTML = `<span class="type-picker-label">${PLANT_LABELS[id] || id}</span>`;
+      btn.addEventListener('click', () => {
+        selectedFlower = id;
+        closeModal(document.getElementById('plantPickerModal'));
+        plantSlot(_pendingPlantTile);
+        _pendingPlantTile = null;
+      });
+      grid.appendChild(btn);
+    }
+    openModal(document.getElementById('plantPickerModal'));
+  }
+
   // ---- Plant an empty slot with the currently selected flower ----
   async function plantSlot(n) {
     const snap = await get(gardenRef);
@@ -7542,13 +7530,23 @@ const w95Apps = {};
     await waterGarden();
   });
 
-  // Plant button delegation (per-tile, kept as-is)
-  tilesRowEl.addEventListener('click', async (e) => {
+  // Plant button delegation — opens plant picker popup
+  tilesRowEl.addEventListener('click', (e) => {
     const btn = e.target.closest('.garden-plant-btn');
     if (!btn || btn.disabled) return;
-    btn.disabled = true;
-    await plantSlot(Number(btn.dataset.tile));
-    btn.disabled = false;
+    openPlantPicker(Number(btn.dataset.tile));
+  });
+
+  // Plant picker modal close handlers
+  document.getElementById('plantPickerModalClose')?.addEventListener('click', () => {
+    closeModal(document.getElementById('plantPickerModal'));
+    _pendingPlantTile = null;
+  });
+  document.getElementById('plantPickerModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'plantPickerModal') {
+      closeModal(document.getElementById('plantPickerModal'));
+      _pendingPlantTile = null;
+    }
   });
 
   // Collect button delegation — gathers a blooming flower into the shared vase
