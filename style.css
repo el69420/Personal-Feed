@@ -5379,7 +5379,7 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ===== Our Garden ===== */
-#w95-win-garden{width:360px;min-width:300px;height:280px;min-height:230px;max-height:min(340px,calc(100vh - 40px));display:flex;flex-direction:column;}
+#w95-win-garden{width:360px;min-width:300px;height:280px;min-height:230px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;}
 .garden-top{display:flex;flex:1;min-height:0;align-items:stretch;gap:6px;}
 .garden-left-col{display:flex;flex-direction:column;gap:4px;flex-shrink:0;width:90px;overflow:hidden;}
 .garden-info{overflow:hidden;}
@@ -5423,7 +5423,7 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
 
 /* sprout: green stem + two tiny leaves */
 .garden-plant--sprout{
-  width:4px;height:28px;
+  width:4px;height:20px;
   background:#3a8c3f;
   bottom:4px;
 }
@@ -5439,23 +5439,23 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
 
 /* bloom: taller stem + flower head */
 .garden-plant--bloom{
-  width:4px;height:40px;
+  width:4px;height:28px;
   background:#3a8c3f;
   bottom:4px;
 }
 .garden-plant--bloom::before{
   content:'';position:absolute;
-  width:22px;height:22px;
+  width:16px;height:16px;
   background:#ffcc00;
   border-radius:50%;
-  top:-20px;left:-9px;
+  top:-14px;left:-6px;
 }
 .garden-plant--bloom::after{
   content:'';position:absolute;
-  width:10px;height:10px;
+  width:7px;height:7px;
   background:#ff6600;
   border-radius:50%;
-  top:-15px;left:-3px;
+  top:-10px;left:-2px;
 }
 
 /* wilted: drooping stem */
@@ -5720,41 +5720,41 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
 /* Tulip: red cup, taller narrower head */
 .garden-plant--bloom.garden-plant--type-tulip::before{
   background:#dd2244;
-  width:16px;height:26px;
+  width:12px;height:19px;
   border-radius:50% 50% 0 0;
-  top:-24px;left:-6px;
+  top:-17px;left:-4px;
 }
 .garden-plant--bloom.garden-plant--type-tulip::after{
   background:#ff6688;
-  width:8px;height:14px;
+  width:6px;height:10px;
   border-radius:50% 50% 0 0;
-  top:-24px;left:-2px;
+  top:-17px;left:-1px;
 }
 
 /* Rose: dark red layered circle */
 .garden-plant--bloom.garden-plant--type-rose::before{
   background:#cc0022;
-  width:20px;height:20px;
-  top:-18px;left:-8px;
+  width:15px;height:15px;
+  top:-13px;left:-6px;
 }
 .garden-plant--bloom.garden-plant--type-rose::after{
   background:#ff2244;
-  width:12px;height:12px;
-  top:-14px;left:-4px;
+  width:9px;height:9px;
+  top:-10px;left:-3px;
 }
 
 /* Orchid: purple exotic petals */
 .garden-plant--bloom.garden-plant--type-orchid::before{
   background:#8822cc;
-  width:24px;height:20px;
+  width:18px;height:15px;
   border-radius:50% 50% 30% 30%;
-  top:-18px;left:-10px;
+  top:-13px;left:-7px;
 }
 .garden-plant--bloom.garden-plant--type-orchid::after{
   background:#cc66ff;
-  width:10px;height:8px;
+  width:7px;height:6px;
   border-radius:50%;
-  top:-14px;left:-3px;
+  top:-10px;left:-2px;
 }
 
 /* Lavender: tall purple-blue spike (coop unlock) */
@@ -5763,72 +5763,72 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
 }
 .garden-plant--bloom.garden-plant--type-lavender::before{
   background:#aa77dd;
-  width:10px;height:28px;
+  width:8px;height:20px;
   border-radius:50% 50% 0 0;
-  top:-26px;left:-3px;
+  top:-19px;left:-2px;
 }
 .garden-plant--bloom.garden-plant--type-lavender::after{
   background:#ddbfff;
-  width:6px;height:16px;
+  width:5px;height:12px;
   border-radius:50% 50% 0 0;
-  top:-26px;left:-1px;
+  top:-19px;left:0px;
 }
 
 /* Two-colour Bloom: split left/right petals (coop unlock) */
 .garden-plant--bloom.garden-plant--type-twocolourbloom::before{
   background:#ee2266;
-  width:12px;height:22px;
+  width:9px;height:16px;
   border-radius:50% 0 0 50%;
-  top:-20px;left:-12px;
+  top:-14px;left:-9px;
 }
 .garden-plant--bloom.garden-plant--type-twocolourbloom::after{
   background:#ffcc00;
-  width:12px;height:22px;
+  width:9px;height:16px;
   border-radius:0 50% 50% 0;
-  top:-20px;left:2px;
+  top:-14px;left:2px;
 }
 
 /* Mint: light teal-green rounded cluster (exploration unlock) */
 .garden-plant--bloom.garden-plant--type-mint{background:#44aa77;}
 .garden-plant--bloom.garden-plant--type-mint::before{
   background:#66ddaa;
-  width:18px;height:16px;
+  width:13px;height:12px;
   border-radius:40%;
-  top:-14px;left:-7px;
+  top:-10px;left:-5px;
 }
 .garden-plant--bloom.garden-plant--type-mint::after{
   background:#aaffdd;
-  width:10px;height:8px;
+  width:7px;height:6px;
   border-radius:40%;
-  top:-14px;left:-3px;
+  top:-10px;left:-2px;
 }
 
 /* Fern: dark green asymmetric fronds (exploration unlock) */
 .garden-plant--bloom.garden-plant--type-fern::before{
   background:#226622;
-  width:20px;height:28px;
+  width:15px;height:20px;
   border-radius:0 80% 0 80%;
-  top:-26px;left:-8px;
+  top:-19px;left:-6px;
 }
 .garden-plant--bloom.garden-plant--type-fern::after{
   background:#338833;
-  width:14px;height:18px;
+  width:10px;height:13px;
   border-radius:80% 0 80% 0;
-  top:-26px;left:-2px;
+  top:-19px;left:-1px;
 }
 
 /* Wildflower: pink petals, purple centre (exploration unlock) */
 .garden-plant--bloom.garden-plant--type-wildflower::before{
   background:#ff88cc;
-  width:22px;height:18px;
+  width:16px;height:13px;
   border-radius:50%;
-  top:-16px;left:-9px;
+  top:-12px;left:-6px;
 }
 .garden-plant--bloom.garden-plant--type-wildflower::after{
   background:#aa44cc;
-  width:10px;height:10px;
+  width:7px;height:7px;
   border-radius:50%;
-  top:-12px;left:-3px;
+  top:-9px;left:-2px;
 }
 
 /* ===== Garden Vibe & Feedback additions ===== */
@@ -6038,12 +6038,12 @@ body.dark-mode .garden-journal-msg{color:#d0d0d0;}
   filter:drop-shadow(0 1px 1px rgba(0,0,0,0.40));
 }
 .garden-plant--sprout{
-  transform:translateX(-50%) scale(1.06);
+  transform:translateX(-50%);
   transform-origin:50% 100%;
   filter:drop-shadow(0 2px 2px rgba(0,0,0,0.35));
 }
 .garden-plant--bloom{
-  transform:translateX(-50%) scale(1.14);
+  transform:translateX(-50%);
   transform-origin:50% 100%;
   filter:drop-shadow(0 3px 5px rgba(0,0,0,0.40));
 }
