@@ -6310,6 +6310,7 @@ body.dark-mode .garden-actions-bar{
    align-items:flex-end lets plants grow from a shared ground line.   */
 .garden-tiles-row {
   align-items: flex-end;
+  align-content: flex-end;
   background: transparent;
   background-image: none;
   min-height: 138px;
