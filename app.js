@@ -6524,7 +6524,7 @@ const w95Apps = {};
     { streak: 7,  id: 'lavender' },
     { streak: 14, id: 'twocolourbloom' },
   ];
-  const STAGE_LABELS    = { seed: 'Seedling', sprout: 'Growing', bud: 'Budding', bloom: 'Blooming', wilted: 'Wilted', harvested: 'Just Gathered', regrowing: 'Regrowing' };
+  const STAGE_LABELS    = { seed: 'Seedling', sprout: 'Growing', bud: 'Budding', bloom: 'Blooming', wilted: 'Wilted' };
   const TOTAL_SLOTS = 8;
   // Bloom count thresholds to unlock each slot (index = slot number)
   const TILE_UNLOCK_THRESHOLDS = [0, 1, 5, 10, 15, 20, 25, 30];
@@ -6580,9 +6580,6 @@ const w95Apps = {};
     // Long streak bonus: 7-day streak → extra 20 % bump; 14-day → chance at special
     if (streak >= 7  && Math.random() < 0.20) idx = Math.min(idx + 1, 2);
     if (streak >= 14 && idx >= 2 && Math.random() < 0.15) idx = 3;
-    // Returning after absence: plant was regrowing (harvestedAt set) → slight boost
-    if (tile.harvestedAt && Math.random() < 0.15) idx = Math.min(idx + 1, 2);
-
     return RARITY_ORDER[idx];
   }
 
@@ -6604,15 +6601,7 @@ const w95Apps = {};
   // ---- calculateStage ----
   function calculateStage(state) {
     const now = Date.now();
-    const { plantedAt, lastWatered, harvestedAt } = state;
-
-    // Regrowing lifecycle: plant cycles after harvest instead of resetting to empty
-    if (harvestedAt) {
-      const hAgo = (now - harvestedAt) / MS_HOUR;
-      if (hAgo < 2)  return 'harvested';   // brief "just gathered" window
-      if (hAgo < 24) return 'regrowing';   // fresh shoots emerging
-      // After 24h: fall into normal lifecycle (plantedAt = harvestedAt)
-    }
+    const { plantedAt, lastWatered } = state;
 
     const ageHrs = (now - plantedAt) / MS_HOUR;
     const wateredHrsAgo = lastWatered ? (now - lastWatered) / MS_HOUR : Infinity;
@@ -7336,13 +7325,8 @@ const w95Apps = {};
           size,
           rarity,
         }),
-        // Reset the tile to regrowing state so the plant cycles instead of disappearing
-        update(ref(database, `garden/tiles/${tileIndex}`), {
-          plantedAt:   now,
-          lastWatered: null,
-          harvestedAt: now,
-          events:      [],
-        }),
+        // Remove the tile entirely so tilled soil is left for a new plant to be chosen
+        remove(ref(database, `garden/tiles/${tileIndex}`)),
       ]);
 
       showToast(`Gathered into the vase${rarityMsg}`);
