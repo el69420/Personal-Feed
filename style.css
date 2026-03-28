@@ -7023,6 +7023,23 @@ body.dark-mode .garden-plant--bud {
 }
 
 /* Collect button on blooming tiles */
+/* When the status bar contains a gather button, use flex so the button is never clipped */
+.garden-tile-status-el:has(.garden-collect-btn) {
+  display: flex;
+  align-items: center;
+  overflow: visible;
+}
+.garden-tile-status-el:has(.garden-collect-btn) span {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.garden-tile-status-el:has(.garden-collect-btn) .garden-collect-btn {
+  flex: 0 0 auto;
+}
+
 .garden-collect-btn {
   font-size: 9px !important;
   padding: 0 4px !important;
