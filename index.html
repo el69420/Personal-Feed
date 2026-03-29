@@ -33,10 +33,6 @@
             <div class="desktop-icon-img">&#127807;</div>
             <div class="desktop-icon-label">Garden.exe</div>
         </div>
-        <div class="w95-desktop-icon" data-app="achievements" tabindex="0">
-            <div class="desktop-icon-img">&#127942;</div>
-            <div class="desktop-icon-label">Achievements.exe</div>
-        </div>
         <div class="w95-desktop-icon" data-app="mailbox" tabindex="0" id="mailboxDesktopIcon">
             <div class="desktop-icon-img mailbox-icon-img" style="overflow:visible;font-size:0;">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="36" height="36" style="display:block;">
@@ -60,57 +56,13 @@
             </div>
             <div class="desktop-icon-label">Mailbox.exe</div>
         </div>
-        <div class="w95-desktop-icon" data-app="jukebox" tabindex="0">
-            <div class="desktop-icon-img" style="font-size:22px;">&#127926;</div>
-            <div class="desktop-icon-label">Jukebox.exe</div>
-        </div>
         <div class="w95-desktop-icon" data-app="recycleBin" tabindex="0">
             <div class="desktop-icon-img">&#128465;</div>
             <div class="desktop-icon-label">Recycle Bin</div>
         </div>
-        <div class="w95-desktop-icon" data-app="cat" tabindex="0">
-            <div class="desktop-icon-img">&#128008;</div>
-            <div class="desktop-icon-label">Cat.exe</div>
-        </div>
-        <div class="w95-desktop-icon" data-app="console" tabindex="0">
-            <div class="desktop-icon-img">&#9000;</div>
-            <div class="desktop-icon-label">Console.exe</div>
-        </div>
-        <div class="w95-desktop-icon" data-app="stats" tabindex="0">
-            <div class="desktop-icon-img">&#128202;</div>
-            <div class="desktop-icon-label">Stats.exe</div>
-        </div>
         <div class="w95-desktop-icon" data-app="myComputer" tabindex="0">
             <div class="desktop-icon-img">&#128187;</div>
             <div class="desktop-icon-label">My Computer</div>
-        </div>
-        <div class="w95-desktop-icon" data-app="profiles" tabindex="0">
-            <div class="desktop-icon-img">&#128100;</div>
-            <div class="desktop-icon-label">Profiles.exe</div>
-        </div>
-        <div class="w95-desktop-icon" data-app="scrapbook" tabindex="0">
-            <div class="desktop-icon-img">&#128204;</div>
-            <div class="desktop-icon-label">Scrapbook.exe</div>
-        </div>
-        <div class="w95-desktop-icon" data-app="wishlist" tabindex="0">
-            <div class="desktop-icon-img">&#127873;</div>
-            <div class="desktop-icon-label">Wishlist.exe</div>
-        </div>
-        <div class="w95-desktop-icon" data-app="fooddiary" tabindex="0">
-            <div class="desktop-icon-img">&#127859;</div>
-            <div class="desktop-icon-label">Food Diary.exe</div>
-        </div>
-        <div class="w95-desktop-icon" data-app="painjournal" tabindex="0">
-            <div class="desktop-icon-img">&#129657;</div>
-            <div class="desktop-icon-label">Pain Journal.exe</div>
-        </div>
-        <div class="w95-desktop-icon" data-app="moodjournal" tabindex="0">
-            <div class="desktop-icon-img">&#128148;</div>
-            <div class="desktop-icon-label">Mood Journal.exe</div>
-        </div>
-        <div class="w95-desktop-icon" data-app="shoplist" tabindex="0">
-            <div class="desktop-icon-img">&#128203;</div>
-            <div class="desktop-icon-label">Lists.exe</div>
         </div>
     </div>
 
@@ -930,25 +882,49 @@
 
     <!-- Start-style popup menu -->
     <div id="w95-start-menu" class="w95-start-menu is-hidden" role="menu">
-        <button class="w95-start-item" data-app="feed" type="button">&#128240; Feed</button>
-        <button class="w95-start-item" data-app="chat" type="button">&#128172; Chat</button>
-        <button class="w95-start-item" data-app="new" type="button">&#10024; What's New</button>
-        <button class="w95-start-item" data-app="garden" type="button">&#127807; Garden</button>
-        <button class="w95-start-item" data-app="cat" type="button">&#128008; Cat.exe</button>
-        <button class="w95-start-item" data-app="achievements" type="button">&#127942; Achievements</button>
-        <button class="w95-start-item" data-app="mailbox" type="button">&#9993; Mailbox</button>
-        <button class="w95-start-item" data-app="jukebox" type="button">&#127926; Jukebox</button>
-        <button class="w95-start-item" data-app="console" type="button">&#9000; Console.exe</button>
-        <button class="w95-start-item" data-app="scrapbook" type="button">&#128204; Scrapbook</button>
-        <button class="w95-start-item" data-app="wishlist" type="button">&#127873; Wishlist</button>
-        <button class="w95-start-item" data-app="fooddiary" type="button">&#127859; Food Diary</button>
-        <button class="w95-start-item" data-app="moodjournal" type="button">&#128148; Mood Journal</button>
-        <button class="w95-start-item" data-app="painjournal" type="button">&#129657; Pain Journal</button>
-        <button class="w95-start-item" data-app="shoplist" type="button">&#128203; Lists</button>
-        <button class="w95-start-item" data-app="profiles" type="button">&#128100; Profiles</button>
-        <button class="w95-start-item" data-app="stats" type="button">&#128202; Stats.exe</button>
-        <button class="w95-start-item" data-app="myComputer" type="button">&#128187; My Computer</button>
-        <button class="w95-start-item" data-app="recycleBin" type="button">&#128465; Recycle Bin</button>
+        <!-- Programs -->
+        <div class="w95-start-category" role="menuitem" aria-haspopup="true">
+            <button class="w95-start-item w95-start-has-sub" type="button">&#128240; Programs <span class="w95-start-arrow">&#9658;</span></button>
+            <div class="w95-start-submenu" role="menu">
+                <button class="w95-start-item" data-app="feed" type="button">&#128240; Feed.exe</button>
+                <button class="w95-start-item" data-app="chat" type="button">&#128172; Chat.exe</button>
+                <button class="w95-start-item" data-app="new" type="button">&#10024; What's New</button>
+                <button class="w95-start-item" data-app="mailbox" type="button">&#9993; Mailbox.exe</button>
+                <button class="w95-start-item" data-app="scrapbook" type="button">&#128204; Scrapbook.exe</button>
+                <button class="w95-start-item" data-app="wishlist" type="button">&#127873; Wishlist.exe</button>
+                <button class="w95-start-item" data-app="shoplist" type="button">&#128203; Lists.exe</button>
+            </div>
+        </div>
+        <!-- Games & Fun -->
+        <div class="w95-start-category" role="menuitem" aria-haspopup="true">
+            <button class="w95-start-item w95-start-has-sub" type="button">&#127918; Games &amp; Fun <span class="w95-start-arrow">&#9658;</span></button>
+            <div class="w95-start-submenu" role="menu">
+                <button class="w95-start-item" data-app="garden" type="button">&#127807; Garden.exe</button>
+                <button class="w95-start-item" data-app="cat" type="button">&#128008; Cat.exe</button>
+                <button class="w95-start-item" data-app="jukebox" type="button">&#127926; Jukebox.exe</button>
+                <button class="w95-start-item" data-app="achievements" type="button">&#127942; Achievements.exe</button>
+            </div>
+        </div>
+        <!-- Journals -->
+        <div class="w95-start-category" role="menuitem" aria-haspopup="true">
+            <button class="w95-start-item w95-start-has-sub" type="button">&#128148; Journals <span class="w95-start-arrow">&#9658;</span></button>
+            <div class="w95-start-submenu" role="menu">
+                <button class="w95-start-item" data-app="fooddiary" type="button">&#127859; Food Diary.exe</button>
+                <button class="w95-start-item" data-app="moodjournal" type="button">&#128148; Mood Journal.exe</button>
+                <button class="w95-start-item" data-app="painjournal" type="button">&#129657; Pain Journal.exe</button>
+            </div>
+        </div>
+        <!-- Utilities -->
+        <div class="w95-start-category" role="menuitem" aria-haspopup="true">
+            <button class="w95-start-item w95-start-has-sub" type="button">&#128202; Utilities <span class="w95-start-arrow">&#9658;</span></button>
+            <div class="w95-start-submenu" role="menu">
+                <button class="w95-start-item" data-app="stats" type="button">&#128202; Stats.exe</button>
+                <button class="w95-start-item" data-app="console" type="button">&#9000; Console.exe</button>
+                <button class="w95-start-item" data-app="profiles" type="button">&#128100; Profiles.exe</button>
+                <button class="w95-start-item" data-app="myComputer" type="button">&#128187; My Computer</button>
+                <button class="w95-start-item" data-app="recycleBin" type="button">&#128465; Recycle Bin</button>
+            </div>
+        </div>
         <hr class="w95-start-separator">
         <button class="w95-start-item" data-app="settings" type="button">&#9881;&#65039; Settings</button>
     </div>
