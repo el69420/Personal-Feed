@@ -8065,6 +8065,15 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
   animation: catYarnZoom 0.85s ease-in-out;
 }
 
+/* ---- Zoomies visual (energetic glow while sprinting) ---- */
+@keyframes catZoomiesGlow {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 220, 60, 0.5)); }
+  50%       { filter: drop-shadow(0 0 6px rgba(255, 200, 20, 0.95)) brightness(1.15); }
+}
+#pixel-cat-canvas.cat-zoomies {
+  animation: catZoomiesGlow 0.25s ease-in-out infinite;
+}
+
 /* ============================================================
    Feature pack: Windows-y polish
    ============================================================ */

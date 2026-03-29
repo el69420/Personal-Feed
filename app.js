@@ -14458,6 +14458,11 @@ const CAT_COLOUR_PALETTES = [
     let _lastActionText = '';
     let _lastActionTimer = null;
 
+    // ---- Care combo tracking ----
+    const _catLastActionTs  = { feed: 0, water: 0, yarn: 0 };
+    const COMBO_WINDOW_MS   = 30_000;  // all 3 actions must fall within this window
+    const COMBO_BONUS       = 10;      // stat points added to all three stats
+
     // ---- Activity log (local-only, up to 8 recent entries) ----
     const _CAT_LOG_MAX = 8;
     const _catActivityLog = [];
@@ -14829,6 +14834,7 @@ const CAT_COLOUR_PALETTES = [
             window._catLocalYarnZoom?.();
         }
         sparkSound('cat');
+        _catLastActionTs[action] = Date.now();
         const _ACT_LOG = { feed: 'Cat was fed', water: 'Cat was watered', yarn: 'Cat played with yarn' };
         if (_ACT_LOG[action]) _addCatLog(_ACT_LOG[action]);
 
@@ -14851,6 +14857,32 @@ const CAT_COLOUR_PALETTES = [
             if (result.committed && result.snapshot.exists()) {
                 _catStats = result.snapshot.val();
                 renderCatWindow();
+                // High play stat → chance of zoomies after yarn
+                if (action === 'yarn' && (_catStats.play ?? 0) > 75 && Math.random() < 0.55) {
+                    window._catController?.triggerZoomies();
+                    _addCatLog(`${catDisplayName()} got the zoomies!`);
+                }
+                // Care combo: all 3 actions within COMBO_WINDOW_MS → bonus to all stats
+                const _comboNow = Date.now();
+                const _comboReady = ['feed', 'water', 'yarn'].every(
+                    a => _catLastActionTs[a] > 0 && _comboNow - _catLastActionTs[a] < COMBO_WINDOW_MS
+                );
+                if (_comboReady) {
+                    _catLastActionTs.feed = 0; _catLastActionTs.water = 0; _catLastActionTs.yarn = 0;
+                    const _cbRef = ref(database, `cat/${currentUser}`);
+                    runTransaction(_cbRef, s => s ? {
+                        ...s,
+                        hunger: Math.min(100, (s.hunger ?? 75) + COMBO_BONUS),
+                        thirst: Math.min(100, (s.thirst ?? 75) + COMBO_BONUS),
+                        play:   Math.min(100, (s.play   ?? 75) + COMBO_BONUS),
+                        lastUpdated: Date.now(),
+                    } : s).then(r => {
+                        if (r.committed) { _catStats = r.snapshot.val(); renderCatWindow(); }
+                    }).catch(() => {});
+                    fireCatEvent('cheer');
+                    _addCatLog(`Perfect care combo! +${COMBO_BONUS} to all stats \u2661`);
+                    showToast(`\u2665 Perfect care! ${catDisplayName()} is thriving! (+${COMBO_BONUS} to all stats)`);
+                }
             }
             // Update last-action to done state
             const lastActElDone = document.getElementById('cat-last-action');
@@ -15273,6 +15305,7 @@ function initPixelCat() {
     let drvPerchLastPixel = null;  // { px, py } – saved pixel pos for fall start position
     let drvFalling        = false; // true when cat fell from a closed window (vs graceful jump-down)
     let drvDazedEnd       = 0;    // timestamp when dazed-on-landing state ends
+    let drvZoomiesEnd     = 0;    // timestamp when zoomies state ends
 
     // ---- Behaviour system state ----
     // Cursor position tracked globally within initPixelCat for attention/copycat use
@@ -16014,6 +16047,19 @@ function initPixelCat() {
                 drvNextAct = now + 3000 + Math.random() * 4000;
             }
 
+        } else if (drvState === 'zoomies') {
+            const zoomSpeed = WALK_SPEED * 4.5;
+            drvX += (drvDir === 'right' ? 1 : -1) * zoomSpeed * dt;
+            if (drvX >= 1 - EDGE_PAD) { drvX = 1 - EDGE_PAD; drvDir = 'left'; }
+            if (drvX <= EDGE_PAD)     { drvX = EDGE_PAD;     drvDir = 'right'; }
+            if (now >= drvZoomiesEnd) {
+                drvState   = 'sit';
+                drvSitEnd  = now + 2000 + Math.random() * 1000;
+                drvNextAct = drvSitEnd + 8000 + Math.random() * 4000;
+                triggerEmote('sparkle');
+                window._catLog?.('Cat collapsed from the zoomies');
+            }
+
         } else if (drvState === 'sit') {
             if (now > drvSitEnd) {
                 if (Math.random() < sleepProb) {
@@ -16047,7 +16093,7 @@ function initPixelCat() {
             const prev = _prevDrvState;
             _prevDrvState = drvState;
             if (prev !== null) {
-                if (drvState === 'walk' && prev !== 'wakeup' && prev !== 'jumping' && prev !== 'jumpDown') {
+                if (drvState === 'walk' && prev !== 'wakeup' && prev !== 'jumping' && prev !== 'jumpDown' && prev !== 'zoomies') {
                     if (Math.random() < 0.3) window._catLog?.('Cat wandered across the desktop');
                 } else if (drvState === 'sleep' && prev !== 'sleep' && drvForcedNapEnd <= now) {
                     window._catLog?.('Cat curled up to sleep');
@@ -16055,6 +16101,8 @@ function initPixelCat() {
                     window._catLog?.('Cat woke up');
                 } else if (drvState === 'perched') {
                     window._catLog?.('Cat perched on a window');
+                } else if (drvState === 'zoomies') {
+                    window._catLog?.('Cat got the zoomies!');
                 }
             }
         }
@@ -16073,7 +16121,7 @@ function initPixelCat() {
         // Local-only states are hidden from remote clients:
         //   idle / perched → 'sit'   (cat is stationary)
         //   jumping / jumpDown → 'walk' (cat is in motion)
-        const LOCAL_ONLY = { idle: 'sit', perched: 'sit', jumping: 'walk', jumpDown: 'walk', dazed: 'sit' };
+        const LOCAL_ONLY = { idle: 'sit', perched: 'sit', jumping: 'walk', jumpDown: 'walk', dazed: 'sit', zoomies: 'walk' };
         const fbWriteState = LOCAL_ONLY[drvState] || drvState;
         if (now - lastFbWrite > FB_INTERVAL) {
             lastFbWrite = now;
@@ -16144,9 +16192,12 @@ function initPixelCat() {
         }
         // Settled visual: soft green glow when driver has roaming paused
         canvas.classList.toggle('cat-settled', isDriver && drvRoamingPaused && catState === 'sit');
+        // Zoomies visual: energetic glow
+        canvas.classList.toggle('cat-zoomies', catState === 'zoomies');
 
-        // Walk animation frame toggle
-        if (catState === 'walk' && now - lastFlip > WALK_FPS) {
+        // Walk animation frame toggle (zoomies runs at 4× the normal rate)
+        const _walkFlipMs = catState === 'zoomies' ? 55 : WALK_FPS;
+        if ((catState === 'walk' || catState === 'zoomies') && now - lastFlip > _walkFlipMs) {
             animIdx  = 1 - animIdx;
             lastFlip = now;
         }
@@ -16340,6 +16391,7 @@ function initPixelCat() {
                     case 'perched':  return 'perched';
                     case 'jumping':
                     case 'jumpDown': return 'jumping';
+                    case 'zoomies':  return 'ZOOMIES \u26a1';
                     default:         return drvState;
                 }
             } else {
@@ -16400,6 +16452,17 @@ function initPixelCat() {
                 drvState   = 'walk';
                 drvNextAct = performance.now() + 9999999; // call target handles the transition
             }
+        },
+
+        // Trigger zoomies: cat sprints across the screen at 4.5× speed for 3–5 s.
+        triggerZoomies() {
+            if (!isDriver) return;
+            if (['sleep', 'wakeup', 'jumping', 'jumpDown', 'perched', 'zoomies'].includes(drvState)) return;
+            drvZoomiesEnd  = performance.now() + 3000 + Math.random() * 2000;
+            drvPerchTarget = null;
+            drvPerchLastPos = null;
+            drvCallTarget  = null;
+            drvState       = 'zoomies';
         },
 
         // Toggle autonomous roaming on/off. Returns the new paused state.
