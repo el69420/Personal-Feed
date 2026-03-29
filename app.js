@@ -1806,32 +1806,11 @@ window.switchMailboxTab = function(tab) {
 
 // ---- NOW PLAYING ----
 
-const LASTFM_API_KEY = '4d927af2241b4f77b711972fb2112329';
-const LASTFM_USERS   = { el: 'elliotmakesart', tero: 'afduarte1' };
-
 async function fetchNowPlaying(userKey) {
     try {
-        const username = LASTFM_USERS[userKey];
-        if (!username) return null;
-        const url = `https://ws.audioscrobbler.com/2.0/?method=user.getRecentTracks&user=${username}&api_key=${LASTFM_API_KEY}&format=json&limit=1`;
-        const r = await fetch(url, { cache: 'no-store' });
+        const r = await fetch(`${API_BASE}/api/now-playing?user=${encodeURIComponent(userKey)}`, { cache: 'no-store' });
         if (!r.ok) return null;
-        const json = await r.json();
-        const tracks = json.recenttracks?.track;
-        const track = Array.isArray(tracks) ? tracks[0] : tracks;
-        if (!track) return { status: 'none' };
-        const images = track.image || [];
-        const imageUrl = [...images].reverse().find(i => i['#text'])?.['#text'] || '';
-        return {
-            track:      track.name || '—',
-            artist:     track.artist?.['#text'] || '',
-            album:      track.album?.['#text'] || '',
-            image:      imageUrl,
-            imageUrl:   imageUrl,
-            nowPlaying: track['@attr']?.nowplaying === 'true',
-            timestamp:  track.date?.uts ? parseInt(track.date.uts) * 1000 : null,
-            status:     'ok',
-        };
+        return await r.json();
     } catch { return null; }
 }
 
@@ -1907,23 +1886,12 @@ function _injectTrackIntoAcCache(td) {
 
 async function prefetchAlbumCovers() {
     const results = [];
-    for (const key of Object.keys(LASTFM_USERS)) {
+    for (const key of ['el', 'tero']) {
         try {
-            const username = LASTFM_USERS[key];
-            const url = `https://ws.audioscrobbler.com/2.0/?method=user.getRecentTracks&user=${username}&api_key=${LASTFM_API_KEY}&format=json&limit=10`;
-            const r = await fetch(url);
+            const r = await fetch(`${API_BASE}/api/recent-tracks?user=${encodeURIComponent(key)}`);
             if (!r.ok) continue;
             const json = await r.json();
-            const raw = json.recenttracks?.track || [];
-            const tracks = (Array.isArray(raw) ? raw : [raw]).map(t => {
-                const images = t.image || [];
-                return {
-                    track:    t.name || '—',
-                    artist:   t.artist?.['#text'] || '',
-                    imageUrl: [...images].reverse().find(i => i['#text'])?.['#text'] || '',
-                };
-            }).filter(t => t.imageUrl);
-            results.push(...tracks);
+            results.push(...(json.tracks || []));
         } catch { /* ignore */ }
     }
     if (!results.length) return;
@@ -5916,6 +5884,13 @@ document.getElementById('postsContainer')?.addEventListener('input', e => {
 
 // ===== System Properties dialog with Update History =====
 const UPDATE_HISTORY = [
+    {
+        date: '29-03-26',
+        label: 'Security & Cleanup',
+        items: [
+            'Last.fm API key removed from client-side code — all music data now fetched through the server proxy.',
+        ]
+    },
     {
         date: '27-03-26',
         label: 'Garden Rewards',
@@ -17743,12 +17718,6 @@ function initPixelCat() {
             if (!node) return null;
         }
         return node;
-    }
-
-    function safeText(s) {
-        const d = document.createElement('div');
-        d.textContent = s;
-        return d.innerHTML;
     }
 
     function render() {
