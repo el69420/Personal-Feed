@@ -17406,7 +17406,7 @@ function initPixelCat() {
         }
     }
 
-    // ---- Still Moment (breathing) ----
+    // ---- Still Moment (breathing — 4-7-8 technique) ----
     let breathFrame = 0;
 
     function initBreathing() {
@@ -17418,12 +17418,33 @@ function initPixelCat() {
         const W = canvas.width, H = canvas.height;
         breathFrame++;
 
-        // Very slow cycle: ~8 s in, ~8 s out at 60fps
-        const cycle = (breathFrame % 960) / 960;   // 0→1 over 16 s
-        const phase = Math.sin(cycle * Math.PI * 2); // -1 → +1 → -1
-        const t = (phase + 1) / 2;                   // 0 → 1 → 0 (inhale→exhale)
+        // 4-7-8 technique: inhale 4 s, hold 7 s, exhale 8 s = 19 s at 60 fps
+        const INHALE_F = 4 * 60;   // 240
+        const HOLD_F   = 7 * 60;   // 420
+        const EXHALE_F = 8 * 60;   // 480
+        const TOTAL_F  = INHALE_F + HOLD_F + EXHALE_F; // 1140
 
-        // Background: shifts from deep slate to soft blue-grey
+        const fc = breathFrame % TOTAL_F; // frame within current cycle
+
+        // t: 0 = circle fully contracted, 1 = fully expanded
+        // phase: current stage name
+        let t, breathPhase;
+        if (fc < INHALE_F) {
+            breathPhase = 'inhale';
+            const p = fc / INHALE_F;
+            // ease-in-out: gentle expansion
+            t = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+        } else if (fc < INHALE_F + HOLD_F) {
+            breathPhase = 'hold';
+            t = 1; // stay fully expanded
+        } else {
+            breathPhase = 'exhale';
+            const p = (fc - INHALE_F - HOLD_F) / EXHALE_F;
+            // ease-in: starts fast (forceful release), then slows
+            t = 1 - p * p;
+        }
+
+        // Background: shifts from deep slate to soft blue-grey as circle expands
         const bgHue = 215 + t * 8;
         const bgLit = 12 + t * 6;
         ctx.fillStyle = `hsl(${bgHue},30%,${bgLit}%)`;
@@ -17434,10 +17455,11 @@ function initPixelCat() {
         const maxR = Math.min(W, H) * 0.22;
         const r = minR + (maxR - minR) * t;
 
-        // Outer glow rings
+        // Outer glow rings (stronger during hold)
+        const glowBoost = breathPhase === 'hold' ? 1.4 : 1;
         for (let i = 3; i >= 1; i--) {
             const gr = r * (1 + i * 0.6);
-            const ga = (0.06 / i) * t;
+            const ga = (0.06 / i) * t * glowBoost;
             const ring = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, gr);
             ring.addColorStop(0, `rgba(160,200,240,${ga})`);
             ring.addColorStop(1, 'rgba(160,200,240,0)');
@@ -17447,26 +17469,54 @@ function initPixelCat() {
             ctx.fill();
         }
 
-        // Main circle
+        // Main circle — slightly warmer hue during hold
+        const circleHue = breathPhase === 'hold' ? 200 : 210;
         const grad = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.2, r * 0.1, cx, cy, r);
-        grad.addColorStop(0, `hsla(210,60%,${60 + t * 20}%,${0.6 + t * 0.3})`);
-        grad.addColorStop(1, `hsla(220,50%,${35 + t * 15}%,${0.5 + t * 0.2})`);
+        grad.addColorStop(0, `hsla(${circleHue},60%,${60 + t * 20}%,${0.6 + t * 0.3})`);
+        grad.addColorStop(1, `hsla(${circleHue + 10},50%,${35 + t * 15}%,${0.5 + t * 0.2})`);
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
 
-        // Instruction text
-        const label = t < 0.45 ? 'breathe in' : t > 0.55 ? 'breathe out' : '';
-        if (label) {
-            ctx.globalAlpha = Math.min(1, (Math.abs(t - 0.5) < 0.05 ? 0 : 1) * Math.min(t * 5, (1 - t) * 5, 1));
-            ctx.fillStyle = 'rgba(200,220,240,0.55)';
-            ctx.font = `${Math.round(Math.min(W, H) * 0.022)}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.fillText(label, cx, cy + r + Math.min(W, H) * 0.06);
-            ctx.globalAlpha = 1;
-            ctx.textAlign = 'left';
+        // Instruction text — fades in/out at phase transitions
+        const FADE_F = 20; // ~⅓ s fade
+        let phaseFrame, phaseTotal;
+        if (breathPhase === 'inhale')       { phaseFrame = fc;                           phaseTotal = INHALE_F; }
+        else if (breathPhase === 'hold')    { phaseFrame = fc - INHALE_F;               phaseTotal = HOLD_F; }
+        else                               { phaseFrame = fc - INHALE_F - HOLD_F;      phaseTotal = EXHALE_F; }
+        const labelAlpha = Math.min(phaseFrame / FADE_F, (phaseTotal - phaseFrame) / FADE_F, 1);
+
+        let label, sublabel;
+        if (breathPhase === 'inhale') {
+            label    = 'inhale';
+            sublabel = 'quietly through your nose';
+        } else if (breathPhase === 'hold') {
+            label    = 'hold';
+            sublabel = '';
+        } else {
+            label    = 'exhale';
+            sublabel = 'forcefully through your mouth';
         }
+
+        const fontSize   = Math.round(Math.min(W, H) * 0.028);
+        const subFontSize = Math.round(fontSize * 0.72);
+        const textY      = cy + r + Math.min(W, H) * 0.07;
+
+        ctx.textAlign = 'center';
+        ctx.globalAlpha = labelAlpha * 0.9;
+        ctx.fillStyle = 'rgba(200,220,240,1)';
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.fillText(label, cx, textY);
+
+        if (sublabel) {
+            ctx.globalAlpha = labelAlpha * 0.5;
+            ctx.font = `${subFontSize}px sans-serif`;
+            ctx.fillText(sublabel, cx, textY + fontSize * 1.35);
+        }
+
+        ctx.globalAlpha = 1;
+        ctx.textAlign = 'left';
     }
 
     // ---- Snowfall ----
