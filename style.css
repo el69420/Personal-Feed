@@ -8904,6 +8904,35 @@ body.dark-mode .sys-props-hr {
   text-transform: uppercase;
 }
 
+/* --- Achievement unlock indicator (trophy badge on reward items) --- */
+.reward-unlock-indicator {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+  z-index: 3;
+  pointer-events: all;
+  transition: opacity 0.1s, transform 0.1s;
+  user-select: none;
+}
+.reward-unlock-indicator:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+/* --- Achievement card highlight when navigated to from a reward item --- */
+@keyframes ach-highlight-pulse {
+  0%   { box-shadow: 0 0 0 2px #ffd700, 0 0 8px rgba(255,215,0,0.6); }
+  60%  { box-shadow: 0 0 0 2px #ffd700, 0 0 8px rgba(255,215,0,0.3); }
+  100% { box-shadow: none; }
+}
+.achievement-card--highlighted {
+  animation: ach-highlight-pulse 2.5s ease-out forwards;
+}
+
 /* --- Section label within settings panels --- */
 .unlock-section-label {
   font: bold 11px Tahoma, Verdana, Arial, sans-serif;

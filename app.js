@@ -10783,6 +10783,25 @@ function getAllRewardsByType(type) {
     return REWARD_REGISTRY.filter(r => r.type === type);
 }
 
+// Returns the achievement that grants the given reward ID (if any).
+function getAchievementForReward(rewardId) {
+    return ACHIEVEMENTS.find(a => Array.isArray(a.rewardIds) && a.rewardIds.includes(rewardId));
+}
+
+// Opens the achievements window and scrolls to + highlights a specific achievement card.
+function openAchievementsAndHighlight(achievementId) {
+    if (w95Apps['achievements']) w95Apps['achievements'].open();
+    setTimeout(() => {
+        const body = document.getElementById('w95-achievements-body');
+        if (!body) return;
+        const card = body.querySelector(`[data-achievement-id="${achievementId}"]`);
+        if (!card) return;
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('achievement-card--highlighted');
+        setTimeout(() => card.classList.remove('achievement-card--highlighted'), 2500);
+    }, 80);
+}
+
 // ---- Achievement state ----
 // Map of id -> unixTimestamp (ms) for every unlocked achievement.
 // Using a Map lets us store the unlock date without a separate data structure.
@@ -11478,7 +11497,7 @@ function renderAchievementsWindow() {
         itemClass += ` tier-${a.tier}`;
 
         return (
-            `<div class="${itemClass}">` +
+            `<div class="${itemClass}" data-achievement-id="${a.id}">` +
             `<span class="achievement-icon">${safeText(a.icon)}</span>` +
             `<div class="achievement-body">` +
             `<div class="achievement-title">${safeText(a.title)}</div>` +
@@ -13925,6 +13944,18 @@ async function loadUserWallpaper() {
                 sw.appendChild(lbl);
 
                 if (unlocked) {
+                    const achWp = getAchievementForReward(rw.id);
+                    if (achWp) {
+                        const ind = document.createElement('span');
+                        ind.className = 'reward-unlock-indicator';
+                        ind.title = `Unlocked by: ${achWp.title}`;
+                        ind.textContent = '🏆';
+                        ind.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            openAchievementsAndHighlight(achWp.id);
+                        });
+                        sw.appendChild(ind);
+                    }
                     sw.addEventListener('click', () => {
                         markRewardSeen(rw.id);
                         wpSelectedId = rw.id;
@@ -13994,6 +14025,19 @@ async function loadUserWallpaper() {
             }
 
             if (unlocked) {
+                const achSs = getAchievementForReward(rs.id);
+                if (achSs) {
+                    card.style.position = 'relative';
+                    const ind = document.createElement('span');
+                    ind.className = 'reward-unlock-indicator';
+                    ind.title = `Unlocked by: ${achSs.title}`;
+                    ind.textContent = '🏆';
+                    ind.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openAchievementsAndHighlight(achSs.id);
+                    });
+                    card.appendChild(ind);
+                }
                 radio.addEventListener('change', () => {
                     if (radio.checked) {
                         localStorage.setItem('screensaverType', rs.id);
@@ -14068,6 +14112,18 @@ async function loadUserWallpaper() {
             }
 
             if (unlocked) {
+                const achSnd = getAchievementForReward(sp.id);
+                if (achSnd) {
+                    const ind = document.createElement('span');
+                    ind.className = 'reward-unlock-indicator';
+                    ind.title = `Unlocked by: ${achSnd.title}`;
+                    ind.textContent = '🏆';
+                    ind.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openAchievementsAndHighlight(achSnd.id);
+                    });
+                    item.appendChild(ind);
+                }
                 item.addEventListener('click', () => {
                     markRewardSeen(sp.id);
                     localStorage.setItem('activeSoundPack', activePack === sp.id ? '' : sp.id);
@@ -14132,6 +14188,18 @@ async function loadUserWallpaper() {
             }
 
             if (unlocked) {
+                const achTh = getAchievementForReward(th.id);
+                if (achTh) {
+                    const ind = document.createElement('span');
+                    ind.className = 'reward-unlock-indicator';
+                    ind.title = `Unlocked by: ${achTh.title}`;
+                    ind.textContent = '🏆';
+                    ind.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openAchievementsAndHighlight(achTh.id);
+                    });
+                    item.appendChild(ind);
+                }
                 item.addEventListener('click', () => {
                     markRewardSeen(th.id);
                     const newActive = activeTheme === th.id ? '' : th.id;
@@ -14633,6 +14701,18 @@ const CAT_COLOUR_PALETTES = [
             }
 
             if (unlocked) {
+                const achAcc = getAchievementForReward(acc.id);
+                if (achAcc) {
+                    const ind = document.createElement('span');
+                    ind.className = 'reward-unlock-indicator';
+                    ind.title = `Unlocked by: ${achAcc.title}`;
+                    ind.textContent = '🏆';
+                    ind.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openAchievementsAndHighlight(achAcc.id);
+                    });
+                    item.appendChild(ind);
+                }
                 item.addEventListener('click', () => {
                     markRewardSeen(acc.id);
                     const cur = localStorage.getItem('catEquippedAccessory');
@@ -14680,6 +14760,21 @@ const CAT_COLOUR_PALETTES = [
                 badge.className = 'cat-unlock-item-badge cat-unlock-item-badge--new';
                 badge.textContent = 'NEW';
                 item.appendChild(badge);
+            }
+
+            if (unlocked) {
+                const achBeh = getAchievementForReward(beh.id);
+                if (achBeh) {
+                    const ind = document.createElement('span');
+                    ind.className = 'reward-unlock-indicator';
+                    ind.title = `Unlocked by: ${achBeh.title}`;
+                    ind.textContent = '🏆';
+                    ind.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openAchievementsAndHighlight(achBeh.id);
+                    });
+                    item.appendChild(ind);
+                }
             }
 
             grid.appendChild(item);
