@@ -764,6 +764,78 @@ const _SOUND_PACK_PROFILES = {
             ach:            [ {f:261.63,t:0.00,dur:0.11}, {f:329.63,t:0.11,dur:0.11}, {f:392.00,t:0.22,dur:0.11}, {f:523.25,t:0.33,dur:0.13}, {f:659.25,t:0.46,dur:0.42} ],
         }
     },
+    // 🎷 Jazz Lounge — sawtooth waves, warm and buzzy; dom7 and minor-7th chord shapes
+    snd_jazz: {
+        oscType: 'sawtooth', gainLevel: 0.055, attackTime: 0.015,
+        patterns: {
+            post:           [ {f:587.33,t:0.00,dur:0.14}, {f:698.46,t:0.13,dur:0.14}, {f:880.00,t:0.26,dur:0.14}, {f:1046.5,t:0.39,dur:0.30} ],
+            reply:          [ {f:392.00,t:0.00,dur:0.14}, {f:466.16,t:0.13,dur:0.20} ],
+            react:          [ {f:880.00,t:0.00,dur:0.24} ],
+            chat:           [ {f:587.33,t:0.00,dur:0.12}, {f:783.99,t:0.11,dur:0.18} ],
+            ping:           [ {f:440.00,t:0.00,dur:0.28} ],
+            window_open:    [ {f:523.25,t:0.00,dur:0.10}, {f:659.25,t:0.09,dur:0.14} ],
+            window_close:   [ {f:659.25,t:0.00,dur:0.10}, {f:523.25,t:0.10,dur:0.14} ],
+            window_min:     [ {f:440.00,t:0.00,dur:0.09}, {f:392.00,t:0.08,dur:0.12} ],
+            window_max:     [ {f:392.00,t:0.00,dur:0.09}, {f:440.00,t:0.08,dur:0.09}, {f:523.25,t:0.16,dur:0.12} ],
+            window_restore: [ {f:523.25,t:0.00,dur:0.09}, {f:440.00,t:0.08,dur:0.09}, {f:392.00,t:0.16,dur:0.12} ],
+            startup:        [ {f:261.63,t:0.00,dur:0.12}, {f:329.63,t:0.11,dur:0.12}, {f:392.00,t:0.22,dur:0.12}, {f:466.16,t:0.33,dur:0.12}, {f:659.25,t:0.44,dur:0.38} ],
+            shutdown:       [ {f:659.25,t:0.00,dur:0.14}, {f:523.25,t:0.13,dur:0.13}, {f:466.16,t:0.25,dur:0.13}, {f:392.00,t:0.37,dur:0.13}, {f:261.63,t:0.50,dur:0.32} ],
+            cat:            [ {f:880.00,t:0.00,dur:0.10}, {f:932.33,t:0.09,dur:0.16} ],
+            water:          [ {f:293.66,t:0.00,dur:0.11}, {f:349.23,t:0.10,dur:0.11}, {f:440.00,t:0.20,dur:0.11}, {f:587.33,t:0.31,dur:0.18} ],
+            letter:         [ {f:659.25,t:0.00,dur:0.13}, {f:783.99,t:0.12,dur:0.13}, {f:932.33,t:0.24,dur:0.22} ],
+            cmd_success:    [ {f:392.00,t:0.00,dur:0.10}, {f:466.16,t:0.09,dur:0.14} ],
+            cmd_error:      [ {f:233.08,t:0.00,dur:0.14}, {f:220.00,t:0.13,dur:0.20} ],
+            ach:            [ {f:523.25,t:0.00,dur:0.09}, {f:659.25,t:0.09,dur:0.09}, {f:783.99,t:0.18,dur:0.09}, {f:932.33,t:0.27,dur:0.10}, {f:1046.5,t:0.37,dur:0.11}, {f:1318.5,t:0.48,dur:0.34} ],
+        }
+    },
+    // 🚀 Space Station — slow-attack sine waves, sparse electronic tones, retro sci-fi
+    snd_space: {
+        oscType: 'sine', gainLevel: 0.07, attackTime: 0.035,
+        patterns: {
+            post:           [ {f:440,t:0.00,dur:0.16}, {f:660,t:0.15,dur:0.16}, {f:880,t:0.30,dur:0.16}, {f:1320,t:0.45,dur:0.30} ],
+            reply:          [ {f:1100,t:0.00,dur:0.15}, {f:550,t:0.15,dur:0.22} ],
+            react:          [ {f:990,t:0.00,dur:0.22} ],
+            chat:           [ {f:495,t:0.00,dur:0.12}, {f:990,t:0.12,dur:0.18} ],
+            ping:           [ {f:770,t:0.00,dur:0.28} ],
+            window_open:    [ {f:396,t:0.00,dur:0.12}, {f:594,t:0.11,dur:0.16} ],
+            window_close:   [ {f:594,t:0.00,dur:0.12}, {f:396,t:0.11,dur:0.16} ],
+            window_min:     [ {f:495,t:0.00,dur:0.10}, {f:330,t:0.09,dur:0.14} ],
+            window_max:     [ {f:330,t:0.00,dur:0.10}, {f:495,t:0.09,dur:0.10}, {f:660,t:0.18,dur:0.14} ],
+            window_restore: [ {f:660,t:0.00,dur:0.10}, {f:495,t:0.09,dur:0.10}, {f:330,t:0.18,dur:0.14} ],
+            startup:        [ {f:220,t:0.00,dur:0.16}, {f:330,t:0.14,dur:0.16}, {f:440,t:0.28,dur:0.16}, {f:660,t:0.42,dur:0.18}, {f:1100,t:0.58,dur:0.42} ],
+            shutdown:       [ {f:1100,t:0.00,dur:0.16}, {f:660,t:0.15,dur:0.15}, {f:440,t:0.29,dur:0.15}, {f:330,t:0.43,dur:0.15}, {f:220,t:0.57,dur:0.32} ],
+            cat:            [ {f:1320,t:0.00,dur:0.08}, {f:1760,t:0.07,dur:0.12} ],
+            water:          [ {f:220,t:0.00,dur:0.11}, {f:330,t:0.10,dur:0.11}, {f:440,t:0.20,dur:0.11}, {f:550,t:0.30,dur:0.16} ],
+            letter:         [ {f:660,t:0.00,dur:0.14}, {f:880,t:0.13,dur:0.14}, {f:1100,t:0.26,dur:0.22} ],
+            cmd_success:    [ {f:550,t:0.00,dur:0.10}, {f:880,t:0.09,dur:0.14} ],
+            cmd_error:      [ {f:330,t:0.00,dur:0.14}, {f:220,t:0.13,dur:0.20} ],
+            ach:            [ {f:440,t:0.00,dur:0.09}, {f:660,t:0.09,dur:0.09}, {f:880,t:0.18,dur:0.09}, {f:1100,t:0.27,dur:0.10}, {f:1320,t:0.37,dur:0.10}, {f:1760,t:0.47,dur:0.36} ],
+        }
+    },
+    // 🌧️ Rainy Day — gentle sine waves, pentatonic scale, slow fade-in, melancholy and soft
+    snd_rain: {
+        oscType: 'sine', gainLevel: 0.055, attackTime: 0.030,
+        patterns: {
+            post:           [ {f:349.23,t:0.00,dur:0.20}, {f:440.00,t:0.18,dur:0.20}, {f:523.25,t:0.36,dur:0.20}, {f:587.33,t:0.54,dur:0.36} ],
+            reply:          [ {f:392.00,t:0.00,dur:0.16}, {f:293.66,t:0.15,dur:0.24} ],
+            react:          [ {f:523.25,t:0.00,dur:0.28} ],
+            chat:           [ {f:293.66,t:0.00,dur:0.14}, {f:392.00,t:0.13,dur:0.20} ],
+            ping:           [ {f:349.23,t:0.00,dur:0.30} ],
+            window_open:    [ {f:261.63,t:0.00,dur:0.14}, {f:349.23,t:0.13,dur:0.18} ],
+            window_close:   [ {f:349.23,t:0.00,dur:0.14}, {f:261.63,t:0.13,dur:0.18} ],
+            window_min:     [ {f:293.66,t:0.00,dur:0.12}, {f:261.63,t:0.11,dur:0.16} ],
+            window_max:     [ {f:261.63,t:0.00,dur:0.12}, {f:293.66,t:0.11,dur:0.12}, {f:349.23,t:0.22,dur:0.16} ],
+            window_restore: [ {f:349.23,t:0.00,dur:0.12}, {f:293.66,t:0.11,dur:0.12}, {f:261.63,t:0.22,dur:0.16} ],
+            startup:        [ {f:130.81,t:0.00,dur:0.20}, {f:261.63,t:0.18,dur:0.20}, {f:349.23,t:0.36,dur:0.20}, {f:440.00,t:0.54,dur:0.22}, {f:523.25,t:0.74,dur:0.50} ],
+            shutdown:       [ {f:523.25,t:0.00,dur:0.18}, {f:440.00,t:0.17,dur:0.17}, {f:392.00,t:0.32,dur:0.17}, {f:293.66,t:0.47,dur:0.17}, {f:261.63,t:0.62,dur:0.40} ],
+            cat:            [ {f:698.46,t:0.00,dur:0.12}, {f:783.99,t:0.11,dur:0.18} ],
+            water:          [ {f:293.66,t:0.00,dur:0.14}, {f:349.23,t:0.13,dur:0.14}, {f:392.00,t:0.26,dur:0.14}, {f:440.00,t:0.39,dur:0.20} ],
+            letter:         [ {f:440.00,t:0.00,dur:0.15}, {f:523.25,t:0.14,dur:0.15}, {f:587.33,t:0.28,dur:0.24} ],
+            cmd_success:    [ {f:349.23,t:0.00,dur:0.12}, {f:440.00,t:0.11,dur:0.16} ],
+            cmd_error:      [ {f:293.66,t:0.00,dur:0.16}, {f:261.63,t:0.15,dur:0.22} ],
+            ach:            [ {f:261.63,t:0.00,dur:0.11}, {f:349.23,t:0.11,dur:0.11}, {f:440.00,t:0.22,dur:0.11}, {f:523.25,t:0.33,dur:0.13}, {f:698.46,t:0.46,dur:0.13}, {f:880.00,t:0.59,dur:0.42} ],
+        }
+    },
 };
 
 // Synthesise a small cat meow using a sine frequency sweep (used by snd_cute).
@@ -9952,6 +10024,17 @@ var ACHIEVEMENTS = [
         getProgress: () => Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0),
         rewardIds:   ['cmd_stats'],
     },
+    {
+        id:          'twenty_replies',
+        title:       'The Conversationalist',
+        desc:        'Send 20 replies',
+        icon:        '[>>>]',
+        xp:          40,
+        tier:        'silver',
+        target:      20,
+        getProgress: () => Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0),
+        rewardIds:   ['snd_jazz'],
+    },
 
     // ---- Reactions ----
     {
@@ -9976,6 +10059,20 @@ var ACHIEVEMENTS = [
         }, 0),
         rewardIds:   ['cmd_reactstats'],
     },
+    {
+        id:          'fifty_reactions',
+        title:       'Star Watcher',
+        desc:        'React to posts 50 times',
+        icon:        '[**]',
+        xp:          50,
+        tier:        'silver',
+        target:      50,
+        getProgress: () => Object.values(allPosts).reduce((acc, p) => {
+            const rxBy = p.reactionsBy || {};
+            return acc + Object.values(rxBy).filter(users => users && users[currentUser]).length;
+        }, 0),
+        rewardIds:   ['snd_space'],
+    },
 
     // ---- Letters ----
     {
@@ -9997,6 +10094,17 @@ var ACHIEVEMENTS = [
         target:      5,
         getProgress: () => Object.values(allLetters).filter(l => l.from === currentUser).length,
         rewardIds:   ['cmd_letters', 'catb_loaf'],
+    },
+    {
+        id:          'ten_letters',
+        title:       'Long Distance',
+        desc:        'Send 10 letters',
+        icon:        '[LLL]',
+        xp:          40,
+        tier:        'gold',
+        target:      10,
+        getProgress: () => Object.values(allLetters).filter(l => l.from === currentUser).length,
+        rewardIds:   ['snd_rain'],
     },
 
     // ---- Cat ----
@@ -10613,6 +10721,9 @@ const REWARD_REGISTRY = [
     // Sound packs
     { id: 'snd_cute',            type: REWARD_TYPE_SOUND_PACK, name: 'Cute & Cozy',       description: 'Soft chimes, gentle pops, and one very small meow', icon: '🌟' },
     { id: 'snd_garden_pack',     type: REWARD_TYPE_SOUND_PACK, name: 'Garden Ambience',   description: 'Wind through leaves, distant bees, and a wood frog', icon: '🌿' },
+    { id: 'snd_jazz',            type: REWARD_TYPE_SOUND_PACK, name: 'Jazz Lounge',       description: 'Warm sawtooth tones with a late-night jazz-club feel',  icon: '🎷' },
+    { id: 'snd_space',           type: REWARD_TYPE_SOUND_PACK, name: 'Space Station',     description: 'Slow-fade sine tones like a console on a distant ship', icon: '🚀' },
+    { id: 'snd_rain',            type: REWARD_TYPE_SOUND_PACK, name: 'Rainy Day',         description: 'Soft pentatonic tones as quiet as rain on a window',   icon: '🌧️' },
 
     // Cat accessories
     { id: 'cat_sunglasses',      type: REWARD_TYPE_CAT_ACCESSORY, name: 'Cool Shades',      description: 'For when the cat needs to look like they own the place', icon: '😎', faceDecor: '🕶️', placement: 'eye' },
@@ -11146,6 +11257,7 @@ async function backfillAchievements() {
     const myReplyCount = Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0);
     if (myReplyCount >= 1)  await unlockAchievement('first_reply');
     if (myReplyCount >= 10) await unlockAchievement('ten_replies');
+    if (myReplyCount >= 20) await unlockAchievement('twenty_replies');
 
     // ---- Reactions ----
     const myReactionCount = Object.values(allPosts).reduce((acc, p) => {
@@ -11154,11 +11266,13 @@ async function backfillAchievements() {
     }, 0);
     if (myReactionCount >= 1)  await unlockAchievement('first_reaction');
     if (myReactionCount >= 25) await unlockAchievement('twentyfive_reactions');
+    if (myReactionCount >= 50) await unlockAchievement('fifty_reactions');
 
     // ---- Letters ----
     const myLetterCount = Object.values(allLetters).filter(l => l.from === currentUser).length;
-    if (myLetterCount >= 1) await unlockAchievement('first_letter');
-    if (myLetterCount >= 5) await unlockAchievement('five_letters');
+    if (myLetterCount >= 1)  await unlockAchievement('first_letter');
+    if (myLetterCount >= 5)  await unlockAchievement('five_letters');
+    if (myLetterCount >= 10) await unlockAchievement('ten_letters');
 
     // ---- Cat actions (localStorage-based, no historical Firebase data) ----
     const catCount = Number(localStorage.getItem('catActionCount') || 0);
@@ -11260,6 +11374,7 @@ async function _afterReply() {
     await unlockAchievement('first_reply');
     const total = Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0) + 1; // +1 for the just-pushed reply (allPosts not yet updated)
     if (total >= 10) await unlockAchievement('ten_replies');
+    if (total >= 20) await unlockAchievement('twenty_replies');
     if (unlockedAchievements.size >= 25) await unlockAchievement('unlock_25');
 }
 
@@ -11271,6 +11386,7 @@ function _afterReaction() {
         return acc + Object.values(rxBy).filter(users => users && users[currentUser]).length;
     }, 0) + 1; // +1 for the just-updated reaction (allPosts not yet synced)
     if (total >= 25) unlockAchievement('twentyfive_reactions');
+    if (total >= 50) unlockAchievement('fifty_reactions');
     if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
 }
 
@@ -11278,7 +11394,8 @@ function _afterReaction() {
 function _afterLetter() {
     unlockAchievement('first_letter');
     const total = Object.values(allLetters).filter(l => l.from === currentUser).length;
-    if (total >= 5) unlockAchievement('five_letters');
+    if (total >= 5)  unlockAchievement('five_letters');
+    if (total >= 10) unlockAchievement('ten_letters');
     if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
     // Desktop cat reacts to you sending a letter
     window._catLocalEmote?.('heart');
