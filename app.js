@@ -13765,7 +13765,7 @@ function renderRecycleBin() {
             if (!sub) return;
             sub.style.top = '';
             const rect = sub.getBoundingClientRect();
-            const maxBottom = window.innerHeight - TASKBAR_H;
+            const maxBottom = window.innerHeight - 40;
             if (rect.bottom > maxBottom) {
                 sub.style.top = (maxBottom - rect.height - cat.getBoundingClientRect().top) + 'px';
             }
@@ -16659,7 +16659,7 @@ function initPixelCat() {
         const mw = menu.offsetWidth;
         const mh = menu.offsetHeight;
         menu.style.left = Math.max(0, Math.min(x, window.innerWidth  - mw - 2)) + 'px';
-        menu.style.top  = Math.max(0, Math.min(y, window.innerHeight - TASKBAR_H - mh - 2)) + 'px';
+        menu.style.top  = Math.max(0, Math.min(y, window.innerHeight - 40 - mh - 2)) + 'px';
     }
 
     function hideAll() {
