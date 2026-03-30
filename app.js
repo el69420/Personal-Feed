@@ -6419,7 +6419,7 @@ const w95Layout = (() => {
     const w    = data.w || winEl.offsetWidth  || 280;
     const h    = data.h || winEl.offsetHeight || 200;
     const left = Math.max(MIN_VIS - w, Math.min(vw - MIN_VIS, data.left ?? 20));
-    const top  = Math.max(0,           Math.min(vh - MIN_VIS, data.top  ?? 20));
+    const top  = Math.max(0,           Math.min(vh - h,        data.top  ?? 20));
     winEl.style.left = left + 'px';
     winEl.style.top  = top  + 'px';
     return data;
@@ -6432,7 +6432,7 @@ const w95Layout = (() => {
     const vh = document.documentElement.clientHeight - TASKBAR_H;
     const r  = winEl.getBoundingClientRect();
     const left = Math.max(MIN_VIS - r.width,  Math.min(vw - MIN_VIS, r.left));
-    const top  = Math.max(0,                  Math.min(vh - MIN_VIS, r.top));
+    const top  = Math.max(0,                  Math.min(vh - r.height, r.top));
     if (Math.round(left) !== Math.round(r.left)) winEl.style.left = left + 'px';
     if (Math.round(top)  !== Math.round(r.top))  winEl.style.top  = top  + 'px';
     if (r.height > vh) winEl.style.height = vh + 'px';
@@ -7931,7 +7931,7 @@ const w95Apps = {};
     const vw = document.documentElement.clientWidth;
     const vh = document.documentElement.clientHeight - taskbarH;
     win.style.left = Math.max(MIN_VIS - win.offsetWidth, Math.min(vw - MIN_VIS, winStartX + (e.clientX - startX))) + 'px';
-    win.style.top  = Math.max(0, Math.min(vh - MIN_VIS, winStartY + (e.clientY - startY))) + 'px';
+    win.style.top  = Math.max(0, Math.min(vh - win.offsetHeight, winStartY + (e.clientY - startY))) + 'px';
   });
 
   window.addEventListener('mouseup', () => { if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-garden'); } });
@@ -9124,7 +9124,7 @@ function makeDraggable(winEl, handleEl, winId) {
     const vw = document.documentElement.clientWidth;
     const vh = document.documentElement.clientHeight - taskbarH;
     winEl.style.left = Math.max(MIN_VIS - winEl.offsetWidth, Math.min(vw - MIN_VIS, winStartX + (e.clientX - startX))) + 'px';
-    winEl.style.top  = Math.max(0, Math.min(vh - MIN_VIS, winStartY + (e.clientY - startY))) + 'px';
+    winEl.style.top  = Math.max(0, Math.min(vh - winEl.offsetHeight, winStartY + (e.clientY - startY))) + 'px';
   });
   window.addEventListener('mouseup', () => {
     if (dragging) {
@@ -9182,7 +9182,7 @@ window.addEventListener('mousemove', (e) => {
   const MAX_H = document.documentElement.clientHeight - 40;
   let newW = startW, newH = startH, newL = startL, newT = startT;
   if (dir.includes('e')) newW = Math.min(MAX_W, Math.max(MIN_W, startW + dx));
-  if (dir.includes('s')) newH = Math.min(MAX_H, Math.max(MIN_H, startH + dy));
+  if (dir.includes('s')) newH = Math.min(MAX_H - startT, Math.max(MIN_H, startH + dy));
   if (dir.includes('w')) { newW = Math.min(MAX_W, Math.max(MIN_W, startW - dx)); newL = startL + startW - newW; }
   if (dir.includes('n')) { newH = Math.min(MAX_H, Math.max(MIN_H, startH - dy)); newT = startT + startH - newH; if (newT < 0) { newH += newT; newT = 0; } }
   winEl.style.width  = newW + 'px';
@@ -13422,8 +13422,11 @@ function openFolderWindow(folderItem) {
     });
     window.addEventListener('mousemove', (e) => {
         if (!dragging) return;
-        win.style.left = (winStartX + e.clientX - startX) + 'px';
-        win.style.top  = (winStartY + e.clientY - startY) + 'px';
+        const taskbarH = 40;
+        const maxX = document.documentElement.clientWidth - win.offsetWidth;
+        const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
+        win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+        win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
     });
     window.addEventListener('mouseup', () => { dragging = false; });
 
