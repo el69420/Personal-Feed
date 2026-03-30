@@ -10681,7 +10681,8 @@ const REWARD_REGISTRY = [
     { id: 'wp_meadow', type: REWARD_TYPE_WALLPAPER, name: 'Wildflower Meadow',
       description: 'A soft field of green and gold, like late afternoon light through grass',
       css: 'linear-gradient(to bottom, #c8dda0 0%, #a8c870 25%, #7aab3a 55%, #5a8f20 80%, #3d6f10 100%)',
-      swatchCss: 'linear-gradient(to bottom, #c8dda0 0%, #7aab3a 50%, #3d6f10 100%)' },
+      swatchCss: 'linear-gradient(to bottom, #c8dda0 0%, #7aab3a 50%, #3d6f10 100%)',
+      animated: true },
 
     { id: 'wp_morning_mist', type: REWARD_TYPE_WALLPAPER, name: 'Morning Mist',
       description: 'The hour before the garden wakes — pale blue, pale gold, and very quiet',
@@ -20631,6 +20632,172 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         }
     }
 
+    // ---- Wildflower Meadow ----
+    const WILDFLOWERS = [];
+
+    function initWildflowerMeadow() {
+        const W = canvas.width, H = canvas.height;
+        WILDFLOWERS.length = 0;
+
+        const flowerColors = [
+            { petals: '#ff8fc0', center: '#ffe050' },
+            { petals: '#ffffff', center: '#ffe050' },
+            { petals: '#c8a0ff', center: '#ffe050' },
+            { petals: '#ffcc30', center: '#ff8800' },
+            { petals: '#ff6060', center: '#8b0000' },
+            { petals: '#7ec8e3', center: '#ffffff' },
+            { petals: '#ff9966', center: '#ff5500' },
+        ];
+
+        const horizonY = H * 0.55;
+        const count = Math.max(35, Math.round(W / 20));
+        for (let i = 0; i < count; i++) {
+            const xr     = (i + 0.5 + (Math.random() - 0.5) * 0.8) / count;
+            const depthR = Math.random();
+            const y      = horizonY + depthR * (H - horizonY) * 0.78;
+            const height = 16 + depthR * 30 + Math.random() * 14;
+            const color  = flowerColors[Math.floor(Math.random() * flowerColors.length)];
+            const type   = Math.random() < 0.3 ? 'daisy' : (Math.random() < 0.5 ? 'simple' : 'tiny');
+            WILDFLOWERS.push({
+                x:      xr * W,
+                y,
+                height,
+                phase:  Math.random() * Math.PI * 2,
+                freq:   0.32 + Math.random() * 0.28,
+                amp:    0.015 + Math.random() * 0.012,
+                color,
+                type,
+                depth:  depthR,
+                petalR: 3 + depthR * 5 + Math.random() * 2,
+            });
+        }
+        WILDFLOWERS.sort((a, b) => a.depth - b.depth);
+    }
+
+    function _drawWildflower(f, t) {
+        const sway  = Math.sin(t * f.freq + f.phase) * f.amp;
+        const baseX = f.x, baseY = f.y;
+        const tipX  = baseX + Math.sin(sway) * f.height;
+        const tipY  = baseY - f.height;
+        const midX  = baseX + (tipX - baseX) * 0.5 + Math.sin(sway * 0.5) * f.height * 0.14;
+        const midY  = baseY + (tipY - baseY) * 0.5;
+        const pr    = f.petalR;
+
+        ctx.save();
+        ctx.strokeStyle = '#4a8c2a';
+        ctx.lineWidth   = 1.0 + f.depth * 0.8;
+        ctx.lineCap     = 'round';
+        ctx.beginPath();
+        ctx.moveTo(baseX, baseY);
+        ctx.quadraticCurveTo(midX, midY, tipX, tipY);
+        ctx.stroke();
+
+        if (f.type === 'tiny') {
+            ctx.fillStyle = f.color.petals;
+            ctx.beginPath();
+            ctx.arc(tipX, tipY, pr * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (f.type === 'simple') {
+            ctx.fillStyle = f.color.petals;
+            for (let p = 0; p < 5; p++) {
+                const angle = (p / 5) * Math.PI * 2 + sway * 0.5;
+                ctx.beginPath();
+                ctx.ellipse(tipX + Math.cos(angle) * pr, tipY + Math.sin(angle) * pr,
+                            pr * 0.55, pr * 0.40, angle, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.fillStyle = f.color.center;
+            ctx.beginPath();
+            ctx.arc(tipX, tipY, pr * 0.38, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.fillStyle = f.color.petals;
+            for (let p = 0; p < 8; p++) {
+                const angle = (p / 8) * Math.PI * 2 + sway * 0.5;
+                ctx.beginPath();
+                ctx.ellipse(tipX + Math.cos(angle) * pr * 1.1, tipY + Math.sin(angle) * pr * 1.1,
+                            pr * 0.32, pr * 0.52, angle, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.fillStyle = f.color.center;
+            ctx.beginPath();
+            ctx.arc(tipX, tipY, pr * 0.42, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function animateWildflowerMeadow() {
+        const W = canvas.width, H = canvas.height;
+        const t = frame / 60;
+        const horizonY = H * 0.55;
+
+        // Sky
+        const sky = ctx.createLinearGradient(0, 0, 0, horizonY);
+        sky.addColorStop(0,   '#87ceeb');
+        sky.addColorStop(0.6, '#b8e0f7');
+        sky.addColorStop(1,   '#d4efb0');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, horizonY);
+
+        // Sun
+        const sunX = W * 0.75, sunY = H * 0.12, sunR = 18;
+        const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 5);
+        glow.addColorStop(0,   'rgba(255,230,100,0.40)');
+        glow.addColorStop(0.4, 'rgba(255,210,60,0.15)');
+        glow.addColorStop(1,   'transparent');
+        ctx.fillStyle = glow;
+        ctx.fillRect(sunX - sunR * 5, sunY - sunR * 5, sunR * 10, sunR * 10);
+        ctx.fillStyle = '#fffacc';
+        ctx.beginPath(); ctx.arc(sunX, sunY, sunR,        0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff5a0';
+        ctx.beginPath(); ctx.arc(sunX, sunY, sunR * 0.70, 0, Math.PI * 2); ctx.fill();
+
+        // Ground
+        const ground = ctx.createLinearGradient(0, horizonY, 0, H);
+        ground.addColorStop(0,   '#a8c870');
+        ground.addColorStop(0.3, '#7aab3a');
+        ground.addColorStop(0.7, '#5a8f20');
+        ground.addColorStop(1,   '#3d6f10');
+        ctx.fillStyle = ground;
+        ctx.fillRect(0, horizonY, W, H - horizonY);
+
+        // Horizon blend
+        const blend = ctx.createLinearGradient(0, horizonY - 20, 0, horizonY + 40);
+        blend.addColorStop(0,   'rgba(168,200,112,0)');
+        blend.addColorStop(0.5, 'rgba(168,200,112,0.65)');
+        blend.addColorStop(1,   'rgba(122,171,58,0)');
+        ctx.fillStyle = blend;
+        ctx.fillRect(0, horizonY - 20, W, 60);
+
+        // Wildflowers (back → front)
+        for (const f of WILDFLOWERS) {
+            _drawWildflower(f, t);
+        }
+
+        // Foreground grass blades
+        const grassCount = Math.round(W / 6);
+        for (let i = 0; i < grassCount; i++) {
+            const gx   = (i / grassCount) * W + Math.sin(i * 1.7) * 3;
+            const gh   = 10 + Math.sin(i * 2.3) * 6;
+            const gswy = Math.sin(t * 0.8 + i * 0.35) * 0.08;
+            ctx.save();
+            ctx.strokeStyle = i % 3 === 0 ? '#3d6f10' : '#5a8f20';
+            ctx.lineWidth   = 1.2;
+            ctx.lineCap     = 'round';
+            ctx.beginPath();
+            ctx.moveTo(gx, H);
+            ctx.quadraticCurveTo(
+                gx + Math.sin(gswy) * gh,
+                H - gh * 0.6,
+                gx + Math.sin(gswy) * gh * 1.5,
+                H - gh
+            );
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
     // ---- Core animation loop ----
     function tick() {
         if (!activeId) return;
@@ -20640,6 +20807,7 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         else if (activeId === 'wp_anim_nightsky') animateNightSky();
         else if (activeId === 'wp_anim_daynight') animateDayNight();
         else if (activeId === 'wp_cozy_rain')     animateCozyRain();
+        else if (activeId === 'wp_meadow')        animateWildflowerMeadow();
         rafId = requestAnimationFrame(tick);
     }
 
@@ -20655,6 +20823,7 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         else if (id === 'wp_anim_nightsky') initNightSky();
         else if (id === 'wp_anim_daynight') initDayNight();
         else if (id === 'wp_cozy_rain')     initCozyRain();
+        else if (id === 'wp_meadow')        initWildflowerMeadow();
         rafId = requestAnimationFrame(tick);
     }
 
@@ -20674,6 +20843,7 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
         else if (activeId === 'wp_anim_nightsky') initNightSky();
         else if (activeId === 'wp_anim_daynight') initDayNight();
         else if (activeId === 'wp_cozy_rain')     initCozyRain();
+        else if (activeId === 'wp_meadow')        initWildflowerMeadow();
     });
 
     window._animWallpaper = { start, stop };
