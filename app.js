@@ -14636,20 +14636,17 @@ const CAT_COLOUR_PALETTES = [
         const grid = document.getElementById('cat-behaviours-grid');
         if (!grid) return;
         grid.innerHTML = '';
-        const activeBehaviours = JSON.parse(localStorage.getItem('catActiveBehaviours') || '[]');
         getAllRewardsByType(REWARD_TYPE_CAT_BEHAVIOUR).forEach(beh => {
             const unlocked = isRewardUnlocked(beh.id);
             const isNew    = isRewardNew(beh.id);
-            const isActive = activeBehaviours.includes(beh.id);
             const item = document.createElement('button');
             item.type = 'button';
             item.className = 'cat-unlock-item' +
-                (unlocked ? '' : ' cat-unlock-item--locked') +
-                (isActive ? ' active' : '');
+                (unlocked ? ' active' : ' cat-unlock-item--locked');
             item.title = unlocked
-                ? (isActive ? 'Click to disable ' + beh.name : 'Click to enable ' + beh.name)
+                ? beh.name + ' — always active'
                 : '🔒 ' + beh.name + ' — ' + beh.description;
-            item.disabled = !unlocked;
+            item.disabled = true; // behaviours are automatic, not user-toggled
 
             const iconEl = document.createElement('span');
             iconEl.className = 'cat-unlock-item-icon';
@@ -14661,29 +14658,13 @@ const CAT_COLOUR_PALETTES = [
             item.appendChild(nameEl);
 
             if (unlocked && isNew) {
+                markRewardSeen(beh.id);
                 const badge = document.createElement('span');
                 badge.className = 'cat-unlock-item-badge cat-unlock-item-badge--new';
                 badge.textContent = 'NEW';
                 item.appendChild(badge);
-            } else if (unlocked && isActive) {
-                const badge = document.createElement('span');
-                badge.className = 'cat-unlock-item-badge';
-                badge.style.cssText = 'background:#008000;color:#fff;';
-                badge.textContent = 'ON';
-                item.appendChild(badge);
             }
 
-            if (unlocked) {
-                item.addEventListener('click', () => {
-                    markRewardSeen(beh.id);
-                    const cur = JSON.parse(localStorage.getItem('catActiveBehaviours') || '[]');
-                    const updated = cur.includes(beh.id)
-                        ? cur.filter(b => b !== beh.id)
-                        : [...cur, beh.id];
-                    localStorage.setItem('catActiveBehaviours', JSON.stringify(updated));
-                    renderCatBehaviours();
-                });
-            }
             grid.appendChild(item);
         });
     }
@@ -15332,10 +15313,9 @@ function initPixelCat() {
     let bhvShyIdleMs    = 0;    // accumulated ms the cat has spent not walking
     const BHV_SHY_MS    = 15000;// ms threshold to trigger shy mode
 
-    // Helper: check if a behaviour reward is both unlocked and toggled on
+    // Helper: check if a behaviour reward is unlocked (behaviours are always active once unlocked)
     function isBehavActive(id) {
-        return isRewardUnlocked(id) &&
-            JSON.parse(localStorage.getItem('catActiveBehaviours') || '[]').includes(id);
+        return isRewardUnlocked(id);
     }
 
     // Kneading: periodic kneading animation when catb_knead is active and cat is sitting
