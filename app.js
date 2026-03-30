@@ -13758,6 +13758,20 @@ function renderRecycleBin() {
         closeMenu();
     });
 
+    // Clamp submenus so they don't extend below the taskbar
+    startMenu.querySelectorAll('.w95-start-category').forEach(cat => {
+        cat.addEventListener('mouseenter', () => {
+            const sub = cat.querySelector('.w95-start-submenu');
+            if (!sub) return;
+            sub.style.top = '';
+            const rect = sub.getBoundingClientRect();
+            const maxBottom = window.innerHeight - TASKBAR_H;
+            if (rect.bottom > maxBottom) {
+                sub.style.top = (maxBottom - rect.height - cat.getBoundingClientRect().top) + 'px';
+            }
+        });
+    });
+
     document.addEventListener('click', (e) => {
         if (!startMenu.classList.contains('is-hidden') &&
             !startMenu.contains(e.target) &&
@@ -16645,7 +16659,7 @@ function initPixelCat() {
         const mw = menu.offsetWidth;
         const mh = menu.offsetHeight;
         menu.style.left = Math.max(0, Math.min(x, window.innerWidth  - mw - 2)) + 'px';
-        menu.style.top  = Math.max(0, Math.min(y, window.innerHeight - mh - 2)) + 'px';
+        menu.style.top  = Math.max(0, Math.min(y, window.innerHeight - TASKBAR_H - mh - 2)) + 'px';
     }
 
     function hideAll() {
