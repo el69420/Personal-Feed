@@ -9184,7 +9184,7 @@ window.addEventListener('mousemove', (e) => {
   if (dir.includes('e')) newW = Math.min(MAX_W, Math.max(MIN_W, startW + dx));
   if (dir.includes('s')) newH = Math.min(MAX_H, Math.max(MIN_H, startH + dy));
   if (dir.includes('w')) { newW = Math.min(MAX_W, Math.max(MIN_W, startW - dx)); newL = startL + startW - newW; }
-  if (dir.includes('n')) { newH = Math.min(MAX_H, Math.max(MIN_H, startH - dy)); newT = startT + startH - newH; }
+  if (dir.includes('n')) { newH = Math.min(MAX_H, Math.max(MIN_H, startH - dy)); newT = startT + startH - newH; if (newT < 0) { newH += newT; newT = 0; } }
   winEl.style.width  = newW + 'px';
   winEl.style.height = newH + 'px';
   winEl.style.left   = newL + 'px';
