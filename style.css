@@ -9061,6 +9061,23 @@ body.dark-mode .sys-props-hr {
   color: #808080;
 }
 .cat-unlock-item--locked:hover { background: #c0c0c0; }
+/* Behaviours grid: flat read-only tags, not interactive buttons */
+#cat-behaviours-grid .cat-unlock-item {
+  border: 1px solid #999;
+  background: #dedad2;
+  cursor: default;
+  font-style: italic;
+}
+#cat-behaviours-grid .cat-unlock-item:hover { background: #dedad2; }
+#cat-behaviours-grid .cat-unlock-item.active {
+  background: #dedad2;
+  color: #222;
+  border: 1px solid #777;
+  border-left: 3px solid #000080;
+}
+#cat-behaviours-grid .cat-unlock-item--locked {
+  border: 1px solid #bbb;
+}
 .cat-unlock-item-icon { font-size: 12px; }
 .cat-unlock-item-badge {
   font: bold 7px Tahoma, Verdana, Arial, sans-serif;
