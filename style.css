@@ -5386,7 +5386,7 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
 #w95-chat-body,#w95-new-body{flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column;}
 
 /* ===== Our Garden ===== */
-#w95-win-garden{width:360px;min-width:300px;height:380px;min-height:310px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;}
+#w95-win-garden{width:560px;min-width:300px;height:520px;min-height:310px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;}
 .garden-top{display:flex;flex:1;min-height:0;align-items:stretch;gap:6px;}
 .garden-left-col{display:flex;flex-direction:row;gap:4px;flex-shrink:0;width:auto;overflow:visible;padding:2px 4px;}
 .garden-info{flex:1;min-width:0;overflow:hidden;}

@@ -13482,18 +13482,6 @@ document.querySelectorAll('.w95-window').forEach(win => {
 
 // ===== Window layout restore + resize persistence =====
 (function () {
-    // One-time migration: reset garden window size if it was saved at the old
-    // wide default (≥ 400 px) so the half-size new default takes effect.
-    (function _resetOversizedGarden() {
-        try {
-            const key  = 'w95_layout_w95-win-garden';
-            const data = JSON.parse(localStorage.getItem(key) || 'null');
-            if (data && data.w >= 400) {
-                localStorage.setItem(key, JSON.stringify({ ...data, w: null, h: null }));
-            }
-        } catch (e) {}
-    })();
-
     // 1. Restore saved size/position for every window on page load.
     //    Windows that were saved as maximised get their in-memory prevRect seeded
     //    so that maximise→restore returns to the right position.
