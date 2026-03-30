@@ -15171,7 +15171,19 @@ function initPixelCat() {
         [1,2,2,1,1,2,2,1],  // row 7 – tucked paws
     ];
 
-    const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE, wakeup: WAKEUP, idle: IDLE, jump: JUMP, dazed: DAZED };
+    // Loaf: legs fully tucked under body, content half-lidded eyes
+    const LOAF = [
+        [0,1,0,0,0,0,1,0],  // row 0 – ear tips
+        [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
+        [1,2,2,2,2,2,2,1],  // row 2 – face
+        [1,2,2,2,2,2,2,1],  // row 3 – half-lidded eyes (no pupil dots = soft squint)
+        [1,2,2,3,3,2,2,1],  // row 4 – nose
+        [1,2,2,2,2,2,2,1],  // row 5 – body
+        [1,2,2,2,2,2,2,1],  // row 6 – body (legs fully tucked, not visible)
+        [0,1,2,2,2,2,1,0],  // row 7 – rounded loaf bottom
+    ];
+
+    const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE, wakeup: WAKEUP, idle: IDLE, jump: JUMP, dazed: DAZED, loaf: LOAF };
 
     // ---- Canvas (appended to body so z-index is unambiguous) ----
     const canvas = document.createElement('canvas');
@@ -15320,6 +15332,15 @@ function initPixelCat() {
     let bhvShyIdleMs    = 0;    // accumulated ms the cat has spent not walking
     const BHV_SHY_MS    = 15000;// ms threshold to trigger shy mode
 
+    // Helper: check if a behaviour reward is both unlocked and toggled on
+    function isBehavActive(id) {
+        return isRewardUnlocked(id) &&
+            JSON.parse(localStorage.getItem('catActiveBehaviours') || '[]').includes(id);
+    }
+
+    // Kneading: periodic kneading animation when catb_knead is active and cat is sitting
+    let bhvKneadAt = 0;  // performance.now() when the next knead should fire (0 = reset)
+
     // Copycat: cat loosely mirrors cursor with a lag and playful offset
     let bhvCopycatActive  = false;
     let bhvCopycatEndAt   = 0;
@@ -15379,6 +15400,8 @@ function initPixelCat() {
             cheer:   { syms: ['✿', '♪', '✿', '♪', '✿'], colors: ['#ff9eb0', '#a0e8af', '#f9d55a', '#a0e8af', '#ff9eb0'] },
             heart:   { syms: ['♡', '♡', '♡', '♡', '♡'], colors: ['#ff6b8a', '#ff8fab', '#ff6b8a', '#ffb3c6', '#ff6b8a'] },
             grumpy:  { syms: ['！', '～', '！', '～', '！'], colors: ['#ff5555', '#ff8888', '#ff5555', '#ffaaaa', '#ff5555'] },
+            paws:    { syms: ['🐾', '·', '🐾', '·', '🐾'], colors: ['#d4a0d4', '#e8c8e8', '#d4a0d4', '#e8c8e8', '#d4a0d4'] },
+            purr:    { syms: ['～', '♪', '～', '♪', '～'], colors: ['#a0d4ff', '#c8e8ff', '#a0d4ff', '#e0f4ff', '#a0d4ff'] },
         };
         const cfg = configs[type] || configs.sparkle;
         cfg.syms.forEach((sym, i) => {
@@ -15755,6 +15778,31 @@ function initPixelCat() {
                 if (drvNextAct < now + 800) drvNextAct = now + 1200 + Math.random() * 1500;
             }
         }
+
+        // ── Kneading ─────────────────────────────────────────────────────────────
+        // When catb_knead is active and the cat is sitting, trigger a knead animation
+        // every 8–15 s with paw emotes and a log message.
+        if (isBehavActive('catb_knead')) {
+            if (drvState === 'sit') {
+                if (bhvKneadAt === 0) bhvKneadAt = now + 8000 + Math.random() * 7000;
+                if (now >= bhvKneadAt) {
+                    bhvKneadAt = now + 8000 + Math.random() * 7000;
+                    window._catLocalKnead?.();
+                    triggerEmote('paws');
+                    const kneadMsgs = [
+                        'Cat is making biscuits',
+                        'Cat kneads the air contentedly',
+                        'Cat kneads away happily',
+                        'Cat is very comfortable right now',
+                    ];
+                    window._catLog?.(kneadMsgs[Math.floor(Math.random() * kneadMsgs.length)]);
+                }
+            } else {
+                bhvKneadAt = 0; // reset when not sitting
+            }
+        } else {
+            bhvKneadAt = 0;
+        }
     }
 
     // ---- Driver behaviour tick (runs every animation frame) ----
@@ -16044,15 +16092,24 @@ function initPixelCat() {
 
         } else if (drvState === 'zoomies') {
             const zoomSpeed = WALK_SPEED * 4.5;
+            const prevDir = drvDir;
             drvX += (drvDir === 'right' ? 1 : -1) * zoomSpeed * dt;
             if (drvX >= 1 - EDGE_PAD) { drvX = 1 - EDGE_PAD; drvDir = 'left'; }
             if (drvX <= EDGE_PAD)     { drvX = EDGE_PAD;     drvDir = 'right'; }
+            // Sparkle emote when bouncing off a wall
+            if (drvDir !== prevDir) triggerEmote('sparkle');
             if (now >= drvZoomiesEnd) {
                 drvState   = 'sit';
                 drvSitEnd  = now + 2000 + Math.random() * 1000;
                 drvNextAct = drvSitEnd + 8000 + Math.random() * 4000;
                 triggerEmote('sparkle');
-                window._catLog?.('Cat collapsed from the zoomies');
+                const zoomEndMsgs = [
+                    'Cat collapsed from the zoomies',
+                    'Cat ran out of energy',
+                    'Cat has satisfied their need for speed',
+                    'Cat is now very tired',
+                ];
+                window._catLog?.(zoomEndMsgs[Math.floor(Math.random() * zoomEndMsgs.length)]);
             }
 
         } else if (drvState === 'sit') {
@@ -16089,15 +16146,47 @@ function initPixelCat() {
             _prevDrvState = drvState;
             if (prev !== null) {
                 if (drvState === 'walk' && prev !== 'wakeup' && prev !== 'jumping' && prev !== 'jumpDown' && prev !== 'zoomies') {
-                    if (Math.random() < 0.3) window._catLog?.('Cat wandered across the desktop');
+                    if (Math.random() < 0.3) {
+                        const walkMsgs = [
+                            'Cat went for a stroll',
+                            'Cat is patrolling the desktop',
+                            'Cat wandered off somewhere',
+                            'Cat is on the move',
+                            'Cat decided to stretch their legs',
+                        ];
+                        window._catLog?.(walkMsgs[Math.floor(Math.random() * walkMsgs.length)]);
+                    }
                 } else if (drvState === 'sleep' && prev !== 'sleep' && drvForcedNapEnd <= now) {
-                    window._catLog?.('Cat curled up to sleep');
+                    const sleepMsgs = [
+                        'Cat curled up to sleep',
+                        'Cat found the perfect napping spot',
+                        'Cat is having a little snooze',
+                        'Cat drifted off to sleep',
+                    ];
+                    window._catLog?.(sleepMsgs[Math.floor(Math.random() * sleepMsgs.length)]);
                 } else if (drvState === 'wakeup') {
-                    window._catLog?.('Cat woke up');
+                    const wakeMsgs = [
+                        'Cat woke up',
+                        'Cat is stretching awake',
+                        'Cat blinked open their eyes',
+                    ];
+                    window._catLog?.(wakeMsgs[Math.floor(Math.random() * wakeMsgs.length)]);
                 } else if (drvState === 'perched') {
-                    window._catLog?.('Cat perched on a window');
+                    const perchMsgs = [
+                        'Cat perched on a window',
+                        'Cat claimed the high ground',
+                        'Cat is sitting on top of things again',
+                        'Cat found a new vantage point',
+                    ];
+                    window._catLog?.(perchMsgs[Math.floor(Math.random() * perchMsgs.length)]);
                 } else if (drvState === 'zoomies') {
-                    window._catLog?.('Cat got the zoomies!');
+                    const zoomStartMsgs = [
+                        'Cat got the zoomies!',
+                        'Cat has entered zoomies mode',
+                        'Cat is GOING!!',
+                        'Cat is running at full speed',
+                    ];
+                    window._catLog?.(zoomStartMsgs[Math.floor(Math.random() * zoomStartMsgs.length)]);
                 }
             }
         }
@@ -16160,6 +16249,7 @@ function initPixelCat() {
     // ---- Main animation loop ----
     let lastTs = performance.now();
     let _prevRenderState = null;  // tracks previous cat state for ambient stretch trigger
+    let _nextPurrAt = performance.now() + 20000 + Math.random() * 30000; // occasional purr emote
 
     function loop(now) {
         const dt = Math.min(now - lastTs, 100); // cap delta so a tab-wake doesn't teleport the cat
@@ -16189,6 +16279,12 @@ function initPixelCat() {
         canvas.classList.toggle('cat-settled', isDriver && drvRoamingPaused && catState === 'sit');
         // Zoomies visual: energetic glow
         canvas.classList.toggle('cat-zoomies', catState === 'zoomies');
+
+        // Occasional purr emote when the cat is sitting contentedly (local only)
+        if (isDriver && (catState === 'sit' || catState === 'perched') && now >= _nextPurrAt) {
+            triggerEmote('purr');
+            _nextPurrAt = now + 25000 + Math.random() * 35000; // next purr in 25–60 s
+        }
 
         // Walk animation frame toggle (zoomies runs at 4× the normal rate)
         const _walkFlipMs = catState === 'zoomies' ? 55 : WALK_FPS;
@@ -16301,7 +16397,7 @@ function initPixelCat() {
         if (now < surpriseEnd)                                        frame = 'surprise';
         else if (catState === 'wakeup')                               frame = wakeElapsed < 1000 ? 'sleep' : wakeElapsed < 2000 ? 'wakeup' : 'sit';
         else if (catState === 'dazed')                                frame = 'dazed';
-        else if (catState === 'sit' || catState === 'perched')        frame = 'sit';
+        else if (catState === 'sit' || catState === 'perched')        frame = isBehavActive('catb_loaf') ? 'loaf' : 'sit';
         else if (catState === 'idle')                                 frame = 'idle';
         else if (catState === 'jumping' || catState === 'jumpDown')   frame = 'jump';
         else if (catState === 'sleep')                                frame = 'sleep';
@@ -16349,6 +16445,7 @@ function initPixelCat() {
         canvas.classList.remove('cat-yarn-zoom');
         canvas.classList.remove('cat-stretch');
         canvas.classList.remove('cat-grumpy');
+        canvas.classList.remove('cat-knead');
     });
 
     // Expose local-only animation helpers for Cat.exe window (no Firebase sync).
@@ -16363,6 +16460,11 @@ function initPixelCat() {
         canvas.classList.remove('cat-yarn-zoom');
         void canvas.offsetWidth; // force reflow to restart
         canvas.classList.add('cat-yarn-zoom');
+    };
+    window._catLocalKnead = function () {
+        canvas.classList.remove('cat-knead');
+        void canvas.offsetWidth;
+        canvas.classList.add('cat-knead');
     };
 
     // ---- Cat controller: shared interface for Cat.exe control panel ----
