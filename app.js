@@ -17634,39 +17634,45 @@ function initPixelCat() {
     }
 
     // ---- Still Moment (breathing — 4-7-8 technique) ----
-    let breathFrame = 0;
+    let breathStartTime = null;
 
     function initBreathing() {
-        breathFrame = 0;
+        breathStartTime = null; // reset; will be set on first draw
     }
 
     function drawBreathing() {
         if (!active) return;
         const W = canvas.width, H = canvas.height;
-        breathFrame++;
+        const now = performance.now();
+        if (breathStartTime === null) breathStartTime = now;
 
-        // 4-7-8 technique: inhale 4 s, hold 7 s, exhale 8 s = 19 s at 60 fps
-        const INHALE_F = 4 * 60;   // 240
-        const HOLD_F   = 7 * 60;   // 420
-        const EXHALE_F = 8 * 60;   // 480
-        const TOTAL_F  = INHALE_F + HOLD_F + EXHALE_F; // 1140
+        // 4-7-8 technique: exact wall-clock durations
+        const INHALE_MS = 4000;
+        const HOLD_MS   = 7000;
+        const EXHALE_MS = 8000;
+        const TOTAL_MS  = INHALE_MS + HOLD_MS + EXHALE_MS; // 19 000 ms
 
-        const fc = breathFrame % TOTAL_F; // frame within current cycle
+        const elapsed = (now - breathStartTime) % TOTAL_MS;
 
         // t: 0 = circle fully contracted, 1 = fully expanded
-        // phase: current stage name
-        let t, breathPhase;
-        if (fc < INHALE_F) {
-            breathPhase = 'inhale';
-            const p = fc / INHALE_F;
+        let t, breathPhase, phaseElapsed, phaseDuration;
+        if (elapsed < INHALE_MS) {
+            breathPhase   = 'inhale';
+            phaseElapsed  = elapsed;
+            phaseDuration = INHALE_MS;
+            const p = elapsed / INHALE_MS;
             // ease-in-out: gentle expansion
             t = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-        } else if (fc < INHALE_F + HOLD_F) {
-            breathPhase = 'hold';
+        } else if (elapsed < INHALE_MS + HOLD_MS) {
+            breathPhase   = 'hold';
+            phaseElapsed  = elapsed - INHALE_MS;
+            phaseDuration = HOLD_MS;
             t = 1; // stay fully expanded
         } else {
-            breathPhase = 'exhale';
-            const p = (fc - INHALE_F - HOLD_F) / EXHALE_F;
+            breathPhase   = 'exhale';
+            phaseElapsed  = elapsed - INHALE_MS - HOLD_MS;
+            phaseDuration = EXHALE_MS;
+            const p = phaseElapsed / EXHALE_MS;
             // ease-in: starts fast (forceful release), then slows
             t = 1 - p * p;
         }
@@ -17706,13 +17712,9 @@ function initPixelCat() {
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
 
-        // Instruction text — fades in/out at phase transitions
-        const FADE_F = 20; // ~⅓ s fade
-        let phaseFrame, phaseTotal;
-        if (breathPhase === 'inhale')       { phaseFrame = fc;                           phaseTotal = INHALE_F; }
-        else if (breathPhase === 'hold')    { phaseFrame = fc - INHALE_F;               phaseTotal = HOLD_F; }
-        else                               { phaseFrame = fc - INHALE_F - HOLD_F;      phaseTotal = EXHALE_F; }
-        const labelAlpha = Math.min(phaseFrame / FADE_F, (phaseTotal - phaseFrame) / FADE_F, 1);
+        // Instruction text — fades in/out over 333 ms at phase transitions
+        const FADE_MS = 333;
+        const labelAlpha = Math.min(phaseElapsed / FADE_MS, (phaseDuration - phaseElapsed) / FADE_MS, 1);
 
         let label, sublabel;
         if (breathPhase === 'inhale') {
@@ -17726,9 +17728,9 @@ function initPixelCat() {
             sublabel = 'forcefully through your mouth';
         }
 
-        const fontSize   = Math.round(Math.min(W, H) * 0.028);
+        const fontSize    = Math.round(Math.min(W, H) * 0.028);
         const subFontSize = Math.round(fontSize * 0.72);
-        const textY      = cy + r + Math.min(W, H) * 0.07;
+        const textY       = cy + r + Math.min(W, H) * 0.07;
 
         ctx.textAlign = 'center';
         ctx.globalAlpha = labelAlpha * 0.9;
