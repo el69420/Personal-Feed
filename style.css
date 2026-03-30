@@ -9310,6 +9310,63 @@ body.dark-mode .desktop-icon-img {
 /* Ensure the w95-body text is readable in dark mode when no theme sets it */
 body.dark-mode .w95-body { color: #e0e0e0; }
 
+/* ===== Dark mode: pain picker & pain journal ===== */
+/* Pain picker section labels */
+body.dark-mode .pp-section-label { color: #aaaaaa; }
+body.dark-mode .pp-optional       { color: #777777; }
+
+/* Pain picker buttons — match the .w95-btn dark mode chrome */
+body.dark-mode .pain-btn,
+body.dark-mode .pp-loc-btn {
+  background: #444444;
+  color: #e0e0e0;
+  border-top-color: #666666;
+  border-left-color: #666666;
+  border-right-color: #1a1a1a;
+  border-bottom-color: #1a1a1a;
+}
+body.dark-mode .pain-btn:hover,
+body.dark-mode .pp-loc-btn:hover { background: #505050; }
+body.dark-mode .pain-btn.is-active,
+body.dark-mode .pp-loc-btn.is-active {
+  background: #383838;
+  border-top-color: #1a1a1a;
+  border-left-color: #1a1a1a;
+  border-right-color: #666666;
+  border-bottom-color: #666666;
+}
+body.dark-mode .pp-sublabel { color: #aaaaaa; }
+body.dark-mode .pp-level-btn.is-active .pp-sublabel { color: #cccccc; }
+body.dark-mode .pp-save-tip { color: #aaaaaa; }
+
+/* Pain journal table */
+body.dark-mode .pj-table td       { border-bottom-color: #444444; }
+body.dark-mode .pj-table tbody tr:hover { background: #2a2a3a; }
+body.dark-mode .pj-ts             { color: #aaaaaa; }
+body.dark-mode .pj-loc            { color: #bbbbbb; }
+body.dark-mode .pj-empty          { color: #888888; }
+
+/* Pain level colours — brightened for dark backgrounds */
+body.dark-mode .pj-level-none { color: #888888; }
+body.dark-mode .pj-level-low  { color: #55cc55; }
+body.dark-mode .pj-level-mid  { color: #ddaa33; }
+body.dark-mode .pj-level-high { color: #ee4444; }
+
+/* Edited tag */
+body.dark-mode .pj-edited-tag {
+  background: #4a3a00;
+  border-color: #806000;
+  color: #ddcc66;
+}
+
+/* History rows */
+body.dark-mode .pj-history-row td {
+  color: #999999;
+  background: #252520;
+  border-bottom-color: #333330;
+}
+body.dark-mode .pj-history-label { color: #777777; }
+
 /* ===== Desktop Themes (applied via data-theme on body) ===== */
 
 /* --- Pastel Mode --- */
@@ -10081,6 +10138,34 @@ body.dark-mode[data-theme="theme_pastel"] .pres-name    { color: #ffb8d8 !import
 body.dark-mode[data-theme="theme_pastel"] .pres-status  { color: #cc88aa !important; }
 body.dark-mode[data-theme="theme_pastel"] .pres-last    { color: #995577 !important; }
 body.dark-mode[data-theme="theme_pastel"] .pres-divider { background: #4a1838 !important; box-shadow: 0 1px 0 #200510 !important; }
+/* Pastel dark: pain picker & journal */
+body.dark-mode[data-theme="theme_pastel"] .pp-section-label { color: #ffb8d8 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pp-optional       { color: #cc88aa !important; }
+body.dark-mode[data-theme="theme_pastel"] .pain-btn,
+body.dark-mode[data-theme="theme_pastel"] .pp-loc-btn {
+  background: #3a1028 !important; color: #ffb8d8 !important; border-color: #6a2848 #1a0818 #1a0818 #6a2848 !important;
+}
+body.dark-mode[data-theme="theme_pastel"] .pain-btn:hover,
+body.dark-mode[data-theme="theme_pastel"] .pp-loc-btn:hover { background: #4a1838 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pain-btn.is-active,
+body.dark-mode[data-theme="theme_pastel"] .pp-loc-btn.is-active {
+  background: #280618 !important; border-color: #1a0818 #6a2848 #6a2848 #1a0818 !important;
+}
+body.dark-mode[data-theme="theme_pastel"] .pp-sublabel                        { color: #cc88aa !important; }
+body.dark-mode[data-theme="theme_pastel"] .pp-level-btn.is-active .pp-sublabel { color: #ffb8d8 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pp-save-tip { color: #cc88aa !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-table td  { border-bottom-color: #4a1838 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-table tbody tr:hover { background: #3a0828 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-ts    { color: #cc88aa !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-loc   { color: #dd99bb !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-empty { color: #995577 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-level-none { color: #995577 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-level-low  { color: #88dd88 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-level-mid  { color: #eeaa44 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-level-high { color: #ff6688 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-edited-tag { background: #3a1800 !important; border-color: #7a4000 !important; color: #ffcc88 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-history-row td { color: #cc88aa !important; background: #200514 !important; border-bottom-color: #380820 !important; }
+body.dark-mode[data-theme="theme_pastel"] .pj-history-label  { color: #995577 !important; }
 
 /* ============================================================
    FROSTED GLASS + DARK MODE
@@ -10144,6 +10229,34 @@ body.dark-mode[data-theme="theme_glass"] .w95-window {
   --input-bg:       rgba(4, 10, 30, 0.95);
   --input-border:   rgba(50, 95, 180, 0.55);
 }
+/* Glass dark: pain picker & journal */
+body.dark-mode[data-theme="theme_glass"] .pp-section-label { color: #a0c0f0 !important; }
+body.dark-mode[data-theme="theme_glass"] .pp-optional       { color: #7090c0 !important; }
+body.dark-mode[data-theme="theme_glass"] .pain-btn,
+body.dark-mode[data-theme="theme_glass"] .pp-loc-btn {
+  background: rgba(20, 50, 110, 0.78) !important; color: #a0c0f0 !important; border-color: rgba(60, 110, 200, 0.85) rgba(10, 25, 65, 0.85) rgba(10, 25, 65, 0.85) rgba(60, 110, 200, 0.85) !important;
+}
+body.dark-mode[data-theme="theme_glass"] .pain-btn:hover,
+body.dark-mode[data-theme="theme_glass"] .pp-loc-btn:hover { background: rgba(30, 65, 140, 0.85) !important; }
+body.dark-mode[data-theme="theme_glass"] .pain-btn.is-active,
+body.dark-mode[data-theme="theme_glass"] .pp-loc-btn.is-active {
+  background: rgba(10, 28, 72, 0.85) !important; border-color: rgba(10, 25, 65, 0.85) rgba(60, 110, 200, 0.85) rgba(60, 110, 200, 0.85) rgba(10, 25, 65, 0.85) !important;
+}
+body.dark-mode[data-theme="theme_glass"] .pp-sublabel                        { color: #7090c0 !important; }
+body.dark-mode[data-theme="theme_glass"] .pp-level-btn.is-active .pp-sublabel { color: #a0c0f0 !important; }
+body.dark-mode[data-theme="theme_glass"] .pp-save-tip { color: #7090c0 !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-table td  { border-bottom-color: rgba(60, 110, 200, 0.30) !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-table tbody tr:hover { background: rgba(30, 65, 140, 0.40) !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-ts    { color: #7090c0 !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-loc   { color: #90b0d8 !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-empty { color: #5070a0 !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-level-none { color: #5070a0 !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-level-low  { color: #55cc55 !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-level-mid  { color: #ddaa33 !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-level-high { color: #ee4444 !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-edited-tag { background: rgba(60, 45, 0, 0.80) !important; border-color: rgba(140, 100, 0, 0.80) !important; color: #ddcc66 !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-history-row td { color: #7090c0 !important; background: rgba(5, 12, 35, 0.85) !important; border-bottom-color: rgba(40, 80, 160, 0.30) !important; }
+body.dark-mode[data-theme="theme_glass"] .pj-history-label  { color: #5070a0 !important; }
 
 /* ============================================================
    ARCHIVE BUTTON
@@ -12819,7 +12932,7 @@ body.dark-mode .sl-assign-for-me { color: #e09050; background: rgba(224,144,80,0
   transform: translateX(-50%);
   font-size: 11px;
   font-style: italic;
-  color: rgba(100, 90, 80, 0.65);
+  color: rgba(255, 255, 255, 0.55);
   letter-spacing: 0.04em;
   pointer-events: none;
   z-index: 8000;
@@ -12830,4 +12943,4 @@ body.dark-mode .sl-assign-for-me { color: #e09050; background: rgba(224,144,80,0
 }
 #noticing-msg.noticing--in  { opacity: 1; transition: opacity 1.2s ease; }
 #noticing-msg.noticing--out { opacity: 0; transition: opacity 1.8s ease; }
-body.dark-mode #noticing-msg { color: rgba(210, 200, 185, 0.45); }
+body.dark-mode #noticing-msg { color: rgba(210, 200, 185, 0.65); }
