@@ -12732,20 +12732,21 @@ function renderScrapbook() {
 
 // ===== Desktop Icon Positions =====
 const ICON_DEFAULTS = {
-    feed:         { x: 16,  y: 16  },
-    chat:         { x: 16,  y: 100 },
+    chat:         { x: 16,  y: 16  },
+    feed:         { x: 16,  y: 100 },
     garden:       { x: 16,  y: 184 },
-    achievements: { x: 16,  y: 268 },
-    mailbox:      { x: 16,  y: 352 },
+    profiles:     { x: 16,  y: 268 },
+    cat:          { x: 16,  y: 352 },
     jukebox:      { x: 16,  y: 436 },
-    recycleBin:   { x: 16,  y: 520 },
-    cat:          { x: 16,  y: 604 },
-    myComputer:   { x: 16,  y: 688 },
-    console:      { x: 104, y: 16  },
-    scrapbook:    { x: 104, y: 100 },
-    wishlist:     { x: 104, y: 184 },
-    fooddiary:    { x: 104, y: 268 },
-    shoplist:     { x: 104, y: 352 },
+    // recycleBin is always placed at bottom-right (computed dynamically)
+    achievements: { x: 104, y: 16  },
+    mailbox:      { x: 104, y: 100 },
+    myComputer:   { x: 104, y: 184 },
+    console:      { x: 104, y: 268 },
+    scrapbook:    { x: 104, y: 352 },
+    wishlist:     { x: 104, y: 436 },
+    fooddiary:    { x: 104, y: 520 },
+    shoplist:     { x: 104, y: 604 },
 };
 
 // ===== Snap-to-grid + Arrange =====
@@ -12770,16 +12771,20 @@ function saveDesktopPrefs(prefs) {
 }
 
 function arrangeByName() {
-    const icons = Array.from(document.querySelectorAll('.w95-desktop-icon:not(.is-hidden)'));
+    const desktop = document.getElementById('w95-desktop');
+    const dw = desktop ? desktop.offsetWidth : window.innerWidth;
+    const dh = desktop ? desktop.offsetHeight : window.innerHeight - 40;
+    const perCol = Math.max(1, Math.floor(dh / GRID_SIZE));
+    const positions = getIconPositions();
+
+    // Recycle bin always goes to bottom-right; sort all other visible icons by name
+    const recycleBinIcon = document.querySelector('.w95-desktop-icon[data-app="recycleBin"]:not(.is-hidden)');
+    const icons = Array.from(document.querySelectorAll('.w95-desktop-icon:not(.is-hidden):not([data-app="recycleBin"])'));
     icons.sort((a, b) => {
         const la = a.querySelector('.desktop-icon-label')?.textContent || '';
         const lb = b.querySelector('.desktop-icon-label')?.textContent || '';
         return la.localeCompare(lb);
     });
-    const desktop = document.getElementById('w95-desktop');
-    const dh = desktop ? desktop.offsetHeight : window.innerHeight - 40;
-    const perCol = Math.max(1, Math.floor(dh / GRID_SIZE));
-    const positions = getIconPositions();
     icons.forEach((icon, i) => {
         const col = Math.floor(i / perCol);
         const row = i % perCol;
@@ -12789,6 +12794,12 @@ function arrangeByName() {
         icon.style.top  = y + 'px';
         if (icon.dataset.app) positions[icon.dataset.app] = { x, y };
     });
+    if (recycleBinIcon) {
+        const rbPos = snapToGrid(dw - GRID_SIZE, dh - GRID_SIZE);
+        recycleBinIcon.style.left = rbPos.x + 'px';
+        recycleBinIcon.style.top  = rbPos.y + 'px';
+        positions['recycleBin'] = rbPos;
+    }
     saveIconPositions(positions);
 }
 
@@ -12811,19 +12822,24 @@ function saveIconPositions(positions) {
 
 function applyIconPositions() {
     const positions = getIconPositions();
+    const deskEl = document.getElementById('w95-desktop');
+    const dw = deskEl ? deskEl.offsetWidth : window.innerWidth;
+    const dh = deskEl ? deskEl.offsetHeight : window.innerHeight - 40;
+
+    // Recycle bin defaults to bottom-right corner
+    const rbDefault = snapToGrid(dw - GRID_SIZE, dh - GRID_SIZE);
 
     // Collect all positions already claimed (saved or default) for free-slot detection.
     const allocated = [];
     document.querySelectorAll('.w95-desktop-icon').forEach(icon => {
-        const p = positions[icon.dataset.app] || ICON_DEFAULTS[icon.dataset.app];
+        const appKey = icon.dataset.app;
+        const p = positions[appKey] || (appKey === 'recycleBin' ? rbDefault : ICON_DEFAULTS[appKey]);
         if (p) allocated.push(p);
     });
 
     // Returns the first grid slot not within icon-size proximity of any allocated position.
     // Uses the same column/row spacing as the existing ICON_DEFAULTS layout.
     function nextFreeSlot() {
-        const deskEl = document.getElementById('w95-desktop');
-        const dh = deskEl ? deskEl.offsetHeight : window.innerHeight - 40;
         const COL_W = 88; // icon width (72) + gap — keeps columns visually separated
         const ROW_H = 84; // matches the 84 px row stride used in ICON_DEFAULTS
         for (let col = 0; ; col++) {
@@ -12842,7 +12858,7 @@ function applyIconPositions() {
 
     document.querySelectorAll('.w95-desktop-icon').forEach(icon => {
         const appKey = icon.dataset.app;
-        const pos = positions[appKey] || ICON_DEFAULTS[appKey] || nextFreeSlot();
+        const pos = positions[appKey] || (appKey === 'recycleBin' ? rbDefault : ICON_DEFAULTS[appKey]) || nextFreeSlot();
         icon.style.left = pos.x + 'px';
         icon.style.top  = pos.y + 'px';
     });
@@ -12852,21 +12868,22 @@ function applyIconPositions() {
 
 // Apps that can be added as shortcuts inside custom folders
 const SHORTCUTABLE_APPS = [
-    { app: 'feed',         icon: '📰', name: 'Feed.exe' },
-    { app: 'chat',         icon: '💬', name: 'Chat.exe' },
-    { app: 'mailbox',      icon: '📬', name: 'Mailbox.exe' },
-    { app: 'garden',       icon: '🌿', name: 'Garden.exe' },
-    { app: 'cat',          icon: '🐱', name: 'Cat.exe' },
-    { app: 'jukebox',      icon: '🎵', name: 'Jukebox.exe' },
-    { app: 'console',      icon: '💻', name: 'Console.exe' },
-    { app: 'scrapbook',    icon: '📋', name: 'Scrapbook.exe' },
-    { app: 'wishlist',     icon: '🎁', name: 'Wishlist.exe' },
-    { app: 'stats',        icon: '📊', name: 'Stats.exe' },
-    { app: 'achievements', icon: '🏆', name: 'Achievements.exe' },
+    { app: 'feed',         icon: '📰', name: 'Feed' },
+    { app: 'chat',         icon: '💬', name: 'Chat' },
+    { app: 'mailbox',      icon: '📬', name: 'Mailbox' },
+    { app: 'garden',       icon: '🌿', name: 'Garden' },
+    { app: 'profiles',     icon: '👤', name: 'Profiles' },
+    { app: 'cat',          icon: '🐱', name: 'Cat' },
+    { app: 'jukebox',      icon: '🎵', name: 'Jukebox' },
+    { app: 'console',      icon: '💻', name: 'Console' },
+    { app: 'scrapbook',    icon: '📋', name: 'Scrapbook' },
+    { app: 'wishlist',     icon: '🎁', name: 'Wishlist' },
+    { app: 'stats',        icon: '📊', name: 'Stats' },
+    { app: 'achievements', icon: '🏆', name: 'Achievements' },
     { app: 'myComputer',   icon: '🖥️', name: 'My Computer' },
-    { app: 'painjournal',  icon: '🩹', name: 'Pain Journal.exe' },
-    { app: 'moodjournal',  icon: '📔', name: 'Mood Journal.exe' },
-    { app: 'shoplist',     icon: '🛒', name: 'Shopping List.exe' },
+    { app: 'painjournal',  icon: '🩹', name: 'Pain Journal' },
+    { app: 'moodjournal',  icon: '📔', name: 'Mood Journal' },
+    { app: 'shoplist',     icon: '🛒', name: 'Shopping List' },
 ];
 
 // Shows a picker dialog for selecting an app to create a shortcut to
@@ -15153,7 +15170,7 @@ const CAT_COLOUR_PALETTES = [
             const name = catDisplayName();
             openW95Dialog({
                 icon: '😴',
-                title: 'Cat.exe',
+                title: 'Cat',
                 message: `Are you sure you want to disturb ${name} while they're napping?`,
                 buttons: [
                     {
@@ -15490,7 +15507,7 @@ function initPixelCat() {
     // ---- Interactive hit area — transparent overlay that captures clicks on the cat ----
     const hitArea = document.createElement('div');
     hitArea.id    = 'cat-hit-area';
-    hitArea.title = 'Desktop Cat \u00b7 double-click to open Cat.exe';
+    hitArea.title = 'Desktop Cat \u00b7 double-click to open Cat';
     document.body.appendChild(hitArea);
 
     // Single click: light local reaction (heart + bounce) without a Firebase write
