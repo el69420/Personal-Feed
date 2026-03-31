@@ -3068,7 +3068,8 @@ function _renderNotifPanel() {
 
         if (n.type === 'achievement') {
             const tierClass = `notif-tier-${n.tier || 'bronze'}`;
-            const achClick = n.achievementId ? ` onclick="openAchievementFromNotif('${n.id}', '${n.achievementId}')" style="cursor:pointer"` : '';
+            const achId = n.achievementId || n.id.replace(/^ach_/, '').replace(/_\d{13}$/, '');
+            const achClick = achId ? ` onclick="openAchievementFromNotif('${n.id}', '${achId}')" style="cursor:pointer"` : '';
             return `<div class="notif-panel-item notif-achievement${readClass}${agedClass}"${achClick}>
                 <div class="notif-item-author"><span class="notif-ach-icon">${safeText(n.icon)}</span> ${safeText(n.title)}</div>
                 <div class="notif-item-snippet">Achievement unlocked${n.xp ? ` · +${n.xp} XP` : ''} <span class="notif-tier-badge ${tierClass}">${n.tier || 'bronze'}</span></div>
