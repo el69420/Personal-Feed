@@ -10732,11 +10732,11 @@ const REWARD_REGISTRY = [
     { id: 'cat_flower_crown',    type: REWARD_TYPE_CAT_ACCESSORY, name: 'Flower Crown',     description: 'Woven with care. The cat tolerates it with grace',          icon: '🌸', faceDecor: '🌸' },
 
     // Desktop themes
-    { id: 'theme_glass',         type: REWARD_TYPE_DESKTOP_THEME, name: 'Frosted Glass',   description: 'Soft blur and ice-white highlights — everything feels just out of focus',
+    { id: 'theme_glass',         type: REWARD_TYPE_DESKTOP_THEME, name: 'Frosted Glass',   description: 'Soft blur and ice-white highlights — everything feels just out of focus', icon: '🧊',
       swatchCss: 'linear-gradient(135deg, rgba(200,220,255,0.6) 0%, rgba(180,210,240,0.4) 50%, rgba(220,235,255,0.7) 100%)' },
-    { id: 'theme_pixel',         type: REWARD_TYPE_DESKTOP_THEME, name: 'Pixel Art',        description: 'Hard edges, limited palette, maximum charm',
+    { id: 'theme_pixel',         type: REWARD_TYPE_DESKTOP_THEME, name: 'Pixel Art',        description: 'Hard edges, limited palette, maximum charm', icon: '👾',
       swatchCss: 'linear-gradient(135deg, #2d6a4f 0%, #1b4332 50%, #081c15 100%)' },
-    { id: 'theme_crt',           type: REWARD_TYPE_DESKTOP_THEME, name: 'CRT Mode',         description: 'Scanlines and phosphor glow. Your eyes will adjust. Probably',
+    { id: 'theme_crt',           type: REWARD_TYPE_DESKTOP_THEME, name: 'CRT Mode',         description: 'Scanlines and phosphor glow. Your eyes will adjust. Probably', icon: '📺',
       swatchCss: 'linear-gradient(135deg, #003300 0%, #001a00 50%, #000800 100%)' },
 
     // Garden unlocks (second set)
@@ -10779,7 +10779,7 @@ const REWARD_REGISTRY = [
 
     // ---- Desktop themes ----
     { id: 'theme_garden_bloom',    type: REWARD_TYPE_DESKTOP_THEME, name: 'Garden Bloom',
-      description: 'Fresh greens and petal pinks — the whole interface in full flower',
+      description: 'Fresh greens and petal pinks — the whole interface in full flower', icon: '🌺',
       swatchCss: 'linear-gradient(135deg, #3a7a28 0%, #78b844 40%, #f4c0d0 100%)' },
 
     // Console commands (second set — unlocked by Power User)
@@ -10820,15 +10820,15 @@ const REWARD_REGISTRY = [
 
     // Desktop themes
     { id: 'theme_garden_floor', type: REWARD_TYPE_DESKTOP_THEME, name: 'Garden Floor',
-      description: 'Earthy greens and warm wood tones — like stepping outside in the morning',
+      description: 'Earthy greens and warm wood tones — like stepping outside in the morning', icon: '🌿',
       swatchCss: 'linear-gradient(135deg, #4a7a28 0%, #2a5010 50%, #1a3808 100%)' },
 
     { id: 'theme_golden', type: REWARD_TYPE_DESKTOP_THEME, name: 'Golden Hour',
-      description: 'Warm amber and honey — the whole UI bathed in late afternoon light',
+      description: 'Warm amber and honey — the whole UI bathed in late afternoon light', icon: '🌅',
       swatchCss: 'linear-gradient(135deg, #c87820 0%, #a05010 50%, #703008 100%)' },
 
     { id: 'theme_dusk', type: REWARD_TYPE_DESKTOP_THEME, name: 'Dusk',
-      description: 'Soft violet-grey — the colour of the sky just after the sun sets',
+      description: 'Soft violet-grey — the colour of the sky just after the sun sets', icon: '🌇',
       swatchCss: 'linear-gradient(135deg, #5a4870 0%, #3a2858 50%, #20183a 100%)' },
 ];
 
