@@ -15297,7 +15297,7 @@ function initPixelCat() {
         [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 9  – narrow neck
     ];
 
-    // Walk-A: legs together (stride-in)
+    // Walk-A: left leg angled forward, right leg angled back (stride position 1)
     const WALK_A = [
         ...HEAD,
         [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – upper body
@@ -15305,9 +15305,9 @@ function initPixelCat() {
         [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 12 – body
         [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 13 – lower body
         [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 14 – legs (3 px wide each)
-        [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 15 – paws
+        [0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0],  // row 15 – left paw 1px forward, right paw 1px back
     ];
-    // Walk-B: legs apart (stride-out)
+    // Walk-B: left leg angled back, right leg angled forward (stride position 2)
     const WALK_B = [
         ...HEAD,
         [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – upper body
@@ -15315,7 +15315,7 @@ function initPixelCat() {
         [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 12 – body
         [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 13 – lower body
         [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 14 – legs
-        [1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1],  // row 15 – paws spread wide
+        [0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0],  // row 15 – left paw 1px back, right paw 1px forward
     ];
     // Sit: haunches visible, paws tucked, tail curling around right side
     const SIT = [
