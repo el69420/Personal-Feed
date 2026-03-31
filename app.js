@@ -15324,25 +15324,46 @@ function initPixelCat() {
         [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 9  – chin/neck
     ];
 
-    // Walk-A: left leg angled forward, right leg angled back (stride position 1)
+    // Walk-A: side-profile, cat facing RIGHT (mirrored for left).
+    // Tail curls up on the left (rear); single ear + eye visible; two leg pairs at bottom.
+    // Stride 1: back paw shifted back (cols 3-4), front paw shifted forward (cols 9-10).
     const WALK_A = [
-        ...HEAD,
-        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – upper body
-        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 11 – body
-        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 12 – body
-        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 13 – lower body
-        [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 14 – legs (3 px wide each)
-        [0,1,1,1,0,0,0,0,0,0,0,0,1,1,1,0],  // row 15 – left paw 1px forward, right paw 1px back
+        [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0],  // row  0 – ear tip (col 11)
+        [0,0,0,0,0,0,0,0,0,0,1,3,1,0,0,0],  // row  1 – ear inner (pink)
+        [0,0,0,0,0,0,0,0,0,1,2,2,2,1,0,0],  // row  2 – ear base
+        [0,0,0,1,0,0,0,0,1,2,2,2,2,2,1,0],  // row  3 – tail tip (col 3) + head top
+        [0,0,1,2,1,0,0,0,1,2,4,1,2,2,1,0],  // row  4 – tail + eye (catchlight col 10, pupil col 11)
+        [0,0,1,2,1,0,0,0,1,2,1,1,2,2,2,1],  // row  5 – tail + eye lower row + muzzle
+        [0,0,0,1,2,1,0,0,0,1,2,2,2,3,2,1],  // row  6 – tail curves + muzzle, pink nose (col 13)
+        [0,0,0,0,1,2,1,0,0,1,2,2,2,2,1,0],  // row  7 – tail base + chin
+        [0,0,0,0,0,1,2,2,2,2,2,2,2,1,0,0],  // row  8 – neck / upper body (tail base merges)
+        [0,0,0,0,0,1,2,2,2,2,2,2,1,0,0,0],  // row  9 – upper body
+        [0,0,0,0,1,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – body
+        [0,0,0,1,2,2,2,2,2,2,2,1,0,0,0,0],  // row 11 – body (haunches widen)
+        [0,0,0,1,2,2,2,2,2,2,1,0,0,0,0,0],  // row 12 – lower body
+        [0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0],  // row 13 – belly / underside
+        [0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0],  // row 14 – legs (back pair cols 4-5, front pair cols 8-9)
+        [0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0],  // row 15 – paws: back paw back (3-4), front paw forward (9-10)
     ];
-    // Walk-B: left leg angled back, right leg angled forward (stride position 2)
+    // Walk-B: same side profile, stride 2.
+    // Back paw forward (cols 5-6), front paw back (cols 8-9).
     const WALK_B = [
-        ...HEAD,
-        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – upper body
-        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 11 – body
-        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 12 – body
-        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 13 – lower body
-        [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 14 – legs
-        [0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0],  // row 15 – left paw 1px back, right paw 1px forward
+        [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0],  // row  0 – ear tip
+        [0,0,0,0,0,0,0,0,0,0,1,3,1,0,0,0],  // row  1 – ear inner
+        [0,0,0,0,0,0,0,0,0,1,2,2,2,1,0,0],  // row  2 – ear base
+        [0,0,0,1,0,0,0,0,1,2,2,2,2,2,1,0],  // row  3 – tail tip + head top
+        [0,0,1,2,1,0,0,0,1,2,4,1,2,2,1,0],  // row  4 – tail + eye
+        [0,0,1,2,1,0,0,0,1,2,1,1,2,2,2,1],  // row  5 – tail + eye lower + muzzle
+        [0,0,0,1,2,1,0,0,0,1,2,2,2,3,2,1],  // row  6 – tail + muzzle/nose
+        [0,0,0,0,1,2,1,0,0,1,2,2,2,2,1,0],  // row  7 – tail base + chin
+        [0,0,0,0,0,1,2,2,2,2,2,2,2,1,0,0],  // row  8 – neck / upper body
+        [0,0,0,0,0,1,2,2,2,2,2,2,1,0,0,0],  // row  9 – upper body
+        [0,0,0,0,1,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – body
+        [0,0,0,1,2,2,2,2,2,2,2,1,0,0,0,0],  // row 11 – body
+        [0,0,0,1,2,2,2,2,2,2,1,0,0,0,0,0],  // row 12 – lower body
+        [0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0],  // row 13 – belly / underside
+        [0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0],  // row 14 – legs (back pair cols 4-5, front pair cols 8-9)
+        [0,0,0,0,0,1,1,0,1,1,0,0,0,0,0,0],  // row 15 – paws: back paw forward (5-6), front paw back (8-9)
     ];
     // Sit: haunches visible, paws tucked, tail curling around right side
     const SIT = [
