@@ -2992,6 +2992,7 @@ function addAchievementNotification(achievement, xpGain) {
     const notif = {
         id: 'ach_' + achievement.id + '_' + Date.now(),
         type: 'achievement',
+        achievementId: achievement.id,
         title: achievement.title,
         icon: achievement.icon,
         xp: xpGain,
@@ -3067,7 +3068,8 @@ function _renderNotifPanel() {
 
         if (n.type === 'achievement') {
             const tierClass = `notif-tier-${n.tier || 'bronze'}`;
-            return `<div class="notif-panel-item notif-achievement${readClass}${agedClass}">
+            const achClick = n.achievementId ? ` onclick="openAchievementFromNotif('${n.id}', '${n.achievementId}')" style="cursor:pointer"` : '';
+            return `<div class="notif-panel-item notif-achievement${readClass}${agedClass}"${achClick}>
                 <div class="notif-item-author"><span class="notif-ach-icon">${safeText(n.icon)}</span> ${safeText(n.title)}</div>
                 <div class="notif-item-snippet">Achievement unlocked${n.xp ? ` · +${n.xp} XP` : ''} <span class="notif-tier-badge ${tierClass}">${n.tier || 'bronze'}</span></div>
                 <div class="notif-item-time">${safeText(ago)}</div>
@@ -3126,6 +3128,13 @@ window.openPostFromNotif = function(postId) {
     if (notif) { notif.read = true; _saveInAppNotifs(); _updateBellBadge(); _renderNotifPanel(); }
     closeNotifPanel();
     openPostWindow(postId);
+};
+
+window.openAchievementFromNotif = function(notifId, achievementId) {
+    const notif = _inAppNotifs.find(n => n.id === notifId);
+    if (notif) { notif.read = true; _saveInAppNotifs(); _updateBellBadge(); _renderNotifPanel(); }
+    closeNotifPanel();
+    openAchievementsAndHighlight(achievementId);
 };
 
 function toggleNotifPanel() {
