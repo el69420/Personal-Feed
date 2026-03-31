@@ -7652,8 +7652,8 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
 }
 #cat-hit-area {
   position: fixed;
-  width: 40px;            /* CW(8) × S(5) = 40 */
-  height: 40px;           /* CH(8) × S(5) = 40 */
+  width: 48px;            /* CW(16) × S(3) = 48 */
+  height: 48px;           /* CH(16) × S(3) = 48 */
   z-index: 152;           /* just above canvas (150) and emotes (151) */
   cursor: pointer;
 }
@@ -7696,7 +7696,7 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
 /* ---- Cat sleep Zzz particles ---- */
 #cat-zzz {
   position: fixed;
-  bottom: 84px;        /* 44px taskbar + 40px cat height = floats from head */
+  bottom: 92px;        /* 44px taskbar + 48px cat height = floats from head */
   pointer-events: none;
   z-index: 152;
   width: 0;
@@ -7725,7 +7725,7 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
   position: fixed;
   pointer-events: none;
   z-index: 153;
-  width: 40px;   /* same as CW * S = 8 * 5 */
+  width: 48px;   /* same as CW * S = 16 * 3 */
   text-align: center;
   font-size: 11px;
   line-height: 1;

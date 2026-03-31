@@ -15270,128 +15270,199 @@ function initPixelCat() {
     if (initPixelCat._done) return;
     initPixelCat._done = true;
 
-    // ---- Sprite data (8 × 8 pixels, each drawn at S px) ----
-    // Palette: 0 = transparent | 1 = dark outline | 2 = fur | 3 = pink (ear-inner / nose)
-    const S   = 5;                            // CSS pixels per cat-pixel → 40 × 40 canvas
-    const CW  = 8, CH = 8;
+    // ---- Sprite data (16 × 16 pixels, each drawn at S px) ----
+    // Palette: 0 = transparent | 1 = dark outline | 2 = fur | 3 = pink (ear-inner / nose / blush) | 4 = white (eye highlight)
+    const S   = 3;                            // CSS pixels per cat-pixel → 48 × 48 canvas
+    const CW  = 16, CH = 16;
     // CLR is mutable so the user can change fur/accent colour at runtime
     const _initPaletteId = localStorage.getItem('catColour') || 'blue';
     const _initPalette   = CAT_COLOUR_PALETTES.find(p => p.id === _initPaletteId) || CAT_COLOUR_PALETTES[0];
-    let CLR = [null, '#2C2C3E', _initPalette.fur, _initPalette.accent];
+    let CLR = [null, '#2C2C3E', _initPalette.fur, _initPalette.accent, '#FFFFFF'];
 
-    // Ear tips at outer cols 1 & 6 form triangle ears; pink at row 1 = inner ear.
-    // Eyes: dark pixel at cols 2 & 5 in the eye row.
-    // Nose: two centred pink pixels at cols 3 & 4.
+    // Ears: triangular, 3 rows tall, pink inner.
+    // Eyes: 2×2 px each (rows 4-5), cols 3-4 left / 11-12 right; white highlight at col 4 / 11.
+    // Whiskers: dark pixels at cols 0-1 and 14-15 on rows 6-7 (extend outside face outline).
+    // Blush: pink at cols 5 & 10 on row 6.  Nose: pink at cols 7-8 on row 6.
 
-    const HEAD = [          // shared top rows (ears + face) – 5 rows
-        [0,1,0,0,0,0,1,0],  // row 0 – ear tips at cols 1 & 6 (outer corners)
-        [1,3,1,0,0,1,3,1],  // row 1 – ears: outline/pink/outline · gap · outline/pink/outline
-        [1,2,2,2,2,2,2,1],  // row 2 – face
-        [1,2,1,2,2,1,2,1],  // row 3 – eyes (dark at cols 2 & 5)
-        [1,2,2,3,3,2,2,1],  // row 4 – centred pink nose (no whisker-hint dots)
+    const HEAD = [          // shared top rows (ears + face + whiskers) – 10 rows
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],  // row 0  – ear tips at cols 2 & 13
+        [0,1,3,1,0,0,0,0,0,0,0,0,1,3,1,0],  // row 1  – ear pink inner
+        [0,1,3,3,1,0,0,0,0,0,0,1,3,3,1,0],  // row 2  – wider ear
+        [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],  // row 3  – ear base + forehead
+        [0,1,2,1,1,2,2,2,2,2,2,1,1,2,1,0],  // row 4  – eye tops (2 px wide each)
+        [0,1,2,1,4,2,2,2,2,2,2,4,1,2,1,0],  // row 5  – eye bottoms with white highlight
+        [1,1,2,2,2,3,2,3,3,2,3,2,2,2,1,1],  // row 6  – whiskers + blush(5,10) + nose(7,8)
+        [1,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1],  // row 7  – whisker row 2
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 8  – chin
+        [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 9  – narrow neck
     ];
 
     // Walk-A: legs together (stride-in)
     const WALK_A = [
         ...HEAD,
-        [1,2,2,2,2,2,2,1],  // row 5 – body
-        [0,1,1,0,0,1,1,0],  // row 6 – legs (2-px wide each)
-        [0,1,1,0,0,1,1,0],  // row 7 – paws
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – upper body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 11 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 12 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 13 – lower body
+        [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 14 – legs (3 px wide each)
+        [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 15 – paws
     ];
     // Walk-B: legs apart (stride-out)
     const WALK_B = [
         ...HEAD,
-        [1,2,2,2,2,2,2,1],  // row 5 – body
-        [0,1,1,0,0,1,1,0],  // row 6 – legs (2-px wide, same as WALK_A)
-        [1,1,0,0,0,0,1,1],  // row 7 – paws spread wide
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – upper body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 11 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 12 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 13 – lower body
+        [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 14 – legs
+        [1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1],  // row 15 – paws spread wide
     ];
-    // Sit: haunches visible, paws tucked
+    // Sit: haunches visible, paws tucked, tail curling around right side
     const SIT = [
         ...HEAD,
-        [1,2,2,2,2,2,2,1],  // row 5 – body
-        [1,2,2,2,2,2,2,1],  // row 6 – haunches
-        [1,2,2,1,1,2,2,1],  // row 7 – tucked paws
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – upper body
+        [0,0,1,2,2,2,2,2,2,2,2,2,1,1,0,0],  // row 11 – haunches widen + tail base
+        [0,0,1,2,2,2,2,2,2,2,2,2,1,2,1,0],  // row 12 – tail at col 13
+        [0,0,1,2,2,2,2,2,2,2,2,2,1,2,1,0],  // row 13 – tail continues
+        [0,0,1,2,2,2,2,2,2,2,2,2,1,1,0,0],  // row 14 – tail tapers
+        [0,0,1,2,2,1,1,2,2,1,1,2,2,1,0,0],  // row 15 – tucked paws (toe divots at 5,6 & 9,10)
     ];
-    // Sleep: ears lowered by one row, eyes closed (horizontal bar), rounded body
+    // Sleep: ears shifted down 2 rows, eyes closed, long rounded body
     const SLEEP = [
-        [0,0,0,0,0,0,0,0],  // row 0 – empty (cat is curled lower)
-        [0,1,0,0,0,0,1,0],  // row 1 – ear tips (shifted down)
-        [1,3,1,0,0,1,3,1],  // row 2 – ears with pink inner
-        [1,2,2,2,2,2,2,1],  // row 3 – face
-        [1,2,2,2,2,2,2,1],  // row 4 – closed eyes (smooth face, no marks = eyelids shut)
-        [1,2,2,2,2,2,2,1],  // row 5 – body
-        [1,2,2,2,2,2,2,1],  // row 6 – body
-        [0,1,2,2,2,2,1,0],  // row 7 – body bottom
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],  // row 0  – empty
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],  // row 1  – empty
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],  // row 2  – ear tips
+        [0,1,3,1,0,0,0,0,0,0,0,0,1,3,1,0],  // row 3  – ear inner
+        [0,1,3,3,1,0,0,0,0,0,0,1,3,3,1,0],  // row 4  – wider ear
+        [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],  // row 5  – ear base + forehead
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 6  – face
+        [0,1,2,1,1,2,2,2,2,2,2,1,1,2,1,0],  // row 7  – closed eyes (dark bars, no highlight)
+        [0,1,2,2,2,2,2,3,3,2,2,2,2,2,1,0],  // row 8  – nose (no whiskers – head tucked)
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 9  – chin
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 10 – body
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 11 – body
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 12 – body
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 13 – body
+        [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row 14 – narrowing
+        [0,0,0,1,1,2,2,2,2,2,2,1,1,0,0,0],  // row 15 – rounded bottom
     ];
-    // Surprise: big eyes — shown for ~700 ms after a click
+    // Surprise: wide shocked eyes — shown for ~700 ms after a click
     const SURPRISE = [
-        [0,1,0,0,0,0,1,0],  // row 0 – ear tips
-        [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
-        [1,2,2,2,2,2,2,1],  // row 2 – face
-        [1,1,1,2,2,1,1,1],  // row 3 – wide eyes (dark fills 3 cols each)
-        [1,2,2,3,3,2,2,1],  // row 4 – surprised nose (no scary dark sides)
-        [1,2,2,2,2,2,2,1],  // row 5 – body
-        [0,1,1,2,2,1,1,0],  // row 6 – body lower
-        [0,1,1,0,0,1,1,0],  // row 7 – paws
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],  // row 0  – ear tips
+        [0,1,3,1,0,0,0,0,0,0,0,0,1,3,1,0],  // row 1  – ear inner
+        [0,1,3,3,1,0,0,0,0,0,0,1,3,3,1,0],  // row 2  – wider ear
+        [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],  // row 3  – forehead
+        [0,1,1,1,1,2,2,2,2,2,2,1,1,1,1,0],  // row 4  – wide shocked eyes (3 px each)
+        [0,1,1,4,1,2,2,2,2,2,2,1,4,1,1,0],  // row 5  – eye bottoms with highlights
+        [1,1,2,2,2,3,2,3,3,2,3,2,2,2,1,1],  // row 6  – whiskers + blush + nose
+        [1,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1],  // row 7  – whisker row 2
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 8  – chin
+        [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 9  – neck
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 11 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 12 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 13 – lower body
+        [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 14 – legs
+        [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 15 – paws
     ];
 
-    // Wakeup: half-open eyes (horizontal bar thinned to one pixel row), seated posture
+    // Wakeup: ears shifted down 2 rows, half-open eyes, seated
     const WAKEUP = [
-        [0,0,0,0,0,0,0,0],  // row 0 – empty
-        [0,1,0,0,0,0,1,0],  // row 1 – ear tips
-        [1,3,1,0,0,1,3,1],  // row 2 – ears with pink inner
-        [1,2,2,2,2,2,2,1],  // row 3 – face
-        [1,2,1,2,2,1,2,1],  // row 4 – half-open eyes (single dark pixel per eye)
-        [1,2,2,3,3,2,2,1],  // row 5 – nose (clean, no whisker-hint dots)
-        [1,2,2,2,2,2,2,1],  // row 6 – body
-        [0,1,2,2,2,2,1,0],  // row 7 – body bottom
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],  // row 0  – empty
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],  // row 1  – empty
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],  // row 2  – ear tips
+        [0,1,3,1,0,0,0,0,0,0,0,0,1,3,1,0],  // row 3  – ear inner
+        [0,1,3,3,1,0,0,0,0,0,0,1,3,3,1,0],  // row 4  – wider ear
+        [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],  // row 5  – forehead
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 6  – face
+        [0,1,2,1,1,1,2,2,2,2,1,1,1,2,1,0],  // row 7  – half-open eyes (3 dark px each)
+        [1,1,2,2,2,3,2,3,3,2,3,2,2,2,1,1],  // row 8  – whiskers + blush + nose
+        [1,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1],  // row 9  – whisker row 2
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 10 – chin
+        [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 11 – neck
+        [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row 12 – body (seated)
+        [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row 13 – body
+        [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row 14 – body
+        [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 15 – body base
     ];
 
-    // Idle: cat standing still, glancing sideways (left eye shifted one pixel right)
+    // Idle: cat standing still, glancing sideways (both eyes shifted right by 1 col)
     const IDLE = [
-        [0,1,0,0,0,0,1,0],  // row 0 – ear tips
-        [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
-        [1,2,2,2,2,2,2,1],  // row 2 – face
-        [1,2,2,1,2,1,2,1],  // row 3 – sideways glance: left eye at col 3, right at col 5
-        [1,2,2,3,3,2,2,1],  // row 4 – nose (no whisker-hint dots)
-        [1,2,2,2,2,2,2,1],  // row 5 – body
-        [0,1,1,0,0,1,1,0],  // row 6 – legs
-        [0,1,1,0,0,1,1,0],  // row 7 – paws
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],  // row 0  – ear tips
+        [0,1,3,1,0,0,0,0,0,0,0,0,1,3,1,0],  // row 1  – ear inner
+        [0,1,3,3,1,0,0,0,0,0,0,1,3,3,1,0],  // row 2  – wider ear
+        [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],  // row 3  – forehead
+        [0,1,2,2,1,1,2,2,2,2,2,1,1,2,1,0],  // row 4  – eyes shifted right (cols 4-5 & 11-12)
+        [0,1,2,2,1,4,2,2,2,2,2,4,1,2,1,0],  // row 5  – pupils right of socket + highlights
+        [1,1,2,2,2,3,2,3,3,2,3,2,2,2,1,1],  // row 6  – whiskers + blush + nose
+        [1,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1],  // row 7  – whisker row 2
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 8  – chin
+        [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 9  – neck
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 11 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 12 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 13 – lower body
+        [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 14 – legs
+        [0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0],  // row 15 – paws
     ];
-    // Jump: mid-leap pose – front paws reaching out, back paws dangling
+    // Jump: mid-leap – front paws extended sideways, back paws dangling below
     const JUMP = [
-        [0,1,0,0,0,0,1,0],  // row 0 – ear tips
-        [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
-        [1,2,2,2,2,2,2,1],  // row 2 – face
-        [1,2,1,2,2,1,2,1],  // row 3 – eyes wide open (alert mid-leap)
-        [1,2,2,3,3,2,2,1],  // row 4 – nose (no whisker-hint dots)
-        [1,2,2,2,2,2,2,1],  // row 5 – body
-        [1,0,2,2,2,2,0,1],  // row 6 – front paws extended sideways
-        [0,1,0,0,0,0,1,0],  // row 7 – back paws tucked/dangling
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],  // row 0  – ear tips
+        [0,1,3,1,0,0,0,0,0,0,0,0,1,3,1,0],  // row 1  – ear inner
+        [0,1,3,3,1,0,0,0,0,0,0,1,3,3,1,0],  // row 2  – wider ear
+        [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],  // row 3  – forehead
+        [0,1,2,1,1,2,2,2,2,2,2,1,1,2,1,0],  // row 4  – eyes wide open (alert mid-leap)
+        [0,1,2,1,4,2,2,2,2,2,2,4,1,2,1,0],  // row 5  – eye highlights
+        [1,1,2,2,2,3,2,3,3,2,3,2,2,2,1,1],  // row 6  – whiskers + blush + nose
+        [1,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1],  // row 7  – whisker row 2
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 8  – chin
+        [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 9  – neck
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 11 – body
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 12 – body
+        [1,0,2,2,2,2,2,2,2,2,2,2,2,2,0,1],  // row 13 – front paws extended sideways
+        [1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],  // row 14 – back paws dangling (outline)
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0],  // row 15 – back paw tips
     ];
 
-    // Dazed: seated cat with crossed/inward eyes — shown for ~2 s after a hard fall
+    // Dazed: seated cat with crossed eyes — shown for ~2 s after a hard fall
     const DAZED = [
-        [0,1,0,0,0,0,1,0],  // row 0 – ear tips
-        [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
-        [1,2,2,2,2,2,2,1],  // row 2 – face
-        [1,2,2,1,1,2,2,1],  // row 3 – crossed eyes (pupils moved inward to cols 3 & 4)
-        [1,2,2,3,3,2,2,1],  // row 4 – nose
-        [1,2,2,2,2,2,2,1],  // row 5 – body
-        [1,2,2,2,2,2,2,1],  // row 6 – haunches
-        [1,2,2,1,1,2,2,1],  // row 7 – tucked paws
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],  // row 0  – ear tips
+        [0,1,3,1,0,0,0,0,0,0,0,0,1,3,1,0],  // row 1  – ear inner
+        [0,1,3,3,1,0,0,0,0,0,0,1,3,3,1,0],  // row 2  – wider ear
+        [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],  // row 3  – forehead
+        [0,1,2,2,2,1,1,2,2,1,1,2,2,2,1,0],  // row 4  – crossed eyes (pupils at 5,6 & 9,10)
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 5  – no highlights (dazed)
+        [1,1,2,2,2,3,2,3,3,2,3,2,2,2,1,1],  // row 6  – whiskers + blush + nose
+        [1,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1],  // row 7  – whisker row 2
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 8  – chin
+        [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 9  – neck
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row 10 – upper body
+        [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row 11 – haunches
+        [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row 12 – haunches
+        [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row 13 – haunches
+        [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row 14 – lower body
+        [0,0,1,2,2,1,1,2,2,1,1,2,2,1,0,0],  // row 15 – tucked paws
     ];
 
-    // Loaf: legs fully tucked under body, content half-lidded eyes
+    // Loaf: legs fully tucked, heavy droopy eyelids, wide round body
     const LOAF = [
-        [0,1,0,0,0,0,1,0],  // row 0 – ear tips
-        [1,3,1,0,0,1,3,1],  // row 1 – ears with pink inner
-        [1,2,2,2,2,2,2,1],  // row 2 – face
-        [1,2,2,2,2,2,2,1],  // row 3 – half-lidded eyes (no pupil dots = soft squint)
-        [1,2,2,3,3,2,2,1],  // row 4 – nose
-        [1,2,2,2,2,2,2,1],  // row 5 – body
-        [1,2,2,2,2,2,2,1],  // row 6 – body (legs fully tucked, not visible)
-        [0,1,2,2,2,2,1,0],  // row 7 – rounded loaf bottom
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0],  // row 0  – ear tips
+        [0,1,3,1,0,0,0,0,0,0,0,0,1,3,1,0],  // row 1  – ear inner
+        [0,1,3,3,1,0,0,0,0,0,0,1,3,3,1,0],  // row 2  – wider ear
+        [0,1,2,2,2,1,1,1,1,1,1,2,2,2,1,0],  // row 3  – forehead
+        [0,1,2,1,1,1,1,2,2,1,1,1,1,2,1,0],  // row 4  – heavy eyelids (4 dark px each)
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 5  – no eye highlight (fully lidded)
+        [1,1,2,2,2,3,2,3,3,2,3,2,2,2,1,1],  // row 6  – whiskers + blush + nose
+        [1,1,2,2,2,2,2,2,2,2,2,2,2,2,1,1],  // row 7  – whisker row 2
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 8  – chin
+        [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 9  – neck
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],  // row 10 – wide loaf body (full 16 px)
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],  // row 11 – loaf body
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],  // row 12 – loaf body
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],  // row 13 – loaf body
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row 14 – slightly narrower bottom
+        [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 15 – rounded base
     ];
 
     const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE, wakeup: WAKEUP, idle: IDLE, jump: JUMP, dazed: DAZED, loaf: LOAF };
@@ -15472,9 +15543,9 @@ function initPixelCat() {
             : null;
         accEl.textContent = acc ? acc.faceDecor : '';
         // Position overlay at the anatomically correct row of the cat sprite.
-        // Sprite rows: 0-1 ears, 2 face, 3 eyes, 4 nose, 5+ body/neck.
-        if (acc && acc.placement === 'eye')  _catAccOverlayTopOffset = S * 3;
-        else if (acc && acc.placement === 'neck') _catAccOverlayTopOffset = S * 4;
+        // Sprite rows: 0-2 ears, 3 forehead, 4-5 eyes, 6-7 nose/whiskers, 8-9 chin/neck, 10+ body.
+        if (acc && acc.placement === 'eye')  _catAccOverlayTopOffset = S * 4;
+        else if (acc && acc.placement === 'neck') _catAccOverlayTopOffset = S * 9;
         else _catAccOverlayTopOffset = S;
     }
     updateCatAccessoryOverlay();
