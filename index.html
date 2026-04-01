@@ -49,6 +49,10 @@
             <div class="desktop-icon-img">&#128465;</div>
             <div class="desktop-icon-label">Recycle Bin</div>
         </div>
+        <div class="w95-desktop-icon" data-app="connect4" tabindex="0">
+            <div class="desktop-icon-img">&#127921;</div>
+            <div class="desktop-icon-label">Connect 4</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -888,6 +892,7 @@
                 <button class="w95-start-item" data-app="cat" type="button">&#128008; Cat.exe</button>
                 <button class="w95-start-item" data-app="jukebox" type="button">&#127926; Jukebox.exe</button>
                 <button class="w95-start-item" data-app="achievements" type="button">&#127942; Achievements.exe</button>
+                <button class="w95-start-item" data-app="connect4" type="button">&#127921; Connect 4.exe</button>
             </div>
         </div>
         <!-- Journals -->
@@ -1625,6 +1630,30 @@
     </div>
   </div>
   <div class="w95-body" id="w95-post-body" style="padding:12px;overflow-y:auto;"></div>
+</div>
+
+<!-- Connect 4 Window -->
+<div id="w95-win-connect4" class="w95-window is-hidden" style="left:200px;top:60px;width:390px;">
+  <div class="w95-titlebar" id="w95-connect4-handle">
+    <div class="w95-title">&#127921; Connect 4.exe</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-connect4-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-connect4-max" type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-connect4-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body c4-body" id="w95-connect4-body">
+    <div class="c4-status" id="c4-status">Your turn (&#128308;)</div>
+    <div class="c4-board-wrap">
+      <div class="c4-board" id="c4-board"></div>
+    </div>
+    <div class="c4-controls">
+      <button class="w95-btn" id="c4-reset-btn" type="button">New Game</button>
+      <label class="c4-mode-label">
+        <input type="checkbox" id="c4-ai-toggle" checked> vs AI
+      </label>
+    </div>
+  </div>
 </div>
 
 <!-- Boot screen (D) — shown once per session -->

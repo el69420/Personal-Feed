@@ -21104,3 +21104,304 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
 
     window._animWallpaper = { start, stop };
 })();
+
+// ===== Connect 4 =====
+(() => {
+    const ROWS = 6, COLS = 7;
+    const EMPTY = 0, PLAYER = 1, AI = 2;
+
+    let board, currentPlayer, gameOver, vsAI;
+
+    const win      = document.getElementById('w95-win-connect4');
+    const boardEl  = document.getElementById('c4-board');
+    const statusEl = document.getElementById('c4-status');
+    const resetBtn = document.getElementById('c4-reset-btn');
+    const aiToggle = document.getElementById('c4-ai-toggle');
+    const minBtn   = document.getElementById('w95-connect4-min');
+    const maxBtn   = document.getElementById('w95-connect4-max');
+    const closeBtn = document.getElementById('w95-connect4-close');
+    const handle   = document.getElementById('w95-connect4-handle');
+
+    if (!win || !boardEl || !handle) return;
+
+    let taskbarBtn = null;
+
+    // ---------- game logic ----------
+
+    function initGame() {
+        board = Array.from({length: ROWS}, () => Array(COLS).fill(EMPTY));
+        currentPlayer = PLAYER;
+        gameOver = false;
+        vsAI = aiToggle.checked;
+        renderBoard(null);
+        updateStatus();
+    }
+
+    function renderBoard(winCells) {
+        boardEl.innerHTML = '';
+        const winSet = winCells
+            ? new Set(winCells.map(([r, c]) => r * COLS + c))
+            : null;
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'c4-cell';
+                const piece = board[r][c];
+                if (piece === PLAYER) cell.classList.add('c4-player');
+                else if (piece === AI) cell.classList.add('c4-ai');
+                if (winSet && winSet.has(r * COLS + c)) cell.classList.add('c4-win');
+                const col = c;
+                cell.addEventListener('click', () => onColClick(col));
+                boardEl.appendChild(cell);
+            }
+        }
+    }
+
+    function dropPiece(col, player) {
+        for (let r = ROWS - 1; r >= 0; r--) {
+            if (board[r][col] === EMPTY) {
+                board[r][col] = player;
+                return r;
+            }
+        }
+        return -1; // column full
+    }
+
+    function undropPiece(col) {
+        for (let r = 0; r < ROWS; r++) {
+            if (board[r][col] !== EMPTY) {
+                board[r][col] = EMPTY;
+                return;
+            }
+        }
+    }
+
+    function checkWin(row, col) {
+        const player = board[row][col];
+        if (player === EMPTY) return null;
+        const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+        for (const [dr, dc] of dirs) {
+            const cells = [[row, col]];
+            for (let s = 1; s < 4; s++) {
+                const nr = row + dr * s, nc = col + dc * s;
+                if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || board[nr][nc] !== player) break;
+                cells.push([nr, nc]);
+            }
+            for (let s = 1; s < 4; s++) {
+                const nr = row - dr * s, nc = col - dc * s;
+                if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || board[nr][nc] !== player) break;
+                cells.push([nr, nc]);
+            }
+            if (cells.length >= 4) return cells;
+        }
+        return null;
+    }
+
+    function isBoardFull() {
+        return board[0].every(cell => cell !== EMPTY);
+    }
+
+    function updateStatus() {
+        if (vsAI) {
+            statusEl.innerHTML = currentPlayer === PLAYER
+                ? '&#128308; Your turn'
+                : '&#128993; AI thinking\u2026';
+        } else {
+            statusEl.innerHTML = currentPlayer === PLAYER
+                ? '&#128308; Red\'s turn'
+                : '&#128993; Yellow\'s turn';
+        }
+    }
+
+    function onColClick(col) {
+        if (gameOver) return;
+        if (vsAI && currentPlayer === AI) return;
+
+        const row = dropPiece(col, currentPlayer);
+        if (row === -1) return; // column full
+
+        const winCells = checkWin(row, col);
+        renderBoard(winCells);
+
+        if (winCells) {
+            if (vsAI) {
+                statusEl.innerHTML = currentPlayer === PLAYER
+                    ? '&#128308; You win! &#127881;'
+                    : '&#128993; AI wins!';
+            } else {
+                statusEl.innerHTML = currentPlayer === PLAYER
+                    ? '&#128308; Red wins! &#127881;'
+                    : '&#128993; Yellow wins! &#127881;';
+            }
+            gameOver = true;
+            return;
+        }
+
+        if (isBoardFull()) {
+            statusEl.textContent = "It\'s a draw!";
+            gameOver = true;
+            return;
+        }
+
+        currentPlayer = currentPlayer === PLAYER ? AI : PLAYER;
+        updateStatus();
+
+        if (vsAI && currentPlayer === AI) {
+            setTimeout(doAIMove, 350);
+        }
+    }
+
+    function doAIMove() {
+        if (gameOver) return;
+        onColClick(getAIMove());
+    }
+
+    // ---------- AI: minimax with alpha-beta, depth 5 ----------
+
+    const COL_ORDER = [3, 2, 4, 1, 5, 0, 6]; // prefer centre
+
+    function getAIMove() {
+        let bestScore = -Infinity, bestCol = 3;
+        for (const c of COL_ORDER) {
+            const r = dropPiece(c, AI);
+            if (r === -1) continue;
+            if (checkWin(r, c)) { undropPiece(c); return c; } // immediate win
+            const score = minimax(4, false, -Infinity, Infinity, r, c);
+            undropPiece(c);
+            if (score > bestScore) { bestScore = score; bestCol = c; }
+        }
+        return bestCol;
+    }
+
+    function minimax(depth, isMaximizing, alpha, beta, lastRow, lastCol) {
+        // Check if the last move ended the game
+        if (lastRow >= 0) {
+            const w = checkWin(lastRow, lastCol);
+            if (w) {
+                const winner = board[lastRow][lastCol];
+                return winner === AI ? 1000 + depth : -1000 - depth;
+            }
+        }
+        if (isBoardFull() || depth === 0) return scoreBoard();
+
+        if (isMaximizing) {
+            let best = -Infinity;
+            for (const c of COL_ORDER) {
+                const r = dropPiece(c, AI);
+                if (r === -1) continue;
+                best = Math.max(best, minimax(depth - 1, false, alpha, beta, r, c));
+                undropPiece(c);
+                alpha = Math.max(alpha, best);
+                if (beta <= alpha) break;
+            }
+            return best;
+        } else {
+            let best = Infinity;
+            for (const c of COL_ORDER) {
+                const r = dropPiece(c, PLAYER);
+                if (r === -1) continue;
+                best = Math.min(best, minimax(depth - 1, true, alpha, beta, r, c));
+                undropPiece(c);
+                beta = Math.min(beta, best);
+                if (beta <= alpha) break;
+            }
+            return best;
+        }
+    }
+
+    function scoreWindow(a, b, c, d) {
+        const cells = [a, b, c, d];
+        const aiCnt = cells.filter(x => x === AI).length;
+        const plCnt = cells.filter(x => x === PLAYER).length;
+        const emCnt = cells.filter(x => x === EMPTY).length;
+        if (aiCnt === 4) return 100;
+        if (aiCnt === 3 && emCnt === 1) return 5;
+        if (aiCnt === 2 && emCnt === 2) return 2;
+        if (plCnt === 3 && emCnt === 1) return -4;
+        return 0;
+    }
+
+    function scoreBoard() {
+        let score = 0;
+        // Centre column bonus
+        for (let r = 0; r < ROWS; r++) {
+            if (board[r][3] === AI) score += 3;
+            else if (board[r][3] === PLAYER) score -= 3;
+        }
+        // Horizontal windows
+        for (let r = 0; r < ROWS; r++)
+            for (let c = 0; c <= COLS - 4; c++)
+                score += scoreWindow(board[r][c], board[r][c+1], board[r][c+2], board[r][c+3]);
+        // Vertical windows
+        for (let c = 0; c < COLS; c++)
+            for (let r = 0; r <= ROWS - 4; r++)
+                score += scoreWindow(board[r][c], board[r+1][c], board[r+2][c], board[r+3][c]);
+        // Diagonal ↘
+        for (let r = 0; r <= ROWS - 4; r++)
+            for (let c = 0; c <= COLS - 4; c++)
+                score += scoreWindow(board[r][c], board[r+1][c+1], board[r+2][c+2], board[r+3][c+3]);
+        // Diagonal ↙
+        for (let r = 3; r < ROWS; r++)
+            for (let c = 0; c <= COLS - 4; c++)
+                score += scoreWindow(board[r][c], board[r-1][c+1], board[r-2][c+2], board[r-3][c+3]);
+        return score;
+    }
+
+    // ---------- window management ----------
+
+    function show() {
+        const wasHidden = win.classList.contains('is-hidden');
+        if (!taskbarBtn) taskbarBtn = w95Mgr.addTaskbarBtn('w95-win-connect4', 'CONNECT 4', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-connect4');
+        if (wasHidden) _trackWindowOpen('connect4');
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-connect4')) w95Mgr.focusWindow(null);
+    }
+
+    function closeWin() {
+        if (w95Mgr.isMaximised('w95-win-connect4')) w95Mgr.toggleMaximise(win, 'w95-win-connect4');
+        hide();
+        if (taskbarBtn) { taskbarBtn.remove(); taskbarBtn = null; }
+    }
+
+    minBtn.addEventListener('click', (e) => { e.stopPropagation(); hide(); });
+    if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-connect4'); });
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeWin(); });
+    resetBtn.addEventListener('click', initGame);
+    aiToggle.addEventListener('change', initGame);
+
+    // Drag support
+    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
+    handle.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button')) return;
+        if (w95Mgr.isMaximised('w95-win-connect4')) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const rect = win.getBoundingClientRect();
+        winStartX = rect.left; winStartY = rect.top;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const taskbarH = 40;
+        const maxX = document.documentElement.clientWidth - win.offsetWidth;
+        const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
+        win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
+        win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
+    });
+    window.addEventListener('mouseup', () => {
+        if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-connect4'); }
+    });
+
+    w95Apps['connect4'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-connect4');
+    }};
+
+    initGame();
+})();

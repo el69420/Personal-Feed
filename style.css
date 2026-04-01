@@ -12944,3 +12944,79 @@ body.dark-mode .sl-assign-for-me { color: #e09050; background: rgba(224,144,80,0
 #noticing-msg.noticing--in  { opacity: 1; transition: opacity 1.2s ease; }
 #noticing-msg.noticing--out { opacity: 0; transition: opacity 1.8s ease; }
 body.dark-mode #noticing-msg { color: rgba(210, 200, 185, 0.65); }
+
+/* ============================================================
+   CONNECT 4 GAME
+   ============================================================ */
+.c4-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.c4-status {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  min-height: 22px;
+  padding: 2px 8px;
+}
+.c4-board-wrap {
+  background: #1a3a8a;
+  border: 3px solid #0d2060;
+  border-radius: 5px;
+  padding: 6px;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.15), 2px 2px 6px rgba(0,0,0,0.4);
+}
+.c4-board {
+  display: grid;
+  grid-template-columns: repeat(7, 40px);
+  grid-template-rows: repeat(6, 40px);
+  gap: 5px;
+}
+.c4-cell {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #0a1e5c;
+  box-shadow: inset 0 3px 6px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: filter 0.1s ease;
+}
+.c4-cell:hover {
+  filter: brightness(1.35);
+}
+.c4-cell.c4-player {
+  background: #e03030;
+  box-shadow: inset 0 -2px 5px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.4);
+  cursor: default;
+}
+.c4-cell.c4-ai {
+  background: #e0c030;
+  box-shadow: inset 0 -2px 5px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.4);
+  cursor: default;
+}
+.c4-cell.c4-win {
+  animation: c4-pulse 0.65s infinite alternate;
+}
+@keyframes c4-pulse {
+  from { filter: brightness(1); box-shadow: inset 0 -2px 5px rgba(0,0,0,0.3); }
+  to   { filter: brightness(1.6); box-shadow: 0 0 10px 3px rgba(255,255,255,0.5); }
+}
+.c4-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.c4-mode-label {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+body.dark-mode .c4-board-wrap {
+  border-color: #081440;
+}
