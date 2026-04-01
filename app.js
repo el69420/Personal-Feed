@@ -15324,46 +15324,43 @@ function initPixelCat() {
         [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 9  – chin/neck
     ];
 
-    // Walk-A: side-profile, cat facing RIGHT (mirrored for left).
-    // Tail curls up high on the left (rear of cat); ear + eye visible in profile;
-    // body widens at haunches; two leg pairs at bottom.
-    // Stride A: back paw back (cols 3-4), front paw forward (cols 9-10).
+    // Walk-A/B: side-profile, cat facing RIGHT (mirrored automatically for left).
+    // Layout: tail arc rows 0-7 (left side), profile head rows 3-6 (right side),
+    // compact body rows 7-10 (max 10px wide — not a blob), legs rows 11-15 (4 rows).
     const WALK_A = [
-        [0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0],  // row  0 – tail tip (slight right curl, cols 4-5)
-        [0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0],  // row  1 – tail upper (cols 3-5)
+        [0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0],  // row  0 – tail tip curl (cols 3-5)
+        [0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0],  // row  1 – tail curl wider (cols 2-5)
         [0,0,1,2,1,0,0,0,0,0,0,1,0,0,0,0],  // row  2 – tail (cols 2-4) + ear tip (col 11)
-        [0,0,1,2,1,0,0,0,0,0,1,3,1,0,0,0],  // row  3 – tail (cols 2-4) + ear inner/pink (cols 10-12)
-        [0,1,2,1,0,0,0,0,0,1,2,2,2,1,0,0],  // row  4 – tail bends (cols 1-3) + head top (cols 9-13)
+        [0,1,2,1,0,0,0,0,0,0,1,3,1,0,0,0],  // row  3 – tail (cols 1-3) + ear inner/pink
+        [0,1,2,1,0,0,0,0,0,1,2,2,2,1,0,0],  // row  4 – tail + head top (cols 9-13)
         [0,1,2,1,0,0,0,0,1,2,4,1,2,2,1,0],  // row  5 – tail + eye: catchlight col10, pupil col11
-        [0,1,2,1,0,0,0,1,2,2,1,1,2,3,1,0],  // row  6 – tail + eye lower row + nose pink (col13)
-        [0,0,1,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row  7 – body top/neck; tail merges at col2
-        [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row  8 – upper body (cols 2-13)
-        [0,0,1,2,2,2,2,2,2,2,2,2,1,0,0,0],  // row  9 – body, haunches (cols 2-12)
-        [0,0,1,2,2,2,2,2,2,2,2,1,0,0,0,0],  // row 10 – body (cols 2-11)
-        [0,0,0,1,2,2,2,2,2,2,1,0,0,0,0,0],  // row 11 – lower body (cols 3-10)
-        [0,0,0,0,1,2,2,2,2,1,0,0,0,0,0,0],  // row 12 – belly (cols 4-9)
-        [0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0],  // row 13 – underside (cols 4-9)
-        [0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0],  // row 14 – legs (back pair cols 4-5, front pair cols 8-9)
-        [0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0],  // row 15 – paws A: back col3-4, front col9-10
+        [0,0,1,2,1,0,0,1,2,2,1,1,2,3,1,0],  // row  6 – tail (cols 2-4) + eye lower + nose (col13)
+        [0,0,0,1,2,2,1,2,2,2,2,2,2,1,0,0],  // row  7 – tail base (3-6) + body (6-13, 8px wide)
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row  8 – body haunches (cols 3-12, 10px wide)
+        [0,0,0,1,2,2,2,2,2,2,2,1,0,0,0,0],  // row  9 – body (cols 3-11, 9px wide)
+        [0,0,0,0,1,2,2,2,2,2,1,0,0,0,0,0],  // row 10 – lower body (cols 4-10, 7px wide)
+        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],  // row 11 – underside (cols 5-10)
+        [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 12 – legs (back cols 4-5, front cols 9-10)
+        [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 13 – legs
+        [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 14 – legs
+        [0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0],  // row 15 – paws A: back col3-4, front col10-11
     ];
-    // Walk-B: same side profile, stride 2.
-    // Back paw forward (cols 5-6), front paw back (cols 8-9).
     const WALK_B = [
-        [0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0],  // row  0
-        [0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0],  // row  1
+        [0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0],  // row  0
+        [0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0],  // row  1
         [0,0,1,2,1,0,0,0,0,0,0,1,0,0,0,0],  // row  2
-        [0,0,1,2,1,0,0,0,0,0,1,3,1,0,0,0],  // row  3
+        [0,1,2,1,0,0,0,0,0,0,1,3,1,0,0,0],  // row  3
         [0,1,2,1,0,0,0,0,0,1,2,2,2,1,0,0],  // row  4
         [0,1,2,1,0,0,0,0,1,2,4,1,2,2,1,0],  // row  5
-        [0,1,2,1,0,0,0,1,2,2,1,1,2,3,1,0],  // row  6
-        [0,0,1,2,2,2,2,2,2,2,2,2,2,2,1,0],  // row  7
-        [0,0,1,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row  8
-        [0,0,1,2,2,2,2,2,2,2,2,2,1,0,0,0],  // row  9
-        [0,0,1,2,2,2,2,2,2,2,2,1,0,0,0,0],  // row 10
-        [0,0,0,1,2,2,2,2,2,2,1,0,0,0,0,0],  // row 11
-        [0,0,0,0,1,2,2,2,2,1,0,0,0,0,0,0],  // row 12
-        [0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0],  // row 13
-        [0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0],  // row 14
+        [0,0,1,2,1,0,0,1,2,2,1,1,2,3,1,0],  // row  6
+        [0,0,0,1,2,2,1,2,2,2,2,2,2,1,0,0],  // row  7
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row  8
+        [0,0,0,1,2,2,2,2,2,2,2,1,0,0,0,0],  // row  9
+        [0,0,0,0,1,2,2,2,2,2,1,0,0,0,0,0],  // row 10
+        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],  // row 11
+        [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 12
+        [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 13
+        [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 14
         [0,0,0,0,0,1,1,0,1,1,0,0,0,0,0,0],  // row 15 – paws B: back col5-6, front col8-9
     ];
     // Sit: haunches visible, paws tucked, tail curling around right side
