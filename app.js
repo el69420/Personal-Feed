@@ -15341,10 +15341,10 @@ function initPixelCat() {
         [0,0,1,2,2,2,2,2,2,2,2,1,0,0,0,0],  // row  9 – body (cols 2-11)
         [0,0,0,1,2,2,2,2,2,2,1,0,0,0,0,0],  // row 10 – belly (cols 3-10)
         [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],  // row 11 – underside (cols 3-10, 8px wide)
-        [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 12 – WIDE legs: back cols 2-3, front cols 9-10
-        [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 13 – legs
-        [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 14 – legs
-        [0,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0],  // row 15 – paws A: back leg back (col1-2), front leg forward (col10-11)
+        [0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],  // row 12 – 4 legs: back pair cols 3,6; front pair cols 9,12
+        [0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],  // row 13 – legs
+        [0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],  // row 14 – legs
+        [0,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0],  // row 15 – paws A: back-near col2, back-far col7, front-near col8, front-far col13
     ];
     const WALK_B = [
         [0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0],  // row  0
@@ -15359,10 +15359,10 @@ function initPixelCat() {
         [0,0,1,2,2,2,2,2,2,2,2,1,0,0,0,0],  // row  9
         [0,0,0,1,2,2,2,2,2,2,1,0,0,0,0,0],  // row 10
         [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],  // row 11
-        [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 12
-        [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 13
-        [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 14
-        [0,0,0,1,1,0,0,0,1,1,0,0,0,0,0,0],  // row 15 – paws B: back leg forward (col3-4), front leg back (col8-9)
+        [0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],  // row 12 – 4 legs: back pair cols 3,6; front pair cols 9,12
+        [0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],  // row 13 – legs
+        [0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],  // row 14 – legs
+        [0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0],  // row 15 – paws B: back-near col4, back-far col5, front-near col10, front-far col11
     ];
     // Sit: haunches visible, paws tucked, tail curling around right side
     const SIT = [
