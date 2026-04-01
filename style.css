@@ -7652,7 +7652,7 @@ body.dark-mode .recycle-bin-del-btn{ color: #ff8080; }
 }
 #cat-hit-area {
   position: fixed;
-  width: 48px;            /* CW(16) × S(3) = 48 */
+  width: 72px;            /* CW(24) × S(3) = 72 */
   height: 48px;           /* CH(16) × S(3) = 48 */
   z-index: 152;           /* just above canvas (150) and emotes (151) */
   cursor: pointer;
