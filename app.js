@@ -2089,6 +2089,18 @@ function setupDBListeners() {
         updateCommentTypingUI();
     });
 
+    // Connect4 game invite notifications
+    let _c4InviteSeenTs = 0;
+    onValue(ref(database, 'connect4_invite'), (snap) => {
+        const data = snap.val();
+        if (!data?.ts || !currentUser || data.from === currentUser) return;
+        // On first fire, just record the timestamp so stale invites don't pop up on page load
+        if (_c4InviteSeenTs === 0) { _c4InviteSeenTs = data.ts; return; }
+        if (data.ts <= _c4InviteSeenTs) return;
+        _c4InviteSeenTs = data.ts;
+        showC4InvitePopup(data.from);
+    });
+
     onValue(query(chatRef, limitToLast(80)), (snapshot) => {
         const raw = snapshot.val() || {};
         const messages = Object.entries(raw)
@@ -3137,6 +3149,29 @@ window.openAchievementFromNotif = function(notifId, achievementId) {
     closeNotifPanel();
     openAchievementsAndHighlight(achievementId);
 };
+
+function showC4InvitePopup(from) {
+    const existing = document.getElementById('c4-invite-popup');
+    if (existing) existing.remove();
+    const popup = document.createElement('div');
+    popup.id = 'c4-invite-popup';
+    popup.className = 'post-notif-popup';
+    popup.innerHTML =
+        `<div class="notif-popup-header">` +
+        `<span class="notif-popup-icon">&#127921;</span>` +
+        `<span class="notif-popup-author">${safeText(from)} wants to play Connect 4</span>` +
+        `<button class="notif-popup-close" onclick="document.getElementById('c4-invite-popup')?.remove()">&#x2715;</button>` +
+        `</div>` +
+        `<button class="notif-popup-open" onclick="if(window.w95Apps&&w95Apps.connect4)w95Apps.connect4.open();document.getElementById('c4-invite-popup')?.remove()">Open game &#x2192;</button>`;
+    document.body.appendChild(popup);
+    requestAnimationFrame(() => { requestAnimationFrame(() => { popup.classList.add('notif-popup-visible'); }); });
+    const t = setTimeout(() => {
+        popup.classList.remove('notif-popup-visible');
+        setTimeout(() => popup.remove(), 350);
+    }, 6000);
+    popup.querySelector('.notif-popup-close').addEventListener('click', () => clearTimeout(t));
+    sendNotification(`${from} wants to play Connect 4! \u{1F3A1}`, 'Switch to Online mode and join the game', 'c4-invite');
+}
 
 function toggleNotifPanel() {
     const panel = document.getElementById('notif-panel');
@@ -20478,6 +20513,7 @@ document.addEventListener('click', (e) => {
                 winner: null,
                 winCells: null,
             });
+            set(ref(database, 'connect4_invite'), { from: currentUser, ts: Date.now() });
             subscribeOnline();
             return; // renderBoard called via onValue
         }
