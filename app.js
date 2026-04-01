@@ -20350,7 +20350,7 @@ document.addEventListener('click', (e) => {
                 else if (piece === AI) cell.classList.add('c4-ai');
                 if (winSet && winSet.has(r * COLS + c)) cell.classList.add('c4-win');
                 const col = c;
-                cell.addEventListener('click', () => onColClick(col));
+                cell.addEventListener('click', () => { if (!vsAI || currentPlayer !== AI) onColClick(col); });
                 boardEl.appendChild(cell);
             }
         }
@@ -20414,7 +20414,6 @@ document.addEventListener('click', (e) => {
 
     function onColClick(col) {
         if (gameOver) return;
-        if (vsAI && currentPlayer === AI) return;
 
         const row = dropPiece(col, currentPlayer);
         if (row === -1) return; // column full
