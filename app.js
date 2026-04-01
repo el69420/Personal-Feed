@@ -15364,6 +15364,27 @@ function initPixelCat() {
         [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 14 – legs
         [0,0,0,1,1,0,0,0,1,1,0,0,0,0,0,0],  // row 15 – paws B: back leg forward (col3-4), front leg back (col8-9)
     ];
+    // Walk-C: mid-stride "down" frame — body shifted 1px lower to create a body-bob.
+    // Tail loses its top pixel, body rows shift to 8-12, legs compress to 3 rows (no paw spread).
+    // Used as the transition frame between WALK_A and WALK_B in the 4-step cycle: A→C→B→C→A.
+    const WALK_C = [
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],  // row  0 – empty (body down, tail tip off-screen)
+        [0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0],  // row  1 – tail tip
+        [0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0],  // row  2 – tail
+        [0,1,2,2,1,0,0,0,0,0,0,1,0,0,0,0],  // row  3 – tail + ear tip
+        [0,1,2,1,0,0,0,0,0,0,1,3,1,0,0,0],  // row  4 – tail + ear inner
+        [0,1,2,1,0,0,0,0,0,1,2,2,2,1,0,0],  // row  5 – tail + head top
+        [0,1,2,1,0,0,0,0,1,2,4,1,2,2,1,0],  // row  6 – tail + eye
+        [0,1,2,1,0,0,0,1,2,2,1,1,2,3,1,0],  // row  7 – tail + chest/nose
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,1,0,0],  // row  8 – body widest (13px) — 1 row lower than A/B
+        [0,1,2,2,2,2,2,2,2,2,2,2,1,0,0,0],  // row  9 – body
+        [0,0,1,2,2,2,2,2,2,2,2,1,0,0,0,0],  // row 10 – body
+        [0,0,0,1,2,2,2,2,2,2,1,0,0,0,0,0],  // row 11 – belly
+        [0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0],  // row 12 – underside (8px)
+        [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 13 – legs: back col 2-3, front col 9-10
+        [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 14 – legs
+        [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 15 – paws flat (no spread — body is low)
+    ];
     // Sit: haunches visible, paws tucked, tail curling around right side
     const SIT = [
         ...HEAD,
@@ -15512,7 +15533,7 @@ function initPixelCat() {
         [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 15 – rounded base
     ];
 
-    const FRAMES = { walkA: WALK_A, walkB: WALK_B, sit: SIT, sleep: SLEEP, surprise: SURPRISE, wakeup: WAKEUP, idle: IDLE, jump: JUMP, dazed: DAZED, loaf: LOAF };
+    const FRAMES = { walkA: WALK_A, walkB: WALK_B, walkC: WALK_C, sit: SIT, sleep: SLEEP, surprise: SURPRISE, wakeup: WAKEUP, idle: IDLE, jump: JUMP, dazed: DAZED, loaf: LOAF };
 
     // ---- Canvas (appended to body so z-index is unambiguous) ----
     const canvas = document.createElement('canvas');
@@ -16617,7 +16638,7 @@ function initPixelCat() {
         // Walk animation frame toggle (zoomies runs at 4× the normal rate)
         const _walkFlipMs = catState === 'zoomies' ? 55 : WALK_FPS;
         if ((catState === 'walk' || catState === 'zoomies') && now - lastFlip > _walkFlipMs) {
-            animIdx  = 1 - animIdx;
+            animIdx  = (animIdx + 1) % 4;
             lastFlip = now;
         }
 
@@ -16729,7 +16750,7 @@ function initPixelCat() {
         else if (catState === 'idle')                                 frame = 'idle';
         else if (catState === 'jumping' || catState === 'jumpDown')   frame = 'jump';
         else if (catState === 'sleep')                                frame = 'sleep';
-        else                                                          frame = animIdx === 0 ? 'walkA' : 'walkB';
+        else                                                          frame = ['walkA', 'walkC', 'walkB', 'walkC'][animIdx];
 
         drawSprite(frame, catDir === 'left');
         } catch (e) { console.error('[cat]', e); }
