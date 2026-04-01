@@ -15344,7 +15344,7 @@ function initPixelCat() {
         [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 12 – WIDE legs: back cols 2-3, front cols 9-10
         [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 13 – legs
         [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 14 – legs
-        [0,1,1,0,0,0,0,0,0,0,1,1,0,0,0,0],  // row 15 – paws A: back col1-2, front col10-11
+        [0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0],  // row 15 – paws A: both shift back (back col1-2, front col8-9)
     ];
     const WALK_B = [
         [0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0],  // row  0
@@ -15362,7 +15362,7 @@ function initPixelCat() {
         [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 12
         [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 13
         [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],  // row 14
-        [0,0,0,1,1,0,0,0,1,1,0,0,0,0,0,0],  // row 15 – paws B: back col3-4, front col8-9
+        [0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0],  // row 15 – paws B: both shift forward (back col3-4, front col10-11)
     ];
     // Sit: haunches visible, paws tucked, tail curling around right side
     const SIT = [
