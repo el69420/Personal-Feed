@@ -10589,6 +10589,67 @@ var ACHIEVEMENTS = [
         tier:                'mythic',
         xp:                  100,
     },
+
+    // ---- Connect 4 ----
+    {
+        id:    'c4_first_win',
+        title: 'Four in a Row',
+        desc:  'Beat the AI for the first time',
+        icon:  '[4]',
+        xp:    10,
+        tier:  'bronze',
+    },
+    {
+        id:          'c4_ai_wins_5',
+        title:       'Repeat Offender',
+        desc:        'Beat the AI 5 times',
+        icon:        '[5★]',
+        xp:          25,
+        tier:        'silver',
+        target:      5,
+        getProgress: () => {
+            try { return JSON.parse(localStorage.getItem('c4Stats_' + currentUser) || '{}').aiWins || 0; }
+            catch(e) { return 0; }
+        },
+    },
+    {
+        id:          'c4_ai_wins_10',
+        title:       'AI Bully',
+        desc:        'Beat the AI 10 times',
+        icon:        '[10★]',
+        xp:          50,
+        tier:        'gold',
+        target:      10,
+        getProgress: () => {
+            try { return JSON.parse(localStorage.getItem('c4Stats_' + currentUser) || '{}').aiWins || 0; }
+            catch(e) { return 0; }
+        },
+    },
+    {
+        id:    'c4_first_draw',
+        title: 'Standoff',
+        desc:  'Play to a draw against the AI',
+        icon:  '[=]',
+        xp:    10,
+        tier:  'bronze',
+    },
+    {
+        id:    'c4_online_win',
+        title: 'Connected',
+        desc:  'Win an online game',
+        icon:  '[W]',
+        xp:    15,
+        tier:  'bronze',
+    },
+    {
+        id:                  'c4_speed_win',
+        title:               'Lightning Drop',
+        desc:                'Beat the AI with 15 or fewer total pieces on the board',
+        icon:                '[!4]',
+        xp:                  30,
+        tier:                'silver',
+        hiddenUntilUnlocked: true,
+    },
 ];
 
 // ---- XP / Level helpers ----
@@ -20326,11 +20387,69 @@ document.addEventListener('click', (e) => {
     if (!win || !boardEl || !handle) return;
 
     const c4Ref = ref(database, 'connect4');
+    const c4ScoresRef = ref(database, 'connect4_scores');
 
     let taskbarBtn = null;
+    let moveCount = 0;            // total pieces placed this game (AI mode)
+    let onlineResultRecorded = false; // prevent double-counting online results
+    let scoresCache = null;       // latest connect4_scores snapshot
 
     // In online mode: El = PLAYER (1, red), Tero = AI (2, yellow)
     function myPiece() { return currentUser === 'El' ? PLAYER : AI; }
+
+    // ---------- stats helpers ----------
+
+    function getC4Stats() {
+        try { return JSON.parse(localStorage.getItem('c4Stats_' + currentUser) || '{}'); }
+        catch(e) { return {}; }
+    }
+    function saveC4Stats(stats) {
+        if (!currentUser) return;
+        localStorage.setItem('c4Stats_' + currentUser, JSON.stringify(stats));
+    }
+
+    async function updateOnlineScore(result) {
+        if (!currentUser) return;
+        const userScoreRef = ref(database, 'connect4_scores/' + currentUser);
+        await runTransaction(userScoreRef, (current) => {
+            const data = current || { wins: 0, draws: 0 };
+            if (result === 'win')  data.wins  = (data.wins  || 0) + 1;
+            if (result === 'draw') data.draws = (data.draws || 0) + 1;
+            return data;
+        });
+        if (result === 'win') await unlockAchievement('c4_online_win');
+    }
+
+    function renderLeaderboard() {
+        const el = document.getElementById('c4-lb-rows');
+        if (!el) return;
+        const scores = scoresCache || {};
+        const stats  = getC4Stats();
+        const players = [
+            { name: 'El',   circle: '&#128308;', data: scores.El   || { wins: 0, draws: 0 } },
+            { name: 'Tero', circle: '&#128993;', data: scores.Tero || { wins: 0, draws: 0 } },
+        ];
+        el.innerHTML =
+            players.map(p =>
+                `<div class="c4-lb-row">` +
+                `<span class="c4-lb-player">${p.circle} ${p.name}</span>` +
+                `<span class="c4-lb-score">${p.data.wins}W&nbsp;${p.data.draws}D</span>` +
+                `</div>`
+            ).join('') +
+            (currentUser
+                ? `<hr class="c4-lb-divider">` +
+                  `<div class="c4-lb-row">` +
+                  `<span>vs AI</span>` +
+                  `<span class="c4-lb-score">${stats.aiWins || 0}W&nbsp;${stats.aiDraws || 0}D</span>` +
+                  `</div>`
+                : '');
+    }
+
+    // Subscribe once to live score updates
+    onValue(c4ScoresRef, (snap) => {
+        scoresCache = snap.val() || {};
+        renderLeaderboard();
+    });
 
     // ---------- game logic ----------
 
@@ -20343,6 +20462,8 @@ document.addEventListener('click', (e) => {
         board = Array.from({length: ROWS}, () => Array(COLS).fill(EMPTY));
         currentPlayer = PLAYER;
         gameOver = false;
+        moveCount = 0;
+        onlineResultRecorded = false;
 
         if (gameMode === 'online') {
             if (!currentUser) {
@@ -20388,6 +20509,11 @@ document.addEventListener('click', (e) => {
                     statusEl.innerHTML = data.winner === 'El'
                         ? '&#128308; El wins!' + (isMe ? ' &#127881;' : '')
                         : '&#128993; Tero wins!' + (isMe ? ' &#127881;' : '');
+                }
+                if (!onlineResultRecorded) {
+                    onlineResultRecorded = true;
+                    if (data.winner === currentUser) updateOnlineScore('win');
+                    else if (data.winner === 'draw') updateOnlineScore('draw');
                 }
             } else {
                 updateStatus();
@@ -20491,14 +20617,29 @@ document.addEventListener('click', (e) => {
         const row = dropPiece(col, currentPlayer);
         if (row === -1) return; // column full
 
+        moveCount++;
+
         const winCells = checkWin(row, col);
         renderBoard(winCells);
 
         if (winCells) {
             if (gameMode === 'ai') {
-                statusEl.innerHTML = currentPlayer === PLAYER
-                    ? '&#128308; You win! &#127881;'
-                    : '&#128993; AI wins!';
+                if (currentPlayer === PLAYER) {
+                    statusEl.innerHTML = '&#128308; You win! &#127881;';
+                    const stats = getC4Stats();
+                    stats.aiWins = (stats.aiWins || 0) + 1;
+                    saveC4Stats(stats);
+                    const mc = moveCount;
+                    (async () => {
+                        await unlockAchievement('c4_first_win');
+                        if (stats.aiWins >= 5)  await unlockAchievement('c4_ai_wins_5');
+                        if (stats.aiWins >= 10) await unlockAchievement('c4_ai_wins_10');
+                        if (mc <= 15)           await unlockAchievement('c4_speed_win');
+                        renderLeaderboard();
+                    })();
+                } else {
+                    statusEl.innerHTML = '&#128993; AI wins!';
+                }
             } else {
                 statusEl.innerHTML = currentPlayer === PLAYER
                     ? '&#128308; Red wins! &#127881;'
@@ -20511,6 +20652,15 @@ document.addEventListener('click', (e) => {
         if (isBoardFull()) {
             statusEl.textContent = "It's a draw!";
             gameOver = true;
+            if (gameMode === 'ai') {
+                const stats = getC4Stats();
+                stats.aiDraws = (stats.aiDraws || 0) + 1;
+                saveC4Stats(stats);
+                (async () => {
+                    await unlockAchievement('c4_first_draw');
+                    renderLeaderboard();
+                })();
+            }
             return;
         }
 

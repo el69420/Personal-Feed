@@ -13025,3 +13025,52 @@ body.dark-mode #noticing-msg { color: rgba(210, 200, 185, 0.65); }
 body.dark-mode .c4-board-wrap {
   border-color: #081440;
 }
+.c4-leaderboard {
+  width: 100%;
+  border: 1px solid #aaa;
+  background: #f0f0f0;
+  padding: 5px 8px;
+  box-sizing: border-box;
+  font-size: 11px;
+}
+body.dark-mode .c4-leaderboard {
+  background: #1e1e2e;
+  border-color: #444;
+  color: #ccc;
+}
+.c4-lb-title {
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #666;
+  margin-bottom: 4px;
+}
+body.dark-mode .c4-lb-title {
+  color: #888;
+}
+.c4-lb-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.c4-lb-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.c4-lb-player {
+  font-weight: 600;
+}
+.c4-lb-score {
+  font-family: monospace;
+  font-size: 11px;
+}
+.c4-lb-divider {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 3px 0 2px;
+}
+body.dark-mode .c4-lb-divider {
+  border-color: #444;
+}
