@@ -20309,31 +20309,90 @@ document.addEventListener('click', (e) => {
     const ROWS = 6, COLS = 7;
     const EMPTY = 0, PLAYER = 1, AI = 2;
 
-    let board, currentPlayer, gameOver, vsAI;
+    // gameMode: 'ai' | 'local' | 'online'
+    let board, currentPlayer, gameOver, gameMode, pendingOnline = false;
+    let onlineUnsub = null;
 
-    const win      = document.getElementById('w95-win-connect4');
-    const boardEl  = document.getElementById('c4-board');
-    const statusEl = document.getElementById('c4-status');
-    const resetBtn = document.getElementById('c4-reset-btn');
-    const aiToggle = document.getElementById('c4-ai-toggle');
-    const minBtn   = document.getElementById('w95-connect4-min');
-    const maxBtn   = document.getElementById('w95-connect4-max');
-    const closeBtn = document.getElementById('w95-connect4-close');
-    const handle   = document.getElementById('w95-connect4-handle');
+    const win        = document.getElementById('w95-win-connect4');
+    const boardEl    = document.getElementById('c4-board');
+    const statusEl   = document.getElementById('c4-status');
+    const resetBtn   = document.getElementById('c4-reset-btn');
+    const modeSelect = document.getElementById('c4-mode-select');
+    const minBtn     = document.getElementById('w95-connect4-min');
+    const maxBtn     = document.getElementById('w95-connect4-max');
+    const closeBtn   = document.getElementById('w95-connect4-close');
+    const handle     = document.getElementById('w95-connect4-handle');
 
     if (!win || !boardEl || !handle) return;
 
+    const c4Ref = ref(database, 'connect4');
+
     let taskbarBtn = null;
+
+    // In online mode: El = PLAYER (1, red), Tero = AI (2, yellow)
+    function myPiece() { return currentUser === 'El' ? PLAYER : AI; }
 
     // ---------- game logic ----------
 
     function initGame() {
+        gameMode = modeSelect ? modeSelect.value : 'ai';
+
+        if (onlineUnsub) { onlineUnsub(); onlineUnsub = null; }
+        pendingOnline = false;
+
         board = Array.from({length: ROWS}, () => Array(COLS).fill(EMPTY));
         currentPlayer = PLAYER;
         gameOver = false;
-        vsAI = aiToggle.checked;
+
+        if (gameMode === 'online') {
+            if (!currentUser) {
+                statusEl.textContent = 'Sign in to play online';
+                renderBoard(null);
+                return;
+            }
+            set(c4Ref, {
+                board: board.map(r => [...r]),
+                turn: 'El',
+                status: 'playing',
+                winner: null,
+                winCells: null,
+            });
+            subscribeOnline();
+            return; // renderBoard called via onValue
+        }
+
         renderBoard(null);
         updateStatus();
+    }
+
+    function subscribeOnline() {
+        onlineUnsub = onValue(c4Ref, (snapshot) => {
+            const data = snapshot.val();
+            pendingOnline = false;
+            if (!data) { renderBoard(null); updateStatus(); return; }
+
+            board = Array.from({length: ROWS}, (_, r) =>
+                Array.from({length: COLS}, (_, c) => (data.board[r] && data.board[r][c] != null ? data.board[r][c] : EMPTY))
+            );
+            currentPlayer = data.turn === 'El' ? PLAYER : AI;
+            gameOver = data.status === 'over';
+
+            const winCells = data.winCells ? data.winCells.map(cell => [cell[0], cell[1]]) : null;
+            renderBoard(winCells);
+
+            if (data.status === 'over') {
+                if (data.winner === 'draw') {
+                    statusEl.textContent = "It's a draw!";
+                } else {
+                    const isMe = data.winner === currentUser;
+                    statusEl.innerHTML = data.winner === 'El'
+                        ? '&#128308; El wins!' + (isMe ? ' &#127881;' : '')
+                        : '&#128993; Tero wins!' + (isMe ? ' &#127881;' : '');
+                }
+            } else {
+                updateStatus();
+            }
+        });
     }
 
     function renderBoard(winCells) {
@@ -20350,7 +20409,11 @@ document.addEventListener('click', (e) => {
                 else if (piece === AI) cell.classList.add('c4-ai');
                 if (winSet && winSet.has(r * COLS + c)) cell.classList.add('c4-win');
                 const col = c;
-                cell.addEventListener('click', () => { if (!vsAI || currentPlayer !== AI) onColClick(col); });
+                cell.addEventListener('click', () => {
+                    if (gameMode === 'ai' && currentPlayer === AI) return;
+                    if (gameMode === 'online' && (currentPlayer !== myPiece() || pendingOnline)) return;
+                    onColClick(col);
+                });
                 boardEl.appendChild(cell);
             }
         }
@@ -20401,7 +20464,12 @@ document.addEventListener('click', (e) => {
     }
 
     function updateStatus() {
-        if (vsAI) {
+        if (gameMode === 'online') {
+            const isMyTurn = currentPlayer === myPiece();
+            statusEl.innerHTML = currentPlayer === PLAYER
+                ? '&#128308; ' + (isMyTurn ? 'Your turn (El)' : "El's turn")
+                : '&#128993; ' + (isMyTurn ? 'Your turn (Tero)' : "Tero's turn");
+        } else if (gameMode === 'ai') {
             statusEl.innerHTML = currentPlayer === PLAYER
                 ? '&#128308; Your turn'
                 : '&#128993; AI thinking\u2026';
@@ -20415,6 +20483,11 @@ document.addEventListener('click', (e) => {
     function onColClick(col) {
         if (gameOver) return;
 
+        if (gameMode === 'online') {
+            pushMoveOnline(col);
+            return;
+        }
+
         const row = dropPiece(col, currentPlayer);
         if (row === -1) return; // column full
 
@@ -20422,7 +20495,7 @@ document.addEventListener('click', (e) => {
         renderBoard(winCells);
 
         if (winCells) {
-            if (vsAI) {
+            if (gameMode === 'ai') {
                 statusEl.innerHTML = currentPlayer === PLAYER
                     ? '&#128308; You win! &#127881;'
                     : '&#128993; AI wins!';
@@ -20436,7 +20509,7 @@ document.addEventListener('click', (e) => {
         }
 
         if (isBoardFull()) {
-            statusEl.textContent = "It\'s a draw!";
+            statusEl.textContent = "It's a draw!";
             gameOver = true;
             return;
         }
@@ -20444,9 +20517,37 @@ document.addEventListener('click', (e) => {
         currentPlayer = currentPlayer === PLAYER ? AI : PLAYER;
         updateStatus();
 
-        if (vsAI && currentPlayer === AI) {
+        if (gameMode === 'ai' && currentPlayer === AI) {
             setTimeout(doAIMove, 350);
         }
+    }
+
+    function pushMoveOnline(col) {
+        const row = dropPiece(col, currentPlayer);
+        if (row === -1) return; // column full
+
+        const winCells = checkWin(row, col);
+        const boardFull = isBoardFull();
+
+        let status = 'playing', winner = null, winCellsData = null;
+        if (winCells) {
+            status = 'over';
+            winner = currentPlayer === PLAYER ? 'El' : 'Tero';
+            winCellsData = winCells;
+        } else if (boardFull) {
+            status = 'over';
+            winner = 'draw';
+        }
+
+        const nextTurn = currentPlayer === PLAYER ? 'Tero' : 'El';
+        pendingOnline = true;
+        set(c4Ref, {
+            board: board.map(r => [...r]),
+            turn: status === 'over' ? (currentPlayer === PLAYER ? 'El' : 'Tero') : nextTurn,
+            status,
+            winner,
+            winCells: winCellsData,
+        });
     }
 
     function doAIMove() {
@@ -20572,7 +20673,7 @@ document.addEventListener('click', (e) => {
     if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-connect4'); });
     closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeWin(); });
     resetBtn.addEventListener('click', initGame);
-    aiToggle.addEventListener('change', initGame);
+    if (modeSelect) modeSelect.addEventListener('change', initGame);
 
     // Drag support
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;

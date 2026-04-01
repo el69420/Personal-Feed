@@ -13017,6 +13017,11 @@ body.dark-mode #noticing-msg { color: rgba(210, 200, 185, 0.65); }
   cursor: pointer;
   user-select: none;
 }
+.c4-mode-select {
+  font-size: 12px;
+  font-family: inherit;
+  padding: 2px 4px;
+}
 body.dark-mode .c4-board-wrap {
   border-color: #081440;
 }
