@@ -15324,22 +15324,22 @@ function initPixelCat() {
         [0,0,1,1,2,2,2,2,2,2,2,2,1,1,0,0],  // row 9  – chin/neck
     ];
 
-    // Walk-A/B: side-profile, cat facing RIGHT (mirrored automatically for left).
-    // Layout: tail arc rows 0-7 (left side), profile head rows 3-6 (right side),
-    // compact body rows 7-10 (max 10px wide — not a blob), legs rows 11-15 (4 rows).
+    // Walk-A/B: side-profile, cat facing RIGHT (mirrored for left).
+    // Body rows 7-11 (wide, dominant), legs rows 12-15 (4 rows, shorter than body).
+    // Tail arcs up left (rows 0-6), head in upper right (rows 3-6), body merges at row 7.
     const WALK_A = [
-        [0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0],  // row  0 – tail tip curl (cols 3-5)
-        [0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0],  // row  1 – tail curl wider (cols 2-5)
+        [0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0],  // row  0 – tail tip (cols 3-5)
+        [0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0],  // row  1 – tail (cols 2-5)
         [0,0,1,2,1,0,0,0,0,0,0,1,0,0,0,0],  // row  2 – tail (cols 2-4) + ear tip (col 11)
         [0,1,2,1,0,0,0,0,0,0,1,3,1,0,0,0],  // row  3 – tail (cols 1-3) + ear inner/pink
         [0,1,2,1,0,0,0,0,0,1,2,2,2,1,0,0],  // row  4 – tail + head top (cols 9-13)
         [0,1,2,1,0,0,0,0,1,2,4,1,2,2,1,0],  // row  5 – tail + eye: catchlight col10, pupil col11
-        [0,0,1,2,1,0,0,1,2,2,1,1,2,3,1,0],  // row  6 – tail (cols 2-4) + eye lower + nose (col13)
-        [0,0,0,1,2,2,1,2,2,2,2,2,2,1,0,0],  // row  7 – tail base (3-6) + body (6-13, 8px wide)
-        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row  8 – body haunches (cols 3-12, 10px wide)
-        [0,0,0,1,2,2,2,2,2,2,2,1,0,0,0,0],  // row  9 – body (cols 3-11, 9px wide)
-        [0,0,0,0,1,2,2,2,2,2,1,0,0,0,0,0],  // row 10 – lower body (cols 4-10, 7px wide)
-        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],  // row 11 – underside (cols 5-10)
+        [0,0,1,2,2,1,0,1,2,2,1,1,2,3,1,0],  // row  6 – tail (cols 2-5) + eye lower + nose (col13)
+        [0,0,0,1,2,2,2,2,2,2,2,2,2,1,0,0],  // row  7 – body (cols 3-13, 11px); tail+head merge here
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row  8 – body (cols 3-12, 10px)
+        [0,0,0,1,2,2,2,2,2,2,2,1,0,0,0,0],  // row  9 – body (cols 3-11, 9px)
+        [0,0,0,0,1,2,2,2,2,2,1,0,0,0,0,0],  // row 10 – lower body (cols 4-10, 7px)
+        [0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0],  // row 11 – underside (cols 4-10)
         [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 12 – legs (back cols 4-5, front cols 9-10)
         [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 13 – legs
         [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 14 – legs
@@ -15352,12 +15352,12 @@ function initPixelCat() {
         [0,1,2,1,0,0,0,0,0,0,1,3,1,0,0,0],  // row  3
         [0,1,2,1,0,0,0,0,0,1,2,2,2,1,0,0],  // row  4
         [0,1,2,1,0,0,0,0,1,2,4,1,2,2,1,0],  // row  5
-        [0,0,1,2,1,0,0,1,2,2,1,1,2,3,1,0],  // row  6
-        [0,0,0,1,2,2,1,2,2,2,2,2,2,1,0,0],  // row  7
+        [0,0,1,2,2,1,0,1,2,2,1,1,2,3,1,0],  // row  6
+        [0,0,0,1,2,2,2,2,2,2,2,2,2,1,0,0],  // row  7
         [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],  // row  8
         [0,0,0,1,2,2,2,2,2,2,2,1,0,0,0,0],  // row  9
         [0,0,0,0,1,2,2,2,2,2,1,0,0,0,0,0],  // row 10
-        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],  // row 11
+        [0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0],  // row 11
         [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 12
         [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 13
         [0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,0],  // row 14
