@@ -13185,3 +13185,10 @@ body.dark-mode .bs-ship-item.bs-ship-current { background: #1a2a4a; color: #88aa
   font-family: inherit;
   padding: 2px 4px;
 }
+
+/* ===== Win Confetti ===== */
+@keyframes confetti-fall {
+  0%   { transform: translateY(0)     translateX(0)              rotate(0deg);   opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(100vh) translateX(var(--cf-drift)) rotate(540deg); opacity: 0; }
+}
