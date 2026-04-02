@@ -13146,6 +13146,9 @@ body.dark-mode .bs-grid-label { color: #aaa; }
   background: #8b0000;
   border-radius: 2px;
 }
+.bs-grid--setup .bs-cell {
+  cursor: pointer;
+}
 .bs-cell.bs-shootable {
   cursor: crosshair;
   transition: filter 0.08s;

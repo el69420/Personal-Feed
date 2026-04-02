@@ -20591,7 +20591,7 @@ document.addEventListener('click', (e) => {
 
     function toggleOrientation() {
         horizontal = !horizontal;
-        renderMyGrid();
+        updateHoverPreview();
         updateStatus();
     }
 
@@ -20755,27 +20755,39 @@ document.addEventListener('click', (e) => {
     }
 
     // ---- render ----
+    function updateHoverPreview() {
+        myGridEl.querySelectorAll('.bs-preview-ok, .bs-preview-bad').forEach(el => {
+            el.classList.remove('bs-preview-ok', 'bs-preview-bad');
+        });
+        if (!hoverRC || placingIdx >= SHIPS.length) return;
+        const prev = previewCells(hoverRC.r, hoverRC.c);
+        const valid = canPlace(myShips, SHIPS[placingIdx].size, hoverRC.r, hoverRC.c, horizontal);
+        prev.forEach(p => {
+            const cell = myGridEl.querySelector(`[data-r="${p.r}"][data-c="${p.c}"]`);
+            if (cell) cell.classList.add(valid ? 'bs-preview-ok' : 'bs-preview-bad');
+        });
+    }
+
     function renderMyGrid() {
+        myGridEl.classList.toggle('bs-grid--setup', phase === 'setup');
         myGridEl.innerHTML = '';
         for (let r = 0; r < BS; r++) {
             for (let c = 0; c < BS; c++) {
                 const cell = document.createElement('div');
                 cell.className = 'bs-cell';
+                cell.dataset.r = r;
+                cell.dataset.c = c;
                 const ship = shipAt(myShips, r, c);
                 const k = key(r, c);
 
                 if (phase === 'setup') {
                     if (ship) cell.classList.add('bs-ship');
-                    if (hoverRC && placingIdx < SHIPS.length) {
-                        const prev = previewCells(hoverRC.r, hoverRC.c);
-                        if (prev.some(p => p.r === r && p.c === c)) {
-                            const valid = canPlace(myShips, SHIPS[placingIdx].size, hoverRC.r, hoverRC.c, horizontal);
-                            cell.classList.add(valid ? 'bs-preview-ok' : 'bs-preview-bad');
-                        }
-                    }
-                    cell.addEventListener('click',     () => onMyGridClick(r, c));
-                    cell.addEventListener('mouseover', () => { hoverRC = { r, c }; renderMyGrid(); });
-                    cell.addEventListener('mouseout',  () => { hoverRC = null; renderMyGrid(); });
+                    cell.addEventListener('click', () => onMyGridClick(r, c));
+                    cell.addEventListener('mouseover', () => { hoverRC = { r, c }; updateHoverPreview(); });
+                    cell.addEventListener('mouseout',  e => {
+                        if (e.relatedTarget && myGridEl.contains(e.relatedTarget)) return;
+                        hoverRC = null; updateHoverPreview();
+                    });
                 } else {
                     if (ship) cell.classList.add('bs-ship');
                     if (incomingShots.has(k)) cell.classList.add(ship ? 'bs-hit' : 'bs-miss');
@@ -20871,7 +20883,7 @@ document.addEventListener('click', (e) => {
     rotateBtn?.addEventListener('click', toggleOrientation);
     resetBtn?.addEventListener('click', initGame);
     modeSelect?.addEventListener('change', initGame);
-    myGridEl?.addEventListener('contextmenu', e => { e.preventDefault(); if (phase === 'setup') toggleOrientation(); });
+    myGridEl?.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); if (phase === 'setup') toggleOrientation(); });
     window.addEventListener('keydown', e => {
         if (!win || win.classList.contains('is-hidden')) return;
         if ((e.key === 'r' || e.key === 'R') && phase === 'setup') toggleOrientation();
