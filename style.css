@@ -13192,3 +13192,41 @@ body.dark-mode .bs-ship-item.bs-ship-current { background: #1a2a4a; color: #88aa
   80%  { opacity: 1; }
   100% { transform: translateY(100vh) translateX(var(--cf-drift)) rotate(540deg); opacity: 0; }
 }
+
+.bs-log-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bs-log-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+}
+body.dark-mode .bs-log-title { color: #aaa; }
+.bs-log {
+  font-size: 11px;
+  height: 72px;
+  overflow-y: auto;
+  border: 1px solid #bbb;
+  background: #f5f5f5;
+  padding: 2px 5px;
+  display: flex;
+  flex-direction: column-reverse;
+}
+body.dark-mode .bs-log { background: #1a1a2a; border-color: #444; }
+.bs-log-entry {
+  padding: 1px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bs-log-entry.bs-log-hit   { color: #c00; }
+.bs-log-entry.bs-log-sunk  { color: #8b0000; font-weight: 700; }
+.bs-log-entry.bs-log-miss  { color: #446; }
+body.dark-mode .bs-log-entry.bs-log-hit  { color: #ff6666; }
+body.dark-mode .bs-log-entry.bs-log-sunk { color: #ff9999; }
+body.dark-mode .bs-log-entry.bs-log-miss { color: #99aacc; }

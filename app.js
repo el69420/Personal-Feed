@@ -20446,6 +20446,7 @@ document.addEventListener('click', (e) => {
 
     const win          = document.getElementById('w95-win-battleships');
     const statusEl     = document.getElementById('bs-status');
+    const logEl        = document.getElementById('bs-log');
     const myGridEl     = document.getElementById('bs-my-grid');
     const enemyGridEl  = document.getElementById('bs-enemy-grid');
     const shipsPanelEl = document.getElementById('bs-ships-panel');
@@ -20550,6 +20551,8 @@ document.addEventListener('click', (e) => {
         aiShots    = new Set();
         aiTargets  = [];
         onlineResultDone = false;
+        clearTimeout(_statusTimer);
+        if (logEl) logEl.innerHTML = '';
         if (bsUnsub) { bsUnsub(); bsUnsub = null; }
 
         if (gameMode === 'ai') {
@@ -20610,9 +20613,16 @@ document.addEventListener('click', (e) => {
 
         if (allSunk(enemyShips, myShots)) { endGame(true); return; }
 
-        statusEl.textContent = sunk ? `You sank their ${hitShip.name}! 💥`
-                             : hit  ? 'Hit! \uD83D\uDD25'
-                             :        'Miss! \uD83D\uDCA7';
+        if (sunk) {
+            setStatus(`You sank their ${hitShip.name}! \uD83D\uDCA5`);
+            addLog(`You sank their ${hitShip.name}!`, 'sunk');
+        } else if (hit) {
+            setStatus('Hit! \uD83D\uDD25');
+            addLog('You hit!', 'hit');
+        } else {
+            setStatus('Miss! \uD83D\uDCA7');
+            addLog('You missed.', 'miss');
+        }
         myTurn = false;
         setTimeout(doAIShot, 850);
     }
@@ -20631,17 +20641,20 @@ document.addEventListener('click', (e) => {
                 // clear probes for this ship
                 const sunkKeys = new Set(shipCells(hitShip).map(sc => key(sc.r, sc.c)));
                 aiTargets = aiTargets.filter(t => !sunkKeys.has(key(t.r, t.c)));
-                statusEl.textContent = `AI sank your ${hitShip.name}!`;
+                setStatus(`AI sank your ${hitShip.name}!`);
+                addLog(`AI sank your ${hitShip.name}!`, 'sunk');
             } else {
                 for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
                     const nr = r+dr, nc = c+dc;
                     if (nr>=0 && nr<BS && nc>=0 && nc<BS && !aiShots.has(key(nr, nc)))
                         aiTargets.push({ r: nr, c: nc });
                 }
-                statusEl.textContent = 'AI hit your ship! \uD83D\uDD25';
+                setStatus('AI hit your ship! \uD83D\uDD25');
+                addLog('AI hit your ship!', 'hit');
             }
         } else {
-            statusEl.textContent = 'AI missed!';
+            setStatus('AI missed!');
+            addLog('AI missed.', 'miss');
         }
 
         renderMyGrid();
@@ -20673,6 +20686,7 @@ document.addEventListener('click', (e) => {
         statusEl.textContent = won
             ? 'Victory! All enemy ships sunk! \uD83C\uDF89'
             : 'Defeat! Your fleet is destroyed! \uD83D\uDC80';
+        clearTimeout(_statusTimer);
         if (won) launchConfetti();
         renderAll();
     }
@@ -20707,6 +20721,7 @@ document.addEventListener('click', (e) => {
         if (data.phase === 'over' && !onlineResultDone) {
             onlineResultDone = true;
             gameOver = true; myTurn = false;
+            clearTimeout(_statusTimer);
             if (data.winner === currentUser) {
                 statusEl.textContent = 'Victory! \uD83C\uDF89';
                 launchConfetti();
@@ -20856,6 +20871,22 @@ document.addEventListener('click', (e) => {
         if (readyBtn) { readyBtn.disabled = !(phase === 'setup' && allPlaced); readyBtn.textContent = allPlaced ? 'Ready!' : 'Place ships\u2026'; }
         if (rotateBtn) rotateBtn.style.display = phase === 'setup' ? '' : 'none';
         renderLeaderboard();
+    }
+
+    let _statusTimer = null;
+    function setStatus(msg) {
+        if (!statusEl) return;
+        statusEl.textContent = msg;
+        clearTimeout(_statusTimer);
+        _statusTimer = setTimeout(() => updateStatus(), 2000);
+    }
+
+    function addLog(text, type) {
+        if (!logEl) return;
+        const entry = document.createElement('div');
+        entry.className = 'bs-log-entry' + (type ? ' bs-log-' + type : '');
+        entry.textContent = text;
+        logEl.prepend(entry);
     }
 
     function updateStatus() {
