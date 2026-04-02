@@ -13230,3 +13230,7 @@ body.dark-mode .bs-log { background: #1a1a2a; border-color: #444; }
 body.dark-mode .bs-log-entry.bs-log-hit  { color: #ff6666; }
 body.dark-mode .bs-log-entry.bs-log-sunk { color: #ff9999; }
 body.dark-mode .bs-log-entry.bs-log-miss { color: #99aacc; }
+
+.bs-log-entry {
+  flex: 0 0 auto;
+}
