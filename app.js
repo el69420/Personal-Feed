@@ -13013,6 +13013,9 @@ const SHORTCUTABLE_APPS = [
     { app: 'painjournal',  icon: '🩹', name: 'Pain Journal' },
     { app: 'moodjournal',  icon: '📔', name: 'Mood Journal' },
     { app: 'shoplist',     icon: '🛒', name: 'Shopping List' },
+    { app: 'fooddiary',    icon: '🍽️', name: 'Food Diary' },
+    { app: 'connect4',     icon: '🟡', name: 'Connect 4' },
+    { app: 'battleships',  icon: '⚓', name: 'Battleships' },
 ];
 
 // Shows a picker dialog for selecting an app to create a shortcut to
