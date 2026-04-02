@@ -20454,6 +20454,7 @@ document.addEventListener('click', (e) => {
     const resetBtn     = document.getElementById('bs-reset-btn');
     const rotateBtn    = document.getElementById('bs-rotate-btn');
     const modeSelect   = document.getElementById('bs-mode-select');
+    const rematchBtn   = document.getElementById('bs-rematch-btn');
     const minBtn       = document.getElementById('w95-battleships-min');
     const maxBtn       = document.getElementById('w95-battleships-max');
     const closeBtn     = document.getElementById('w95-battleships-close');
@@ -20483,6 +20484,7 @@ document.addEventListener('click', (e) => {
     let bsUnsub    = null;
     let onlineResultDone = false;
     let bsScoresCache    = null;
+    let loggedShotsCount = 0; // tracks how many shots have been added to log
 
     // ---- helpers ----
     function key(r, c) { return r + ',' + c; }
@@ -20535,8 +20537,26 @@ document.addEventListener('click', (e) => {
     }
 
     // ---- init ----
-    function initGame() {
-        gameMode  = modeSelect ? modeSelect.value : 'ai';
+    function initGame(forceNew = false) {
+        if (bsUnsub) { bsUnsub(); bsUnsub = null; }
+        gameMode = modeSelect ? modeSelect.value : 'ai';
+        clearTimeout(_statusTimer);
+        if (rematchBtn) rematchBtn.style.display = 'none';
+
+        if (!forceNew && currentUser) {
+            if (gameMode === 'online') {
+                (async () => { if (!(await tryRestoreOnlineBS())) startFreshBS(); })();
+                return;
+            }
+            if (gameMode === 'ai') {
+                (async () => { if (!(await tryRestoreAIBS())) startFreshBS(); })();
+                return;
+            }
+        }
+        startFreshBS();
+    }
+
+    function startFreshBS() {
         phase     = 'setup';
         gameOver  = false;
         myTurn    = false;
@@ -20551,24 +20571,84 @@ document.addEventListener('click', (e) => {
         aiShots    = new Set();
         aiTargets  = [];
         onlineResultDone = false;
-        clearTimeout(_statusTimer);
+        loggedShotsCount = 0;
         if (logEl) logEl.innerHTML = '';
-        if (bsUnsub) { bsUnsub(); bsUnsub = null; }
 
         if (gameMode === 'ai') {
             enemyShips = randomFleet();
         } else {
             if (!currentUser) { statusEl.textContent = 'Sign in to play online'; renderAll(); return; }
+            const gameId = Date.now().toString(36);
+            localStorage.setItem('bs_online_gid', gameId);
             set(bsRef, {
                 phase: 'setup', turn: 'El', winner: null,
                 ready: { El: false, Tero: false },
-                ElShips: null, TeroShips: null, shots: null,
+                ElShips: null, TeroShips: null, shots: null, gameId,
             });
             set(ref(database, 'battleships_invite'), { from: currentUser, ts: Date.now() });
             bsUnsub = onValue(bsRef, onBsSnapshot);
         }
         renderAll();
         updateStatus();
+    }
+
+    async function tryRestoreOnlineBS() {
+        try {
+            const snap = await get(bsRef);
+            const data = snap.val();
+            if (!data || data.phase === 'over') return false;
+            const savedGid = localStorage.getItem('bs_online_gid');
+            if (savedGid && data.gameId && savedGid !== data.gameId) return false;
+            loggedShotsCount = 0;
+            bsUnsub = onValue(bsRef, onBsSnapshot);
+            return true;
+        } catch(e) { return false; }
+    }
+
+    async function tryRestoreAIBS() {
+        if (!currentUser) return false;
+        try {
+            const snap = await get(ref(database, 'battleships_ai/' + currentUser));
+            const data = snap.val();
+            if (!data || data.phase === 'over') return false;
+            if (Date.now() - (data.ts || 0) > 48 * 3600000) return false;
+
+            phase        = data.phase;
+            myTurn       = data.myTurn;
+            myShips      = data.myShips || [];
+            enemyShips   = data.enemyShips || [];
+            myShots      = new Set(data.myShots || []);
+            shotResults  = data.shotResults || {};
+            incomingShots = new Set(data.incomingShots || []);
+            aiShots      = new Set(data.aiShots || []);
+            aiTargets    = data.aiTargets || [];
+            placingIdx   = myShips.length;
+            horizontal   = true;
+            hoverRC      = null;
+            gameOver     = false;
+            onlineResultDone = false;
+            loggedShotsCount = 0;
+            if (logEl) logEl.innerHTML = '';
+
+            renderAll();
+            updateStatus();
+            return true;
+        } catch(e) { return false; }
+    }
+
+    function saveBSAIGame() {
+        if (!currentUser || gameMode !== 'ai') return;
+        set(ref(database, 'battleships_ai/' + currentUser), {
+            phase, myTurn,
+            myShips,
+            enemyShips,
+            myShots: [...myShots],
+            shotResults,
+            incomingShots: [...incomingShots],
+            aiShots: [...aiShots],
+            aiTargets,
+            ts: Date.now(),
+        }).catch(() => {});
     }
 
     // ---- placement ----
@@ -20624,6 +20704,7 @@ document.addEventListener('click', (e) => {
             addLog('You missed.', 'miss');
         }
         myTurn = false;
+        saveBSAIGame();
         setTimeout(doAIShot, 850);
     }
 
@@ -20660,6 +20741,7 @@ document.addEventListener('click', (e) => {
         renderMyGrid();
         if (allSunk(myShips, aiShots)) { endGame(false); return; }
         myTurn = true;
+        saveBSAIGame();
         setTimeout(() => { updateStatus(); renderEnemyGrid(); }, 600);
     }
 
@@ -20688,6 +20770,8 @@ document.addEventListener('click', (e) => {
             : 'Defeat! Your fleet is destroyed! \uD83D\uDC80';
         clearTimeout(_statusTimer);
         if (won) launchConfetti();
+        if (rematchBtn) rematchBtn.style.display = '';
+        if (gameMode === 'ai') saveBSAIGame();
         renderAll();
     }
 
@@ -20696,25 +20780,76 @@ document.addEventListener('click', (e) => {
         const data = snap.val();
         if (!data || !currentUser) return;
 
+        // Handle rematch: when both players accepted, reset for a new game
+        if (data.rematch?.El && data.rematch?.Tero) {
+            onlineResultDone = false;
+            loggedShotsCount = 0;
+            if (logEl) logEl.innerHTML = '';
+            if (rematchBtn) rematchBtn.style.display = 'none';
+            myShips = []; enemyShips = []; placingIdx = 0;
+            if (currentUser === 'El') {
+                const newGid = Date.now().toString(36);
+                localStorage.setItem('bs_online_gid', newGid);
+                set(bsRef, {
+                    phase: 'setup', turn: 'El', winner: null,
+                    ready: { El: false, Tero: false },
+                    ElShips: null, TeroShips: null, shots: null, gameId: newGid,
+                });
+            }
+            return;
+        }
+
         phase  = data.phase || 'setup';
         myTurn = data.turn === currentUser;
         const other = currentUser === 'El' ? 'Tero' : 'El';
 
         // Load opponent's ships (used for hit evaluation by this browser)
         if (data[other + 'Ships']) enemyShips = data[other + 'Ships'];
+        // Restore own ships if re-joining mid-game
+        if (data[currentUser + 'Ships'] && myShips.length === 0) {
+            myShips = data[currentUser + 'Ships'];
+            placingIdx = SHIPS.length;
+        }
 
-        // Rebuild shot state from Firebase ground truth
+        // Rebuild shot state from Firebase ground truth (sort by push-key for order)
         myShots       = new Set();
         shotResults   = {};
         incomingShots = new Set();
-        const shots = data.shots ? Object.values(data.shots) : [];
-        for (const s of shots) {
+        const shotsArr = data.shots
+            ? Object.entries(data.shots).sort(([a], [b]) => a < b ? -1 : 1).map(([, v]) => v)
+            : [];
+        for (const s of shotsArr) {
             const k = key(s.row, s.col);
             if (s.by === currentUser) {
                 myShots.add(k);
                 shotResults[k] = { hit: s.hit, sunkShipId: s.sunkShipId || null };
             } else {
                 incomingShots.add(k);
+            }
+        }
+
+        // Log only shots we haven't seen yet
+        const newShots = shotsArr.slice(loggedShotsCount);
+        loggedShotsCount = shotsArr.length;
+        for (const s of newShots) {
+            if (s.by === currentUser) {
+                if (s.sunkShipId) {
+                    const ship = SHIPS.find(sh => sh.id === s.sunkShipId);
+                    addLog(`You sank their ${ship ? ship.name : s.sunkShipId}!`, 'sunk');
+                } else if (s.hit) {
+                    addLog('You hit!', 'hit');
+                } else {
+                    addLog('You missed.', 'miss');
+                }
+            } else {
+                if (s.sunkShipId) {
+                    const ship = SHIPS.find(sh => sh.id === s.sunkShipId);
+                    addLog(`${other} sank your ${ship ? ship.name : s.sunkShipId}!`, 'sunk');
+                } else if (s.hit) {
+                    addLog(`${other} hit your ship!`, 'hit');
+                } else {
+                    addLog(`${other} missed.`, 'miss');
+                }
             }
         }
 
@@ -20732,6 +20867,12 @@ document.addEventListener('click', (e) => {
                 });
             } else {
                 statusEl.textContent = 'Defeat! \uD83D\uDC80';
+            }
+            if (rematchBtn) {
+                rematchBtn.style.display = '';
+                const myRematch = data.rematch?.[currentUser];
+                rematchBtn.textContent = myRematch ? 'Rematch (waiting\u2026)' : 'Rematch';
+                rematchBtn.disabled = !!myRematch;
             }
         } else if (data.phase !== 'over') {
             updateStatus();
@@ -20914,8 +21055,16 @@ document.addEventListener('click', (e) => {
         else onReadyOnline();
     });
     rotateBtn?.addEventListener('click', toggleOrientation);
-    resetBtn?.addEventListener('click', initGame);
-    modeSelect?.addEventListener('change', initGame);
+    resetBtn?.addEventListener('click', () => initGame(true));
+    modeSelect?.addEventListener('change', () => initGame(false));
+    rematchBtn?.addEventListener('click', () => {
+        if (gameMode === 'online') {
+            if (rematchBtn) { rematchBtn.textContent = 'Rematch (waiting\u2026)'; rematchBtn.disabled = true; }
+            set(ref(database, 'battleships/rematch/' + currentUser), true).catch(() => {});
+        } else {
+            initGame(true);
+        }
+    });
     myGridEl?.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); if (phase === 'setup') toggleOrientation(); });
     window.addEventListener('keydown', e => {
         if (!win || win.classList.contains('is-hidden')) return;
@@ -20986,6 +21135,8 @@ document.addEventListener('click', (e) => {
     const statusEl   = document.getElementById('c4-status');
     const resetBtn   = document.getElementById('c4-reset-btn');
     const modeSelect = document.getElementById('c4-mode-select');
+    const diffSelect = document.getElementById('c4-diff-select');
+    const rematchBtn = document.getElementById('c4-rematch-btn');
     const minBtn     = document.getElementById('w95-connect4-min');
     const maxBtn     = document.getElementById('w95-connect4-max');
     const closeBtn   = document.getElementById('w95-connect4-close');
@@ -21000,6 +21151,7 @@ document.addEventListener('click', (e) => {
     let moveCount = 0;            // total pieces placed this game (AI mode)
     let onlineResultRecorded = false; // prevent double-counting online results
     let scoresCache = null;       // latest connect4_scores snapshot
+    let aiDifficulty = 'hard';   // 'easy' | 'medium' | 'hard'
 
     // In online mode: El = PLAYER (1, red), Tero = AI (2, yellow)
     function myPiece() { return currentUser === 'El' ? PLAYER : AI; }
@@ -21060,12 +21212,28 @@ document.addEventListener('click', (e) => {
 
     // ---------- game logic ----------
 
-    function initGame() {
-        gameMode = modeSelect ? modeSelect.value : 'ai';
-
+    function initGame(forceNew = false) {
         if (onlineUnsub) { onlineUnsub(); onlineUnsub = null; }
+        gameMode = modeSelect ? modeSelect.value : 'ai';
+        aiDifficulty = diffSelect ? diffSelect.value : 'hard';
         pendingOnline = false;
+        if (rematchBtn) rematchBtn.style.display = 'none';
+        if (diffSelect) diffSelect.style.display = gameMode === 'ai' ? '' : 'none';
 
+        if (!forceNew && currentUser) {
+            if (gameMode === 'online') {
+                (async () => { if (!(await tryRestoreOnlineC4())) startFreshC4(); })();
+                return;
+            }
+            if (gameMode === 'ai') {
+                (async () => { if (!(await tryRestoreAIC4())) startFreshC4(); })();
+                return;
+            }
+        }
+        startFreshC4();
+    }
+
+    function startFreshC4() {
         board = Array.from({length: ROWS}, () => Array(COLS).fill(EMPTY));
         currentPlayer = PLAYER;
         gameOver = false;
@@ -21078,20 +21246,68 @@ document.addEventListener('click', (e) => {
                 renderBoard(null);
                 return;
             }
+            const gameId = Date.now().toString(36);
+            localStorage.setItem('c4_online_gid', gameId);
             set(c4Ref, {
                 board: board.map(r => [...r]),
                 turn: 'El',
                 status: 'playing',
                 winner: null,
                 winCells: null,
+                gameId,
             });
             set(ref(database, 'connect4_invite'), { from: currentUser, ts: Date.now() });
             subscribeOnline();
-            return; // renderBoard called via onValue
+            return;
         }
 
         renderBoard(null);
         updateStatus();
+    }
+
+    async function tryRestoreOnlineC4() {
+        try {
+            const snap = await get(c4Ref);
+            const data = snap.val();
+            if (!data || data.status === 'over') return false;
+            const savedGid = localStorage.getItem('c4_online_gid');
+            if (savedGid && data.gameId && savedGid !== data.gameId) return false;
+            onlineResultRecorded = false;
+            subscribeOnline();
+            return true;
+        } catch(e) { return false; }
+    }
+
+    async function tryRestoreAIC4() {
+        if (!currentUser) return false;
+        try {
+            const snap = await get(ref(database, 'connect4_ai/' + currentUser));
+            const data = snap.val();
+            if (!data || data.gameOver || data.mode !== gameMode) return false;
+            if (Date.now() - (data.ts || 0) > 48 * 3600000) return false;
+            board = data.board.map(r => [...r]);
+            currentPlayer = data.currentPlayer;
+            gameOver = data.gameOver || false;
+            moveCount = data.moveCount || 0;
+            onlineResultRecorded = false;
+            renderBoard(null);
+            updateStatus();
+            // If it was the AI's turn when we saved, trigger the AI move
+            if (currentPlayer === AI && !gameOver) setTimeout(doAIMove, 350);
+            return true;
+        } catch(e) { return false; }
+    }
+
+    function saveC4AIGame() {
+        if (!currentUser || gameMode !== 'ai') return;
+        set(ref(database, 'connect4_ai/' + currentUser), {
+            mode: gameMode,
+            board: board.map(r => [...r]),
+            currentPlayer,
+            gameOver,
+            moveCount,
+            ts: Date.now(),
+        }).catch(() => {});
     }
 
     function subscribeOnline() {
@@ -21099,6 +21315,23 @@ document.addEventListener('click', (e) => {
             const data = snapshot.val();
             pendingOnline = false;
             if (!data) { renderBoard(null); updateStatus(); return; }
+
+            // Handle rematch: when both accept, El creates a fresh game
+            if (data.rematch?.El && data.rematch?.Tero) {
+                onlineResultRecorded = false;
+                if (rematchBtn) rematchBtn.style.display = 'none';
+                if (currentUser === 'El') {
+                    const newGid = Date.now().toString(36);
+                    localStorage.setItem('c4_online_gid', newGid);
+                    const newBoard = Array.from({length: ROWS}, () => Array(COLS).fill(EMPTY));
+                    set(c4Ref, {
+                        board: newBoard.map(r => [...r]),
+                        turn: 'El', status: 'playing',
+                        winner: null, winCells: null, gameId: newGid,
+                    });
+                }
+                return;
+            }
 
             board = Array.from({length: ROWS}, (_, r) =>
                 Array.from({length: COLS}, (_, c) => (data.board[r] && data.board[r][c] != null ? data.board[r][c] : EMPTY))
@@ -21123,6 +21356,12 @@ document.addEventListener('click', (e) => {
                     onlineResultRecorded = true;
                     if (data.winner === currentUser) updateOnlineScore('win');
                     else if (data.winner === 'draw') updateOnlineScore('draw');
+                }
+                if (rematchBtn) {
+                    rematchBtn.style.display = '';
+                    const myRematch = data.rematch?.[currentUser];
+                    rematchBtn.textContent = myRematch ? 'Rematch (waiting\u2026)' : 'Rematch';
+                    rematchBtn.disabled = !!myRematch;
                 }
             } else {
                 updateStatus();
@@ -21257,16 +21496,20 @@ document.addEventListener('click', (e) => {
                 launchConfetti();
             }
             gameOver = true;
+            if (rematchBtn) rematchBtn.style.display = '';
+            if (gameMode === 'ai') saveC4AIGame();
             return;
         }
 
         if (isBoardFull()) {
             statusEl.textContent = "It's a draw!";
             gameOver = true;
+            if (rematchBtn) rematchBtn.style.display = '';
             if (gameMode === 'ai') {
                 const stats = getC4Stats();
                 stats.aiDraws = (stats.aiDraws || 0) + 1;
                 saveC4Stats(stats);
+                saveC4AIGame();
                 (async () => {
                     await unlockAchievement('c4_first_draw');
                     renderLeaderboard();
@@ -21280,6 +21523,9 @@ document.addEventListener('click', (e) => {
 
         if (gameMode === 'ai' && currentPlayer === AI) {
             setTimeout(doAIMove, 350);
+        } else if (gameMode === 'ai') {
+            // Player's turn again after AI responded — save state
+            saveC4AIGame();
         }
     }
 
@@ -21321,6 +21567,37 @@ document.addEventListener('click', (e) => {
     const COL_ORDER = [3, 2, 4, 1, 5, 0, 6]; // prefer centre
 
     function getAIMove() {
+        if (aiDifficulty === 'easy')   return getAIMoveEasy();
+        if (aiDifficulty === 'medium') return getAIMoveMedium();
+        return getAIMoveHard();
+    }
+
+    function getAIMoveEasy() {
+        const valid = COL_ORDER.filter(c => board[0][c] === EMPTY);
+        return valid[Math.floor(Math.random() * valid.length)] ?? 3;
+    }
+
+    function getAIMoveMedium() {
+        // Win if possible
+        for (const c of COL_ORDER) {
+            const r = dropPiece(c, AI);
+            if (r === -1) continue;
+            const wins = !!checkWin(r, c);
+            undropPiece(c);
+            if (wins) return c;
+        }
+        // Block opponent win
+        for (const c of COL_ORDER) {
+            const r = dropPiece(c, PLAYER);
+            if (r === -1) continue;
+            const wins = !!checkWin(r, c);
+            undropPiece(c);
+            if (wins) return c;
+        }
+        return getAIMoveEasy();
+    }
+
+    function getAIMoveHard() {
         let bestScore = -Infinity, bestCol = 3;
         for (const c of COL_ORDER) {
             const r = dropPiece(c, AI);
@@ -21433,8 +21710,17 @@ document.addEventListener('click', (e) => {
     minBtn.addEventListener('click', (e) => { e.stopPropagation(); hide(); });
     if (maxBtn) maxBtn.addEventListener('click', (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-connect4'); });
     closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeWin(); });
-    resetBtn.addEventListener('click', initGame);
-    if (modeSelect) modeSelect.addEventListener('change', initGame);
+    resetBtn.addEventListener('click', () => initGame(true));
+    if (modeSelect) modeSelect.addEventListener('change', () => initGame(false));
+    if (diffSelect) diffSelect.addEventListener('change', () => { aiDifficulty = diffSelect.value; });
+    rematchBtn?.addEventListener('click', () => {
+        if (gameMode === 'online') {
+            if (rematchBtn) { rematchBtn.textContent = 'Rematch (waiting\u2026)'; rematchBtn.disabled = true; }
+            set(ref(database, 'connect4/rematch/' + currentUser), true).catch(() => {});
+        } else {
+            initGame(true);
+        }
+    });
 
     // Drag support
     let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
