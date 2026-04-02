@@ -13074,3 +13074,111 @@ body.dark-mode .c4-lb-title {
 body.dark-mode .c4-lb-divider {
   border-color: #444;
 }
+
+/* ===== Battleships ===== */
+.bs-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.bs-status {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  min-height: 20px;
+  padding: 2px 8px;
+}
+.bs-grids {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+}
+.bs-grid-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.bs-grid-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #555;
+}
+body.dark-mode .bs-grid-label { color: #aaa; }
+.bs-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 22px);
+  grid-template-rows:    repeat(10, 22px);
+  gap: 2px;
+  background: #1a3a8a;
+  border: 2px solid #0d2060;
+  border-radius: 3px;
+  padding: 3px;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.1), 2px 2px 5px rgba(0,0,0,0.35);
+}
+.bs-cell {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #0a1e5c;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+  cursor: default;
+}
+.bs-cell.bs-ship {
+  background: #607880;
+  border-radius: 2px;
+  box-shadow: inset 0 -2px 3px rgba(0,0,0,0.3);
+}
+.bs-cell.bs-hit {
+  background: #d42020;
+  border-radius: 2px;
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,0.4), 0 0 5px rgba(255,60,60,0.5);
+}
+.bs-cell.bs-miss {
+  background: #2a4a7a;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px rgba(180,210,255,0.35);
+}
+.bs-cell.bs-sunk {
+  background: #8b0000;
+  border-radius: 2px;
+}
+.bs-cell.bs-shootable {
+  cursor: crosshair;
+  transition: filter 0.08s;
+}
+.bs-cell.bs-shootable:hover { filter: brightness(1.6); }
+.bs-cell.bs-preview-ok  { background: rgba(60,200,80,0.55);  border-radius: 2px; }
+.bs-cell.bs-preview-bad { background: rgba(220,50,50,0.55); border-radius: 2px; }
+.bs-ships-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 11px;
+  min-height: 22px;
+}
+.bs-ship-item {
+  padding: 2px 6px;
+  border: 1px solid #bbb;
+  background: #e8e8e8;
+  white-space: nowrap;
+}
+body.dark-mode .bs-ship-item { background: #2a2a3a; border-color: #555; color: #ccc; }
+.bs-ship-item.bs-ship-placed  { background: #c8e0c8; color: #2a5a2a; border-color: #8ab08a; }
+body.dark-mode .bs-ship-item.bs-ship-placed { background: #1a3a1a; color: #8acc8a; border-color: #3a6a3a; }
+.bs-ship-item.bs-ship-current { background: #d0e4ff; font-weight: 700; border-color: #5080cc; }
+body.dark-mode .bs-ship-item.bs-ship-current { background: #1a2a4a; color: #88aaff; border-color: #3a5a8a; }
+.bs-controls {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.bs-mode-select {
+  font-size: 12px;
+  font-family: inherit;
+  padding: 2px 4px;
+}

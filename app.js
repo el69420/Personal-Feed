@@ -2101,6 +2101,16 @@ function setupDBListeners() {
         showC4InvitePopup(data.from);
     });
 
+    let _bsInviteSeenTs = 0;
+    onValue(ref(database, 'battleships_invite'), (snap) => {
+        const data = snap.val();
+        if (!data?.ts || !currentUser || data.from === currentUser) return;
+        if (_bsInviteSeenTs === 0) { _bsInviteSeenTs = data.ts; return; }
+        if (data.ts <= _bsInviteSeenTs) return;
+        _bsInviteSeenTs = data.ts;
+        showBsInvitePopup(data.from);
+    });
+
     onValue(query(chatRef, limitToLast(80)), (snapshot) => {
         const raw = snapshot.val() || {};
         const messages = Object.entries(raw)
@@ -3171,6 +3181,29 @@ function showC4InvitePopup(from) {
     }, 6000);
     popup.querySelector('.notif-popup-close').addEventListener('click', () => clearTimeout(t));
     sendNotification(`${from} wants to play Connect 4! \u{1F3A1}`, 'Switch to Online mode and join the game', 'c4-invite');
+}
+
+function showBsInvitePopup(from) {
+    const existing = document.getElementById('bs-invite-popup');
+    if (existing) existing.remove();
+    const popup = document.createElement('div');
+    popup.id = 'bs-invite-popup';
+    popup.className = 'post-notif-popup';
+    popup.innerHTML =
+        `<div class="notif-popup-header">` +
+        `<span class="notif-popup-icon">&#9875;</span>` +
+        `<span class="notif-popup-author">${safeText(from)} wants to play Battleships</span>` +
+        `<button class="notif-popup-close" onclick="document.getElementById('bs-invite-popup')?.remove()">&#x2715;</button>` +
+        `</div>` +
+        `<button class="notif-popup-open" onclick="if(window.w95Apps&&w95Apps.battleships)w95Apps.battleships.open();document.getElementById('bs-invite-popup')?.remove()">Open game &#x2192;</button>`;
+    document.body.appendChild(popup);
+    requestAnimationFrame(() => { requestAnimationFrame(() => { popup.classList.add('notif-popup-visible'); }); });
+    const t = setTimeout(() => {
+        popup.classList.remove('notif-popup-visible');
+        setTimeout(() => popup.remove(), 350);
+    }, 6000);
+    popup.querySelector('.notif-popup-close').addEventListener('click', () => clearTimeout(t));
+    sendNotification(`${from} wants to play Battleships! \u2693`, 'Switch to Online mode and join the game', 'bs-invite');
 }
 
 function toggleNotifPanel() {
@@ -20398,6 +20431,500 @@ document.addEventListener('click', (e) => {
     w95Apps['shoplist'] = { open: () => {
         if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow(WIN_ID);
     }};
+})();
+
+// ===== Battleships =====
+(() => {
+    const BS = 10; // grid size
+    const SHIPS = [
+        { id: 'carrier',    name: 'Carrier',    size: 5 },
+        { id: 'battleship', name: 'Battleship', size: 4 },
+        { id: 'cruiser',    name: 'Cruiser',    size: 3 },
+        { id: 'submarine',  name: 'Submarine',  size: 3 },
+        { id: 'destroyer',  name: 'Destroyer',  size: 2 },
+    ];
+
+    const win          = document.getElementById('w95-win-battleships');
+    const statusEl     = document.getElementById('bs-status');
+    const myGridEl     = document.getElementById('bs-my-grid');
+    const enemyGridEl  = document.getElementById('bs-enemy-grid');
+    const shipsPanelEl = document.getElementById('bs-ships-panel');
+    const readyBtn     = document.getElementById('bs-ready-btn');
+    const resetBtn     = document.getElementById('bs-reset-btn');
+    const rotateBtn    = document.getElementById('bs-rotate-btn');
+    const modeSelect   = document.getElementById('bs-mode-select');
+    const minBtn       = document.getElementById('w95-battleships-min');
+    const maxBtn       = document.getElementById('w95-battleships-max');
+    const closeBtn     = document.getElementById('w95-battleships-close');
+    const handle       = document.getElementById('w95-battleships-handle');
+
+    if (!win || !handle) return;
+
+    const bsRef       = ref(database, 'battleships');
+    const bsScoresRef = ref(database, 'battleships_scores');
+    let taskbarBtn = null;
+
+    // ---- state ----
+    let gameMode  = 'ai';
+    let phase     = 'setup'; // 'setup' | 'playing' | 'over'
+    let gameOver  = false;
+    let myTurn    = false;
+    let myShips   = [];      // { id, name, size, row, col, horizontal }
+    let enemyShips = [];     // opponent's ships (AI placement or from Firebase)
+    let myShots      = new Set(); // "r,c" of cells I fired on
+    let shotResults  = {};        // "r,c" → { hit, sunkShipId }
+    let incomingShots = new Set(); // "r,c" of shots fired at me
+    let placingIdx = 0;
+    let horizontal = true;
+    let hoverRC    = null; // { r, c } during placement hover
+    let aiShots    = new Set();
+    let aiTargets  = []; // probe stack after a hit
+    let bsUnsub    = null;
+    let onlineResultDone = false;
+    let bsScoresCache    = null;
+
+    // ---- helpers ----
+    function key(r, c) { return r + ',' + c; }
+
+    function shipCells(s) {
+        const cells = [];
+        for (let i = 0; i < s.size; i++)
+            cells.push(s.horizontal ? { r: s.row, c: s.col + i } : { r: s.row + i, c: s.col });
+        return cells;
+    }
+
+    function canPlace(fleet, size, row, col, horiz) {
+        for (let i = 0; i < size; i++) {
+            const r = horiz ? row : row + i;
+            const c = horiz ? col + i : col;
+            if (r < 0 || r >= BS || c < 0 || c >= BS) return false;
+            if (fleet.some(s => shipCells(s).some(sc => sc.r === r && sc.c === c))) return false;
+        }
+        return true;
+    }
+
+    function shipAt(fleet, r, c) {
+        return fleet.find(s => shipCells(s).some(sc => sc.r === r && sc.c === c)) || null;
+    }
+
+    function isSunk(ship, shots) {
+        return shipCells(ship).every(sc => shots.has(key(sc.r, sc.c)));
+    }
+
+    function allSunk(fleet, shots) {
+        return fleet.length > 0 && fleet.every(s => isSunk(s, shots));
+    }
+
+    // ---- random fleet for AI ----
+    function randomFleet() {
+        const fleet = [];
+        for (const s of SHIPS) {
+            let ok = false, tries = 0;
+            while (!ok && tries++ < 300) {
+                const horiz = Math.random() < 0.5;
+                const r = Math.floor(Math.random() * BS);
+                const c = Math.floor(Math.random() * BS);
+                if (canPlace(fleet, s.size, r, c, horiz)) {
+                    fleet.push({ ...s, row: r, col: c, horizontal: horiz });
+                    ok = true;
+                }
+            }
+        }
+        return fleet;
+    }
+
+    // ---- init ----
+    function initGame() {
+        gameMode  = modeSelect ? modeSelect.value : 'ai';
+        phase     = 'setup';
+        gameOver  = false;
+        myTurn    = false;
+        myShips   = [];
+        enemyShips = [];
+        myShots      = new Set();
+        shotResults  = {};
+        incomingShots = new Set();
+        placingIdx = 0;
+        horizontal = true;
+        hoverRC    = null;
+        aiShots    = new Set();
+        aiTargets  = [];
+        onlineResultDone = false;
+        if (bsUnsub) { bsUnsub(); bsUnsub = null; }
+
+        if (gameMode === 'ai') {
+            enemyShips = randomFleet();
+        } else {
+            if (!currentUser) { statusEl.textContent = 'Sign in to play online'; renderAll(); return; }
+            set(bsRef, {
+                phase: 'setup', turn: 'El', winner: null,
+                ready: { El: false, Tero: false },
+                ElShips: null, TeroShips: null, shots: null,
+            });
+            set(ref(database, 'battleships_invite'), { from: currentUser, ts: Date.now() });
+            bsUnsub = onValue(bsRef, onBsSnapshot);
+        }
+        renderAll();
+        updateStatus();
+    }
+
+    // ---- placement ----
+    function previewCells(r, c) {
+        const s = SHIPS[placingIdx];
+        if (!s) return [];
+        const cells = [];
+        for (let i = 0; i < s.size; i++)
+            cells.push(horizontal ? { r, c: c + i } : { r: r + i, c });
+        return cells;
+    }
+
+    function onMyGridClick(r, c) {
+        if (phase !== 'setup') return;
+        const s = SHIPS[placingIdx];
+        if (!s || !canPlace(myShips, s.size, r, c, horizontal)) return;
+        myShips.push({ ...s, row: r, col: c, horizontal });
+        placingIdx++;
+        hoverRC = null;
+        renderAll();
+        updateStatus();
+    }
+
+    function toggleOrientation() {
+        horizontal = !horizontal;
+        renderMyGrid();
+        updateStatus();
+    }
+
+    // ---- shooting (AI mode) ----
+    function onEnemyGridClick(r, c) {
+        if (phase !== 'playing' || !myTurn || gameOver) return;
+        const k = key(r, c);
+        if (myShots.has(k)) return;
+
+        myShots.add(k);
+        const hitShip = shipAt(enemyShips, r, c);
+        const hit = !!hitShip;
+        const sunk = hit && isSunk(hitShip, myShots);
+        shotResults[k] = { hit, sunkShipId: sunk ? hitShip.id : null };
+        renderEnemyGrid();
+
+        if (allSunk(enemyShips, myShots)) { endGame(true); return; }
+
+        statusEl.textContent = sunk ? `You sank their ${hitShip.name}! 💥`
+                             : hit  ? 'Hit! \uD83D\uDD25'
+                             :        'Miss! \uD83D\uDCA7';
+        myTurn = false;
+        setTimeout(doAIShot, 850);
+    }
+
+    // ---- AI shooting ----
+    function doAIShot() {
+        if (gameOver) return;
+        const [r, c] = getAITarget();
+        const k = key(r, c);
+        aiShots.add(k);
+        incomingShots.add(k);
+
+        const hitShip = shipAt(myShips, r, c);
+        if (hitShip) {
+            if (isSunk(hitShip, aiShots)) {
+                // clear probes for this ship
+                const sunkKeys = new Set(shipCells(hitShip).map(sc => key(sc.r, sc.c)));
+                aiTargets = aiTargets.filter(t => !sunkKeys.has(key(t.r, t.c)));
+                statusEl.textContent = `AI sank your ${hitShip.name}!`;
+            } else {
+                for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+                    const nr = r+dr, nc = c+dc;
+                    if (nr>=0 && nr<BS && nc>=0 && nc<BS && !aiShots.has(key(nr, nc)))
+                        aiTargets.push({ r: nr, c: nc });
+                }
+                statusEl.textContent = 'AI hit your ship! \uD83D\uDD25';
+            }
+        } else {
+            statusEl.textContent = 'AI missed!';
+        }
+
+        renderMyGrid();
+        if (allSunk(myShips, aiShots)) { endGame(false); return; }
+        myTurn = true;
+        setTimeout(() => { updateStatus(); renderEnemyGrid(); }, 600);
+    }
+
+    function getAITarget() {
+        while (aiTargets.length > 0) {
+            const t = aiTargets.pop();
+            if (!aiShots.has(key(t.r, t.c))) return [t.r, t.c];
+        }
+        // Checkerboard hunt (never misses a ship of size ≥ 2)
+        const pool = [];
+        for (let r = 0; r < BS; r++)
+            for (let c = 0; c < BS; c++)
+                if (!aiShots.has(key(r, c)) && (r+c) % 2 === 0) pool.push([r, c]);
+        if (pool.length === 0)
+            for (let r = 0; r < BS; r++)
+                for (let c = 0; c < BS; c++)
+                    if (!aiShots.has(key(r, c))) pool.push([r, c]);
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    // ---- end game ----
+    function endGame(won) {
+        phase = 'over'; gameOver = true; myTurn = false;
+        statusEl.textContent = won
+            ? 'Victory! All enemy ships sunk! \uD83C\uDF89'
+            : 'Defeat! Your fleet is destroyed! \uD83D\uDC80';
+        renderAll();
+    }
+
+    // ---- online ----
+    function onBsSnapshot(snap) {
+        const data = snap.val();
+        if (!data || !currentUser) return;
+
+        phase  = data.phase || 'setup';
+        myTurn = data.turn === currentUser;
+        const other = currentUser === 'El' ? 'Tero' : 'El';
+
+        // Load opponent's ships (used for hit evaluation by this browser)
+        if (data[other + 'Ships']) enemyShips = data[other + 'Ships'];
+
+        // Rebuild shot state from Firebase ground truth
+        myShots       = new Set();
+        shotResults   = {};
+        incomingShots = new Set();
+        const shots = data.shots ? Object.values(data.shots) : [];
+        for (const s of shots) {
+            const k = key(s.row, s.col);
+            if (s.by === currentUser) {
+                myShots.add(k);
+                shotResults[k] = { hit: s.hit, sunkShipId: s.sunkShipId || null };
+            } else {
+                incomingShots.add(k);
+            }
+        }
+
+        if (data.phase === 'over' && !onlineResultDone) {
+            onlineResultDone = true;
+            gameOver = true; myTurn = false;
+            if (data.winner === currentUser) {
+                statusEl.textContent = 'Victory! \uD83C\uDF89';
+                runTransaction(ref(database, 'battleships_scores/' + currentUser), cur => {
+                    const d = cur || { wins: 0 };
+                    d.wins = (d.wins || 0) + 1;
+                    return d;
+                });
+            } else {
+                statusEl.textContent = 'Defeat! \uD83D\uDC80';
+            }
+        } else if (data.phase !== 'over') {
+            updateStatus();
+        }
+
+        renderAll();
+    }
+
+    async function onReadyOnline() {
+        if (placingIdx < SHIPS.length || !currentUser) return;
+        await set(ref(database, 'battleships/' + currentUser + 'Ships'),
+            myShips.map(({ id, name, size, row, col, horizontal: h }) => ({ id, name, size, row, col, horizontal: h }))
+        );
+        await set(ref(database, 'battleships/ready/' + currentUser), true);
+        statusEl.textContent = 'Waiting for opponent to place ships\u2026';
+        const snap = await get(bsRef);
+        const data = snap.val();
+        if (data?.ready?.El && data?.ready?.Tero)
+            await update(bsRef, { phase: 'playing', turn: 'El' });
+    }
+
+    async function shootOnline(r, c) {
+        if (!myTurn || gameOver) return;
+        const k = key(r, c);
+        if (myShots.has(k)) return;
+        myTurn = false;
+
+        const hitShip = shipAt(enemyShips, r, c);
+        const hit = !!hitShip;
+        const futureShots = new Set([...myShots, k]);
+        const sunkShipId = (hit && isSunk(hitShip, futureShots)) ? hitShip.id : null;
+        const won = hit && allSunk(enemyShips, futureShots);
+        const other = currentUser === 'El' ? 'Tero' : 'El';
+
+        await push(ref(database, 'battleships/shots'), { by: currentUser, row: r, col: c, hit, sunkShipId });
+        if (won) await update(bsRef, { phase: 'over', winner: currentUser, turn: currentUser });
+        else     await set(ref(database, 'battleships/turn'), other);
+    }
+
+    // ---- render ----
+    function renderMyGrid() {
+        myGridEl.innerHTML = '';
+        for (let r = 0; r < BS; r++) {
+            for (let c = 0; c < BS; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'bs-cell';
+                const ship = shipAt(myShips, r, c);
+                const k = key(r, c);
+
+                if (phase === 'setup') {
+                    if (ship) cell.classList.add('bs-ship');
+                    if (hoverRC && placingIdx < SHIPS.length) {
+                        const prev = previewCells(hoverRC.r, hoverRC.c);
+                        if (prev.some(p => p.r === r && p.c === c)) {
+                            const valid = canPlace(myShips, SHIPS[placingIdx].size, hoverRC.r, hoverRC.c, horizontal);
+                            cell.classList.add(valid ? 'bs-preview-ok' : 'bs-preview-bad');
+                        }
+                    }
+                    cell.addEventListener('click',     () => onMyGridClick(r, c));
+                    cell.addEventListener('mouseover', () => { hoverRC = { r, c }; renderMyGrid(); });
+                    cell.addEventListener('mouseout',  () => { hoverRC = null; renderMyGrid(); });
+                } else {
+                    if (ship) cell.classList.add('bs-ship');
+                    if (incomingShots.has(k)) cell.classList.add(ship ? 'bs-hit' : 'bs-miss');
+                }
+                myGridEl.appendChild(cell);
+            }
+        }
+    }
+
+    function renderEnemyGrid() {
+        // Collect all cells belonging to sunk ships (so we can outline them)
+        const sunkCells = new Set();
+        for (const k in shotResults) {
+            const sid = shotResults[k]?.sunkShipId;
+            if (sid) {
+                const s = enemyShips.find(sh => sh.id === sid);
+                if (s) shipCells(s).forEach(sc => sunkCells.add(key(sc.r, sc.c)));
+            }
+        }
+
+        enemyGridEl.innerHTML = '';
+        for (let r = 0; r < BS; r++) {
+            for (let c = 0; c < BS; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'bs-cell';
+                const k = key(r, c);
+
+                if (myShots.has(k)) {
+                    cell.classList.add(shotResults[k]?.hit ? 'bs-hit' : 'bs-miss');
+                    if (sunkCells.has(k)) cell.classList.add('bs-sunk');
+                } else if (phase === 'playing' && myTurn && !gameOver) {
+                    cell.classList.add('bs-shootable');
+                    cell.addEventListener('click', () =>
+                        gameMode === 'online' ? shootOnline(r, c) : onEnemyGridClick(r, c)
+                    );
+                }
+                enemyGridEl.appendChild(cell);
+            }
+        }
+    }
+
+    function renderShipsPanel() {
+        if (!shipsPanelEl) return;
+        shipsPanelEl.innerHTML = SHIPS.map((s, i) => {
+            const done = i < placingIdx, cur = i === placingIdx && phase === 'setup';
+            return `<span class="bs-ship-item${done?' bs-ship-placed':cur?' bs-ship-current':''}">${done?'✓':cur?'▶':'·'} ${s.name}&nbsp;(${s.size})</span>`;
+        }).join('');
+    }
+
+    function renderLeaderboard() {
+        const el = document.getElementById('bs-lb-rows');
+        if (!el) return;
+        const sc = bsScoresCache || {};
+        el.innerHTML = ['El', 'Tero'].map(name =>
+            `<div class="c4-lb-row"><span class="c4-lb-player">&#9875; ${name}</span><span class="c4-lb-score">${sc[name]?.wins||0}W</span></div>`
+        ).join('');
+    }
+
+    function renderAll() {
+        renderMyGrid();
+        renderEnemyGrid();
+        renderShipsPanel();
+        const allPlaced = placingIdx >= SHIPS.length;
+        if (readyBtn) { readyBtn.disabled = !(phase === 'setup' && allPlaced); readyBtn.textContent = allPlaced ? 'Ready!' : 'Place ships\u2026'; }
+        if (rotateBtn) rotateBtn.style.display = phase === 'setup' ? '' : 'none';
+        renderLeaderboard();
+    }
+
+    function updateStatus() {
+        if (!statusEl) return;
+        if (phase === 'setup') {
+            const s = SHIPS[placingIdx];
+            statusEl.textContent = s
+                ? `Place your ${s.name} (${s.size}) \u2014 click your grid${horizontal ? '' : ' (vertical)'}`
+                : 'All ships placed \u2014 press Ready!';
+        } else if (phase === 'playing') {
+            const other = currentUser === 'El' ? 'Tero' : 'El';
+            statusEl.textContent = myTurn
+                ? 'Your turn \u2014 click enemy waters to fire'
+                : gameMode === 'ai' ? 'AI is targeting\u2026' : `Waiting for ${other}\u2026`;
+        }
+    }
+
+    // ---- scores subscription ----
+    onValue(bsScoresRef, snap => { bsScoresCache = snap.val() || {}; renderLeaderboard(); });
+
+    // ---- event listeners ----
+    readyBtn?.addEventListener('click', () => {
+        if (phase !== 'setup' || placingIdx < SHIPS.length) return;
+        if (gameMode === 'ai') { phase = 'playing'; myTurn = true; renderAll(); updateStatus(); }
+        else onReadyOnline();
+    });
+    rotateBtn?.addEventListener('click', toggleOrientation);
+    resetBtn?.addEventListener('click', initGame);
+    modeSelect?.addEventListener('change', initGame);
+    myGridEl?.addEventListener('contextmenu', e => { e.preventDefault(); if (phase === 'setup') toggleOrientation(); });
+    window.addEventListener('keydown', e => {
+        if (!win || win.classList.contains('is-hidden')) return;
+        if ((e.key === 'r' || e.key === 'R') && phase === 'setup') toggleOrientation();
+    });
+
+    // ---- window management ----
+    function show() {
+        const wasHidden = win.classList.contains('is-hidden');
+        if (!taskbarBtn) taskbarBtn = w95Mgr.addTaskbarBtn('w95-win-battleships', 'BATTLESHIPS', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-battleships');
+        if (wasHidden) _trackWindowOpen('battleships');
+    }
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-battleships')) w95Mgr.focusWindow(null);
+    }
+    function closeWin() {
+        if (w95Mgr.isMaximised('w95-win-battleships')) w95Mgr.toggleMaximise(win, 'w95-win-battleships');
+        hide();
+        if (taskbarBtn) { taskbarBtn.remove(); taskbarBtn = null; }
+    }
+
+    minBtn?.addEventListener('click',  e => { e.stopPropagation(); hide(); });
+    maxBtn?.addEventListener('click',  e => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-battleships'); });
+    closeBtn?.addEventListener('click', e => { e.stopPropagation(); closeWin(); });
+
+    let dragging = false, sx = 0, sy = 0, wx = 0, wy = 0;
+    handle.addEventListener('mousedown', e => {
+        if (e.target.closest('button') || w95Mgr.isMaximised('w95-win-battleships')) return;
+        dragging = true; sx = e.clientX; sy = e.clientY;
+        const rect = win.getBoundingClientRect(); wx = rect.left; wy = rect.top;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        const maxX = document.documentElement.clientWidth - win.offsetWidth;
+        const maxY = document.documentElement.clientHeight - win.offsetHeight - 40;
+        win.style.left = Math.max(0, Math.min(maxX, wx + e.clientX - sx)) + 'px';
+        win.style.top  = Math.max(0, Math.min(maxY, wy + e.clientY - sy)) + 'px';
+    });
+    window.addEventListener('mouseup', () => {
+        if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-battleships'); }
+    });
+
+    w95Apps['battleships'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show();
+        else w95Mgr.focusWindow('w95-win-battleships');
+    }};
+
+    initGame();
 })();
 
 // ===== Connect 4 =====

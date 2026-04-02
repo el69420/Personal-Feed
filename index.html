@@ -53,6 +53,10 @@
             <div class="desktop-icon-img">&#127921;</div>
             <div class="desktop-icon-label">Connect 4</div>
         </div>
+        <div class="w95-desktop-icon" data-app="battleships" tabindex="0">
+            <div class="desktop-icon-img">&#9875;</div>
+            <div class="desktop-icon-label">Battleships</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -893,6 +897,7 @@
                 <button class="w95-start-item" data-app="jukebox" type="button">&#127926; Jukebox.exe</button>
                 <button class="w95-start-item" data-app="achievements" type="button">&#127942; Achievements.exe</button>
                 <button class="w95-start-item" data-app="connect4" type="button">&#127921; Connect 4.exe</button>
+                <button class="w95-start-item" data-app="battleships" type="button">&#9875; Battleships.exe</button>
             </div>
         </div>
         <!-- Journals -->
@@ -1658,6 +1663,45 @@
     <div class="c4-leaderboard" id="c4-leaderboard">
       <div class="c4-lb-title">Scoreboard</div>
       <div class="c4-lb-rows" id="c4-lb-rows"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Battleships Window -->
+<div id="w95-win-battleships" class="w95-window is-hidden" style="left:120px;top:50px;width:534px;">
+  <div class="w95-titlebar" id="w95-battleships-handle">
+    <div class="w95-title">&#9875; Battleships.exe</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-battleships-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-battleships-max" type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-battleships-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body bs-body" id="w95-battleships-body">
+    <div class="bs-status" id="bs-status"></div>
+    <div class="bs-grids">
+      <div class="bs-grid-area">
+        <div class="bs-grid-label">Enemy Waters</div>
+        <div class="bs-grid" id="bs-enemy-grid"></div>
+      </div>
+      <div class="bs-grid-area">
+        <div class="bs-grid-label">Your Fleet</div>
+        <div class="bs-grid" id="bs-my-grid"></div>
+      </div>
+    </div>
+    <div class="bs-ships-panel" id="bs-ships-panel"></div>
+    <div class="bs-controls">
+      <button class="w95-btn" id="bs-rotate-btn" type="button">Rotate [R]</button>
+      <button class="w95-btn" id="bs-ready-btn" type="button" disabled>Place ships&hellip;</button>
+      <button class="w95-btn" id="bs-reset-btn" type="button">New Game</button>
+      <select id="bs-mode-select" class="bs-mode-select">
+        <option value="ai">vs AI</option>
+        <option value="online">Online</option>
+      </select>
+    </div>
+    <div class="c4-leaderboard">
+      <div class="c4-lb-title">Scoreboard</div>
+      <div class="c4-lb-rows" id="bs-lb-rows"></div>
     </div>
   </div>
 </div>
