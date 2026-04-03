@@ -13016,6 +13016,7 @@ const SHORTCUTABLE_APPS = [
     { app: 'fooddiary',    icon: '🍽️', name: 'Food Diary' },
     { app: 'connect4',     icon: '🟡', name: 'Connect 4' },
     { app: 'battleships',  icon: '⚓', name: 'Battleships' },
+    { app: 'countdown',    icon: '🔢', name: 'Countdown' },
 ];
 
 // Shows a picker dialog for selecting an app to create a shortcut to
@@ -22579,3 +22580,485 @@ window.addEventListener('DOMContentLoaded', initApp, { once: true });
     window._animWallpaper = { start, stop };
 })();
 
+
+// ===== Countdown Numbers Game =====
+(() => {
+    const win       = document.getElementById('w95-win-countdown');
+    const handle    = document.getElementById('w95-countdown-handle');
+    const minBtn    = document.getElementById('w95-countdown-min');
+    const maxBtn    = document.getElementById('w95-countdown-max');
+    const closeBtn  = document.getElementById('w95-countdown-close');
+
+    // Pick phase
+    const pickPhaseEl  = document.getElementById('cd-pick-phase');
+    const largeBtnsEl  = document.getElementById('cd-large-btns');
+    const pickPreview  = document.getElementById('cd-pick-preview');
+    const dealBtn      = document.getElementById('cd-deal-btn');
+
+    // Game phase
+    const gamePhaseEl  = document.getElementById('cd-game-phase');
+    const targetEl     = document.getElementById('cd-target');
+    const timerEl      = document.getElementById('cd-timer');
+    const exprDisplay  = document.getElementById('cd-expr-display');
+    const exprValue    = document.getElementById('cd-expr-value');
+    const numbersEl    = document.getElementById('cd-numbers');
+    const undoBtn      = document.getElementById('cd-undo-btn');
+    const clearBtn     = document.getElementById('cd-clear-btn');
+    const submitBtn    = document.getElementById('cd-submit-btn');
+    const resultEl     = document.getElementById('cd-result');
+
+    // Scoreboard
+    const sbRowsEl     = document.getElementById('cd-sb-rows');
+
+    const cdScoresRef  = ref(database, 'countdown_scores');
+
+    // ---- Game state ----
+    let numLargeSelected = -1;
+    let gameNumbers   = [];   // the 6 numbers dealt
+    let target        = 0;
+    let tokens        = [];   // string tokens in expression
+    let tokenMeta     = [];   // parallel: { type:'num'|'op', numIdx?:number }
+    let usedNumIdx    = new Set();
+    let timerSec      = 30;
+    let timerInterval = null;
+    let gameOver      = false;
+    let taskbarBtn    = null;
+
+    // ---- Pools ----
+    const LARGE = [25, 50, 75, 100];
+    // Small: 1-10 each appearing twice
+    const SMALL_POOL = [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10];
+
+    function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    // ---- Expression evaluator ----
+    // Tokenises expression string into an array of { type, val } objects.
+    function tokeniseExpr(expr) {
+        const out = [];
+        let i = 0;
+        while (i < expr.length) {
+            if (/\s/.test(expr[i])) { i++; continue; }
+            if (/\d/.test(expr[i])) {
+                let num = '';
+                while (i < expr.length && /\d/.test(expr[i])) num += expr[i++];
+                out.push({ type: 'num', val: parseInt(num, 10) });
+            } else if ('+-*/()'.includes(expr[i])) {
+                out.push({ type: 'op', val: expr[i++] });
+            } else {
+                return null;
+            }
+        }
+        return out;
+    }
+
+    // Recursive-descent parser that enforces integer-only division.
+    // Returns [value, nextPos] or [null, pos] on error.
+    function parseExprRD(toks, pos) {
+        let [left, p] = parseTerm(toks, pos);
+        if (left === null) return [null, pos];
+        while (p < toks.length && toks[p].type === 'op' && (toks[p].val === '+' || toks[p].val === '-')) {
+            const op = toks[p].val;
+            const [right, p2] = parseTerm(toks, p + 1);
+            if (right === null) return [null, p];
+            left = op === '+' ? left + right : left - right;
+            p = p2;
+        }
+        return [left, p];
+    }
+    function parseTerm(toks, pos) {
+        let [left, p] = parseFactor(toks, pos);
+        if (left === null) return [null, pos];
+        while (p < toks.length && toks[p].type === 'op' && (toks[p].val === '*' || toks[p].val === '/')) {
+            const op = toks[p].val;
+            const [right, p2] = parseFactor(toks, p + 1);
+            if (right === null) return [null, p];
+            if (op === '/') {
+                if (right === 0 || left % right !== 0) return [null, p];
+                left = left / right;
+            } else {
+                left = left * right;
+            }
+            p = p2;
+        }
+        return [left, p];
+    }
+    function parseFactor(toks, pos) {
+        if (pos >= toks.length) return [null, pos];
+        if (toks[pos].type === 'num') return [toks[pos].val, pos + 1];
+        if (toks[pos].type === 'op' && toks[pos].val === '(') {
+            const [val, p2] = parseExprRD(toks, pos + 1);
+            if (val === null) return [null, pos];
+            if (p2 >= toks.length || toks[p2].val !== ')') return [null, pos];
+            return [val, p2 + 1];
+        }
+        return [null, pos];
+    }
+
+    function evalExpression(exprStr) {
+        if (!exprStr || !exprStr.trim()) return null;
+        const toks = tokeniseExpr(exprStr);
+        if (!toks) return null;
+        const [result, pos] = parseExprRD(toks, 0);
+        if (result === null || pos !== toks.length) return null;
+        if (!Number.isInteger(result) || result <= 0) return null;
+        return result;
+    }
+
+    // Build expression string from tokens (replacing * with × and / with ÷ for display)
+    function exprString(forEval = false) {
+        return tokens.map(t => {
+            if (forEval)  return t;
+            if (t === '*') return '×';
+            if (t === '/') return '÷';
+            return t;
+        }).join(' ');
+    }
+
+    function updateExprDisplay() {
+        const display = exprString(false);
+        exprDisplay.textContent = display || '\u00a0';
+        const val = evalExpression(exprString(true));
+        exprValue.className = 'cd-expr-value';
+        if (val === null) {
+            exprValue.textContent = tokens.length ? '(incomplete)' : '\u00a0';
+            if (tokens.length) exprValue.classList.add('cd-val-error');
+        } else {
+            const diff = Math.abs(val - target);
+            if (diff === 0) {
+                exprValue.textContent = `= ${val} ✓ Exact!`;
+                exprValue.classList.add('cd-val-exact');
+            } else {
+                exprValue.textContent = `= ${val}  (${diff > 0 ? '+' : ''}${val - target} from target)`;
+                exprValue.classList.add(diff <= 10 ? 'cd-val-close' : 'cd-val-error');
+            }
+        }
+    }
+
+    // ---- Solver ----
+    // Finds the closest achievable result to target using the given numbers.
+    // Returns { diff, expr } where expr is a human-readable string.
+    function solveCountdown(nums, tgt) {
+        let bestDiff = Infinity;
+        let bestExpr = '';
+
+        function search(pool, exprs) {
+            for (let i = 0; i < pool.length; i++) {
+                const d = Math.abs(pool[i] - tgt);
+                if (d < bestDiff) { bestDiff = d; bestExpr = exprs[i]; }
+                if (bestDiff === 0) return;
+            }
+            if (pool.length === 1) return;
+            for (let i = 0; i < pool.length; i++) {
+                for (let j = 0; j < pool.length; j++) {
+                    if (i === j) continue;
+                    const a = pool[i], b = pool[j];
+                    const ae = exprs[i], be = exprs[j];
+                    const rest = pool.filter((_, k) => k !== i && k !== j);
+                    const restE = exprs.filter((_, k) => k !== i && k !== j);
+                    const ops = [
+                        [a + b, `(${ae} + ${be})`],
+                        [a - b, `(${ae} - ${be})`],
+                        [a * b, `(${ae} × ${be})`],
+                    ];
+                    if (b > 0 && a % b === 0) ops.push([a / b, `(${ae} ÷ ${be})`]);
+                    for (const [val, expr] of ops) {
+                        if (val > 0 && bestDiff > 0) {
+                            search([...rest, val], [...restE, expr]);
+                        }
+                    }
+                }
+            }
+        }
+
+        search(nums.slice(), nums.map(String));
+        return { diff: bestDiff, expr: bestExpr };
+    }
+
+    // ---- Scoring ----
+    function scoreResult(got, tgt) {
+        if (got === null) return 0;
+        const diff = Math.abs(got - tgt);
+        if (diff === 0)  return 10;
+        if (diff <= 5)   return 7;
+        if (diff <= 10)  return 5;
+        return 0;
+    }
+
+    // ---- Pick phase ----
+    largeBtnsEl?.querySelectorAll('.cd-large-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            largeBtnsEl.querySelectorAll('.cd-large-btn').forEach(b => b.classList.remove('cd-selected'));
+            btn.classList.add('cd-selected');
+            numLargeSelected = parseInt(btn.dataset.count, 10);
+            dealBtn.disabled = false;
+            updatePickPreview();
+        });
+    });
+
+    function updatePickPreview() {
+        if (numLargeSelected < 0) { pickPreview.innerHTML = ''; return; }
+        const numSmall = 6 - numLargeSelected;
+        // Show placeholder tiles
+        pickPreview.innerHTML = '';
+        for (let i = 0; i < numLargeSelected; i++) {
+            const el = document.createElement('div');
+            el.className = 'cd-preview-tile';
+            el.textContent = 'Large';
+            pickPreview.appendChild(el);
+        }
+        for (let i = 0; i < numSmall; i++) {
+            const el = document.createElement('div');
+            el.className = 'cd-preview-tile';
+            el.textContent = 'Small';
+            pickPreview.appendChild(el);
+        }
+    }
+
+    dealBtn?.addEventListener('click', () => {
+        if (numLargeSelected < 0) return;
+        // Build number set
+        const largePerm = shuffle(LARGE).slice(0, numLargeSelected);
+        const smallPerm = shuffle(SMALL_POOL).slice(0, 6 - numLargeSelected);
+        gameNumbers = [...largePerm, ...smallPerm];
+        target = Math.floor(Math.random() * 899) + 101; // 101-999
+        startGame();
+    });
+
+    // ---- Game phase ----
+    function startGame() {
+        // Reset state
+        tokens       = [];
+        tokenMeta    = [];
+        usedNumIdx   = new Set();
+        gameOver     = false;
+        timerSec     = 30;
+        resultEl.innerHTML = '';
+        resultEl.style.display = '';
+
+        // Switch phases
+        pickPhaseEl.classList.add('is-hidden');
+        gamePhaseEl.classList.remove('is-hidden');
+
+        targetEl.textContent = String(target);
+        timerEl.textContent  = '30';
+        timerEl.classList.remove('cd-timer-urgent');
+        updateExprDisplay();
+        buildNumberTiles();
+        setControlsDisabled(false);
+
+        // Start timer
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timerSec--;
+            timerEl.textContent = String(timerSec);
+            if (timerSec <= 10) timerEl.classList.add('cd-timer-urgent');
+            if (timerSec <= 0) {
+                clearInterval(timerInterval);
+                endGame(false);
+            }
+        }, 1000);
+    }
+
+    function buildNumberTiles() {
+        numbersEl.innerHTML = '';
+        gameNumbers.forEach((n, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'w95-btn cd-num-btn';
+            btn.textContent = String(n);
+            btn.dataset.idx = i;
+            btn.type = 'button';
+            btn.addEventListener('click', () => onNumberClick(i, btn));
+            numbersEl.appendChild(btn);
+        });
+    }
+
+    function onNumberClick(idx, btn) {
+        if (gameOver || usedNumIdx.has(idx)) return;
+        tokens.push(String(gameNumbers[idx]));
+        tokenMeta.push({ type: 'num', numIdx: idx });
+        usedNumIdx.add(idx);
+        btn.disabled = true;
+        updateExprDisplay();
+    }
+
+    document.querySelectorAll('.cd-op-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (gameOver) return;
+            tokens.push(btn.dataset.op);
+            tokenMeta.push({ type: 'op' });
+            updateExprDisplay();
+        });
+    });
+
+    undoBtn?.addEventListener('click', () => {
+        if (gameOver || !tokens.length) return;
+        const meta = tokenMeta.pop();
+        tokens.pop();
+        if (meta.type === 'num') {
+            usedNumIdx.delete(meta.numIdx);
+            const tile = numbersEl.querySelector(`[data-idx="${meta.numIdx}"]`);
+            if (tile) tile.disabled = false;
+        }
+        updateExprDisplay();
+    });
+
+    clearBtn?.addEventListener('click', () => {
+        if (gameOver) return;
+        tokens    = [];
+        tokenMeta = [];
+        usedNumIdx.clear();
+        numbersEl.querySelectorAll('.cd-num-btn').forEach(b => b.disabled = false);
+        updateExprDisplay();
+    });
+
+    submitBtn?.addEventListener('click', () => {
+        if (gameOver) return;
+        clearInterval(timerInterval);
+        endGame(true);
+    });
+
+    function setControlsDisabled(disabled) {
+        [undoBtn, clearBtn, submitBtn].forEach(b => { if (b) b.disabled = disabled; });
+        document.querySelectorAll('.cd-op-btn').forEach(b => b.disabled = disabled);
+        numbersEl.querySelectorAll('.cd-num-btn').forEach(b => {
+            if (!usedNumIdx.has(parseInt(b.dataset.idx, 10))) b.disabled = disabled;
+        });
+    }
+
+    function endGame(submitted) {
+        gameOver = true;
+        setControlsDisabled(true);
+        timerEl.classList.remove('cd-timer-urgent');
+
+        const playerVal = evalExpression(exprString(true));
+        const pts       = scoreResult(playerVal, target);
+
+        // Find best computer solution
+        const solution = solveCountdown(gameNumbers, target);
+
+        // Build result HTML
+        let scoreClass = `cd-score-${pts}`;
+        let scoreLabel = pts === 10 ? '10 points — Exact!' :
+                         pts === 7  ? '7 points — Within 5!' :
+                         pts === 5  ? '5 points — Within 10!' :
+                                      '0 points — No score';
+
+        let gotText = playerVal !== null
+            ? `You got: <strong>${playerVal}</strong> (${Math.abs(playerVal - target) === 0 ? 'exact' : Math.abs(playerVal - target) + ' away'})`
+            : submitted ? 'No valid expression submitted.' : 'Time\'s up — no valid expression.';
+
+        let solutionHtml = solution.diff === 0
+            ? `<div class="cd-result-solution">Optimal: ${solution.expr} = ${target}</div>`
+            : `<div class="cd-result-solution">Closest found: ${solution.expr} (${solution.diff} away)</div>`;
+
+        resultEl.innerHTML = `
+          <div class="cd-result-inner">
+            <div class="cd-result-score ${scoreClass}">${scoreLabel}</div>
+            <div class="cd-result-detail">${gotText}</div>
+            ${solutionHtml}
+            <button class="w95-btn cd-again-btn" id="cd-again-btn" type="button">Play Again</button>
+          </div>`;
+
+        document.getElementById('cd-again-btn')?.addEventListener('click', resetToPick);
+
+        // Save score to Firebase
+        if (currentUser && pts > 0) {
+            const userScoreRef = ref(database, 'countdown_scores/' + currentUser);
+            runTransaction(userScoreRef, cur => {
+                if (!cur) return { total: pts, games: 1 };
+                return { total: (cur.total || 0) + pts, games: (cur.games || 0) + 1 };
+            }).catch(() => {});
+        } else if (currentUser) {
+            const userScoreRef = ref(database, 'countdown_scores/' + currentUser);
+            runTransaction(userScoreRef, cur => {
+                if (!cur) return { total: 0, games: 1 };
+                return { total: (cur.total || 0), games: (cur.games || 0) + 1 };
+            }).catch(() => {});
+        }
+    }
+
+    function resetToPick() {
+        gamePhaseEl.classList.add('is-hidden');
+        pickPhaseEl.classList.remove('is-hidden');
+        // Reset pick selection
+        numLargeSelected = -1;
+        largeBtnsEl?.querySelectorAll('.cd-large-btn').forEach(b => b.classList.remove('cd-selected'));
+        pickPreview.innerHTML = '';
+        dealBtn.disabled = true;
+        resultEl.innerHTML = '';
+    }
+
+    // ---- Scoreboard ----
+    onValue(cdScoresRef, snap => {
+        const data = snap.val() || {};
+        if (!sbRowsEl) return;
+        const rows = Object.entries(data)
+            .map(([user, s]) => ({ user, total: s.total || 0, games: s.games || 0 }))
+            .sort((a, b) => b.total - a.total);
+        if (!rows.length) {
+            sbRowsEl.innerHTML = '<div class="c4-lb-row" style="justify-content:center;color:#888;font-size:11px;">No scores yet</div>';
+            return;
+        }
+        sbRowsEl.innerHTML = rows.map(r =>
+            `<div class="c4-lb-row">
+               <span class="c4-lb-player">${r.user}</span>
+               <span class="c4-lb-score">${r.total} pts (${r.games} game${r.games === 1 ? '' : 's'})</span>
+             </div>`
+        ).join('');
+    });
+
+    // ---- Window management ----
+    function show() {
+        const wasHidden = win.classList.contains('is-hidden');
+        if (!taskbarBtn) taskbarBtn = w95Mgr.addTaskbarBtn('w95-win-countdown', 'COUNTDOWN', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow('w95-win-countdown');
+        if (wasHidden) _trackWindowOpen('countdown');
+    }
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin('w95-win-countdown')) w95Mgr.focusWindow(null);
+    }
+    function closeWin() {
+        if (w95Mgr.isMaximised('w95-win-countdown')) w95Mgr.toggleMaximise(win, 'w95-win-countdown');
+        clearInterval(timerInterval);
+        hide();
+        if (taskbarBtn) { taskbarBtn.remove(); taskbarBtn = null; }
+    }
+
+    minBtn?.addEventListener('click',  e => { e.stopPropagation(); hide(); });
+    maxBtn?.addEventListener('click',  e => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-countdown'); });
+    closeBtn?.addEventListener('click', e => { e.stopPropagation(); closeWin(); });
+
+    let dragging = false, sx = 0, sy = 0, wx = 0, wy = 0;
+    handle.addEventListener('mousedown', e => {
+        if (e.target.closest('button') || w95Mgr.isMaximised('w95-win-countdown')) return;
+        dragging = true; sx = e.clientX; sy = e.clientY;
+        const rect = win.getBoundingClientRect(); wx = rect.left; wy = rect.top;
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        const maxX = document.documentElement.clientWidth - win.offsetWidth;
+        const maxY = document.documentElement.clientHeight - win.offsetHeight - 40;
+        win.style.left = Math.max(0, Math.min(maxX, wx + e.clientX - sx)) + 'px';
+        win.style.top  = Math.max(0, Math.min(maxY, wy + e.clientY - sy)) + 'px';
+    });
+    window.addEventListener('mouseup', () => {
+        if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-countdown'); }
+    });
+
+    w95Apps['countdown'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show();
+        else w95Mgr.focusWindow('w95-win-countdown');
+    }};
+})();

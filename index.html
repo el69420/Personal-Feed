@@ -57,6 +57,10 @@
             <div class="desktop-icon-img">&#9875;</div>
             <div class="desktop-icon-label">Battleships</div>
         </div>
+        <div class="w95-desktop-icon" data-app="countdown" tabindex="0">
+            <div class="desktop-icon-img">&#128290;</div>
+            <div class="desktop-icon-label">Countdown</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -898,6 +902,7 @@
                 <button class="w95-start-item" data-app="achievements" type="button">&#127942; Achievements.exe</button>
                 <button class="w95-start-item" data-app="connect4" type="button">&#127921; Connect 4.exe</button>
                 <button class="w95-start-item" data-app="battleships" type="button">&#9875; Battleships.exe</button>
+                <button class="w95-start-item" data-app="countdown" type="button">&#128290; Countdown.exe</button>
             </div>
         </div>
         <!-- Journals -->
@@ -1714,6 +1719,75 @@
       <div class="c4-lb-title">Scoreboard</div>
       <div class="c4-lb-rows" id="bs-lb-rows"></div>
     </div>
+  </div>
+</div>
+
+<!-- Countdown Numbers Game Window -->
+<div id="w95-win-countdown" class="w95-window is-hidden" style="left:180px;top:55px;width:430px;">
+  <div class="w95-titlebar" id="w95-countdown-handle">
+    <div class="w95-title">&#128290; Countdown.exe</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-countdown-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-countdown-max" type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-countdown-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body cd-body" id="w95-countdown-body">
+
+    <!-- Pick phase -->
+    <div id="cd-pick-phase">
+      <div class="cd-phase-title">Numbers Game</div>
+      <div class="cd-pick-info">How many large numbers? (25, 50, 75, 100)</div>
+      <div class="cd-large-btns" id="cd-large-btns">
+        <button class="w95-btn cd-large-btn" data-count="0" type="button">0</button>
+        <button class="w95-btn cd-large-btn" data-count="1" type="button">1</button>
+        <button class="w95-btn cd-large-btn" data-count="2" type="button">2</button>
+        <button class="w95-btn cd-large-btn" data-count="3" type="button">3</button>
+        <button class="w95-btn cd-large-btn" data-count="4" type="button">4</button>
+      </div>
+      <div class="cd-pick-preview" id="cd-pick-preview"></div>
+      <button class="w95-btn cd-deal-btn" id="cd-deal-btn" disabled type="button">Deal!</button>
+    </div>
+
+    <!-- Game phase -->
+    <div id="cd-game-phase" class="is-hidden">
+      <div class="cd-header">
+        <div class="cd-target-wrap">
+          <div class="cd-target-label">Target</div>
+          <div class="cd-target" id="cd-target">???</div>
+        </div>
+        <div class="cd-timer-wrap">
+          <div class="cd-timer-label">Time</div>
+          <div class="cd-timer" id="cd-timer">30</div>
+        </div>
+      </div>
+      <div class="cd-expr-box">
+        <div class="cd-expr-display" id="cd-expr-display">&nbsp;</div>
+        <div class="cd-expr-value" id="cd-expr-value">&nbsp;</div>
+      </div>
+      <div class="cd-numbers" id="cd-numbers"></div>
+      <div class="cd-ops">
+        <button class="w95-btn cd-op-btn" data-op="+" type="button">+</button>
+        <button class="w95-btn cd-op-btn" data-op="-" type="button">&minus;</button>
+        <button class="w95-btn cd-op-btn" data-op="*" type="button">&times;</button>
+        <button class="w95-btn cd-op-btn" data-op="/" type="button">&divide;</button>
+        <button class="w95-btn cd-op-btn" data-op="(" type="button">(</button>
+        <button class="w95-btn cd-op-btn" data-op=")" type="button">)</button>
+      </div>
+      <div class="cd-actions">
+        <button class="w95-btn" id="cd-undo-btn" type="button">&#9003; Undo</button>
+        <button class="w95-btn" id="cd-clear-btn" type="button">Clear</button>
+        <button class="w95-btn cd-submit-btn" id="cd-submit-btn" type="button">Submit</button>
+      </div>
+      <div class="cd-result" id="cd-result"></div>
+    </div>
+
+    <!-- Scoreboard (always visible) -->
+    <div class="cd-scoreboard" id="cd-scoreboard">
+      <div class="c4-lb-title">Scoreboard</div>
+      <div class="c4-lb-rows" id="cd-sb-rows"></div>
+    </div>
+
   </div>
 </div>
 
