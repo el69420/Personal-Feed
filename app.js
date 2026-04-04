@@ -22278,22 +22278,31 @@ function launchConfetti() {
     document.getElementById('cd-scoreboard')?.appendChild(sbDetailEl);
     let sbDetailUser = '';
 
-    onValue(cdScoresRef, snap => {
-        const data = snap.val() || {};
+    let cdLatestScores = {};
+    let cdLatestGames  = {};
+
+    function renderCdLeaderboard() {
         if (!sbRowsEl) return;
-        const rows = Object.entries(data)
-            .map(([user, s]) => ({ user, total: s.total || 0, games: s.games || 0 }))
-            .sort((a, b) => b.total - a.total);
-        if (!rows.length) {
+        const allUsers = new Set([...Object.keys(cdLatestScores), ...Object.keys(cdLatestGames)]);
+        if (!allUsers.size) {
             sbRowsEl.innerHTML = '<div class="c4-lb-row" style="justify-content:center;color:#888;font-size:11px;">No scores yet</div>';
             return;
         }
-        sbRowsEl.innerHTML = rows.map(r =>
-            `<div class="c4-lb-row cd-lb-clickable" data-user="${r.user}" style="cursor:pointer;" title="Click to see game history">
+        const rows = Array.from(allUsers).map(user => {
+            const s = cdLatestScores[user] || {};
+            const userGames = cdLatestGames[user] ? Object.values(cdLatestGames[user]) : [];
+            const times = userGames.map(g => g.timeTaken).filter(t => t != null);
+            const bestTime = times.length ? Math.min(...times) : Infinity;
+            return { user, total: s.total || 0, games: s.games || 0, bestTime };
+        });
+        rows.sort((a, b) => a.bestTime - b.bestTime);
+        sbRowsEl.innerHTML = rows.map(r => {
+            const bestStr = r.bestTime < Infinity ? `${r.bestTime}s best · ` : '';
+            return `<div class="c4-lb-row cd-lb-clickable" data-user="${r.user}" style="cursor:pointer;" title="Click to see game history">
                <span class="c4-lb-player">${r.user}</span>
-               <span class="c4-lb-score">${r.total} pts (${r.games} game${r.games === 1 ? '' : 's'})</span>
-             </div>`
-        ).join('');
+               <span class="c4-lb-score">${bestStr}${r.total} pts (${r.games} game${r.games === 1 ? '' : 's'})</span>
+             </div>`;
+        }).join('');
 
         sbRowsEl.querySelectorAll('.cd-lb-clickable').forEach(row => {
             row.addEventListener('click', async () => {
@@ -22332,6 +22341,16 @@ function launchConfetti() {
                 }
             });
         });
+    }
+
+    onValue(cdScoresRef, snap => {
+        cdLatestScores = snap.val() || {};
+        renderCdLeaderboard();
+    });
+
+    onValue(ref(database, 'countdown_games'), snap => {
+        cdLatestGames = snap.val() || {};
+        renderCdLeaderboard();
     });
 
     // ---- Window management ----
