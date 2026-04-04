@@ -21824,6 +21824,7 @@ function launchConfetti() {
     let timerSec      = 30;
     let timerInterval = null;
     let gameOver      = false;
+    let gameStartTime = 0;
     let taskbarBtn    = null;
 
     // ---- Pools ----
@@ -22017,6 +22018,7 @@ function launchConfetti() {
         pendingA = null;
         pendingOp = null;
         gameOver = false;
+        gameStartTime = Date.now();
         timerSec = 30;
         resultEl.innerHTML = '';
         resultEl.style.display = '';
@@ -22088,6 +22090,12 @@ function launchConfetti() {
             buildNumberTiles();
             updateDisplay();
             updateControls();
+            // Auto-submit on exact match
+            if (result === target) {
+                clearInterval(timerInterval);
+                endGame(true);
+                return;
+            }
         }
     }
 
@@ -22148,15 +22156,17 @@ function launchConfetti() {
         updateControls();
         timerEl.classList.remove('cd-timer-urgent');
 
+        const timeTaken = Math.round((Date.now() - gameStartTime) / 100) / 10; // seconds, 1dp
         const playerVal = getPlayerResult();
         const pts       = scoreResult(playerVal, target);
+        const playerMethod = steps.map(s => `${s.a} ${opDisplay(s.op)} ${s.b} = ${s.result}`).join(', ');
 
         // Find best computer solution
         const solution = solveCountdown(gameNumbers, target);
 
         // Build result HTML
         let scoreClass = `cd-score-${pts}`;
-        let scoreLabel = pts === 10 ? '10 points — Exact!' :
+        let scoreLabel = pts === 10 ? `10 points — Exact! (${timeTaken}s)` :
                          pts === 7  ? '7 points — Within 5!' :
                          pts === 5  ? '5 points — Within 10!' :
                                       '0 points — No score';
@@ -22186,6 +22196,10 @@ function launchConfetti() {
                 if (!cur) return { total: pts, games: 1 };
                 return { total: (cur.total || 0) + pts, games: (cur.games || 0) + 1 };
             }).catch(() => {});
+            push(ref(database, 'countdown_games/' + currentUser), {
+                pts, numbers: gameNumbers, target, method: playerMethod,
+                timeTaken, timestamp: Date.now()
+            }).catch(() => {});
         } else if (currentUser) {
             const userScoreRef = ref(database, 'countdown_scores/' + currentUser);
             runTransaction(userScoreRef, cur => {
@@ -22207,6 +22221,13 @@ function launchConfetti() {
     }
 
     // ---- Scoreboard ----
+    // Detail panel for showing per-user game history on row click
+    const sbDetailEl = document.createElement('div');
+    sbDetailEl.id = 'cd-sb-detail';
+    sbDetailEl.style.cssText = 'margin-top:4px;padding:4px 6px;border:1px solid #aaa;font-size:11px;display:none;line-height:1.4;';
+    document.getElementById('cd-scoreboard')?.appendChild(sbDetailEl);
+    let sbDetailUser = '';
+
     onValue(cdScoresRef, snap => {
         const data = snap.val() || {};
         if (!sbRowsEl) return;
@@ -22218,11 +22239,49 @@ function launchConfetti() {
             return;
         }
         sbRowsEl.innerHTML = rows.map(r =>
-            `<div class="c4-lb-row">
+            `<div class="c4-lb-row cd-lb-clickable" data-user="${r.user}" style="cursor:pointer;" title="Click to see game history">
                <span class="c4-lb-player">${r.user}</span>
                <span class="c4-lb-score">${r.total} pts (${r.games} game${r.games === 1 ? '' : 's'})</span>
              </div>`
         ).join('');
+
+        sbRowsEl.querySelectorAll('.cd-lb-clickable').forEach(row => {
+            row.addEventListener('click', async () => {
+                const user = row.dataset.user;
+                if (sbDetailUser === user && sbDetailEl.style.display !== 'none') {
+                    sbDetailEl.style.display = 'none';
+                    sbDetailUser = '';
+                    return;
+                }
+                sbDetailUser = user;
+                sbDetailEl.style.display = 'block';
+                sbDetailEl.innerHTML = '<em>Loading…</em>';
+                try {
+                    const gSnap = await get(ref(database, 'countdown_games/' + user));
+                    const gData = gSnap.val();
+                    if (!gData) {
+                        sbDetailEl.innerHTML = `<strong>${user}</strong> — no detailed records yet.`;
+                        return;
+                    }
+                    const entries = Object.values(gData)
+                        .sort((a, b) => b.timestamp - a.timestamp)
+                        .slice(0, 5);
+                    sbDetailEl.innerHTML = `<strong>${user}'s recent games:</strong>` +
+                        entries.map(g => {
+                            const nums = (g.numbers || []).join(', ');
+                            const timeStr = g.timeTaken != null ? ` in ${g.timeTaken}s` : '';
+                            const method = g.method || 'N/A';
+                            return `<div style="margin-top:3px;padding-top:3px;border-top:1px solid #ddd;">
+                                <b>${g.pts}pts</b> — Target: <b>${g.target}</b>${timeStr}<br>
+                                Numbers: [${nums}]<br>
+                                Method: ${method}
+                            </div>`;
+                        }).join('');
+                } catch (_) {
+                    sbDetailEl.innerHTML = '<em>Could not load game details.</em>';
+                }
+            });
+        });
     });
 
     // ---- Window management ----
