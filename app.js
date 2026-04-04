@@ -22323,7 +22323,8 @@ function launchConfetti() {
                         return;
                     }
                     const entries = Object.values(gData)
-                        .sort((a, b) => b.timestamp - a.timestamp)
+                        .filter(g => g.timeTaken != null)
+                        .sort((a, b) => a.timeTaken - b.timeTaken)
                         .slice(0, 5);
                     sbDetailEl.innerHTML = `<strong>${user}'s recent games:</strong>` +
                         entries.map(g => {
