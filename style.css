@@ -13370,12 +13370,12 @@ body.dark-mode .cd-timer.cd-timer-urgent {
   border-left-color: #404040;
   border-right-color: #dfdfdf;
   border-bottom-color: #dfdfdf;
-  padding: 6px 10px;
-  min-height: 52px;
+  padding: 8px 12px;
+  min-height: 100px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
+  gap: 4px;
 }
 body.dark-mode .cd-expr-box {
   background: #1a2a2a;
@@ -13388,11 +13388,12 @@ body.dark-mode .cd-expr-box {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 .cd-step-row {
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 700;
+  letter-spacing: 0.02em;
 }
 .cd-step-row .cd-val-exact { color: #080; }
 .cd-step-row .cd-val-close { color: #c80; }
@@ -13416,38 +13417,47 @@ body.dark-mode .cd-num-result {
 }
 .cd-numbers {
   display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
+  flex-wrap: nowrap;
+  gap: 6px;
   justify-content: center;
+  width: 100%;
 }
 .cd-num-btn {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
-  min-width: 48px;
-  padding: 6px 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 4px;
   text-align: center;
 }
 .cd-num-btn:disabled {
   opacity: 0.35;
   cursor: default;
 }
-.cd-ops {
+.cd-controls-row {
   display: flex;
   gap: 6px;
+  width: 100%;
 }
-.cd-op-btn {
+.cd-op-btn,
+.cd-ctrl-btn {
+  flex: 1;
   font-size: 16px;
   font-weight: 700;
-  min-width: 38px;
-  padding: 5px 6px;
+  min-width: 0;
+  padding: 7px 4px;
+  text-align: center;
 }
 .cd-actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 .cd-submit-btn {
   font-weight: 900;
+  padding: 5px 28px;
 }
 .cd-result {
   width: 100%;
