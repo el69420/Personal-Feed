@@ -21909,7 +21909,9 @@ function launchConfetti() {
 
     function updateControls() {
         document.querySelectorAll('.cd-op-btn').forEach(b => {
-            b.disabled = gameOver || stepState !== 'pickOp';
+            const canAutoSelectLast = stepState === 'pickA' && steps.length > 0 &&
+                pool.some(p => p.id === steps[steps.length - 1].resultId);
+            b.disabled = gameOver || (stepState !== 'pickOp' && stepState !== 'pickB' && !canAutoSelectLast);
         });
         const nothingDone = stepState === 'pickA' && steps.length === 0;
         if (undoBtn) undoBtn.disabled = gameOver || nothingDone;
@@ -22101,9 +22103,28 @@ function launchConfetti() {
 
     document.querySelectorAll('.cd-op-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (gameOver || stepState !== 'pickOp') return;
-            pendingOp = btn.dataset.op;
-            stepState = 'pickB';
+            if (gameOver) return;
+            if (stepState === 'pickA') {
+                // Auto-select the last equation's result as the first operand
+                if (steps.length === 0) return;
+                const lastResultId = steps[steps.length - 1].resultId;
+                const lastResult = pool.find(p => p.id === lastResultId);
+                if (!lastResult) return;
+                pendingA = lastResult;
+                pool = pool.filter(p => p.id !== lastResult.id);
+                pendingOp = btn.dataset.op;
+                stepState = 'pickB';
+                buildNumberTiles();
+            } else if (stepState === 'pickOp') {
+                pendingOp = btn.dataset.op;
+                stepState = 'pickB';
+            } else if (stepState === 'pickB') {
+                // Change operator — ignore the previously selected one
+                pendingOp = btn.dataset.op;
+                buildNumberTiles(); // re-validate tiles for new op constraints
+            } else {
+                return;
+            }
             updateDisplay();
             updateControls();
         });
