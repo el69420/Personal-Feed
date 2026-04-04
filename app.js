@@ -21809,12 +21809,16 @@ function launchConfetti() {
     const bestEl       = document.getElementById('cd-best');
 
     // Analogue clock
-    const clockCanvas  = document.getElementById('cd-clock');
-    const clockCtx     = clockCanvas ? clockCanvas.getContext('2d') : null;
+    let clockCtx = null;
 
     function drawClock() {
-        if (!clockCtx) return;
-        const cw = clockCanvas.width, ch = clockCanvas.height;
+        const canvas = document.getElementById('cd-clock');
+        if (!canvas) return;
+        if (!clockCtx) {
+            clockCtx = canvas.getContext('2d');
+            if (!clockCtx) return;
+        }
+        const cw = canvas.width, ch = canvas.height;
         const cx = cw / 2, cy = ch / 2;
         const r  = Math.min(cw, ch) / 2 - 3;
         const urgent  = timerSec <= 10;
