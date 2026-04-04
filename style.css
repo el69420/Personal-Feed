@@ -13519,10 +13519,6 @@ body.dark-mode .cd-num-result {
   justify-content: center;
   width: 100%;
 }
-.cd-submit-btn {
-  font-weight: 900;
-  padding: 5px 28px;
-}
 .cd-result {
   width: 100%;
   min-height: 0;

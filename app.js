@@ -21803,7 +21803,6 @@ function launchConfetti() {
     const numbersEl    = document.getElementById('cd-numbers');
     const undoBtn      = document.getElementById('cd-undo-btn');
     const clearBtn     = document.getElementById('cd-clear-btn');
-    const submitBtn    = document.getElementById('cd-submit-btn');
     const resultEl     = document.getElementById('cd-result');
     const bestWrapEl   = document.getElementById('cd-best-wrap');
     const bestEl       = document.getElementById('cd-best');
@@ -22000,7 +21999,6 @@ function launchConfetti() {
         const nothingDone = stepState === 'pickA' && steps.length === 0;
         if (undoBtn) undoBtn.disabled = gameOver || nothingDone;
         if (clearBtn) clearBtn.disabled = gameOver || nothingDone;
-        if (submitBtn) submitBtn.disabled = gameOver;
         updateTileDisabled();
     }
 
@@ -22198,8 +22196,8 @@ function launchConfetti() {
             updateDisplay();
             updateControls();
             checkAndUpdateBest();
-            // Auto-submit on exact match
-            if (result === target) {
+            // Auto-submit when close enough (within 10 of target)
+            if (scoreResult(result, target) > 0) {
                 clearInterval(timerInterval);
                 endGame(true);
                 return;
@@ -22272,11 +22270,6 @@ function launchConfetti() {
         updateControls();
     });
 
-    submitBtn?.addEventListener('click', () => {
-        if (gameOver) return;
-        clearInterval(timerInterval);
-        endGame(true);
-    });
 
     function endGame(submitted) {
         gameOver = true;
