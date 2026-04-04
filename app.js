@@ -21825,10 +21825,11 @@ function launchConfetti() {
     let pendingOp     = null; // '+' | '-' | '*' | '/'
     let timerSec      = 30;
     let timerInterval = null;
-    let gameOver      = false;
-    let gameStartTime = 0;
-    let taskbarBtn    = null;
-    let bestAttempt   = { value: null, steps: [], score: 0 };
+    let gameOver        = false;
+    let gameStartTime   = 0;
+    let bestAttemptTime = 0;
+    let taskbarBtn      = null;
+    let bestAttempt     = { value: null, steps: [], score: 0 };
 
     // ---- Pools ----
     const LARGE = [25, 50, 75, 100];
@@ -21982,6 +21983,7 @@ function launchConfetti() {
         const prevDiff = bestAttempt.value !== null ? Math.abs(bestAttempt.value - target) : Infinity;
         if (sc > bestAttempt.score || (sc === bestAttempt.score && curDiff < prevDiff)) {
             bestAttempt = { value: val, steps: steps.slice(), score: sc };
+            bestAttemptTime = Date.now();
             bestWrapEl?.classList.remove('is-hidden');
             if (bestEl) bestEl.textContent = String(val);
         }
@@ -22040,6 +22042,7 @@ function launchConfetti() {
         gameStartTime = Date.now();
         timerSec = 30;
         bestAttempt = { value: null, steps: [], score: 0 };
+        bestAttemptTime = 0;
         bestWrapEl?.classList.add('is-hidden');
         if (bestEl) bestEl.textContent = '—';
         resultEl.innerHTML = '';
@@ -22198,13 +22201,14 @@ function launchConfetti() {
         updateControls();
         timerEl.classList.remove('cd-timer-urgent');
 
-        const timeTaken = Math.round((Date.now() - gameStartTime) / 100) / 10; // seconds, 1dp
         const currentVal   = getPlayerResult();
         const currentScore = scoreResult(currentVal, target);
         const currentDiff  = currentVal !== null ? Math.abs(currentVal - target) : Infinity;
         const bestDiff     = bestAttempt.value !== null ? Math.abs(bestAttempt.value - target) : Infinity;
         const useBest = bestAttempt.score > currentScore ||
                         (bestAttempt.score === currentScore && bestAttempt.score > 0 && bestDiff < currentDiff);
+        const resultTime   = useBest && bestAttemptTime ? bestAttemptTime : Date.now();
+        const timeTaken    = Math.round((resultTime - gameStartTime) / 100) / 10; // seconds, 1dp
         const playerVal    = useBest ? bestAttempt.value : currentVal;
         const finalSteps   = useBest ? bestAttempt.steps : steps;
         const pts          = scoreResult(playerVal, target);
