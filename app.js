@@ -22196,8 +22196,8 @@ function launchConfetti() {
             updateDisplay();
             updateControls();
             checkAndUpdateBest();
-            // Auto-submit when close enough (within 10 of target)
-            if (scoreResult(result, target) > 0) {
+            // Auto-submit only on exact match; close results are tracked via bestAttempt
+            if (result === target) {
                 clearInterval(timerInterval);
                 endGame(true);
                 return;
