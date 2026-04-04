@@ -13310,27 +13310,52 @@ body.dark-mode .cd-preview-tile {
 #cd-game-phase {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
   width: 100%;
 }
-.cd-header {
+.cd-game-layout {
   display: flex;
-  align-items: center;
-  justify-content: space-around;
+  flex-direction: row;
+  gap: 12px;
   width: 100%;
+  align-items: flex-start;
 }
-.cd-target-wrap, .cd-timer-wrap, .cd-best-wrap {
+.cd-left-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 138px;
+}
+.cd-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.cd-target-wrap, .cd-best-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-.cd-target-label, .cd-timer-label, .cd-best-label {
+.cd-target-label, .cd-best-label {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
+}
+/* Hide the numeric timer — replaced by analogue clock */
+.cd-timer {
+  display: none;
+}
+/* Analogue clock canvas */
+.cd-clock {
+  display: block;
+  border-radius: 50%;
 }
 .cd-best {
   font-size: 36px;
@@ -13353,24 +13378,6 @@ body.dark-mode .cd-best {
 }
 body.dark-mode .cd-target {
   color: #ff6666;
-}
-.cd-timer {
-  font-size: 36px;
-  font-weight: 900;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-  transition: color 0.3s ease;
-}
-.cd-timer.cd-timer-urgent {
-  color: #c00;
-  animation: cd-blink 0.6s infinite;
-}
-body.dark-mode .cd-timer.cd-timer-urgent {
-  color: #ff5555;
-}
-@keyframes cd-blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.45; }
 }
 .cd-expr-box {
   width: 100%;

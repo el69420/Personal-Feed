@@ -1751,35 +1751,39 @@
 
     <!-- Game phase -->
     <div id="cd-game-phase" class="is-hidden">
-      <div class="cd-header">
-        <div class="cd-target-wrap">
-          <div class="cd-target-label">Target</div>
-          <div class="cd-target" id="cd-target">???</div>
+      <div class="cd-game-layout">
+        <!-- Left column: target, clock, best -->
+        <div class="cd-left-col">
+          <div class="cd-target-wrap">
+            <div class="cd-target-label">Target</div>
+            <div class="cd-target" id="cd-target">???</div>
+          </div>
+          <canvas id="cd-clock" class="cd-clock" width="130" height="130"></canvas>
+          <div class="cd-timer" id="cd-timer" aria-hidden="true">30</div>
+          <div class="cd-best-wrap is-hidden" id="cd-best-wrap">
+            <div class="cd-best-label">Best</div>
+            <div class="cd-best" id="cd-best">—</div>
+          </div>
         </div>
-        <div class="cd-timer-wrap">
-          <div class="cd-timer-label">Time</div>
-          <div class="cd-timer" id="cd-timer">30</div>
+        <!-- Right column: numbers, equations, controls -->
+        <div class="cd-right-col">
+          <div class="cd-numbers" id="cd-numbers"></div>
+          <div class="cd-expr-box">
+            <div class="cd-steps-log" id="cd-steps-log"></div>
+            <div class="cd-current-step" id="cd-current-step">&nbsp;</div>
+          </div>
+          <div class="cd-controls-row">
+            <button class="w95-btn cd-ctrl-btn" id="cd-clear-btn" type="button">Clear</button>
+            <button class="w95-btn cd-op-btn" data-op="+" type="button">+</button>
+            <button class="w95-btn cd-op-btn" data-op="-" type="button">&minus;</button>
+            <button class="w95-btn cd-op-btn" data-op="*" type="button">&times;</button>
+            <button class="w95-btn cd-op-btn" data-op="/" type="button">&divide;</button>
+            <button class="w95-btn cd-ctrl-btn" id="cd-undo-btn" type="button">Undo</button>
+          </div>
+          <div class="cd-actions">
+            <button class="w95-btn cd-submit-btn" id="cd-submit-btn" type="button">Submit</button>
+          </div>
         </div>
-        <div class="cd-best-wrap is-hidden" id="cd-best-wrap">
-          <div class="cd-best-label">Best</div>
-          <div class="cd-best" id="cd-best">—</div>
-        </div>
-      </div>
-      <div class="cd-expr-box">
-        <div class="cd-steps-log" id="cd-steps-log"></div>
-        <div class="cd-current-step" id="cd-current-step">&nbsp;</div>
-      </div>
-      <div class="cd-numbers" id="cd-numbers"></div>
-      <div class="cd-controls-row">
-        <button class="w95-btn cd-ctrl-btn" id="cd-clear-btn" type="button">Clear</button>
-        <button class="w95-btn cd-op-btn" data-op="+" type="button">+</button>
-        <button class="w95-btn cd-op-btn" data-op="-" type="button">&minus;</button>
-        <button class="w95-btn cd-op-btn" data-op="*" type="button">&times;</button>
-        <button class="w95-btn cd-op-btn" data-op="/" type="button">&divide;</button>
-        <button class="w95-btn cd-ctrl-btn" id="cd-undo-btn" type="button">Undo</button>
-      </div>
-      <div class="cd-actions">
-        <button class="w95-btn cd-submit-btn" id="cd-submit-btn" type="button">Submit</button>
       </div>
       <div class="cd-result" id="cd-result"></div>
     </div>

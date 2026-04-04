@@ -21808,6 +21808,82 @@ function launchConfetti() {
     const bestWrapEl   = document.getElementById('cd-best-wrap');
     const bestEl       = document.getElementById('cd-best');
 
+    // Analogue clock
+    const clockCanvas  = document.getElementById('cd-clock');
+    const clockCtx     = clockCanvas ? clockCanvas.getContext('2d') : null;
+
+    function drawClock() {
+        if (!clockCtx) return;
+        const cw = clockCanvas.width, ch = clockCanvas.height;
+        const cx = cw / 2, cy = ch / 2;
+        const r  = Math.min(cw, ch) / 2 - 3;
+        const urgent  = timerSec <= 10;
+        const isDark  = document.body.classList.contains('dark-mode');
+
+        clockCtx.clearRect(0, 0, cw, ch);
+
+        // Face fill
+        clockCtx.beginPath();
+        clockCtx.arc(cx, cy, r, 0, 2 * Math.PI);
+        clockCtx.fillStyle = isDark ? '#1a2a2a' : '#ffffff';
+        clockCtx.fill();
+
+        // Remaining-time arc (filled sector from 12 o'clock)
+        if (timerSec > 0) {
+            const startAngle = -Math.PI / 2;
+            const endAngle   = startAngle + (timerSec / 30) * 2 * Math.PI;
+            clockCtx.beginPath();
+            clockCtx.moveTo(cx, cy);
+            clockCtx.arc(cx, cy, r - 2, startAngle, endAngle);
+            clockCtx.closePath();
+            if (urgent) {
+                clockCtx.fillStyle = isDark ? 'rgba(255,85,85,0.28)' : 'rgba(200,0,0,0.14)';
+            } else {
+                clockCtx.fillStyle = isDark ? 'rgba(0,160,160,0.28)' : 'rgba(0,128,128,0.13)';
+            }
+            clockCtx.fill();
+        }
+
+        // Face border
+        clockCtx.beginPath();
+        clockCtx.arc(cx, cy, r, 0, 2 * Math.PI);
+        clockCtx.strokeStyle = urgent ? (isDark ? '#ff5555' : '#c00') : (isDark ? '#555' : '#808080');
+        clockCtx.lineWidth = 2;
+        clockCtx.stroke();
+
+        // Tick marks (30 ticks — one per second)
+        for (let i = 0; i < 30; i++) {
+            const angle  = (i / 30) * 2 * Math.PI - Math.PI / 2;
+            const isFive = i % 5 === 0;
+            const inner  = r - (isFive ? 10 : 6);
+            clockCtx.beginPath();
+            clockCtx.moveTo(cx + Math.cos(angle) * (r - 1), cy + Math.sin(angle) * (r - 1));
+            clockCtx.lineTo(cx + Math.cos(angle) * inner,   cy + Math.sin(angle) * inner);
+            clockCtx.strokeStyle = isDark ? '#888' : '#404040';
+            clockCtx.lineWidth   = isFive ? 2 : 1;
+            clockCtx.stroke();
+        }
+
+        // Second hand — points at elapsed position (starts at 12, sweeps clockwise)
+        const elapsed   = 30 - timerSec;
+        const handAngle = (elapsed / 30) * 2 * Math.PI - Math.PI / 2;
+        const handLen   = r - 14;
+        clockCtx.beginPath();
+        clockCtx.moveTo(cx, cy);
+        clockCtx.lineTo(cx + Math.cos(handAngle) * handLen, cy + Math.sin(handAngle) * handLen);
+        clockCtx.strokeStyle = urgent ? (isDark ? '#ff5555' : '#c00') : (isDark ? '#4dd' : '#008080');
+        clockCtx.lineWidth   = 2.5;
+        clockCtx.lineCap     = 'round';
+        clockCtx.stroke();
+        clockCtx.lineCap     = 'butt';
+
+        // Centre dot
+        clockCtx.beginPath();
+        clockCtx.arc(cx, cy, 3.5, 0, 2 * Math.PI);
+        clockCtx.fillStyle = urgent ? (isDark ? '#ff5555' : '#c00') : (isDark ? '#4dd' : '#008080');
+        clockCtx.fill();
+    }
+
     // Scoreboard
     const sbRowsEl     = document.getElementById('cd-sb-rows');
 
@@ -22058,6 +22134,7 @@ function launchConfetti() {
         buildNumberTiles();
         updateDisplay();
         updateControls();
+        drawClock();
 
         // Start timer
         clearInterval(timerInterval);
@@ -22065,6 +22142,7 @@ function launchConfetti() {
             timerSec--;
             timerEl.textContent = String(timerSec);
             if (timerSec <= 10) timerEl.classList.add('cd-timer-urgent');
+            drawClock();
             if (timerSec <= 0) {
                 clearInterval(timerInterval);
                 endGame(false);
