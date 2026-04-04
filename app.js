@@ -21805,6 +21805,8 @@ function launchConfetti() {
     const clearBtn     = document.getElementById('cd-clear-btn');
     const submitBtn    = document.getElementById('cd-submit-btn');
     const resultEl     = document.getElementById('cd-result');
+    const bestWrapEl   = document.getElementById('cd-best-wrap');
+    const bestEl       = document.getElementById('cd-best');
 
     // Scoreboard
     const sbRowsEl     = document.getElementById('cd-sb-rows');
@@ -21826,6 +21828,7 @@ function launchConfetti() {
     let gameOver      = false;
     let gameStartTime = 0;
     let taskbarBtn    = null;
+    let bestAttempt   = { value: null, steps: [], score: 0 };
 
     // ---- Pools ----
     const LARGE = [25, 50, 75, 100];
@@ -21871,7 +21874,7 @@ function launchConfetti() {
             const cls = diff === 0 ? 'cd-val-exact' : diff <= 10 ? 'cd-val-close' : '';
             const row = document.createElement('div');
             row.className = 'cd-step-row';
-            row.innerHTML = `${step.a} ${opDisplay(step.op)} ${step.b} = <strong${cls ? ` class="${cls}"` : ''}>${step.result}</strong>`;
+            row.innerHTML = `<span>${step.a} ${opDisplay(step.op)} ${step.b} =</span> <span class="cd-step-result${cls ? ' ' + cls : ''}">${step.result}</span>`;
             stepsLog.appendChild(row);
         });
 
@@ -21970,6 +21973,20 @@ function launchConfetti() {
         return 0;
     }
 
+    function checkAndUpdateBest() {
+        const val = getPlayerResult();
+        if (val === null) return;
+        const sc = scoreResult(val, target);
+        if (sc <= 0) return;
+        const curDiff = Math.abs(val - target);
+        const prevDiff = bestAttempt.value !== null ? Math.abs(bestAttempt.value - target) : Infinity;
+        if (sc > bestAttempt.score || (sc === bestAttempt.score && curDiff < prevDiff)) {
+            bestAttempt = { value: val, steps: steps.slice(), score: sc };
+            bestWrapEl?.classList.remove('is-hidden');
+            if (bestEl) bestEl.textContent = String(val);
+        }
+    }
+
     // ---- Pick phase ----
     largeBtnsEl?.querySelectorAll('.cd-large-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -22022,6 +22039,9 @@ function launchConfetti() {
         gameOver = false;
         gameStartTime = Date.now();
         timerSec = 30;
+        bestAttempt = { value: null, steps: [], score: 0 };
+        bestWrapEl?.classList.add('is-hidden');
+        if (bestEl) bestEl.textContent = '—';
         resultEl.innerHTML = '';
         resultEl.style.display = '';
 
@@ -22092,6 +22112,7 @@ function launchConfetti() {
             buildNumberTiles();
             updateDisplay();
             updateControls();
+            checkAndUpdateBest();
             // Auto-submit on exact match
             if (result === target) {
                 clearInterval(timerInterval);
@@ -22178,9 +22199,16 @@ function launchConfetti() {
         timerEl.classList.remove('cd-timer-urgent');
 
         const timeTaken = Math.round((Date.now() - gameStartTime) / 100) / 10; // seconds, 1dp
-        const playerVal = getPlayerResult();
-        const pts       = scoreResult(playerVal, target);
-        const playerMethod = steps.map(s => `${s.a} ${opDisplay(s.op)} ${s.b} = ${s.result}`).join(', ');
+        const currentVal   = getPlayerResult();
+        const currentScore = scoreResult(currentVal, target);
+        const currentDiff  = currentVal !== null ? Math.abs(currentVal - target) : Infinity;
+        const bestDiff     = bestAttempt.value !== null ? Math.abs(bestAttempt.value - target) : Infinity;
+        const useBest = bestAttempt.score > currentScore ||
+                        (bestAttempt.score === currentScore && bestAttempt.score > 0 && bestDiff < currentDiff);
+        const playerVal    = useBest ? bestAttempt.value : currentVal;
+        const finalSteps   = useBest ? bestAttempt.steps : steps;
+        const pts          = scoreResult(playerVal, target);
+        const playerMethod = finalSteps.map(s => `${s.a} ${opDisplay(s.op)} ${s.b} = ${s.result}`).join(', ');
 
         // Find best computer solution
         const solution = solveCountdown(gameNumbers, target);
@@ -22192,8 +22220,9 @@ function launchConfetti() {
                          pts === 5  ? '5 points — Within 10!' :
                                       '0 points — No score';
 
+        const gotDiff = playerVal !== null ? Math.abs(playerVal - target) : null;
         let gotText = playerVal !== null
-            ? `You got: <strong>${playerVal}</strong> (${Math.abs(playerVal - target) === 0 ? 'exact' : Math.abs(playerVal - target) + ' away'})`
+            ? `${useBest ? 'Best attempt: ' : 'You got: '}<strong>${playerVal}</strong> (${gotDiff === 0 ? 'exact' : gotDiff + ' away'})`
             : submitted ? 'No steps completed.' : 'Time\'s up — no steps completed.';
 
         let solutionHtml = solution.diff === 0
