@@ -21798,8 +21798,8 @@ function launchConfetti() {
     const gamePhaseEl  = document.getElementById('cd-game-phase');
     const targetEl     = document.getElementById('cd-target');
     const timerEl      = document.getElementById('cd-timer');
-    const exprDisplay  = document.getElementById('cd-expr-display');
-    const exprValue    = document.getElementById('cd-expr-value');
+    const stepsLog     = document.getElementById('cd-steps-log');
+    const currentStepEl = document.getElementById('cd-current-step');
     const numbersEl    = document.getElementById('cd-numbers');
     const undoBtn      = document.getElementById('cd-undo-btn');
     const clearBtn     = document.getElementById('cd-clear-btn');
@@ -21815,9 +21815,12 @@ function launchConfetti() {
     let numLargeSelected = -1;
     let gameNumbers   = [];   // the 6 numbers dealt
     let target        = 0;
-    let tokens        = [];   // string tokens in expression
-    let tokenMeta     = [];   // parallel: { type:'num'|'op', numIdx?:number }
-    let usedNumIdx    = new Set();
+    let pool          = [];   // { id, value, isResult } — currently available numbers
+    let nextPoolId    = 0;
+    let steps         = [];   // completed: { aId, bId, op, a, b, aIsResult, bIsResult, result, resultId }
+    let stepState     = 'pickA'; // 'pickA' | 'pickOp' | 'pickB'
+    let pendingA      = null; // pool item selected as first operand
+    let pendingOp     = null; // '+' | '-' | '*' | '/'
     let timerSec      = 30;
     let timerInterval = null;
     let gameOver      = false;
@@ -21837,107 +21840,81 @@ function launchConfetti() {
         return a;
     }
 
-    // ---- Expression evaluator ----
-    // Tokenises expression string into an array of { type, val } objects.
-    function tokeniseExpr(expr) {
-        const out = [];
-        let i = 0;
-        while (i < expr.length) {
-            if (/\s/.test(expr[i])) { i++; continue; }
-            if (/\d/.test(expr[i])) {
-                let num = '';
-                while (i < expr.length && /\d/.test(expr[i])) num += expr[i++];
-                out.push({ type: 'num', val: parseInt(num, 10) });
-            } else if ('+-*/()'.includes(expr[i])) {
-                out.push({ type: 'op', val: expr[i++] });
-            } else {
-                return null;
+    // ---- Step helpers ----
+    function opDisplay(op) {
+        if (op === '+') return '+';
+        if (op === '-') return '−';
+        if (op === '*') return '×';
+        if (op === '/') return '÷';
+        return op;
+    }
+
+    function compute(a, op, b) {
+        if (op === '+') return a + b;
+        if (op === '-') { const r = a - b; return r > 0 ? r : null; }
+        if (op === '*') return a * b;
+        if (op === '/') return (b > 0 && a % b === 0) ? a / b : null;
+        return null;
+    }
+
+    function getPlayerResult() {
+        if (steps.length === 0) return null;
+        return steps[steps.length - 1].result;
+    }
+
+    function updateDisplay() {
+        // Render completed steps
+        stepsLog.innerHTML = '';
+        steps.forEach(step => {
+            const diff = Math.abs(step.result - target);
+            const cls = diff === 0 ? 'cd-val-exact' : diff <= 10 ? 'cd-val-close' : '';
+            const row = document.createElement('div');
+            row.className = 'cd-step-row';
+            row.innerHTML = `${step.a} ${opDisplay(step.op)} ${step.b} = <strong${cls ? ` class="${cls}"` : ''}>${step.result}</strong>`;
+            stepsLog.appendChild(row);
+        });
+
+        // Render in-progress step hint
+        if (stepState === 'pickA') {
+            currentStepEl.textContent = steps.length === 0 ? 'Pick a number to start' : 'Pick a number for next step (or Submit)';
+        } else if (stepState === 'pickOp') {
+            currentStepEl.textContent = `${pendingA.value}  …  pick an operator`;
+        } else if (stepState === 'pickB') {
+            currentStepEl.textContent = `${pendingA.value} ${opDisplay(pendingOp)}  …  pick a number`;
+        }
+    }
+
+    function updateTileDisabled() {
+        numbersEl.querySelectorAll('.cd-num-btn').forEach(btn => {
+            if (gameOver) { btn.disabled = true; return; }
+            const id = parseInt(btn.dataset.poolId, 10);
+            const item = pool.find(p => p.id === id);
+            if (!item) { btn.disabled = true; return; }
+            if (stepState === 'pickA') {
+                btn.disabled = false;
+            } else if (stepState === 'pickOp') {
+                btn.disabled = true;
+            } else { // pickB
+                if (pendingOp === '/') {
+                    btn.disabled = item.value === 0 || pendingA.value % item.value !== 0;
+                } else if (pendingOp === '-') {
+                    btn.disabled = item.value >= pendingA.value;
+                } else {
+                    btn.disabled = false;
+                }
             }
-        }
-        return out;
+        });
     }
 
-    // Recursive-descent parser that enforces integer-only division.
-    // Returns [value, nextPos] or [null, pos] on error.
-    function parseExprRD(toks, pos) {
-        let [left, p] = parseTerm(toks, pos);
-        if (left === null) return [null, pos];
-        while (p < toks.length && toks[p].type === 'op' && (toks[p].val === '+' || toks[p].val === '-')) {
-            const op = toks[p].val;
-            const [right, p2] = parseTerm(toks, p + 1);
-            if (right === null) return [null, p];
-            left = op === '+' ? left + right : left - right;
-            p = p2;
-        }
-        return [left, p];
-    }
-    function parseTerm(toks, pos) {
-        let [left, p] = parseFactor(toks, pos);
-        if (left === null) return [null, pos];
-        while (p < toks.length && toks[p].type === 'op' && (toks[p].val === '*' || toks[p].val === '/')) {
-            const op = toks[p].val;
-            const [right, p2] = parseFactor(toks, p + 1);
-            if (right === null) return [null, p];
-            if (op === '/') {
-                if (right === 0 || left % right !== 0) return [null, p];
-                left = left / right;
-            } else {
-                left = left * right;
-            }
-            p = p2;
-        }
-        return [left, p];
-    }
-    function parseFactor(toks, pos) {
-        if (pos >= toks.length) return [null, pos];
-        if (toks[pos].type === 'num') return [toks[pos].val, pos + 1];
-        if (toks[pos].type === 'op' && toks[pos].val === '(') {
-            const [val, p2] = parseExprRD(toks, pos + 1);
-            if (val === null) return [null, pos];
-            if (p2 >= toks.length || toks[p2].val !== ')') return [null, pos];
-            return [val, p2 + 1];
-        }
-        return [null, pos];
-    }
-
-    function evalExpression(exprStr) {
-        if (!exprStr || !exprStr.trim()) return null;
-        const toks = tokeniseExpr(exprStr);
-        if (!toks) return null;
-        const [result, pos] = parseExprRD(toks, 0);
-        if (result === null || pos !== toks.length) return null;
-        if (!Number.isInteger(result) || result <= 0) return null;
-        return result;
-    }
-
-    // Build expression string from tokens (replacing * with × and / with ÷ for display)
-    function exprString(forEval = false) {
-        return tokens.map(t => {
-            if (forEval)  return t;
-            if (t === '*') return '×';
-            if (t === '/') return '÷';
-            return t;
-        }).join(' ');
-    }
-
-    function updateExprDisplay() {
-        const display = exprString(false);
-        exprDisplay.textContent = display || '\u00a0';
-        const val = evalExpression(exprString(true));
-        exprValue.className = 'cd-expr-value';
-        if (val === null) {
-            exprValue.textContent = tokens.length ? '(incomplete)' : '\u00a0';
-            if (tokens.length) exprValue.classList.add('cd-val-error');
-        } else {
-            const diff = Math.abs(val - target);
-            if (diff === 0) {
-                exprValue.textContent = `= ${val} ✓ Exact!`;
-                exprValue.classList.add('cd-val-exact');
-            } else {
-                exprValue.textContent = `= ${val}  (${diff > 0 ? '+' : ''}${val - target} from target)`;
-                exprValue.classList.add(diff <= 10 ? 'cd-val-close' : 'cd-val-error');
-            }
-        }
+    function updateControls() {
+        document.querySelectorAll('.cd-op-btn').forEach(b => {
+            b.disabled = gameOver || stepState !== 'pickOp';
+        });
+        const nothingDone = stepState === 'pickA' && steps.length === 0;
+        if (undoBtn) undoBtn.disabled = gameOver || nothingDone;
+        if (clearBtn) clearBtn.disabled = gameOver || nothingDone;
+        if (submitBtn) submitBtn.disabled = gameOver;
+        updateTileDisabled();
     }
 
     // ---- Solver ----
@@ -22033,11 +22010,14 @@ function launchConfetti() {
     // ---- Game phase ----
     function startGame() {
         // Reset state
-        tokens       = [];
-        tokenMeta    = [];
-        usedNumIdx   = new Set();
-        gameOver     = false;
-        timerSec     = 30;
+        nextPoolId = 0;
+        pool = gameNumbers.map(v => ({ id: nextPoolId++, value: v, isResult: false }));
+        steps = [];
+        stepState = 'pickA';
+        pendingA = null;
+        pendingOp = null;
+        gameOver = false;
+        timerSec = 30;
         resultEl.innerHTML = '';
         resultEl.style.display = '';
 
@@ -22048,9 +22028,9 @@ function launchConfetti() {
         targetEl.textContent = String(target);
         timerEl.textContent  = '30';
         timerEl.classList.remove('cd-timer-urgent');
-        updateExprDisplay();
         buildNumberTiles();
-        setControlsDisabled(false);
+        updateDisplay();
+        updateControls();
 
         // Start timer
         clearInterval(timerInterval);
@@ -22067,54 +22047,94 @@ function launchConfetti() {
 
     function buildNumberTiles() {
         numbersEl.innerHTML = '';
-        gameNumbers.forEach((n, i) => {
+        pool.forEach(item => {
             const btn = document.createElement('button');
             btn.className = 'w95-btn cd-num-btn';
-            btn.textContent = String(n);
-            btn.dataset.idx = i;
+            if (item.isResult) btn.classList.add('cd-num-result');
+            btn.textContent = String(item.value);
+            btn.dataset.poolId = item.id;
             btn.type = 'button';
-            btn.addEventListener('click', () => onNumberClick(i, btn));
+            btn.addEventListener('click', () => onNumberClick(item));
             numbersEl.appendChild(btn);
         });
+        updateTileDisabled();
     }
 
-    function onNumberClick(idx, btn) {
-        if (gameOver || usedNumIdx.has(idx)) return;
-        tokens.push(String(gameNumbers[idx]));
-        tokenMeta.push({ type: 'num', numIdx: idx });
-        usedNumIdx.add(idx);
-        btn.disabled = true;
-        updateExprDisplay();
+    function onNumberClick(item) {
+        if (gameOver) return;
+        if (stepState === 'pickA') {
+            pendingA = item;
+            pool = pool.filter(p => p.id !== item.id);
+            stepState = 'pickOp';
+            buildNumberTiles();
+            updateDisplay();
+            updateControls();
+        } else if (stepState === 'pickB') {
+            const result = compute(pendingA.value, pendingOp, item.value);
+            if (result === null) return;
+            pool = pool.filter(p => p.id !== item.id);
+            const resultId = nextPoolId++;
+            steps.push({
+                aId: pendingA.id, bId: item.id,
+                op: pendingOp,
+                a: pendingA.value, b: item.value,
+                aIsResult: pendingA.isResult, bIsResult: item.isResult,
+                result, resultId
+            });
+            pool.push({ id: resultId, value: result, isResult: true });
+            pendingA = null;
+            pendingOp = null;
+            stepState = 'pickA';
+            buildNumberTiles();
+            updateDisplay();
+            updateControls();
+        }
     }
 
     document.querySelectorAll('.cd-op-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (gameOver) return;
-            tokens.push(btn.dataset.op);
-            tokenMeta.push({ type: 'op' });
-            updateExprDisplay();
+            if (gameOver || stepState !== 'pickOp') return;
+            pendingOp = btn.dataset.op;
+            stepState = 'pickB';
+            updateDisplay();
+            updateControls();
         });
     });
 
     undoBtn?.addEventListener('click', () => {
-        if (gameOver || !tokens.length) return;
-        const meta = tokenMeta.pop();
-        tokens.pop();
-        if (meta.type === 'num') {
-            usedNumIdx.delete(meta.numIdx);
-            const tile = numbersEl.querySelector(`[data-idx="${meta.numIdx}"]`);
-            if (tile) tile.disabled = false;
+        if (gameOver) return;
+        if (stepState === 'pickOp') {
+            // Cancel A selection, return to pool
+            pool.push(pendingA);
+            pendingA = null;
+            stepState = 'pickA';
+        } else if (stepState === 'pickB') {
+            // Cancel operator, go back to pickOp
+            pendingOp = null;
+            stepState = 'pickOp';
+        } else if (steps.length > 0) {
+            // Undo last completed step
+            const step = steps.pop();
+            pool = pool.filter(p => p.id !== step.resultId);
+            pool.push({ id: step.aId, value: step.a, isResult: step.aIsResult });
+            pool.push({ id: step.bId, value: step.b, isResult: step.bIsResult });
         }
-        updateExprDisplay();
+        buildNumberTiles();
+        updateDisplay();
+        updateControls();
     });
 
     clearBtn?.addEventListener('click', () => {
         if (gameOver) return;
-        tokens    = [];
-        tokenMeta = [];
-        usedNumIdx.clear();
-        numbersEl.querySelectorAll('.cd-num-btn').forEach(b => b.disabled = false);
-        updateExprDisplay();
+        pool = gameNumbers.map((v, i) => ({ id: i, value: v, isResult: false }));
+        nextPoolId = gameNumbers.length;
+        steps = [];
+        pendingA = null;
+        pendingOp = null;
+        stepState = 'pickA';
+        buildNumberTiles();
+        updateDisplay();
+        updateControls();
     });
 
     submitBtn?.addEventListener('click', () => {
@@ -22123,20 +22143,12 @@ function launchConfetti() {
         endGame(true);
     });
 
-    function setControlsDisabled(disabled) {
-        [undoBtn, clearBtn, submitBtn].forEach(b => { if (b) b.disabled = disabled; });
-        document.querySelectorAll('.cd-op-btn').forEach(b => b.disabled = disabled);
-        numbersEl.querySelectorAll('.cd-num-btn').forEach(b => {
-            if (!usedNumIdx.has(parseInt(b.dataset.idx, 10))) b.disabled = disabled;
-        });
-    }
-
     function endGame(submitted) {
         gameOver = true;
-        setControlsDisabled(true);
+        updateControls();
         timerEl.classList.remove('cd-timer-urgent');
 
-        const playerVal = evalExpression(exprString(true));
+        const playerVal = getPlayerResult();
         const pts       = scoreResult(playerVal, target);
 
         // Find best computer solution
@@ -22151,7 +22163,7 @@ function launchConfetti() {
 
         let gotText = playerVal !== null
             ? `You got: <strong>${playerVal}</strong> (${Math.abs(playerVal - target) === 0 ? 'exact' : Math.abs(playerVal - target) + ' away'})`
-            : submitted ? 'No valid expression submitted.' : 'Time\'s up — no valid expression.';
+            : submitted ? 'No steps completed.' : 'Time\'s up — no steps completed.';
 
         let solutionHtml = solution.diff === 0
             ? `<div class="cd-result-solution">Optimal: ${solution.expr} = ${target}</div>`

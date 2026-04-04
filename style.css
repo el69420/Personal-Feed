@@ -13375,7 +13375,7 @@ body.dark-mode .cd-timer.cd-timer-urgent {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 3px;
 }
 body.dark-mode .cd-expr-box {
   background: #1a2a2a;
@@ -13384,23 +13384,36 @@ body.dark-mode .cd-expr-box {
   border-right-color: #555;
   border-bottom-color: #555;
 }
-.cd-expr-display {
-  font-size: 14px;
-  font-weight: 700;
-  word-break: break-all;
-  min-height: 20px;
+.cd-steps-log {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.cd-expr-value {
+.cd-step-row {
+  font-size: 13px;
+  font-weight: 700;
+}
+.cd-step-row .cd-val-exact { color: #080; }
+.cd-step-row .cd-val-close { color: #c80; }
+body.dark-mode .cd-step-row .cd-val-exact { color: #4d4; }
+body.dark-mode .cd-step-row .cd-val-close { color: #fc0; }
+.cd-current-step {
   font-size: 12px;
   color: var(--text-secondary);
-  min-height: 16px;
+  min-height: 18px;
+  font-style: italic;
 }
-.cd-expr-value.cd-val-exact { color: #080; font-weight: 700; }
-.cd-expr-value.cd-val-close { color: #c80; font-weight: 700; }
-.cd-expr-value.cd-val-error { color: #a00; }
-body.dark-mode .cd-expr-value.cd-val-exact { color: #4d4; }
-body.dark-mode .cd-expr-value.cd-val-close { color: #fc0; }
-body.dark-mode .cd-expr-value.cd-val-error { color: #f66; }
+.cd-num-result {
+  background: #d0e8d0;
+  border-top-color: #a0c8a0;
+  border-left-color: #a0c8a0;
+}
+body.dark-mode .cd-num-result {
+  background: #1a3a1a;
+  border-top-color: #3a6a3a;
+  border-left-color: #3a6a3a;
+}
 .cd-numbers {
   display: flex;
   flex-wrap: wrap;
