@@ -6661,6 +6661,179 @@ const w95Apps = {};
     garden_fairy_lights:    { overlay: 'fireflies' },
   };
 
+  // SVG rendering data for each garden decoration (viewBox, pixel size, inner markup)
+  const GARDEN_DECOR_SVG = {
+    garden_fountain: { vb:'0 0 32 30', w:30, h:28, d:
+      `<ellipse cx="16" cy="27" rx="14" ry="4" fill="#3e88a8" stroke="#1e5878" stroke-width="1"/>
+       <ellipse cx="16" cy="26" rx="10" ry="2.5" fill="#5aaac8"/>
+       <rect x="14" y="17" width="4" height="10" fill="#c0bcc8" stroke="#909098" stroke-width="0.5"/>
+       <ellipse cx="16" cy="17" rx="7" ry="3" fill="#4898b8" stroke="#2868a0" stroke-width="0.8"/>
+       <ellipse cx="16" cy="16" rx="5" ry="1.8" fill="#62aad0"/>
+       <path d="M16 14.5 Q12.5 9 10 7" stroke="#8ad0ee" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+       <path d="M16 14.5 Q19.5 9 22 7" stroke="#8ad0ee" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+       <path d="M16 14.5 Q16 8 16 5.5" stroke="#8ad0ee" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+       <circle cx="10" cy="7" r="1.2" fill="#8ad0ee"/>
+       <circle cx="22" cy="7" r="1.2" fill="#8ad0ee"/>
+       <circle cx="16" cy="5.5" r="1.2" fill="#8ad0ee"/>` },
+    garden_lantern: { vb:'0 0 18 32', w:16, h:30, d:
+      `<line x1="9" y1="0" x2="9" y2="4" stroke="#706858" stroke-width="1.5"/>
+       <rect x="5.5" y="3.5" width="7" height="2.5" rx="0.5" fill="#a82010" stroke="#800c00" stroke-width="0.5"/>
+       <rect x="4" y="6" width="10" height="14" rx="1.5" fill="#cc3020" stroke="#8a1808" stroke-width="0.5"/>
+       <rect x="5.5" y="7" width="7" height="12" fill="rgba(255,160,40,0.6)" rx="1"/>
+       <line x1="9" y1="6" x2="9" y2="20" stroke="rgba(100,0,0,0.35)" stroke-width="0.7"/>
+       <line x1="4" y1="13" x2="14" y2="13" stroke="rgba(100,0,0,0.2)" stroke-width="0.7"/>
+       <rect x="5.5" y="20" width="7" height="2" rx="0.5" fill="#a82010" stroke="#800c00" stroke-width="0.5"/>
+       <line x1="9" y1="22" x2="9" y2="26" stroke="#c89020" stroke-width="2"/>
+       <line x1="9" y1="26" x2="7" y2="31" stroke="#c89020" stroke-width="1.2"/>
+       <line x1="9" y1="26" x2="9" y2="31.5" stroke="#c89020" stroke-width="1.2"/>
+       <line x1="9" y1="26" x2="11" y2="31" stroke="#c89020" stroke-width="1.2"/>` },
+    garden_bench: { vb:'0 0 38 18', w:44, h:18, d:
+      `<rect x="2" y="2" width="34" height="3.5" rx="1" fill="#d4a060" stroke="#8a5820" stroke-width="0.5"/>
+       <rect x="4" y="5.5" width="2.5" height="3.5" fill="#b88040"/>
+       <rect x="31.5" y="5.5" width="2.5" height="3.5" fill="#b88040"/>
+       <rect x="2" y="9" width="34" height="4.5" rx="0.5" fill="#d4a060" stroke="#8a5820" stroke-width="0.5"/>
+       <rect x="4" y="13.5" width="2.5" height="4.5" fill="#a06830" stroke="#784020" stroke-width="0.5"/>
+       <rect x="31.5" y="13.5" width="2.5" height="4.5" fill="#a06830" stroke="#784020" stroke-width="0.5"/>
+       <line x1="6.5" y1="16" x2="31.5" y2="16" stroke="#a06830" stroke-width="1"/>` },
+    garden_pond: { vb:'0 0 44 16', w:50, h:18, d:
+      `<ellipse cx="22" cy="10" rx="21" ry="7" fill="#3a88a8" stroke="#186080" stroke-width="1"/>
+       <ellipse cx="22" cy="9" rx="14" ry="4" fill="rgba(80,160,210,0.4)"/>
+       <ellipse cx="18" cy="8" rx="5" ry="1.5" fill="rgba(255,255,255,0.15)"/>
+       <ellipse cx="11" cy="9.5" rx="5" ry="2.8" fill="#5a9038" stroke="#386018" stroke-width="0.5"/>
+       <line x1="11" y1="7" x2="11" y2="9.5" stroke="#386018" stroke-width="0.7"/>
+       <circle cx="11" cy="7" r="2" fill="#f0a0b0" stroke="#c07088" stroke-width="0.5"/>
+       <circle cx="11" cy="7" r="0.8" fill="#f8d040"/>
+       <ellipse cx="32" cy="11" rx="4.5" ry="1.8" fill="#f09030" stroke="#c06010" stroke-width="0.5"/>
+       <path d="M36.5 11 L40 9 L40 13 Z" fill="#f09030" stroke="#c06010" stroke-width="0.3"/>
+       <circle cx="30" cy="10.5" r="0.8" fill="#2a1808"/>` },
+    garden_gazebo: { vb:'0 0 36 30', w:36, h:32, d:
+      `<polygon points="18,1 34,14 2,14" fill="#a84830" stroke="#782010" stroke-width="0.5"/>
+       <polygon points="18,1 34,14 32,14 18,4 4,14 2,14" fill="#c05840"/>
+       <circle cx="18" cy="1.5" r="1.5" fill="#e0a030"/>
+       <rect x="2" y="14" width="32" height="2" fill="#c8be98" stroke="#988e68" stroke-width="0.5"/>
+       <rect x="3" y="15.5" width="3.5" height="12" fill="#d8d0b0" stroke="#a89878" stroke-width="0.5"/>
+       <rect x="29.5" y="15.5" width="3.5" height="12" fill="#d8d0b0" stroke="#a89878" stroke-width="0.5"/>
+       <rect x="1" y="27" width="34" height="3" rx="0.5" fill="#c8c0a0" stroke="#988870" stroke-width="0.5"/>
+       <line x1="9" y1="27" x2="9" y2="30" stroke="rgba(0,0,0,0.1)" stroke-width="0.7"/>
+       <line x1="18" y1="27" x2="18" y2="30" stroke="rgba(0,0,0,0.1)" stroke-width="0.7"/>
+       <line x1="27" y1="27" x2="27" y2="30" stroke="rgba(0,0,0,0.1)" stroke-width="0.7"/>` },
+    garden_sundial: { vb:'0 0 28 26', w:26, h:26, d:
+      `<rect x="8" y="22" width="12" height="4" rx="1" fill="#b0a888" stroke="#807860" stroke-width="0.5"/>
+       <rect x="11.5" y="14" width="5" height="9" fill="#c8c0a0" stroke="#989070" stroke-width="0.5"/>
+       <ellipse cx="14" cy="13" rx="11" ry="7" fill="#e8dfa0" stroke="#a09860" stroke-width="1"/>
+       <ellipse cx="14" cy="12.5" rx="7" ry="4" fill="rgba(255,255,255,0.2)"/>
+       <line x1="14" y1="7" x2="14" y2="9.5" stroke="#909060" stroke-width="0.7"/>
+       <line x1="14" y1="16.5" x2="14" y2="19" stroke="#909060" stroke-width="0.7"/>
+       <line x1="4" y1="13" x2="6.5" y2="13" stroke="#909060" stroke-width="0.7"/>
+       <line x1="21.5" y1="13" x2="24" y2="13" stroke="#909060" stroke-width="0.7"/>
+       <line x1="14" y1="13" x2="22" y2="7.5" stroke="#4a4030" stroke-width="2" stroke-linecap="round"/>` },
+    garden_birdhouse: { vb:'0 0 24 32', w:22, h:30, d:
+      `<rect x="11" y="21" width="2" height="11" fill="#8a6030" stroke="#604010" stroke-width="0.5"/>
+       <rect x="4" y="11" width="16" height="11" rx="1" fill="#c89050" stroke="#886020" stroke-width="0.5"/>
+       <rect x="14" y="12" width="5" height="9" fill="rgba(0,0,0,0.08)" rx="0.5"/>
+       <polygon points="12,1.5 22.5,11 1.5,11" fill="#804020" stroke="#602810" stroke-width="0.5"/>
+       <polygon points="12,1.5 22.5,11 20,11 12,4 4,11 1.5,11" fill="#9a5030"/>
+       <circle cx="12" cy="16" r="3.5" fill="#2a1808"/>
+       <circle cx="12" cy="16" r="2" fill="#180e04"/>
+       <rect x="8" y="22" width="8" height="1.2" rx="0.5" fill="#a07038"/>` },
+    garden_bird_bath: { vb:'0 0 30 30', w:28, h:28, d:
+      `<rect x="10" y="26" width="10" height="3" rx="1" fill="#c0b898" stroke="#908870" stroke-width="0.5"/>
+       <rect x="13" y="15" width="4" height="12" fill="#d0c8a8" stroke="#a09880" stroke-width="0.5"/>
+       <ellipse cx="15" cy="15" rx="13" ry="4.5" fill="#c8c0a8" stroke="#908870" stroke-width="1"/>
+       <ellipse cx="15" cy="13.5" rx="9.5" ry="3.5" fill="#62a8c8" stroke="#3e7898" stroke-width="0.5"/>
+       <ellipse cx="11" cy="12.5" rx="4" ry="1.2" fill="rgba(255,255,255,0.25)"/>
+       <ellipse cx="16" cy="13" rx="3.5" ry="2" fill="#4a5898" stroke="#2a3878" stroke-width="0.5"/>
+       <circle cx="18.5" cy="11.5" r="2" fill="#4a5898" stroke="#2a3878" stroke-width="0.5"/>
+       <polygon points="20.5,11 22.5,11.5 20.5,12" fill="#e0a020"/>
+       <circle cx="19" cy="11" r="0.7" fill="#fafafa"/>
+       <path d="M13.5 14 Q11.5 12 13.5 11" stroke="#2a3878" stroke-width="1" fill="none" stroke-linecap="round"/>` },
+    garden_moss_path: { vb:'0 0 48 14', w:52, h:14, d:
+      `<ellipse cx="7.5" cy="9" rx="6.5" ry="4" fill="#9a9888" stroke="#6a6858" stroke-width="1"/>
+       <ellipse cx="6" cy="8" rx="2.5" ry="1.5" fill="#6a9a50" opacity="0.85"/>
+       <ellipse cx="9" cy="9.5" rx="1.5" ry="1" fill="#5a8840" opacity="0.7"/>
+       <ellipse cx="24" cy="10" rx="7.5" ry="4.5" fill="#a2a090" stroke="#727060" stroke-width="1"/>
+       <ellipse cx="22" cy="9" rx="3" ry="1.8" fill="#6aaa50" opacity="0.85"/>
+       <ellipse cx="26" cy="10.5" rx="2" ry="1.2" fill="#5a9040" opacity="0.7"/>
+       <ellipse cx="40.5" cy="8.5" rx="6.5" ry="4" fill="#9a9888" stroke="#6a6858" stroke-width="1"/>
+       <ellipse cx="39" cy="7.5" rx="2.5" ry="1.5" fill="#6a9a50" opacity="0.85"/>
+       <ellipse cx="41.5" cy="9" rx="2" ry="1" fill="#5a8840" opacity="0.7"/>` },
+    garden_hanging_basket: { vb:'0 0 26 30', w:26, h:30, d:
+      `<line x1="13" y1="0" x2="13" y2="8" stroke="#888878" stroke-width="1.5"/>
+       <path d="M4,12 Q13,24 22,12" fill="#b88840" stroke="#886018" stroke-width="1"/>
+       <line x1="4" y1="12" x2="22" y2="12" stroke="#886018" stroke-width="1"/>
+       <line x1="8" y1="12" x2="11" y2="21" stroke="#a07030" stroke-width="0.6"/>
+       <line x1="13" y1="12" x2="13" y2="23.5" stroke="#a07030" stroke-width="0.6"/>
+       <line x1="18" y1="12" x2="15" y2="21" stroke="#a07030" stroke-width="0.6"/>
+       <ellipse cx="4" cy="12" rx="3" ry="2" fill="#5a9838" transform="rotate(-30 4 12)"/>
+       <ellipse cx="22" cy="12" rx="3" ry="2" fill="#5a9838" transform="rotate(30 22 12)"/>
+       <circle cx="8" cy="10" r="3" fill="#e84060"/>
+       <circle cx="8" cy="10" r="1.2" fill="#f8c040"/>
+       <circle cx="13" cy="8.5" r="3.5" fill="#f06080"/>
+       <circle cx="13" cy="8.5" r="1.4" fill="#f8d040"/>
+       <circle cx="18" cy="10" r="3" fill="#e84060"/>
+       <circle cx="18" cy="10" r="1.2" fill="#f8c040"/>
+       <ellipse cx="10.5" cy="8" rx="2" ry="1.2" fill="#4a8830" transform="rotate(-15 10.5 8)"/>
+       <ellipse cx="15.5" cy="8" rx="2" ry="1.2" fill="#4a8830" transform="rotate(15 15.5 8)"/>` },
+    garden_pot_terracotta: { vb:'0 0 24 28', w:22, h:28, d:
+      `<path d="M3,26 L5.5,14 L18.5,14 L21,26 Z" fill="#c06030" stroke="#904020" stroke-width="1"/>
+       <path d="M16,14 L18.5,14 L21,26 L18,26 Z" fill="rgba(0,0,0,0.12)"/>
+       <rect x="3" y="11.5" width="18" height="3" rx="1" fill="#d07040" stroke="#a04820" stroke-width="0.5"/>
+       <ellipse cx="12" cy="12" rx="7" ry="2" fill="#7a4a28"/>
+       <rect x="4" y="25.5" width="16" height="2.5" rx="0.5" fill="#b05020" stroke="#804010" stroke-width="0.5"/>
+       <rect x="11" y="3" width="2" height="10" fill="#4a8030" stroke="#306010" stroke-width="0.5"/>
+       <ellipse cx="9" cy="6" rx="4.5" ry="2" fill="#5a9838" stroke="#3a7020" stroke-width="0.5" transform="rotate(-25 9 6)"/>
+       <ellipse cx="15" cy="5" rx="4.5" ry="2" fill="#5a9838" stroke="#3a7020" stroke-width="0.5" transform="rotate(25 15 5)"/>
+       <ellipse cx="12" cy="3.5" rx="3" ry="1.8" fill="#6aaa48" stroke="#3a7020" stroke-width="0.5"/>` },
+    garden_stepping_stones: { vb:'0 0 50 10', w:54, h:12, d:
+      `<ellipse cx="8" cy="6" rx="7" ry="4" fill="#b8b0a0" stroke="#888070" stroke-width="1"/>
+       <path d="M3 5 Q8 3.5 13 5.5" stroke="rgba(255,255,255,0.25)" stroke-width="0.7" fill="none"/>
+       <ellipse cx="25" cy="5.5" rx="7.5" ry="4.5" fill="#b0a898" stroke="#808068" stroke-width="1"/>
+       <path d="M18.5 4.5 Q25 3 31.5 5.5" stroke="rgba(255,255,255,0.25)" stroke-width="0.7" fill="none"/>
+       <ellipse cx="42" cy="6" rx="7" ry="4" fill="#b8b0a0" stroke="#888070" stroke-width="1"/>
+       <path d="M37 5 Q42 3.5 47 5.5" stroke="rgba(255,255,255,0.25)" stroke-width="0.7" fill="none"/>` },
+    garden_windchimes: { vb:'0 0 22 32', w:20, h:32, d:
+      `<line x1="11" y1="0" x2="11" y2="4" stroke="#706858" stroke-width="1.5"/>
+       <rect x="1.5" y="4" width="19" height="2.5" rx="1" fill="#d0c8a8" stroke="#a09878" stroke-width="0.5"/>
+       <line x1="5" y1="6.5" x2="5" y2="14" stroke="#c0a878" stroke-width="0.5"/>
+       <line x1="9" y1="6.5" x2="8.5" y2="16" stroke="#c0a878" stroke-width="0.5"/>
+       <line x1="13" y1="6.5" x2="13.5" y2="17" stroke="#c0a878" stroke-width="0.5"/>
+       <line x1="17" y1="6.5" x2="17" y2="13" stroke="#c0a878" stroke-width="0.5"/>
+       <rect x="3" y="14" width="4" height="12" rx="1.5" fill="#c8c0b0" stroke="#a09880" stroke-width="0.5"/>
+       <ellipse cx="5" cy="14" rx="2" ry="0.8" fill="#d8d0b8"/>
+       <rect x="6.5" y="16" width="4" height="14" rx="1.5" fill="#c0b8a8" stroke="#989070" stroke-width="0.5"/>
+       <ellipse cx="8.5" cy="16" rx="2" ry="0.8" fill="#d0c8b0"/>
+       <rect x="11" y="17" width="4" height="13" rx="1.5" fill="#c8c0b0" stroke="#a09880" stroke-width="0.5"/>
+       <ellipse cx="13" cy="17" rx="2" ry="0.8" fill="#d8d0b8"/>
+       <rect x="15" y="13" width="4" height="11" rx="1.5" fill="#c0b8a8" stroke="#989070" stroke-width="0.5"/>
+       <ellipse cx="17" cy="13" rx="2" ry="0.8" fill="#d0c8b0"/>` },
+    garden_butterflies: { vb:'0 0 30 22', w:30, h:22, d:
+      `<path d="M13.5 9 Q5 2 2 10 Q4 17 13.5 13" fill="#f0a030" stroke="#c07020" stroke-width="0.5"/>
+       <path d="M16.5 9 Q25 2 28 10 Q26 17 16.5 13" fill="#f0a030" stroke="#c07020" stroke-width="0.5"/>
+       <path d="M13.5 13 Q6 16 5 20 Q9 22 13.5 16" fill="#e89028" stroke="#b86018" stroke-width="0.5"/>
+       <path d="M16.5 13 Q24 16 25 20 Q21 22 16.5 16" fill="#e89028" stroke="#b86018" stroke-width="0.5"/>
+       <circle cx="8" cy="9.5" r="2" fill="rgba(0,0,0,0.18)"/>
+       <circle cx="22" cy="9.5" r="2" fill="rgba(0,0,0,0.18)"/>
+       <circle cx="8" cy="9.5" r="0.8" fill="rgba(255,255,255,0.3)"/>
+       <circle cx="22" cy="9.5" r="0.8" fill="rgba(255,255,255,0.3)"/>
+       <ellipse cx="15" cy="11" rx="1.5" ry="5.5" fill="#3a2a18" stroke="#1e1408" stroke-width="0.5"/>
+       <line x1="14" y1="5.5" x2="11" y2="1" stroke="#3a2a18" stroke-width="0.8"/>
+       <line x1="16" y1="5.5" x2="19" y2="1" stroke="#3a2a18" stroke-width="0.8"/>
+       <circle cx="11" cy="1" r="1" fill="#3a2a18"/>
+       <circle cx="19" cy="1" r="1" fill="#3a2a18"/>` },
+    garden_frogs: { vb:'0 0 26 20', w:26, h:20, d:
+      `<ellipse cx="13" cy="14.5" rx="9" ry="5.5" fill="#5a9a2a" stroke="#3a7010" stroke-width="1"/>
+       <ellipse cx="13" cy="9.5" rx="7" ry="5" fill="#5a9a2a" stroke="#3a7010" stroke-width="1"/>
+       <circle cx="8.5" cy="7" r="3" fill="#4a8a1a" stroke="#2a6008" stroke-width="0.8"/>
+       <circle cx="17.5" cy="7" r="3" fill="#4a8a1a" stroke="#2a6008" stroke-width="0.8"/>
+       <ellipse cx="8.5" cy="7" rx="1.5" ry="1.8" fill="#1a1808"/>
+       <ellipse cx="17.5" cy="7" rx="1.5" ry="1.8" fill="#1a1808"/>
+       <circle cx="9" cy="6.2" r="0.7" fill="rgba(255,255,255,0.85)"/>
+       <circle cx="18" cy="6.2" r="0.7" fill="rgba(255,255,255,0.85)"/>
+       <path d="M9 12 Q13 14 17 12" stroke="#2a6008" stroke-width="1" fill="none" stroke-linecap="round"/>
+       <path d="M5 17 Q3 19 2 18" stroke="#4a8a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+       <path d="M21 17 Q23 19 24 18" stroke="#4a8a1a" stroke-width="1.5" fill="none" stroke-linecap="round"/>` },
+  };
+
   // Returns "YYYY-MM-DD" in local time for a given ms timestamp.
   function tsToLocalDate(ts) {
     const d = new Date(ts);
@@ -7082,12 +7255,18 @@ const w95Apps = {};
           }
         }
         win.appendChild(overlay);
-      } else if (decor.emoji) {
-        const el = document.createElement('span');
-        el.className = 'garden-decoration' +
+      } else {
+        const svgInfo = GARDEN_DECOR_SVG[id];
+        if (!svgInfo) continue;
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        el.setAttribute('viewBox', svgInfo.vb);
+        el.setAttribute('width',   svgInfo.w);
+        el.setAttribute('height',  svgInfo.h);
+        el.setAttribute('aria-hidden', 'true');
+        el.setAttribute('class', 'garden-decoration' +
           (decor.float  ? ' garden-decoration--float'  : '') +
-          (decor.ground ? ' garden-decoration--ground' : '');
-        el.textContent = decor.emoji;
+          (decor.ground ? ' garden-decoration--ground' : ''));
+        el.innerHTML = svgInfo.d;
         el.style.left = decor.x + '%';
         if (decor.ground) {
           el.style.bottom = '13px';

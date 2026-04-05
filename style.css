@@ -6542,26 +6542,13 @@ body.dark-mode .garden-section-hdr{
 }
 .garden-decoration{
   position:absolute;
-  font-size:24px;
-  display:inline-block;
+  display:block;
   pointer-events:none;
   user-select:none;
   z-index:3;
-  line-height:1;
   transform:translateX(-50%);
-  filter:drop-shadow(1px 2px 3px rgba(0,0,0,0.5));
-}
-.garden-decoration--ground::after{
-  content:'';
-  position:absolute;
-  bottom:-3px;
-  left:50%;
-  transform:translateX(-50%);
-  width:75%;
-  height:5px;
-  border-radius:50%;
-  background:rgba(0,0,0,0.20);
-  filter:blur(2px);
+  filter:drop-shadow(1px 2px 4px rgba(0,0,0,0.5));
+  overflow:visible;
 }
 .garden-decoration--float{
   animation:garden-decor-float 3s ease-in-out infinite;
