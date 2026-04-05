@@ -7448,7 +7448,7 @@ const w95Apps = {};
     for (const id of PLANT_DISPLAY_ORDER) {
       const isUnlocked = _unlockedPlants.includes(id);
       const btn = document.createElement('button');
-      btn.className = 'type-picker-btn' + (isUnlocked ? '' : ' locked');
+      btn.className = 'type-picker-btn' + (isUnlocked ? '' : ' locked') + (id === selectedFlower ? ' selected' : '');
       btn.dataset.plant = id;
       btn.disabled = !isUnlocked;
       const icon  = PLANT_ICONS[id] || '🌱';
