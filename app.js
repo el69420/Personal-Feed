@@ -7040,7 +7040,9 @@ const w95Apps = {};
     gardenItemsListEl.innerHTML = unlocked
       .map(r => {
         const active = _activeItems.has(r.id);
-        return `<span class="garden-item-chip${active ? ' garden-item-chip--active' : ''}" data-reward-id="${safeText(r.id)}" title="${safeText(r.description || '')}">${safeText(r.name)}</span>`;
+        const decor = GARDEN_ITEM_DECOR[r.id];
+        const icon = decor ? (decor.emoji || (decor.overlay === 'rain' ? '🌧️' : '✨')) : '';
+        return `<span class="garden-item-chip${active ? ' garden-item-chip--active' : ''}" data-reward-id="${safeText(r.id)}" title="${safeText(r.description || '')}"><span class="garden-item-chip-icon" aria-hidden="true">${icon}</span>${safeText(r.name)}</span>`;
       })
       .join('');
   }
