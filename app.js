@@ -12261,7 +12261,8 @@ function renderAchievementsWindow() {
     window.addEventListener('mouseup', () => { if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-achievements'); } });
 
     // Click delegation: reward badges navigate to the app where that reward is used
-    body.addEventListener('click', (e) => {
+    const body = document.getElementById('w95-achievements-body');
+    body?.addEventListener('click', (e) => {
         const badge = e.target.closest('.ach-reward-badge--nav');
         if (!badge) return;
         const type = badge.dataset.rewardType;
