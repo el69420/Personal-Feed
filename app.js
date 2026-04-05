@@ -6627,6 +6627,8 @@ const w95Apps = {};
   const sharedStreakEl = document.getElementById('garden-shared-streak');
   const gardenBodyEl   = win.querySelector('.w95-body');
   const weatherDisplayEl = document.getElementById('garden-weather');
+  const gardenItemsListEl = document.getElementById('garden-items-list');
+  const gardenItemsHdrEl  = document.getElementById('garden-items-hdr');
 
   const gardenRef  = ref(database, 'garden');
   const ritualEl   = document.getElementById('garden-ritual');
@@ -6994,6 +6996,27 @@ const w95Apps = {};
   }
 
   // ---- renderGarden: drives the 8 slots + streak rows ----
+  // ---- Render unlocked garden decoration items ----
+  function renderGardenItems() {
+    if (!gardenItemsListEl || !gardenItemsHdrEl) return;
+    const VASE_STYLE_IDS = new Set(['vase_style_terracotta', 'vase_style_blue', 'vase_style_golden', 'vase_style_crystal']);
+    const unlocked = REWARD_REGISTRY.filter(r =>
+      r.type === REWARD_TYPE_GARDEN_UNLOCK &&
+      !VASE_STYLE_IDS.has(r.id) &&
+      isRewardUnlocked(r.id)
+    );
+    if (unlocked.length === 0) {
+      gardenItemsHdrEl.style.display = 'none';
+      gardenItemsListEl.style.display = 'none';
+      return;
+    }
+    gardenItemsHdrEl.style.display = '';
+    gardenItemsListEl.style.display = '';
+    gardenItemsListEl.innerHTML = unlocked
+      .map(r => `<span class="garden-item-chip" title="${safeText(r.description || '')}">${safeText(r.name)}</span>`)
+      .join('');
+  }
+
   function renderGarden(state) {
     if (!state) return;
     const tiles         = state.tiles || {};
@@ -7001,6 +7024,7 @@ const w95Apps = {};
     const unlockedTiles = state.unlockedTiles || 1;
     tilesRowEl.dataset.gardenSize = String(unlockedTiles);
 
+    renderGardenItems();
     renderPlantSelector(unlockedPlants);
 
     for (let n = 0; n < TOTAL_SLOTS; n++) {
@@ -8104,6 +8128,7 @@ const w95Apps = {};
     maybeTriggerMythical(_dateKey);
     maybeGardenGlitch();
     renderGardenJournal();
+    renderGardenItems();
   }
 
   function hide() {

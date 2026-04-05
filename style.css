@@ -6505,6 +6505,31 @@ body.dark-mode .garden-section-hdr{
   color:#888;
   border-bottom-color:rgba(255,255,255,0.12);
 }
+.garden-items-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:3px;
+  padding:2px 0 4px;
+}
+.garden-item-chip{
+  font:9px Tahoma,sans-serif;
+  background:#c8d8a0;
+  border-top:1px solid #fff;
+  border-left:1px solid #fff;
+  border-right:1px solid #808080;
+  border-bottom:1px solid #808080;
+  padding:1px 5px;
+  color:#2a4a10;
+  cursor:default;
+}
+body.dark-mode .garden-item-chip{
+  background:#2a3a1a;
+  border-top-color:#4a6a2a;
+  border-left-color:#4a6a2a;
+  border-right-color:#111;
+  border-bottom-color:#111;
+  color:#8aba50;
+}
 body.dark-mode .garden-tile-status-el{
   background:rgba(0,0,0,0.55);
 }
