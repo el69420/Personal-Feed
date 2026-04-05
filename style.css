@@ -6200,7 +6200,7 @@ body.dark-mode .garden-journal-msg{color:#d0d0d0;}
 }
 @media(prefers-reduced-motion:no-preference){
   .garden-plant.garden-plant--stage-change{
-    animation:garden-stage-sparkle 0.75s ease-out;
+    animation:garden-stage-sparkle 0.75s ease-out !important;
   }
 }
 
@@ -6624,7 +6624,7 @@ body.dark-mode .garden-actions-bar{
 /* Bud stage transition sparkle (reuse the existing keyframe) */
 @media(prefers-reduced-motion:no-preference){
   .garden-plant.garden-plant--bud.garden-plant--stage-change {
-    animation: garden-stage-sparkle 0.75s ease-out;
+    animation: garden-stage-sparkle 0.75s ease-out !important;
   }
 }
 
@@ -7192,6 +7192,201 @@ body.dark-mode .garden-plant--bud {
 }
 .garden-collect-btn:hover:not(:disabled) { background: #ffe8a0 !important; }
 .garden-collect-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ============================================================
+   Garden Design Improvements
+   ============================================================ */
+
+/* ---- 1. PLANT SWAY ANIMATION ---- */
+
+@keyframes garden-plant-sway {
+  0%,100% { transform: translateX(-50%) rotate(-1.8deg); }
+  50%      { transform: translateX(-50%) rotate( 1.8deg); }
+}
+@keyframes garden-sprout-sway {
+  0%,100% { transform: translateX(-50%) rotate(-1.2deg); }
+  50%      { transform: translateX(-50%) rotate( 1.2deg); }
+}
+
+/* Each column gets its own timing so plants don't all sway in lockstep */
+@media(prefers-reduced-motion: no-preference) {
+  .garden-tile-col:nth-child(1) .garden-plant--bloom,
+  .garden-tile-col:nth-child(1) .garden-plant--bud   { animation: garden-plant-sway  4.3s ease-in-out 0.0s infinite; }
+  .garden-tile-col:nth-child(2) .garden-plant--bloom,
+  .garden-tile-col:nth-child(2) .garden-plant--bud   { animation: garden-plant-sway  3.8s ease-in-out 0.8s infinite; }
+  .garden-tile-col:nth-child(3) .garden-plant--bloom,
+  .garden-tile-col:nth-child(3) .garden-plant--bud   { animation: garden-plant-sway  4.6s ease-in-out 1.5s infinite; }
+  .garden-tile-col:nth-child(4) .garden-plant--bloom,
+  .garden-tile-col:nth-child(4) .garden-plant--bud   { animation: garden-plant-sway  3.6s ease-in-out 0.4s infinite; }
+  .garden-tile-col:nth-child(5) .garden-plant--bloom,
+  .garden-tile-col:nth-child(5) .garden-plant--bud   { animation: garden-plant-sway  4.1s ease-in-out 1.2s infinite; }
+  .garden-tile-col:nth-child(6) .garden-plant--bloom,
+  .garden-tile-col:nth-child(6) .garden-plant--bud   { animation: garden-plant-sway  4.4s ease-in-out 0.6s infinite; }
+  .garden-tile-col:nth-child(7) .garden-plant--bloom,
+  .garden-tile-col:nth-child(7) .garden-plant--bud   { animation: garden-plant-sway  3.9s ease-in-out 1.9s infinite; }
+  .garden-tile-col:nth-child(8) .garden-plant--bloom,
+  .garden-tile-col:nth-child(8) .garden-plant--bud   { animation: garden-plant-sway  4.2s ease-in-out 1.0s infinite; }
+
+  /* Sprouts sway more gently */
+  .garden-tile-col:nth-child(1) .garden-plant--sprout { animation: garden-sprout-sway 5.0s ease-in-out 0.3s infinite; }
+  .garden-tile-col:nth-child(2) .garden-plant--sprout { animation: garden-sprout-sway 4.7s ease-in-out 1.1s infinite; }
+  .garden-tile-col:nth-child(3) .garden-plant--sprout { animation: garden-sprout-sway 5.3s ease-in-out 0.7s infinite; }
+  .garden-tile-col:nth-child(4) .garden-plant--sprout { animation: garden-sprout-sway 4.5s ease-in-out 1.6s infinite; }
+  .garden-tile-col:nth-child(5) .garden-plant--sprout { animation: garden-sprout-sway 5.1s ease-in-out 0.2s infinite; }
+  .garden-tile-col:nth-child(6) .garden-plant--sprout { animation: garden-sprout-sway 4.8s ease-in-out 1.3s infinite; }
+  .garden-tile-col:nth-child(7) .garden-plant--sprout { animation: garden-sprout-sway 5.4s ease-in-out 0.9s infinite; }
+  .garden-tile-col:nth-child(8) .garden-plant--sprout { animation: garden-sprout-sway 4.6s ease-in-out 0.5s infinite; }
+
+  /* Stage-change sparkle still runs — it animates filter, not transform, so they don't clash */
+}
+
+/* ---- 2. REDESIGNED SUNFLOWER BLOOM ---- */
+/* Supersedes the old type-sunflower rules (lines ~5720-5741) */
+
+.garden-plant--bloom.garden-plant--type-sunflower {
+  background: linear-gradient(to top, #2a6a20, #3a9030);
+  width: 4px; height: 38px;
+}
+.garden-plant--bloom.garden-plant--type-sunflower::before {
+  width: 8px; height: 8px;
+  background: #3d1e00;
+  border-radius: 50%;
+  top: -17px; left: -2px;
+  box-shadow:
+     0   -12px 0 3px #ffd000,
+     8px  -8px 0 3px #ffc800,
+    12px   0   0 3px #ffd000,
+     8px   8px 0 3px #ffc800,
+     0    12px 0 3px #ffd000,
+    -8px   8px 0 3px #ffc800,
+   -12px   0   0 3px #ffd000,
+    -8px  -8px 0 3px #ffc800;
+}
+.garden-plant--bloom.garden-plant--type-sunflower::after {
+  width: 11px; height: 11px;
+  background: radial-gradient(circle at 40% 35%, #5a3200, #2e1800);
+  border-radius: 50%;
+  top: -19px; left: -3.5px;
+  box-shadow: inset 1px 1px 3px rgba(0,0,0,0.55);
+}
+
+/* ---- 3. REDESIGNED POPPY BLOOM ---- */
+
+.garden-plant--bloom.garden-plant--type-poppy {
+  background: linear-gradient(to top, #2a7a2a, #3c9a30);
+  width: 4px; height: 36px;
+}
+.garden-plant--bloom.garden-plant--type-poppy::before {
+  width: 18px; height: 15px;
+  background: radial-gradient(ellipse at 40% 32%, #ff5500, #cc2200);
+  border-radius: 55% 55% 45% 45%;
+  top: -16px; left: -7px;
+  box-shadow:
+    -5px 4px 0 3px rgba(160,20,0,0.55),
+     5px 4px 0 3px rgba(160,20,0,0.55),
+     0   6px 0 3px rgba(140,15,0,0.60),
+    inset 2px 3px 0 rgba(255,120,60,0.28);
+}
+.garden-plant--bloom.garden-plant--type-poppy::after {
+  width: 7px; height: 7px;
+  background: radial-gradient(circle at 40% 40%, #222200, #111100);
+  border-radius: 50%;
+  top: -13px; left: -1.5px;
+  box-shadow: 0 0 3px 1px rgba(50,50,0,0.55);
+}
+
+/* ---- 4. REDESIGNED BLUEBELL BLOOM ---- */
+
+.garden-plant--bloom.garden-plant--type-bluebell {
+  background: linear-gradient(to top, #2a7a30, #3a9040);
+  width: 3px; height: 40px;
+}
+.garden-plant--bloom.garden-plant--type-bluebell::before {
+  width: 12px; height: 17px;
+  background: linear-gradient(170deg, #7799ee 0%, #4466cc 60%, #3355bb 100%);
+  border-radius: 50% 50% 40% 40% / 40% 40% 60% 60%;
+  top: -18px; left: -4.5px;
+  box-shadow:
+    inset 2px 4px 0 rgba(210,230,255,0.30),
+    inset -2px -3px 0 rgba(20,40,140,0.22),
+    /* side petal lobes */
+    -8px -2px 0 3px rgba(80,110,210,0.55),
+     8px -2px 0 3px rgba(80,110,210,0.55);
+}
+.garden-plant--bloom.garden-plant--type-bluebell::after {
+  width: 12px; height: 5px;
+  background: #8899dd;
+  border-radius: 0 0 50% 50%;
+  top: -6px; left: -4.5px;
+  box-shadow: inset 0 -1px 0 rgba(220,230,255,0.25);
+}
+
+/* ---- 5. REDESIGNED COSMOS BLOOM ---- */
+
+.garden-plant--bloom.garden-plant--type-cosmos {
+  background: linear-gradient(to top, #2a8a30, #4aaa44);
+  width: 3px; height: 30px;
+}
+.garden-plant--bloom.garden-plant--type-cosmos::before {
+  width: 5px; height: 5px;
+  background: #ffee44;
+  border-radius: 50%;
+  top: -14px; left: -1px;
+  box-shadow:
+     0   -10px 0 2px #ee44aa,
+     7px  -7px 0 2px #ff66bb,
+    10px   0   0 2px #ee44aa,
+     7px   7px 0 2px #ff66bb,
+     0    10px 0 2px #ee44aa,
+    -7px   7px 0 2px #ff66bb,
+   -10px   0   0 2px #ee44aa,
+    -7px  -7px 0 2px #ff66bb;
+}
+.garden-plant--bloom.garden-plant--type-cosmos::after {
+  width: 7px; height: 7px;
+  background: radial-gradient(circle at 38% 38%, #ff9900, #cc6600);
+  border-radius: 50%;
+  top: -16px; left: -2px;
+  box-shadow: 0 0 4px 1px rgba(255,150,0,0.50);
+}
+
+/* ---- 6. VASE BASE SHADOW ---- */
+
+/* Grounding shadow beneath the vase bowl */
+.garden-vase-wrap::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 6px;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.22) 0%, transparent 70%);
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+/* ---- 7. WATER GARDEN BUTTON POLISH ---- */
+
+/* Soft blue-green tint on the water button to signal its purpose */
+.garden-water-btn:not(.garden-water-btn--done):not(.garden-water-btn--partial) {
+  background: #d4ecd4;
+  color: #003a00;
+  border-top-color: #a8d0a8;
+  border-left-color: #a8d0a8;
+}
+.garden-water-btn:not(.garden-water-btn--done):not(.garden-water-btn--partial):hover {
+  background: #c4e4c4;
+}
+body.dark-mode .garden-water-btn:not(.garden-water-btn--done):not(.garden-water-btn--partial) {
+  background: #1a3a1a;
+  color: #88cc88;
+  border-top-color: #2a5a2a;
+  border-left-color: #2a5a2a;
+}
+
+/* ---- 8. NIGHT: DEEPER MOONLIT GRASS ---- */
+/* The grass strip becomes a dark blue-green under a night sky */
+#w95-win-garden .w95-body.garden--night .garden-tiles-row::after {
+  background: linear-gradient(to bottom, #2a5520, #163010);
+}
 
 /* ============================================================
    Win95 Desktop
