@@ -12026,13 +12026,13 @@ function renderAchievementsWindow() {
         // Reward badges — XP first, then named rewards from the registry
         let rewardBadge = '';
         if (isUnlocked) {
-            if (a.xp) rewardBadge += `<span class="ach-reward-badge ach-reward-xp">+${a.xp} XP</span>`;
+            if (a.xp) rewardBadge += `<span class="ach-reward-badge ach-reward-xp" data-tooltip="Experience points — counts towards your level">+${a.xp} XP</span>`;
             if (Array.isArray(a.rewardIds)) {
                 for (const rId of a.rewardIds) {
                     const reward = REWARD_REGISTRY.find(r => r.id === rId);
                     if (!reward) continue;
                     const cls = reward.type === REWARD_TYPE_CONSOLE_COMMAND ? 'ach-reward-cmd' : 'ach-reward-item';
-                    rewardBadge += `<span class="ach-reward-badge ${cls} ach-reward-badge--nav" data-reward-id="${safeText(rId)}" data-reward-type="${safeText(reward.type)}" title="${safeText(reward.description)}">${safeText(reward.name)}</span>`;
+                    rewardBadge += `<span class="ach-reward-badge ${cls} ach-reward-badge--nav" data-reward-id="${safeText(rId)}" data-reward-type="${safeText(reward.type)}" data-tooltip="${safeText(reward.description)}">${safeText(reward.name)}</span>`;
                 }
             }
         }
@@ -12054,7 +12054,7 @@ function renderAchievementsWindow() {
         if (!isUnlocked && Array.isArray(a.rewardIds) && a.rewardIds.length) {
             const previews = a.rewardIds.map(rId => {
                 const r = REWARD_REGISTRY.find(x => x.id === rId);
-                return r ? `<span class="ach-reward-badge ach-reward-locked" title="${safeText(r.description)}">🔒 ${safeText(r.name)}</span>` : '';
+                return r ? `<span class="ach-reward-badge ach-reward-locked" data-tooltip="${safeText(r.description)}">🔒 ${safeText(r.name)}</span>` : '';
             }).join('');
             if (previews) lockedRewardHtml = `<div class="ach-locked-rewards">${previews}</div>`;
         }
