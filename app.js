@@ -21825,10 +21825,10 @@ function launchConfetti() {
 
         clockCtx.clearRect(0, 0, cw, ch);
 
-        // Face fill
+        // Face fill — warm cream background
         clockCtx.beginPath();
         clockCtx.arc(cx, cy, r, 0, 2 * Math.PI);
-        clockCtx.fillStyle = isDark ? '#1a2a2a' : '#ffffff';
+        clockCtx.fillStyle = isDark ? '#1e1810' : '#fffbf0';
         clockCtx.fill();
 
         // Remaining-time arc (filled sector from 12 o'clock)
@@ -21840,18 +21840,18 @@ function launchConfetti() {
             clockCtx.arc(cx, cy, r - 2, startAngle, endAngle);
             clockCtx.closePath();
             if (urgent) {
-                clockCtx.fillStyle = isDark ? 'rgba(255,85,85,0.28)' : 'rgba(200,0,0,0.14)';
+                clockCtx.fillStyle = isDark ? 'rgba(255,80,80,0.30)' : 'rgba(200,0,0,0.14)';
             } else {
-                clockCtx.fillStyle = isDark ? 'rgba(0,160,160,0.28)' : 'rgba(0,128,128,0.13)';
+                clockCtx.fillStyle = isDark ? 'rgba(200,160,40,0.22)' : 'rgba(180,130,0,0.13)';
             }
             clockCtx.fill();
         }
 
-        // Face border
+        // Face border — gold ring
         clockCtx.beginPath();
         clockCtx.arc(cx, cy, r, 0, 2 * Math.PI);
-        clockCtx.strokeStyle = urgent ? (isDark ? '#ff5555' : '#c00') : (isDark ? '#555' : '#808080');
-        clockCtx.lineWidth = 2;
+        clockCtx.strokeStyle = urgent ? (isDark ? '#ff5555' : '#c01010') : (isDark ? '#8a6820' : '#9a7820');
+        clockCtx.lineWidth = 2.5;
         clockCtx.stroke();
 
         // Tick marks (30 ticks — one per second)
@@ -21860,9 +21860,9 @@ function launchConfetti() {
             const isFive = i % 5 === 0;
             const inner  = r - (isFive ? 10 : 6);
             clockCtx.beginPath();
-            clockCtx.moveTo(cx + Math.cos(angle) * (r - 1), cy + Math.sin(angle) * (r - 1));
+            clockCtx.moveTo(cx + Math.cos(angle) * (r - 2), cy + Math.sin(angle) * (r - 2));
             clockCtx.lineTo(cx + Math.cos(angle) * inner,   cy + Math.sin(angle) * inner);
-            clockCtx.strokeStyle = isDark ? '#888' : '#404040';
+            clockCtx.strokeStyle = isDark ? '#7a6030' : '#5a4010';
             clockCtx.lineWidth   = isFive ? 2 : 1;
             clockCtx.stroke();
         }
@@ -21874,7 +21874,7 @@ function launchConfetti() {
         clockCtx.beginPath();
         clockCtx.moveTo(cx, cy);
         clockCtx.lineTo(cx + Math.cos(handAngle) * handLen, cy + Math.sin(handAngle) * handLen);
-        clockCtx.strokeStyle = urgent ? (isDark ? '#ff5555' : '#c00') : (isDark ? '#4dd' : '#008080');
+        clockCtx.strokeStyle = urgent ? (isDark ? '#ff5555' : '#c01010') : (isDark ? '#e0a820' : '#9a6800');
         clockCtx.lineWidth   = 2.5;
         clockCtx.lineCap     = 'round';
         clockCtx.stroke();
@@ -21883,7 +21883,7 @@ function launchConfetti() {
         // Centre dot
         clockCtx.beginPath();
         clockCtx.arc(cx, cy, 3.5, 0, 2 * Math.PI);
-        clockCtx.fillStyle = urgent ? (isDark ? '#ff5555' : '#c00') : (isDark ? '#4dd' : '#008080');
+        clockCtx.fillStyle = urgent ? (isDark ? '#ff5555' : '#c01010') : (isDark ? '#e0a820' : '#9a6800');
         clockCtx.fill();
     }
 
