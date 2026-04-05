@@ -8128,7 +8128,6 @@ const w95Apps = {};
     maybeTriggerMythical(_dateKey);
     maybeGardenGlitch();
     renderGardenJournal();
-    renderGardenItems();
   }
 
   function hide() {
