@@ -9708,12 +9708,13 @@ var ACHIEVEMENTS = [
     // ---- Posting ----
     // To adjust XP values: change the `xp` field below. Level formula is flat 100 XP/level.
     {
-        id:   'first_post',
-        title: 'First Post!',
-        desc:  'Create your first post',
-        icon:  '[*]',
-        xp:    10,
-        tier:  'bronze',
+        id:        'first_post',
+        title:     'First Post!',
+        desc:      'Create your first post',
+        icon:      '[*]',
+        xp:        10,
+        tier:      'bronze',
+        rewardIds: ['snd_piano'],
     },
     {
         id:          'five_posts',
@@ -9757,6 +9758,7 @@ var ACHIEVEMENTS = [
         tier:        'bronze',
         target:      30,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+        rewardIds:   ['wp_lavender'],
     },
     {
         id:          'fifty_posts',
@@ -9767,6 +9769,7 @@ var ACHIEVEMENTS = [
         tier:        'silver',
         target:      50,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+        rewardIds:   ['cat_collar'],
     },
     {
         id:          'hundred_posts',
@@ -9801,6 +9804,7 @@ var ACHIEVEMENTS = [
         tier:        'silver',
         target:      5,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && p.body && p.body.length >= 500).length,
+        rewardIds:   ['ss_clock'],
     },
     {
         id:          'minimalist_5',
@@ -9811,6 +9815,7 @@ var ACHIEVEMENTS = [
         tier:        'bronze',
         target:      5,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && p.body && p.body.length > 0 && p.body.length < 30).length,
+        rewardIds:   ['garden_moss_path'],
     },
     {
         id:          'minimalist_20',
@@ -9821,6 +9826,7 @@ var ACHIEVEMENTS = [
         tier:        'gold',
         target:      20,
         getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && p.body && p.body.length > 0 && p.body.length < 30).length,
+        rewardIds:   ['theme_lavender'],
     },
 
     // ---- XP / Meta ----
@@ -9833,6 +9839,7 @@ var ACHIEVEMENTS = [
         tier:        'silver',
         target:      5,
         getProgress: () => xpToLevel(xpTotal),
+        rewardIds:   ['wp_ocean'],
     },
     {
         id:          'unlock_25',
@@ -9843,16 +9850,18 @@ var ACHIEVEMENTS = [
         tier:        'gold',
         target:      25,
         getProgress: () => unlockedAchievements.size,
+        rewardIds:   ['wp_sunset'],
     },
 
     // ---- Garden actions ----
     {
-        id:    'first_sprout',
-        title: 'First Sprout',
-        desc:  'Water the garden for the first time',
-        icon:  '[~]',
-        xp:    10,
-        tier:  'bronze',
+        id:        'first_sprout',
+        title:     'First Sprout',
+        desc:      'Water the garden for the first time',
+        icon:      '[~]',
+        xp:        10,
+        tier:      'bronze',
+        rewardIds: ['garden_pond'],
     },
     {
         id:          'watering_can',
@@ -9874,6 +9883,7 @@ var ACHIEVEMENTS = [
         tier:        'bronze',
         target:      10,
         getProgress: () => totalWaterings,
+        rewardIds:   ['snd_lofi'],
     },
     {
         id:          'watering_25',
@@ -9895,6 +9905,7 @@ var ACHIEVEMENTS = [
         tier:        'silver',
         target:      50,
         getProgress: () => totalWaterings,
+        rewardIds:   ['garden_sundial'],
     },
     {
         id:          'watering_100',
@@ -9984,6 +9995,7 @@ var ACHIEVEMENTS = [
         tier:        'gold',
         target:      60,
         getProgress: () => Object.keys(gardenVisitDays).length,
+        rewardIds:   ['theme_sunrise'],
     },
     {
         id:          'week_streak',
@@ -10005,6 +10017,7 @@ var ACHIEVEMENTS = [
         tier:        'gold',
         target:      14,
         getProgress: () => gardenVisitStreak.current,
+        rewardIds:   ['catb_stretch'],
     },
     {
         id:          'visit_streak_30',
@@ -10015,6 +10028,7 @@ var ACHIEVEMENTS = [
         tier:        'gold',
         target:      30,
         getProgress: () => gardenVisitStreak.current,
+        rewardIds:   ['ss_matrix'],
     },
 
     // ---- Hidden / Mythic ----
@@ -10036,6 +10050,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  30,
+        rewardIds:           ['wp_forest_floor'],
     },
     {
         id:                  'sun_chaser',
@@ -10055,6 +10070,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  100,
+        rewardIds:           ['theme_starlight'],
     },
     {
         id:                  'inside_joke',
@@ -10064,6 +10080,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  100,
+        rewardIds:           ['garden_bench'],
     },
     {
         id:                  'all_three_today',
@@ -10073,6 +10090,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  150,
+        rewardIds:           ['cat_party_hat'],
     },
     {
         id:                  'comeback_kid',
@@ -10082,6 +10100,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  150,
+        rewardIds:           ['ss_hearts'],
     },
     {
         id:                  'same_braincell',
@@ -10091,6 +10110,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  200,
+        rewardIds:           ['wp_anim_aurora'],
     },
     {
         id:                  'long_distance_high_five',
@@ -10100,6 +10120,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  200,
+        rewardIds:           ['garden_lantern'],
     },
     {
         id:                  'we_were_here',
@@ -10109,6 +10130,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  300,
+        rewardIds:           ['wp_anim_prism'],
     },
 
     // ---- Per-user 3-waters-a-day ----
@@ -10121,6 +10143,7 @@ var ACHIEVEMENTS = [
         tier:        'silver',
         target:      3,
         getProgress: () => dailyWaterCounts[localDateStr()] || 0,
+        rewardIds:   ['cat_bowtie'],
     },
     {
         id:          'water3_week',
@@ -10131,6 +10154,7 @@ var ACHIEVEMENTS = [
         tier:        'gold',
         target:      7,
         getProgress: () => water3Streak.current,
+        rewardIds:   ['theme_ocean'],
     },
 
     // ---- Shared 3-waters-a-day (mythic) ----
@@ -10142,6 +10166,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  100,
+        rewardIds:           ['garden_hanging_basket'],
     },
     {
         id:                  'both_water3_week',
@@ -10151,16 +10176,18 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  200,
+        rewardIds:           ['wp_anim_rain'],
     },
 
     // ---- Replies ----
     {
-        id:    'first_reply',
-        title: 'First Reply',
-        desc:  'Send your first reply to a post',
-        icon:  '[>]',
-        xp:    10,
-        tier:  'bronze',
+        id:        'first_reply',
+        title:     'First Reply',
+        desc:      'Send your first reply to a post',
+        icon:      '[>]',
+        xp:        10,
+        tier:      'bronze',
+        rewardIds: ['garden_fountain'],
     },
     {
         id:          'ten_replies',
@@ -10187,12 +10214,13 @@ var ACHIEVEMENTS = [
 
     // ---- Reactions ----
     {
-        id:    'first_reaction',
-        title: 'First Reaction',
-        desc:  'React to a post for the first time',
-        icon:  '[<3]',
-        xp:    10,
-        tier:  'bronze',
+        id:        'first_reaction',
+        title:     'First Reaction',
+        desc:      'React to a post for the first time',
+        icon:      '[<3]',
+        xp:        10,
+        tier:      'bronze',
+        rewardIds: ['ss_rain'],
     },
     {
         id:          'twentyfive_reactions',
@@ -10727,6 +10755,7 @@ var ACHIEVEMENTS = [
         hiddenUntilUnlocked: true,
         tier:                'mythic',
         xp:                  100,
+        rewardIds:           ['ss_aurora'],
     },
 
     // ---- Connect 4 ----
@@ -10750,6 +10779,7 @@ var ACHIEVEMENTS = [
             try { return JSON.parse(localStorage.getItem('c4Stats_' + currentUser) || '{}').aiWins || 0; }
             catch(e) { return 0; }
         },
+        rewardIds:   ['cmd_c4stats'],
     },
     {
         id:          'c4_ai_wins_10',
@@ -10763,6 +10793,7 @@ var ACHIEVEMENTS = [
             try { return JSON.parse(localStorage.getItem('c4Stats_' + currentUser) || '{}').aiWins || 0; }
             catch(e) { return 0; }
         },
+        rewardIds:   ['wp_storm'],
     },
     {
         id:    'c4_first_draw',
@@ -10788,6 +10819,93 @@ var ACHIEVEMENTS = [
         xp:                  30,
         tier:                'silver',
         hiddenUntilUnlocked: true,
+        rewardIds:           ['wp_neon_grid'],
+    },
+
+    // ---- New achievements ----
+
+    // Posting milestone
+    {
+        id:          'two_hundred_posts',
+        title:       'The Long Game',
+        desc:        'Create 200 posts',
+        icon:        '[200]',
+        xp:          150,
+        tier:        'gold',
+        target:      200,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser).length,
+        rewardIds:   ['theme_cosmos'],
+    },
+
+    // Long-form writing
+    {
+        id:          'novelist',
+        title:       'Novelist',
+        desc:        'Write 10 posts with 500 or more characters each',
+        icon:        '[LLL]',
+        xp:          75,
+        tier:        'gold',
+        target:      10,
+        getProgress: () => Object.values(allPosts).filter(p => p.author === currentUser && p.body && p.body.length >= 500).length,
+        rewardIds:   ['theme_forest'],
+    },
+
+    // Replies milestone
+    {
+        id:          'fifty_replies',
+        title:       'Fifty Replies',
+        desc:        'Send 50 replies',
+        icon:        '[>>>>]',
+        xp:          75,
+        tier:        'gold',
+        target:      50,
+        getProgress: () => Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0),
+        rewardIds:   ['garden_gazebo'],
+    },
+
+    // Reactions milestone
+    {
+        id:          'hundred_reactions',
+        title:       'Reaction Machine',
+        desc:        'React to posts 100 times',
+        icon:        '[100<3]',
+        xp:          75,
+        tier:        'gold',
+        target:      100,
+        getProgress: () => Object.values(allPosts).reduce((acc, p) => {
+            const rxBy = p.reactionsBy || {};
+            return acc + Object.values(rxBy).filter(users => users && users[currentUser]).length;
+        }, 0),
+        rewardIds:   ['garden_bird_bath'],
+    },
+
+    // Cat milestone
+    {
+        id:          'fifty_cat_actions',
+        title:       "Cat's Best Friend",
+        desc:        'Perform 50 total cat actions',
+        icon:        '[~~~]',
+        xp:          75,
+        tier:        'gold',
+        target:      50,
+        getProgress: () => Number(localStorage.getItem('catActionCount') || 0),
+        rewardIds:   ['cat_crown'],
+    },
+
+    // Connect 4 milestone
+    {
+        id:          'c4_ai_wins_25',
+        title:       'Unbeatable',
+        desc:        'Beat the AI 25 times',
+        icon:        '[25★]',
+        xp:          75,
+        tier:        'gold',
+        target:      25,
+        getProgress: () => {
+            try { return JSON.parse(localStorage.getItem('c4Stats_' + currentUser) || '{}').aiWins || 0; }
+            catch(e) { return 0; }
+        },
+        rewardIds:   ['theme_arcade'],
     },
 ];
 
@@ -11040,6 +11158,117 @@ const REWARD_REGISTRY = [
     { id: 'theme_dusk', type: REWARD_TYPE_DESKTOP_THEME, name: 'Dusk',
       description: 'Soft violet-grey — the colour of the sky just after the sun sets', icon: '🌇',
       swatchCss: 'linear-gradient(135deg, #5a4870 0%, #3a2858 50%, #20183a 100%)' },
+
+    // ---- New wallpapers ----
+    { id: 'wp_lavender', type: REWARD_TYPE_WALLPAPER, name: 'Lavender Fields',
+      description: 'Soft violet haze, the colour of a field just before dusk',
+      css: 'linear-gradient(160deg,#f0e8ff 0%,#d8c8f0 30%,#b8a0e0 65%,#9878c8 100%)',
+      swatchCss: 'linear-gradient(160deg,#f0e8ff 0%,#d8c8f0 40%,#9878c8 100%)' },
+    { id: 'wp_ocean', type: REWARD_TYPE_WALLPAPER, name: 'Deep Ocean',
+      description: 'Still water, very deep — the light barely reaches here',
+      css: 'linear-gradient(to bottom,#001a30 0%,#002d50 40%,#00203c 70%,#001020 100%)',
+      swatchCss: 'linear-gradient(to bottom,#001a30 0%,#002d50 50%,#001020 100%)' },
+    { id: 'wp_sunset', type: REWARD_TYPE_WALLPAPER, name: 'Violet Sunset',
+      description: 'The horizon turns orange, then purple, then something with no name',
+      css: 'linear-gradient(to bottom,#1a0030 0%,#5a0878 25%,#c04820 60%,#f08030 85%,#f8c860 100%)',
+      swatchCss: 'linear-gradient(to bottom,#1a0030 0%,#c04820 55%,#f8c860 100%)' },
+    { id: 'wp_forest_floor', type: REWARD_TYPE_WALLPAPER, name: 'Forest Floor',
+      description: 'Moss, pine needles, and the smell of last night\'s rain',
+      css: 'linear-gradient(160deg,#0a1a08 0%,#122010 30%,#1a3018 60%,#0e2008 100%)',
+      swatchCss: 'linear-gradient(160deg,#0a1a08 0%,#1a3018 50%,#0e2008 100%)' },
+    { id: 'wp_storm', type: REWARD_TYPE_WALLPAPER, name: 'Before the Storm',
+      description: 'That strange yellow-grey light when the air goes very still',
+      css: 'linear-gradient(to bottom,#0a0c10 0%,#1a1e28 35%,#2a2c30 65%,#151820 100%)',
+      swatchCss: 'linear-gradient(to bottom,#0a0c10 0%,#2a2c30 60%,#151820 100%)' },
+    { id: 'wp_neon_grid', type: REWARD_TYPE_WALLPAPER, name: 'Neon Grid',
+      description: 'A flat grid pulsing under violet light — it goes on forever',
+      css: 'linear-gradient(to bottom,#050010 0%,#0a0020 40%,#050018 70%,#020010 100%)',
+      swatchCss: 'linear-gradient(to bottom,#050010 0%,#0a0020 50%,#020010 100%)' },
+    { id: 'wp_anim_rain', type: REWARD_TYPE_WALLPAPER, name: 'Soft Rain', animated: true,
+      description: 'A dark window and the sound of rain you can almost hear',
+      css: 'linear-gradient(to bottom,#0a0e18 0%,#101828 50%,#080e18 100%)',
+      swatchCss: 'linear-gradient(to bottom,#0a0e18 0%,#101828 50%,#080e18 100%)' },
+    { id: 'wp_anim_aurora', type: REWARD_TYPE_WALLPAPER, name: 'Aurora Borealis', animated: true,
+      description: 'The northern lights, rippling in slow waves across a black sky',
+      css: 'linear-gradient(to bottom,#000510 0%,#001020 100%)',
+      swatchCss: 'linear-gradient(to bottom,#000510 0%,#003318 40%,#001020 100%)' },
+    { id: 'wp_anim_prism', type: REWARD_TYPE_WALLPAPER, name: 'Prismatic Light', animated: true,
+      description: 'Something impossibly rare — light splitting into every colour at once',
+      css: 'linear-gradient(to bottom,#050010 0%,#050020 100%)',
+      swatchCss: 'linear-gradient(135deg,#ff0080 0%,#8000ff 25%,#0080ff 50%,#00ff80 75%,#ff8000 100%)' },
+
+    // ---- New screensavers ----
+    { id: 'ss_clock', type: REWARD_TYPE_SCREENSAVER, name: 'Analog Clock',
+      description: 'A quiet clock face, ticking through the slow hours',
+      swatchCss: 'radial-gradient(circle,#1a1a2a 0%,#0a0a18 70%,#050510 100%)' },
+    { id: 'ss_matrix', type: REWARD_TYPE_SCREENSAVER, name: 'Falling Code',
+      description: 'Green characters cascade down in the dark — something is running',
+      swatchCss: 'linear-gradient(to bottom,#001a00 0%,#002800 50%,#000e00 100%)' },
+    { id: 'ss_hearts', type: REWARD_TYPE_SCREENSAVER, name: 'Floating Hearts',
+      description: 'Small hearts drift upward and fade, one by one',
+      swatchCss: 'radial-gradient(ellipse,#3a0820 0%,#200010 60%,#0c0008 100%)' },
+    { id: 'ss_aurora', type: REWARD_TYPE_SCREENSAVER, name: 'Aurora',
+      description: 'Curtains of colour, impossibly slow, impossibly quiet',
+      swatchCss: 'linear-gradient(to bottom,#020e10 0%,#004428 40%,#020e10 100%)' },
+    { id: 'ss_rain', type: REWARD_TYPE_SCREENSAVER, name: 'Rain on Glass',
+      description: 'Drops trace paths down a cold window while the world blurs outside',
+      swatchCss: 'linear-gradient(to bottom,#0a1020 0%,#182030 50%,#0a1020 100%)' },
+
+    // ---- New sound packs ----
+    { id: 'snd_piano', type: REWARD_TYPE_SOUND_PACK, name: 'Soft Piano',
+      description: 'A single piano, unhurried, in a warm room', icon: '🎹' },
+    { id: 'snd_lofi', type: REWARD_TYPE_SOUND_PACK, name: 'Lo-Fi Beats',
+      description: 'Muffled drums, a lazy bassline, and crackling vinyl', icon: '🎧' },
+
+    // ---- New cat accessories ----
+    { id: 'cat_party_hat', type: REWARD_TYPE_CAT_ACCESSORY, name: 'Party Hat',
+      description: 'Cone-shaped, slightly lopsided — the cat is unmoved', icon: '🎉', faceDecor: '🎉' },
+    { id: 'cat_collar', type: REWARD_TYPE_CAT_ACCESSORY, name: 'Tiny Collar',
+      description: 'A small bell that chimes when the cat moves', icon: '🔔', faceDecor: '🔔', placement: 'neck' },
+    { id: 'cat_bowtie', type: REWARD_TYPE_CAT_ACCESSORY, name: 'Bow Tie',
+      description: 'The cat looks like they have somewhere important to be', icon: '🎀', faceDecor: '🪢', placement: 'neck' },
+    { id: 'cat_crown', type: REWARD_TYPE_CAT_ACCESSORY, name: 'Tiny Crown',
+      description: 'For the true devotee. The cat wears it without irony', icon: '👑', faceDecor: '👑' },
+
+    // ---- New cat behaviours ----
+    { id: 'catb_stretch', type: REWARD_TYPE_CAT_BEHAVIOUR, name: 'Stretching',
+      description: 'Cat slowly stretches and yawns — long day', icon: '😹' },
+
+    // ---- New garden unlocks ----
+    { id: 'garden_pond',            type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Koi Pond',          description: 'A small still pond — something golden moves beneath the surface', icon: '[G]' },
+    { id: 'garden_gazebo',          type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Garden Gazebo',      description: 'A latticed shelter at the far end — good for rainy visits',          icon: '[G]' },
+    { id: 'garden_sundial',         type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Stone Sundial',      description: 'It keeps its own time. It seems about right',                        icon: '[G]' },
+    { id: 'garden_moss_path',       type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Mossy Path',         description: 'Soft stones set into the earth, leading somewhere quiet',            icon: '[G]' },
+    { id: 'garden_hanging_basket',  type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Hanging Basket',     description: 'A cascade of petals near the entrance — cheery and a little chaotic', icon: '[G]' },
+    { id: 'garden_bird_bath',       type: REWARD_TYPE_GARDEN_UNLOCK, name: 'Stone Bird Bath',    description: 'Visitors come in the morning. The water is always clear',             icon: '[G]' },
+
+    // ---- New desktop themes ----
+    { id: 'theme_forest', type: REWARD_TYPE_DESKTOP_THEME, name: 'Deep Forest',
+      description: 'Dark greens and bark-brown — like using your device under a canopy', icon: '🌲',
+      swatchCss: 'linear-gradient(135deg,#1a3a0a 0%,#0d2005 50%,#050e02 100%)' },
+    { id: 'theme_ocean', type: REWARD_TYPE_DESKTOP_THEME, name: 'Ocean Breeze',
+      description: 'Cool blues and salt-white — calm in the way deep water is calm', icon: '🌊',
+      swatchCss: 'linear-gradient(135deg,#003a5a 0%,#002038 50%,#000c18 100%)' },
+    { id: 'theme_lavender', type: REWARD_TYPE_DESKTOP_THEME, name: 'Lavender',
+      description: 'A gentle purple haze over everything — nothing urgent here', icon: '💜',
+      swatchCss: 'linear-gradient(135deg,#6a408a 0%,#482868 50%,#281848 100%)' },
+    { id: 'theme_sunrise', type: REWARD_TYPE_DESKTOP_THEME, name: 'Sunrise',
+      description: 'Warm peach and gold — the interface at its most optimistic', icon: '🌅',
+      swatchCss: 'linear-gradient(135deg,#c06820 0%,#a04810 50%,#702808 100%)' },
+    { id: 'theme_starlight', type: REWARD_TYPE_DESKTOP_THEME, name: 'Starlight',
+      description: 'Midnight blue flecked with white — a night you stayed up for', icon: '✨',
+      swatchCss: 'linear-gradient(135deg,#050828 0%,#080c38 50%,#030618 100%)' },
+    { id: 'theme_cosmos', type: REWARD_TYPE_DESKTOP_THEME, name: 'Cosmic Night',
+      description: 'The full depth of space — every post, a tiny signal in the dark', icon: '🌌',
+      swatchCss: 'linear-gradient(135deg,#020414 0%,#050820 50%,#020310 100%)' },
+
+    // ---- New console command ----
+    { id: 'cmd_c4stats', type: REWARD_TYPE_CONSOLE_COMMAND, name: '/c4stats',
+      description: 'Show your Connect 4 win/draw/loss record against the AI and online', icon: '[>_]' },
+
+    { id: 'theme_arcade', type: REWARD_TYPE_DESKTOP_THEME, name: 'Retro Arcade',
+      description: 'Bold primary colours on a dark grid — like a cabinet game glowing in a corner', icon: '🕹️',
+      swatchCss: 'linear-gradient(135deg,#1a0030 0%,#300060 40%,#500090 70%,#200050 100%)' },
 ];
 
 // ---- Reward unlock state ----
@@ -11330,6 +11559,7 @@ async function afterPostCreated(newPostType) {
     if (myCount >= 30)  await unlockAchievement('thirty_posts');
     if (myCount >= 50)  await unlockAchievement('fifty_posts');
     if (myCount >= 100) await unlockAchievement('hundred_posts');
+    if (myCount >= 200) await unlockAchievement('two_hundred_posts');
 
     // Link-sharing achievements — count existing link posts + this new one if it's a link
     const isNewLink = !newPostType || newPostType === 'link';
@@ -11346,6 +11576,7 @@ async function afterPostCreated(newPostType) {
         const minimalist  = myPosts.filter(p => p.body && p.body.length > 0 && p.body.length < 30).length + (newBodyLen < 30 ? 1 : 0);
         if (longform >= 1)   await unlockAchievement('longform_1');
         if (longform >= 5)   await unlockAchievement('longform_5');
+        if (longform >= 10)  await unlockAchievement('novelist');
         if (minimalist >= 5)  await unlockAchievement('minimalist_5');
         if (minimalist >= 20) await unlockAchievement('minimalist_20');
     }
@@ -11389,12 +11620,14 @@ async function backfillAchievements() {
     if (myCount >= 30)  await unlockAchievement('thirty_posts');
     if (myCount >= 50)  await unlockAchievement('fifty_posts');
     if (myCount >= 100) await unlockAchievement('hundred_posts');
+    if (myCount >= 200) await unlockAchievement('two_hundred_posts');
 
     // Post-length achievements.
     const longformCount   = myPosts.filter(p => p.body && p.body.length >= 500).length;
     const minimalistCount = myPosts.filter(p => p.body && p.body.length > 0 && p.body.length < 30).length;
     if (longformCount >= 1)   await unlockAchievement('longform_1');
     if (longformCount >= 5)   await unlockAchievement('longform_5');
+    if (longformCount >= 10)  await unlockAchievement('novelist');
     if (minimalistCount >= 5)  await unlockAchievement('minimalist_5');
     if (minimalistCount >= 20) await unlockAchievement('minimalist_20');
 
@@ -11468,15 +11701,17 @@ async function backfillAchievements() {
     if (myReplyCount >= 1)  await unlockAchievement('first_reply');
     if (myReplyCount >= 10) await unlockAchievement('ten_replies');
     if (myReplyCount >= 20) await unlockAchievement('twenty_replies');
+    if (myReplyCount >= 50) await unlockAchievement('fifty_replies');
 
     // ---- Reactions ----
     const myReactionCount = Object.values(allPosts).reduce((acc, p) => {
         const rxBy = p.reactionsBy || {};
         return acc + Object.values(rxBy).filter(users => users && users[currentUser]).length;
     }, 0);
-    if (myReactionCount >= 1)  await unlockAchievement('first_reaction');
-    if (myReactionCount >= 25) await unlockAchievement('twentyfive_reactions');
-    if (myReactionCount >= 50) await unlockAchievement('fifty_reactions');
+    if (myReactionCount >= 1)   await unlockAchievement('first_reaction');
+    if (myReactionCount >= 25)  await unlockAchievement('twentyfive_reactions');
+    if (myReactionCount >= 50)  await unlockAchievement('fifty_reactions');
+    if (myReactionCount >= 100) await unlockAchievement('hundred_reactions');
 
     // ---- Letters ----
     const myLetterCount = Object.values(allLetters).filter(l => l.from === currentUser).length;
@@ -11489,6 +11724,7 @@ async function backfillAchievements() {
     if (catCount >= 1)  await unlockAchievement('first_cat_action');
     if (catCount >= 10) await unlockAchievement('ten_cat_actions');
     if (catCount >= 25) await unlockAchievement('cat_whisperer');
+    if (catCount >= 50) await unlockAchievement('fifty_cat_actions');
 
     // ---- Cat interact days ----
     try {
@@ -11568,6 +11804,15 @@ async function backfillAchievements() {
         if (allSeen) await unlockAchievement('curious_mind');
     } catch (_) {}
 
+    // ---- Connect 4 (localStorage-based) ----
+    const c4StatsBf = (() => { try { return JSON.parse(localStorage.getItem('c4Stats_' + currentUser) || '{}'); } catch(e) { return {}; } })();
+    if ((c4StatsBf.aiWins || 0) >= 1)  await unlockAchievement('c4_first_win');
+    if ((c4StatsBf.aiWins || 0) >= 5)  await unlockAchievement('c4_ai_wins_5');
+    if ((c4StatsBf.aiWins || 0) >= 10) await unlockAchievement('c4_ai_wins_10');
+    if ((c4StatsBf.aiWins || 0) >= 25) await unlockAchievement('c4_ai_wins_25');
+    if ((c4StatsBf.aiDraws || 0) >= 1) await unlockAchievement('c4_first_draw');
+    if ((c4StatsBf.onlineWins || 0) >= 1) await unlockAchievement('c4_online_win');
+
     // XP / meta — checked last so all prior unlocks are counted.
     if (xpToLevel(xpTotal) >= 5)        await unlockAchievement('level_5');
     if (unlockedAchievements.size >= 25) await unlockAchievement('unlock_25');
@@ -11585,6 +11830,7 @@ async function _afterReply() {
     const total = Object.values(allPosts).reduce((acc, p) => acc + (p.replies || []).filter(r => r.author === currentUser).length, 0) + 1; // +1 for the just-pushed reply (allPosts not yet updated)
     if (total >= 10) await unlockAchievement('ten_replies');
     if (total >= 20) await unlockAchievement('twenty_replies');
+    if (total >= 50) await unlockAchievement('fifty_replies');
     if (unlockedAchievements.size >= 25) await unlockAchievement('unlock_25');
 }
 
@@ -11595,8 +11841,9 @@ function _afterReaction() {
         const rxBy = p.reactionsBy || {};
         return acc + Object.values(rxBy).filter(users => users && users[currentUser]).length;
     }, 0) + 1; // +1 for the just-updated reaction (allPosts not yet synced)
-    if (total >= 25) unlockAchievement('twentyfive_reactions');
-    if (total >= 50) unlockAchievement('fifty_reactions');
+    if (total >= 25)  unlockAchievement('twentyfive_reactions');
+    if (total >= 50)  unlockAchievement('fifty_reactions');
+    if (total >= 100) unlockAchievement('hundred_reactions');
     if (unlockedAchievements.size >= 25) unlockAchievement('unlock_25');
 }
 
@@ -11622,6 +11869,7 @@ function _afterCatAction() {
     unlockAchievement('first_cat_action');
     if (count >= 10) unlockAchievement('ten_cat_actions');
     if (count >= 25) unlockAchievement('cat_whisperer');
+    if (count >= 50) unlockAchievement('fifty_cat_actions');
 
     // Track unique cat-interact days for Explorer Cat achievement
     try {
@@ -21550,6 +21798,7 @@ document.addEventListener('click', (e) => {
                         await unlockAchievement('c4_first_win');
                         if (stats.aiWins >= 5)  await unlockAchievement('c4_ai_wins_5');
                         if (stats.aiWins >= 10) await unlockAchievement('c4_ai_wins_10');
+                        if (stats.aiWins >= 25) await unlockAchievement('c4_ai_wins_25');
                         if (mc <= 15)           await unlockAchievement('c4_speed_win');
                         renderLeaderboard();
                     })();
