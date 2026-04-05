@@ -21845,10 +21845,12 @@ function launchConfetti() {
         clockCtx.fillStyle = isDark ? '#1e1810' : '#fffbf0';
         clockCtx.fill();
 
-        // Remaining-time arc (filled sector from 12 o'clock)
-        if (timerSec > 0) {
+        const elapsed   = 30 - timerSec;
+
+        // Elapsed-time arc (filled sector from 12 o'clock, follows hand)
+        if (timerSec < 30) {
             const startAngle = -Math.PI / 2;
-            const endAngle   = startAngle + (timerSec / 30) * 2 * Math.PI;
+            const endAngle   = startAngle + (elapsed / 30) * 2 * Math.PI;
             clockCtx.beginPath();
             clockCtx.moveTo(cx, cy);
             clockCtx.arc(cx, cy, r - 2, startAngle, endAngle);
@@ -21882,7 +21884,6 @@ function launchConfetti() {
         }
 
         // Second hand — points at elapsed position (starts at 12, sweeps clockwise)
-        const elapsed   = 30 - timerSec;
         const handAngle = (elapsed / 30) * 2 * Math.PI - Math.PI / 2;
         const handLen   = r - 14;
         clockCtx.beginPath();
