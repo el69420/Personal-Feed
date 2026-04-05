@@ -7013,9 +7013,29 @@ const w95Apps = {};
     gardenItemsHdrEl.style.display = '';
     gardenItemsListEl.style.display = '';
     gardenItemsListEl.innerHTML = unlocked
-      .map(r => `<span class="garden-item-chip" title="${safeText(r.description || '')}">${safeText(r.name)}</span>`)
+      .map(r => `<span class="garden-item-chip" data-reward-id="${safeText(r.id)}" title="${safeText(r.description || '')}">${safeText(r.name)}</span>`)
       .join('');
   }
+
+  // Garden item chip clicks — trigger effects or show description
+  gardenItemsListEl?.addEventListener('click', (e) => {
+    const chip = e.target.closest('.garden-item-chip');
+    if (!chip) return;
+    const id     = chip.dataset.rewardId;
+    const reward = REWARD_REGISTRY.find(r => r.id === id);
+    if (!reward) return;
+    if (id === 'garden_rain') {
+      triggerGardenOverlay('rain', 15000);
+    } else if (id === 'garden_butterflies') {
+      spawnForcedCritter('🦋', 'butterfly');
+    } else if (id === 'garden_frogs') {
+      spawnForcedCritter('🐸', 'frog');
+    } else if (id === 'garden_fairy_lights') {
+      triggerGardenOverlay('fireflies', 20000);
+    }
+    showToast(reward.description);
+    sparkSound('react');
+  });
 
   function renderGarden(state) {
     if (!state) return;
@@ -7873,6 +7893,7 @@ const w95Apps = {};
     snail:     ['A little snail says hi! 🐌', 'Slow and steady! 🐌', 'Look, a snail!'],
     bee:       ['A bee visits your flowers! 🐝', 'Bzzzz! 🐝', 'The bees love your garden!'],
     butterfly: ['A butterfly dances past! 🦋', 'How beautiful! 🦋', 'Flutter flutter! 🦋'],
+    frog:      ['A frog watches from the pond! 🐸', 'Ribbit! 🐸', 'The frog seems content. All is well.'],
   };
 
   // Mythical critter pool — fairy and spirit moth (very rare, 0.5–1 %)
@@ -7934,6 +7955,25 @@ const w95Apps = {};
   function despawnCritter() {
     if (_critterDespawn) { clearTimeout(_critterDespawn); _critterDespawn = null; }
     if (_critterEl) { _critterEl.remove(); _critterEl = null; }
+  }
+
+  function spawnForcedCritter(emoji, label) {
+    despawnCritter();
+    const el = document.createElement('div');
+    el.className     = 'garden-critter';
+    el.textContent   = emoji;
+    el.dataset.label = label;
+    el.style.left    = (4 + Math.random() * 82) + '%';
+    el.style.top     = (5 + Math.random() * 30) + '%';
+    el.addEventListener('click', () => {
+      const msgs = CRITTER_MESSAGES[label] || ['A visitor!'];
+      showToast(msgs[Math.floor(Math.random() * msgs.length)]);
+      sparkSound('react');
+      despawnCritter();
+    });
+    tilesRowEl.appendChild(el);
+    _critterEl = el;
+    _critterDespawn = setTimeout(despawnCritter, 12000);
   }
 
   function scheduleNextCritter() {

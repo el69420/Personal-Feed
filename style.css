@@ -6520,7 +6520,10 @@ body.dark-mode .garden-section-hdr{
   border-bottom:1px solid #808080;
   padding:1px 5px;
   color:#2a4a10;
-  cursor:default;
+  cursor:pointer;
+}
+.garden-item-chip:hover{
+  background:#d8e8b0;
 }
 body.dark-mode .garden-item-chip{
   background:#2a3a1a;
@@ -6529,6 +6532,9 @@ body.dark-mode .garden-item-chip{
   border-right-color:#111;
   border-bottom-color:#111;
   color:#8aba50;
+}
+body.dark-mode .garden-item-chip:hover{
+  background:#3a4a28;
 }
 body.dark-mode .garden-tile-status-el{
   background:rgba(0,0,0,0.55);
