@@ -15372,18 +15372,10 @@ const CAT_COLOUR_PALETTES = [
                                 doCatAction('yarn');
                                 window._catLocalEmote?.('cheer');
                                 _addCatLog(`[positive] ${name} wakes up excited for play time`);
-                                window._appendGardenJournalEntry?.({
-                                    date: localDateStr(),
-                                    msg:  `${name} wakes up excited for play time`,
-                                });
                             } else {
                                 // Negative: cat is grumpy about being disturbed
                                 window._catLocalGrumpy?.();
                                 _addCatLog(`[negative] ${name} was trying to get cosy, leave them be!`);
-                                window._appendGardenJournalEntry?.({
-                                    date: localDateStr(),
-                                    msg:  `${name} was trying to get cosy, leave them be!`,
-                                });
                             }
                         },
                     },
