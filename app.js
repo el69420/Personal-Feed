@@ -12004,6 +12004,22 @@ function renderAchievementsWindow() {
         `</button>` +
         `</div>`;
 
+    // ---- Reward tooltip helper ----
+    const REWARD_TYPE_LABELS = {
+        [REWARD_TYPE_WALLPAPER]:       'Wallpaper',
+        [REWARD_TYPE_SCREENSAVER]:     'Screensaver',
+        [REWARD_TYPE_SOUND_PACK]:      'Sound pack',
+        [REWARD_TYPE_CAT_ACCESSORY]:   'Cat accessory',
+        [REWARD_TYPE_CAT_BEHAVIOUR]:   'Cat behaviour',
+        [REWARD_TYPE_CONSOLE_COMMAND]: 'Console command',
+        [REWARD_TYPE_DESKTOP_THEME]:   'Desktop theme',
+        [REWARD_TYPE_GARDEN_UNLOCK]:   'Garden item',
+    };
+    function rewardTooltip(reward) {
+        const label = REWARD_TYPE_LABELS[reward.type] || 'Reward';
+        return reward.description ? `${label}: ${reward.description}` : label;
+    }
+
     // ---- Card renderer ----
     function renderCard(a) {
         const isUnlocked = unlockedAchievements.has(a.id);
@@ -12032,7 +12048,7 @@ function renderAchievementsWindow() {
                     const reward = REWARD_REGISTRY.find(r => r.id === rId);
                     if (!reward) continue;
                     const cls = reward.type === REWARD_TYPE_CONSOLE_COMMAND ? 'ach-reward-cmd' : 'ach-reward-item';
-                    rewardBadge += `<span class="ach-reward-badge ${cls} ach-reward-badge--nav" data-reward-id="${safeText(rId)}" data-reward-type="${safeText(reward.type)}" data-tooltip="${safeText(reward.description)}">${safeText(reward.name)}</span>`;
+                    rewardBadge += `<span class="ach-reward-badge ${cls} ach-reward-badge--nav" data-reward-id="${safeText(rId)}" data-reward-type="${safeText(reward.type)}" data-tooltip="${safeText(rewardTooltip(reward))}">${safeText(reward.name)}</span>`;
                 }
             }
         }
@@ -12054,7 +12070,7 @@ function renderAchievementsWindow() {
         if (!isUnlocked && Array.isArray(a.rewardIds) && a.rewardIds.length) {
             const previews = a.rewardIds.map(rId => {
                 const r = REWARD_REGISTRY.find(x => x.id === rId);
-                return r ? `<span class="ach-reward-badge ach-reward-locked" data-tooltip="${safeText(r.description)}">🔒 ${safeText(r.name)}</span>` : '';
+                return r ? `<span class="ach-reward-badge ach-reward-locked" data-tooltip="${safeText(rewardTooltip(r))}">🔒 ${safeText(r.name)}</span>` : '';
             }).join('');
             if (previews) lockedRewardHtml = `<div class="ach-locked-rewards">${previews}</div>`;
         }
