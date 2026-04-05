@@ -6640,21 +6640,23 @@ const w95Apps = {};
 
   // Visual representation of each garden item in the scene
   const GARDEN_ITEM_DECOR = {
-    garden_fountain:        { emoji: '⛲', x: 10, y: 58 },
-    garden_lantern:         { emoji: '🏮', x: 87, y: 8  },
-    garden_bench:           { emoji: '🪑', x: 76, y: 64 },
-    garden_pond:            { emoji: '🐟', x: 58, y: 66 },
-    garden_gazebo:          { emoji: '⛺', x: 82, y: 36 },
-    garden_sundial:         { emoji: '🕰️', x: 30, y: 44 },
-    garden_birdhouse:       { emoji: '🏠', x: 16, y: 7  },
-    garden_bird_bath:       { emoji: '🐦', x: 65, y: 38 },
-    garden_moss_path:       { emoji: '🌿', x: 45, y: 72 },
-    garden_hanging_basket:  { emoji: '🌺', x: 92, y: 5  },
-    garden_pot_terracotta:  { emoji: '🪴', x: 5,  y: 62 },
-    garden_stepping_stones: { emoji: '🪨', x: 42, y: 70 },
-    garden_windchimes:      { emoji: '🎐', x: 94, y: 9  },
+    // ground: true  → placed bottom-edge on the grass line (bottom: 13px)
+    // ground: false → placed top-edge at y% from top (sky / hanging items)
+    garden_fountain:        { emoji: '⛲', x: 10, ground: true  },
+    garden_lantern:         { emoji: '🏮', x: 87, y: 8          },
+    garden_bench:           { emoji: '🪑', x: 76, ground: true  },
+    garden_pond:            { emoji: '🐟', x: 58, ground: true  },
+    garden_gazebo:          { emoji: '⛺', x: 82, ground: true  },
+    garden_sundial:         { emoji: '🕰️', x: 30, ground: true  },
+    garden_birdhouse:       { emoji: '🏠', x: 16, y: 7          },
+    garden_bird_bath:       { emoji: '🐦', x: 65, ground: true  },
+    garden_moss_path:       { emoji: '🌿', x: 45, ground: true  },
+    garden_hanging_basket:  { emoji: '🌺', x: 85, y: 5          },
+    garden_pot_terracotta:  { emoji: '🪴', x: 5,  ground: true  },
+    garden_stepping_stones: { emoji: '🪨', x: 42, ground: true  },
+    garden_windchimes:      { emoji: '🎐', x: 94, y: 9          },
     garden_butterflies:     { emoji: '🦋', x: 40, y: 22, float: true },
-    garden_frogs:           { emoji: '🐸', x: 22, y: 66 },
+    garden_frogs:           { emoji: '🐸', x: 22, ground: true  },
     garden_rain:            { overlay: 'rain' },
     garden_fairy_lights:    { overlay: 'fireflies' },
   };
@@ -7082,10 +7084,16 @@ const w95Apps = {};
         win.appendChild(overlay);
       } else if (decor.emoji) {
         const el = document.createElement('span');
-        el.className = 'garden-decoration' + (decor.float ? ' garden-decoration--float' : '');
+        el.className = 'garden-decoration' +
+          (decor.float  ? ' garden-decoration--float'  : '') +
+          (decor.ground ? ' garden-decoration--ground' : '');
         el.textContent = decor.emoji;
         el.style.left = decor.x + '%';
-        el.style.top  = decor.y + '%';
+        if (decor.ground) {
+          el.style.bottom = '13px';
+        } else {
+          el.style.top = decor.y + '%';
+        }
         tilesRowEl.appendChild(el);
       }
     }
