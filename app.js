@@ -7962,12 +7962,24 @@ const w95Apps = {};
   }
   window._appendGardenJournalEntry = appendGardenJournalEntry;
 
+  // Cat-interaction messages that were incorrectly written to the garden journal.
+  const CAT_JOURNAL_MSGS = [
+    'wakes up excited for play time',
+    'was trying to get cosy, leave them be!',
+  ];
+
   // Re-render the Garden Journal section from localStorage.
   function renderGardenJournal() {
     const journalEl  = document.getElementById('garden-journal');
     const entriesEl  = document.getElementById('garden-journal-entries');
     if (!journalEl || !entriesEl) return;
-    const stored = JSON.parse(localStorage.getItem('garden_journal') || '[]');
+    let stored = JSON.parse(localStorage.getItem('garden_journal') || '[]');
+    // Strip any cat messages that were incorrectly recorded here.
+    const cleaned = stored.filter(e => !CAT_JOURNAL_MSGS.some(m => e.msg?.includes(m)));
+    if (cleaned.length !== stored.length) {
+      localStorage.setItem('garden_journal', JSON.stringify(cleaned));
+      stored = cleaned;
+    }
     if (!stored.length) { journalEl.style.display = 'none'; return; }
     journalEl.style.display = '';
     entriesEl.innerHTML = stored.map(e =>
