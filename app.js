@@ -6651,22 +6651,28 @@ const w95Apps = {};
     mint:           'Mint',
     fern:           'Fern',
     wildflower:     'Wildflower',
+    poppy:          'Poppy',
+    bluebell:       'Bluebell',
+    cosmos:         'Cosmos',
   };
   const UNLOCK_THRESHOLDS = [
     { streak: 3,  id: 'daisy' },
     { streak: 7,  id: 'tulip' },
     { streak: 14, id: 'rose' },
+    { streak: 21, id: 'poppy' },
     { streak: 30, id: 'orchid' },
   ];
   const COOP_UNLOCK_THRESHOLDS = [
     { streak: 3,  id: 'sunflower' },
     { streak: 7,  id: 'lavender' },
     { streak: 14, id: 'twocolourbloom' },
+    { streak: 21, id: 'bluebell' },
   ];
   const EXPLORE_UNLOCKS = [
     { id: 'mint',      threshold: 5,  field: 'postsCount' },
     { id: 'fern',      threshold: 10, field: 'messagesCount' },
-    { id: 'wildflower', threshold: 5, field: 'taggedPostsCount' },
+    { id: 'wildflower', threshold: 5,  field: 'taggedPostsCount' },
+    { id: 'cosmos',    threshold: 20, field: 'taggedPostsCount' },
   ];
   const GARDEN_USER_KEY = { El: 'el', Tero: 'tero' };
   const GARDEN_COOP_USERS    = ['el', 'tero'];
@@ -6674,12 +6680,14 @@ const w95Apps = {};
     { streak: 3,  id: 'daisy' },
     { streak: 7,  id: 'tulip' },
     { streak: 14, id: 'rose' },
+    { streak: 21, id: 'poppy' },
     { streak: 30, id: 'orchid' },
   ];
   const GARDEN_COOP_UNLOCKS = [
     { streak: 3,  id: 'sunflower' },
     { streak: 7,  id: 'lavender' },
     { streak: 14, id: 'twocolourbloom' },
+    { streak: 21, id: 'bluebell' },
   ];
   const STAGE_LABELS    = { seed: 'Seedling', sprout: 'Growing', bud: 'Budding', bloom: 'Blooming', wilted: 'Wilted' };
   const TOTAL_SLOTS = 8;
@@ -6698,6 +6706,9 @@ const w95Apps = {};
     mint:           155,
     fern:           130,
     wildflower:     310,
+    poppy:          12,
+    bluebell:       220,
+    cosmos:         300,
   };
 
   // Flower rarity tiers — base rarity per plant type, upgradeable via conditions
@@ -6710,6 +6721,9 @@ const w95Apps = {};
     tulip:          'uncommon',
     rose:           'uncommon',
     wildflower:     'uncommon',
+    poppy:          'uncommon',
+    bluebell:       'uncommon',
+    cosmos:         'uncommon',
     orchid:         'rare',
     twocolourbloom: 'rare',
   };

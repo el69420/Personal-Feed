@@ -5716,127 +5716,248 @@ body.dark-mode .ach-popup__reward span{background:#1a3a1a;color:#7acc7a;border-c
 }
 
 /* ---- Plant type bloom overrides ---- */
-/* Daisy: white petals, yellow center */
+/* Sunflower: 8-petal ring around a dark brown centre */
+.garden-plant--bloom.garden-plant--type-sunflower::before{
+  background:#3a2200;
+  width:10px;height:10px;
+  border-radius:50%;
+  top:-13px;left:-3px;
+  box-shadow:
+    0 -9px 0 -1px #ffcc00,
+    6px -6px 0 -1px #ffcc00,
+    9px 0 0 -1px #ffcc00,
+    6px 6px 0 -1px #ffcc00,
+    0 9px 0 -1px #ffcc00,
+    -6px 6px 0 -1px #ffcc00,
+    -9px 0 0 -1px #ffcc00,
+    -6px -6px 0 -1px #ffcc00,
+    inset 0 2px 0 rgba(255,255,255,0.08);
+}
+.garden-plant--bloom.garden-plant--type-sunflower::after{
+  background:#aa6600;
+  width:5px;height:5px;
+  border-radius:50%;
+  top:-11px;left:-0.5px;
+}
+
+/* Daisy: 8 white petals around a yellow centre */
 .garden-plant--bloom.garden-plant--type-daisy::before{
-  background:#f0f0f0;
-  border:1px solid #bbb;
+  background:#ffee44;
+  width:8px;height:8px;
+  border-radius:50%;
+  top:-11px;left:-2px;
+  border:none;
+  box-shadow:
+    0 -8px 0 -1px #f2f2f2,
+    5px -5px 0 -1px #f2f2f2,
+    8px 0 0 -1px #f2f2f2,
+    5px 5px 0 -1px #f2f2f2,
+    0 8px 0 -1px #f2f2f2,
+    -5px 5px 0 -1px #f2f2f2,
+    -8px 0 0 -1px #f2f2f2,
+    -5px -5px 0 -1px #f2f2f2;
 }
 .garden-plant--bloom.garden-plant--type-daisy::after{
-  background:#ffee00;
+  background:#cc8800;
+  width:4px;height:4px;
+  border-radius:50%;
+  top:-9px;left:0px;
 }
 
-/* Tulip: red cup, taller narrower head */
+/* Tulip: red cup shape with inner highlight */
 .garden-plant--bloom.garden-plant--type-tulip::before{
-  background:#dd2244;
-  width:12px;height:19px;
-  border-radius:50% 50% 0 0;
-  top:-17px;left:-4px;
+  background:#cc1a36;
+  width:13px;height:20px;
+  border-radius:40% 40% 10% 10%;
+  top:-18px;left:-4.5px;
+  box-shadow:inset 3px 4px 0 rgba(255,120,130,0.28),inset -2px -3px 0 rgba(80,0,20,0.25);
 }
 .garden-plant--bloom.garden-plant--type-tulip::after{
-  background:#ff6688;
-  width:6px;height:10px;
-  border-radius:50% 50% 0 0;
-  top:-17px;left:-1px;
+  background:#ff5577;
+  width:7px;height:11px;
+  border-radius:40% 40% 10% 10%;
+  top:-18px;left:-1.5px;
+  box-shadow:inset 1px 2px 0 rgba(255,200,200,0.3);
 }
 
-/* Rose: dark red layered circle */
+/* Rose: layered petals with shading depth */
 .garden-plant--bloom.garden-plant--type-rose::before{
   background:#cc0022;
-  width:15px;height:15px;
-  top:-13px;left:-6px;
+  width:16px;height:15px;
+  border-radius:50% 45% 50% 45%;
+  top:-14px;left:-6px;
+  box-shadow:inset -2px -2px 0 rgba(80,0,15,0.35),inset 2px 2px 0 rgba(255,80,100,0.25);
 }
 .garden-plant--bloom.garden-plant--type-rose::after{
   background:#ff2244;
   width:9px;height:9px;
-  top:-10px;left:-3px;
+  border-radius:50% 40% 50% 40%;
+  top:-11px;left:-2.5px;
+  box-shadow:inset -1px -1px 0 rgba(100,0,20,0.3),inset 1px 1px 0 rgba(255,150,160,0.4);
 }
 
-/* Orchid: purple exotic petals */
+/* Orchid: spread wing-petals with raised lip */
 .garden-plant--bloom.garden-plant--type-orchid::before{
-  background:#8822cc;
-  width:18px;height:15px;
-  border-radius:50% 50% 30% 30%;
-  top:-13px;left:-7px;
+  background:#7711bb;
+  width:22px;height:12px;
+  border-radius:50%;
+  top:-11px;left:-9px;
+  box-shadow:inset -3px -2px 0 rgba(40,0,80,0.3),inset 3px 2px 0 rgba(200,100,255,0.22);
 }
 .garden-plant--bloom.garden-plant--type-orchid::after{
   background:#cc66ff;
-  width:7px;height:6px;
-  border-radius:50%;
-  top:-10px;left:-2px;
+  width:8px;height:13px;
+  border-radius:50% 50% 30% 30%;
+  top:-15px;left:-2px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,0.28),inset 0 -1px 0 rgba(100,0,180,0.2);
 }
 
-/* Lavender: tall purple-blue spike (coop unlock) */
+/* Lavender: tall purple spike with subtle inner highlight */
 .garden-plant--bloom.garden-plant--type-lavender{
-  background:#5a3a8c;
+  background:#4a2a7c;
 }
 .garden-plant--bloom.garden-plant--type-lavender::before{
   background:#aa77dd;
-  width:8px;height:20px;
+  width:8px;height:22px;
   border-radius:50% 50% 0 0;
-  top:-19px;left:-2px;
+  top:-21px;left:-2px;
+  box-shadow:inset -2px 0 0 rgba(80,40,140,0.35),inset 2px 0 0 rgba(220,180,255,0.25);
 }
 .garden-plant--bloom.garden-plant--type-lavender::after{
   background:#ddbfff;
-  width:5px;height:12px;
+  width:5px;height:14px;
   border-radius:50% 50% 0 0;
-  top:-19px;left:0px;
+  top:-21px;left:0px;
+  box-shadow:inset -1px 0 0 rgba(150,100,220,0.25);
 }
 
-/* Two-colour Bloom: split left/right petals (coop unlock) */
+/* Two-colour Bloom: split petals with shaded edges (coop unlock) */
 .garden-plant--bloom.garden-plant--type-twocolourbloom::before{
   background:#ee2266;
-  width:9px;height:16px;
+  width:10px;height:17px;
   border-radius:50% 0 0 50%;
-  top:-14px;left:-9px;
+  top:-15px;left:-10px;
+  box-shadow:inset 2px 0 0 rgba(255,150,170,0.3),inset -1px -2px 0 rgba(100,0,30,0.25);
 }
 .garden-plant--bloom.garden-plant--type-twocolourbloom::after{
   background:#ffcc00;
-  width:9px;height:16px;
+  width:10px;height:17px;
   border-radius:0 50% 50% 0;
-  top:-14px;left:2px;
+  top:-15px;left:2px;
+  box-shadow:inset -2px 0 0 rgba(180,130,0,0.3),inset 1px 2px 0 rgba(255,255,150,0.3);
 }
 
-/* Mint: light teal-green rounded cluster (exploration unlock) */
-.garden-plant--bloom.garden-plant--type-mint{background:#44aa77;}
+/* Mint: soft rounded herb cluster (exploration unlock) */
+.garden-plant--bloom.garden-plant--type-mint{background:#3a9966;}
 .garden-plant--bloom.garden-plant--type-mint::before{
-  background:#66ddaa;
-  width:13px;height:12px;
-  border-radius:40%;
-  top:-10px;left:-5px;
+  background:#55cc88;
+  width:14px;height:12px;
+  border-radius:40% 60% 30% 70%;
+  top:-11px;left:-5px;
+  box-shadow:inset -2px -2px 0 rgba(20,100,50,0.3),inset 2px 2px 0 rgba(150,255,200,0.22);
 }
 .garden-plant--bloom.garden-plant--type-mint::after{
-  background:#aaffdd;
-  width:7px;height:6px;
-  border-radius:40%;
-  top:-10px;left:-2px;
+  background:#99ffcc;
+  width:8px;height:7px;
+  border-radius:50% 30% 60% 40%;
+  top:-11px;left:-2px;
 }
 
-/* Fern: dark green asymmetric fronds (exploration unlock) */
+/* Fern: overlapping asymmetric fronds (exploration unlock) */
 .garden-plant--bloom.garden-plant--type-fern::before{
-  background:#226622;
-  width:15px;height:20px;
+  background:#1a5520;
+  width:16px;height:22px;
   border-radius:0 80% 0 80%;
-  top:-19px;left:-6px;
+  top:-21px;left:-6px;
+  box-shadow:inset -2px 0 0 rgba(0,80,20,0.3),inset 2px 2px 0 rgba(80,160,80,0.18);
 }
 .garden-plant--bloom.garden-plant--type-fern::after{
-  background:#338833;
-  width:10px;height:13px;
+  background:#2d7730;
+  width:11px;height:15px;
   border-radius:80% 0 80% 0;
-  top:-19px;left:-1px;
+  top:-21px;left:0px;
+  box-shadow:inset 2px -1px 0 rgba(0,0,0,0.2),inset -1px 1px 0 rgba(100,200,100,0.15);
 }
 
-/* Wildflower: pink petals, purple centre (exploration unlock) */
+/* Wildflower: 6-petal ring with yellow centre (exploration unlock) */
 .garden-plant--bloom.garden-plant--type-wildflower::before{
-  background:#ff88cc;
-  width:16px;height:13px;
+  background:#cc44aa;
+  width:8px;height:8px;
   border-radius:50%;
-  top:-12px;left:-6px;
+  top:-11px;left:-2px;
+  box-shadow:
+    0 -8px 0 -1px #ff99cc,
+    7px -4px 0 -1px #ff99cc,
+    7px 4px 0 -1px #ff99cc,
+    0 8px 0 -1px #ff99cc,
+    -7px 4px 0 -1px #ff99cc,
+    -7px -4px 0 -1px #ff99cc;
 }
 .garden-plant--bloom.garden-plant--type-wildflower::after{
-  background:#aa44cc;
+  background:#ffee44;
+  width:4px;height:4px;
+  border-radius:50%;
+  top:-9px;left:0px;
+}
+
+/* Poppy: wide red petals with almost-black centre + stamens ring (streak unlock) */
+.garden-plant--bloom.garden-plant--type-poppy::before{
+  background:#ee3300;
+  width:18px;height:16px;
+  border-radius:50%;
+  top:-15px;left:-7px;
+  box-shadow:
+    inset -3px -3px 0 rgba(120,0,0,0.28),
+    inset 3px 3px 0 rgba(255,100,50,0.28),
+    0 -4px 0 -3px #ff5500;
+}
+.garden-plant--bloom.garden-plant--type-poppy::after{
+  background:#111100;
   width:7px;height:7px;
   border-radius:50%;
-  top:-9px;left:-2px;
+  top:-12px;left:-1.5px;
+  box-shadow:0 0 0 1px #2a2a00;
+}
+
+/* Bluebell: drooping bell with shaded dome, flared rim (coop unlock) */
+.garden-plant--bloom.garden-plant--type-bluebell::before{
+  background:#5577ee;
+  width:13px;height:16px;
+  border-radius:50% 50% 45% 45%;
+  top:-15px;left:-4.5px;
+  box-shadow:
+    inset 2px 4px 0 rgba(200,220,255,0.3),
+    inset -2px -3px 0 rgba(30,50,150,0.22);
+}
+.garden-plant--bloom.garden-plant--type-bluebell::after{
+  background:#7788dd;
+  width:13px;height:5px;
+  border-radius:0 0 50% 50%;
+  top:-5px;left:-4.5px;
+  box-shadow:inset 0 -1px 0 rgba(200,220,255,0.2);
+}
+
+/* Cosmos: 8 thin petals radiating from a yellow centre (exploration unlock) */
+.garden-plant--bloom.garden-plant--type-cosmos::before{
+  background:#ffcc44;
+  width:8px;height:8px;
+  border-radius:50%;
+  top:-11px;left:-2px;
+  box-shadow:
+    0 -9px 0 -2px #ee44aa,
+    6px -6px 0 -2px #ee44aa,
+    9px 0 0 -2px #ee44aa,
+    6px 6px 0 -2px #ee44aa,
+    0 9px 0 -2px #ee44aa,
+    -6px 6px 0 -2px #ee44aa,
+    -9px 0 0 -2px #ee44aa,
+    -6px -6px 0 -2px #ee44aa;
+}
+.garden-plant--bloom.garden-plant--type-cosmos::after{
+  background:#ff8800;
+  width:4px;height:4px;
+  border-radius:50%;
+  top:-9px;left:0px;
 }
 
 /* ===== Garden Vibe & Feedback additions ===== */
@@ -6493,6 +6614,12 @@ body.dark-mode .garden-actions-bar{
 .garden-plant--bud.garden-plant--type-fern::after        { background:#4a8a4a; width:10px; height:7px; top:-11px; left:-1px; border-radius:50%; }
 .garden-plant--bud.garden-plant--type-wildflower::before { background:#ff66aa; border-radius:50%; }
 .garden-plant--bud.garden-plant--type-wildflower::after  { background:#cc44aa; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-poppy::before      { background:#cc2200; width:12px; height:14px; left:-4px; border-radius:50% 50% 30% 30%; }
+.garden-plant--bud.garden-plant--type-poppy::after       { background:#ff4422; width:7px; height:8px; top:-13px; left:-1.5px; border-radius:50%; }
+.garden-plant--bud.garden-plant--type-bluebell::before   { background:#4466dd; width:11px; height:15px; left:-3.5px; border-radius:40% 40% 50% 50%; }
+.garden-plant--bud.garden-plant--type-bluebell::after    { background:#7799ff; width:7px; height:5px; top:-5px; left:-1.5px; border-radius:0 0 50% 50%; }
+.garden-plant--bud.garden-plant--type-cosmos::before     { background:#ee44aa; border-radius:50%; width:11px; height:11px; left:-3.5px; }
+.garden-plant--bud.garden-plant--type-cosmos::after      { background:#ffcc44; width:5px; height:5px; top:-11px; left:-0.5px; border-radius:50%; }
 
 /* Bud stage transition sparkle (reuse the existing keyframe) */
 @media(prefers-reduced-motion:no-preference){
