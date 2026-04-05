@@ -12032,7 +12032,7 @@ function renderAchievementsWindow() {
                     const reward = REWARD_REGISTRY.find(r => r.id === rId);
                     if (!reward) continue;
                     const cls = reward.type === REWARD_TYPE_CONSOLE_COMMAND ? 'ach-reward-cmd' : 'ach-reward-item';
-                    rewardBadge += `<span class="ach-reward-badge ${cls}" title="${safeText(reward.description)}">${safeText(reward.name)}</span>`;
+                    rewardBadge += `<span class="ach-reward-badge ${cls} ach-reward-badge--nav" data-reward-id="${safeText(rId)}" data-reward-type="${safeText(reward.type)}" title="${safeText(reward.description)}">${safeText(reward.name)}</span>`;
                 }
             }
         }
@@ -12259,6 +12259,26 @@ function renderAchievementsWindow() {
         win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
     });
     window.addEventListener('mouseup', () => { if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-achievements'); } });
+
+    // Click delegation: reward badges navigate to the app where that reward is used
+    body.addEventListener('click', (e) => {
+        const badge = e.target.closest('.ach-reward-badge--nav');
+        if (!badge) return;
+        const type = badge.dataset.rewardType;
+        if (type === REWARD_TYPE_WALLPAPER || type === REWARD_TYPE_DESKTOP_THEME) {
+            w95Apps['wallpaper']?.open();
+        } else if (type === REWARD_TYPE_SCREENSAVER) {
+            w95Apps['settings-screensaver']?.open();
+        } else if (type === REWARD_TYPE_SOUND_PACK) {
+            w95Apps['settings-sound']?.open();
+        } else if (type === REWARD_TYPE_CAT_ACCESSORY || type === REWARD_TYPE_CAT_BEHAVIOUR) {
+            w95Apps['cat']?.open();
+        } else if (type === REWARD_TYPE_CONSOLE_COMMAND) {
+            w95Apps['console']?.open();
+        } else if (type === REWARD_TYPE_GARDEN_UNLOCK) {
+            w95Apps['garden']?.open();
+        }
+    });
 })();
 
 // ===== Win95 Mailbox Window =====
@@ -15107,6 +15127,12 @@ async function loadUserWallpaper() {
     // Backward-compat: anything that opens 'wallpaper' now opens Settings > Appearance
     w95Apps['wallpaper'] = { open: () => {
         if (win.classList.contains('is-hidden')) show('appearance'); else { switchTab('appearance'); w95Mgr.focusWindow(WIN_ID); }
+    }};
+    w95Apps['settings-screensaver'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show('screensaver'); else { switchTab('screensaver'); w95Mgr.focusWindow(WIN_ID); }
+    }};
+    w95Apps['settings-sound'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show('sound'); else { switchTab('sound'); w95Mgr.focusWindow(WIN_ID); }
     }};
 })();
 

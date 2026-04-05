@@ -5376,6 +5376,9 @@ body.dark-mode .achievement-item.is-unlocked .ach-progress-count{color:#a0c8a0;}
 .ach-reward-item{background:#fde8c8;color:#6b3a00;border:1px solid #c87a30;}
 /* Locked reward teaser shown on achievements not yet unlocked */
 .ach-reward-locked{background:#eee;color:#888;border:1px solid #bbb;opacity:0.85;}
+/* Navigable reward badges */
+.ach-reward-badge--nav{cursor:pointer;}
+.ach-reward-badge--nav:hover{filter:brightness(1.15);text-decoration:underline;}
 .ach-locked-rewards{margin-top:3px;display:flex;flex-wrap:wrap;gap:3px;}
 body.dark-mode .ach-reward-xp{background:#1a3a1a;color:#7acc7a;border-color:#3a6a3a;}
 body.dark-mode .ach-reward-cmd{background:#1a1a3a;color:#8888ff;border-color:#3a3a7a;}
