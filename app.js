@@ -6655,6 +6655,40 @@ const w95Apps = {};
     bluebell:       'Bluebell',
     cosmos:         'Cosmos',
   };
+  const PLANT_ICONS = {
+    sunflower:      '🌻',
+    daisy:          '🌼',
+    tulip:          '🌷',
+    rose:           '🌹',
+    orchid:         '🌸',
+    lavender:       '🪻',
+    twocolourbloom: '🏵️',
+    mint:           '🌿',
+    fern:           '🍃',
+    wildflower:     '💐',
+    poppy:          '🌺',
+    bluebell:       '🔵',
+    cosmos:         '✨',
+  };
+  const PLANT_UNLOCK_HINTS = {
+    daisy:          '3-day streak',
+    tulip:          '7-day streak',
+    rose:           '14-day streak',
+    poppy:          '21-day streak',
+    orchid:         '30-day streak',
+    lavender:       '7-day shared streak',
+    twocolourbloom: '14-day shared streak',
+    bluebell:       '21-day shared streak',
+    mint:           '5 posts',
+    fern:           '10 messages',
+    wildflower:     '5 tagged posts',
+    cosmos:         '20 tagged posts',
+  };
+  const PLANT_DISPLAY_ORDER = [
+    'sunflower', 'daisy', 'tulip', 'rose', 'poppy', 'orchid',
+    'lavender', 'twocolourbloom', 'bluebell',
+    'mint', 'fern', 'wildflower', 'cosmos',
+  ];
   const UNLOCK_THRESHOLDS = [
     { streak: 3,  id: 'daisy' },
     { streak: 7,  id: 'tulip' },
@@ -7411,17 +7445,26 @@ const w95Apps = {};
     const grid = document.getElementById('plant-picker-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    for (const id of _unlockedPlants) {
+    for (const id of PLANT_DISPLAY_ORDER) {
+      const isUnlocked = _unlockedPlants.includes(id);
       const btn = document.createElement('button');
-      btn.className = 'type-picker-btn';
+      btn.className = 'type-picker-btn' + (isUnlocked ? '' : ' locked');
       btn.dataset.plant = id;
-      btn.innerHTML = `<span class="type-picker-label">${PLANT_LABELS[id] || id}</span>`;
-      btn.addEventListener('click', () => {
-        selectedFlower = id;
-        closeModal(document.getElementById('plantPickerModal'));
-        plantSlot(_pendingPlantTile);
-        _pendingPlantTile = null;
-      });
+      btn.disabled = !isUnlocked;
+      const icon  = PLANT_ICONS[id] || '🌱';
+      const label = PLANT_LABELS[id] || id;
+      if (isUnlocked) {
+        btn.innerHTML = `<span class="type-picker-icon">${icon}</span><span class="type-picker-label">${label}</span>`;
+        btn.addEventListener('click', () => {
+          selectedFlower = id;
+          closeModal(document.getElementById('plantPickerModal'));
+          plantSlot(_pendingPlantTile);
+          _pendingPlantTile = null;
+        });
+      } else {
+        const hint = PLANT_UNLOCK_HINTS[id] || '';
+        btn.innerHTML = `<span class="type-picker-icon">${icon}</span><span class="type-picker-label">${label}</span>${hint ? `<span class="type-picker-hint">${hint}</span>` : ''}`;
+      }
       grid.appendChild(btn);
     }
     openModal(document.getElementById('plantPickerModal'));
