@@ -6634,6 +6634,31 @@ const w95Apps = {};
   const ritualEl   = document.getElementById('garden-ritual');
   const MS_HOUR    = 3600000;
 
+  // ---- Active garden item toggle state ----
+  const _ACTIVE_ITEMS_KEY = 'garden_active_items';
+  const _activeItems = new Set(JSON.parse(localStorage.getItem(_ACTIVE_ITEMS_KEY) || '[]'));
+
+  // Visual representation of each garden item in the scene
+  const GARDEN_ITEM_DECOR = {
+    garden_fountain:        { emoji: '⛲', x: 10, y: 58 },
+    garden_lantern:         { emoji: '🏮', x: 87, y: 8  },
+    garden_bench:           { emoji: '🪑', x: 76, y: 64 },
+    garden_pond:            { emoji: '🐟', x: 58, y: 66 },
+    garden_gazebo:          { emoji: '⛺', x: 82, y: 36 },
+    garden_sundial:         { emoji: '🕰️', x: 30, y: 44 },
+    garden_birdhouse:       { emoji: '🏠', x: 16, y: 7  },
+    garden_bird_bath:       { emoji: '🐦', x: 65, y: 38 },
+    garden_moss_path:       { emoji: '🌿', x: 45, y: 72 },
+    garden_hanging_basket:  { emoji: '🌺', x: 92, y: 5  },
+    garden_pot_terracotta:  { emoji: '🪴', x: 5,  y: 62 },
+    garden_stepping_stones: { emoji: '🪨', x: 42, y: 70 },
+    garden_windchimes:      { emoji: '🎐', x: 94, y: 9  },
+    garden_butterflies:     { emoji: '🦋', x: 40, y: 22, float: true },
+    garden_frogs:           { emoji: '🐸', x: 22, y: 66 },
+    garden_rain:            { overlay: 'rain' },
+    garden_fairy_lights:    { overlay: 'fireflies' },
+  };
+
   // Returns "YYYY-MM-DD" in local time for a given ms timestamp.
   function tsToLocalDate(ts) {
     const d = new Date(ts);
@@ -7013,27 +7038,71 @@ const w95Apps = {};
     gardenItemsHdrEl.style.display = '';
     gardenItemsListEl.style.display = '';
     gardenItemsListEl.innerHTML = unlocked
-      .map(r => `<span class="garden-item-chip" data-reward-id="${safeText(r.id)}" title="${safeText(r.description || '')}">${safeText(r.name)}</span>`)
+      .map(r => {
+        const active = _activeItems.has(r.id);
+        return `<span class="garden-item-chip${active ? ' garden-item-chip--active' : ''}" data-reward-id="${safeText(r.id)}" title="${safeText(r.description || '')}">${safeText(r.name)}</span>`;
+      })
       .join('');
   }
 
-  // Garden item chip clicks — trigger effects or show description
+  // Renders all active garden item decorations into the garden scene
+  function applyGardenDecorations() {
+    if (!tilesRowEl || !win) return;
+    tilesRowEl.querySelectorAll('.garden-decoration').forEach(el => el.remove());
+    win.querySelectorAll('.garden-persistent-overlay').forEach(el => el.remove());
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    for (const id of _activeItems) {
+      const decor = GARDEN_ITEM_DECOR[id];
+      if (!decor) continue;
+      if (decor.overlay) {
+        const overlay = document.createElement('div');
+        overlay.className = `garden-xp-overlay garden-xp-overlay--${decor.overlay} garden-persistent-overlay`;
+        if (decor.overlay === 'rain') {
+          for (let i = 0; i < 40; i++) {
+            const d = document.createElement('div');
+            d.className = 'garden-rain-drop';
+            d.style.left              = (Math.random() * 110 - 5) + '%';
+            d.style.animationDelay    = (Math.random() * 1.5) + 's';
+            d.style.animationDuration = (0.35 + Math.random() * 0.35) + 's';
+            overlay.appendChild(d);
+          }
+        } else if (decor.overlay === 'fireflies') {
+          for (let i = 0; i < 14; i++) {
+            const ff = document.createElement('div');
+            ff.className = 'garden-firefly';
+            ff.style.left              = (8 + Math.random() * 84) + '%';
+            ff.style.top               = (15 + Math.random() * 65) + '%';
+            ff.style.animationDelay    = (Math.random() * 3) + 's';
+            ff.style.animationDuration = (1.8 + Math.random() * 2.2) + 's';
+            overlay.appendChild(ff);
+          }
+        }
+        win.appendChild(overlay);
+      } else if (decor.emoji) {
+        const el = document.createElement('span');
+        el.className = 'garden-decoration' + (decor.float ? ' garden-decoration--float' : '');
+        el.textContent = decor.emoji;
+        el.style.left = decor.x + '%';
+        el.style.top  = decor.y + '%';
+        tilesRowEl.appendChild(el);
+      }
+    }
+  }
+
+  // Garden item chip clicks — toggle decoration on/off
   gardenItemsListEl?.addEventListener('click', (e) => {
     const chip = e.target.closest('.garden-item-chip');
     if (!chip) return;
-    const id     = chip.dataset.rewardId;
-    const reward = REWARD_REGISTRY.find(r => r.id === id);
-    if (!reward) return;
-    if (id === 'garden_rain') {
-      triggerGardenOverlay('rain', 15000);
-    } else if (id === 'garden_butterflies') {
-      spawnForcedCritter('🦋', 'butterfly');
-    } else if (id === 'garden_frogs') {
-      spawnForcedCritter('🐸', 'frog');
-    } else if (id === 'garden_fairy_lights') {
-      triggerGardenOverlay('fireflies', 20000);
+    const id = chip.dataset.rewardId;
+    if (!GARDEN_ITEM_DECOR[id]) return;
+    if (_activeItems.has(id)) {
+      _activeItems.delete(id);
+    } else {
+      _activeItems.add(id);
     }
-    showToast(reward.description);
+    localStorage.setItem(_ACTIVE_ITEMS_KEY, JSON.stringify([..._activeItems]));
+    applyGardenDecorations();
+    renderGardenItems();
     sparkSound('react');
   });
 
@@ -7045,6 +7114,7 @@ const w95Apps = {};
     tilesRowEl.dataset.gardenSize = String(unlockedTiles);
 
     renderGardenItems();
+    applyGardenDecorations();
     renderPlantSelector(unlockedPlants);
 
     for (let n = 0; n < TOTAL_SLOTS; n++) {
@@ -8168,6 +8238,7 @@ const w95Apps = {};
     maybeTriggerMythical(_dateKey);
     maybeGardenGlitch();
     renderGardenJournal();
+    applyGardenDecorations();
   }
 
   function hide() {

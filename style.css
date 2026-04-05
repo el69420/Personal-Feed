@@ -6525,6 +6525,28 @@ body.dark-mode .garden-section-hdr{
 .garden-item-chip:hover{
   background:#d8e8b0;
 }
+.garden-item-chip--active{
+  background:#90b858;
+  border-top:1px solid #505050;
+  border-left:1px solid #505050;
+  border-right:1px solid #e0e0e0;
+  border-bottom:1px solid #e0e0e0;
+}
+.garden-decoration{
+  position:absolute;
+  font-size:18px;
+  pointer-events:none;
+  user-select:none;
+  z-index:2;
+  line-height:1;
+}
+.garden-decoration--float{
+  animation:garden-decor-float 3s ease-in-out infinite;
+}
+@keyframes garden-decor-float{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-5px);}
+}
 body.dark-mode .garden-item-chip{
   background:#2a3a1a;
   border-top-color:#4a6a2a;
@@ -6535,6 +6557,13 @@ body.dark-mode .garden-item-chip{
 }
 body.dark-mode .garden-item-chip:hover{
   background:#3a4a28;
+}
+body.dark-mode .garden-item-chip--active{
+  background:#4a6a28;
+  border-top-color:#1a1a1a;
+  border-left-color:#1a1a1a;
+  border-right-color:#6a8a48;
+  border-bottom-color:#6a8a48;
 }
 body.dark-mode .garden-tile-status-el{
   background:rgba(0,0,0,0.55);
