@@ -7647,7 +7647,7 @@ const w95Apps = {};
     const spreadCols = Math.min(total, 14);
     const colWidth   = spreadCols > 1 ? 36 / (spreadCols - 1) : 0;
     // Heights cycle through tiers so adjacent flowers differ
-    const heightTiers = [20, 26, 22, 28, 18, 24];
+    const heightTiers = [26, 34, 28, 36, 24, 32];
 
     let maxFlowerHeight = 4;
     flowersArea.innerHTML = visible.map((f, i) => {
@@ -7662,7 +7662,8 @@ const w95Apps = {};
       const headPx  = Math.round(5 + (f.size || 1) * 3) + sizeBoost;
       const sat     = rarity === 'special' ? 90 : rarity === 'rare' ? 80 : 65;
       const lit     = rarity === 'special' ? 65 : rarity === 'rare' ? 60 : 55;
-      const color   = `hsl(${hue},${sat}%,${lit}%)`;
+      const color    = `hsl(${hue},${sat}%,${lit}%)`;
+      const pistilPx = Math.max(2, Math.round(headPx * 0.38));
       if (h + headPx > maxFlowerHeight) maxFlowerHeight = h + headPx;
       const typeLabel   = PLANT_LABELS[f.type] || (f.type || '?');
       const rarityLabel = RARITY_LABELS[rarity] || rarity;
@@ -7680,7 +7681,8 @@ const w95Apps = {};
         `height:${h}px;` +
         `transform:rotate(${rot}deg);` +
         `--fcolor:${color};` +
-        `--fhead:${headPx}px` +
+        `--fhead:${headPx}px;` +
+        `--fpistil:${pistilPx}px` +
         `"></span>`;
     }).join('');
     flowersArea.style.height = maxFlowerHeight + 'px';

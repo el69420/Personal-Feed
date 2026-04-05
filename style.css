@@ -7170,7 +7170,7 @@ body.dark-mode .garden-plant--bud {
   position: absolute;
   bottom: 0;
   width: 2px;
-  background: #3a8c3f;
+  background: linear-gradient(to top, #246228, #52b858);
   transform-origin: bottom center;
   border-radius: 1px 1px 0 0;
 }
@@ -7182,11 +7182,24 @@ body.dark-mode .garden-plant--bud {
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--fcolor, #ffcc00);
+  background: radial-gradient(circle at 38% 32%, rgba(255,255,255,0.4) 0%, transparent 55%), var(--fcolor, #ffcc00);
   width: var(--fhead, 7px);
   height: var(--fhead, 7px);
   /* slight inner highlight */
   box-shadow: inset -1px -1px 0 rgba(0,0,0,0.15), inset 1px 1px 0 rgba(255,255,255,0.2);
+}
+/* Pistil — small centre dot rendered above the flower head */
+.garden-vase-flower::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  bottom: calc(100% + (var(--fhead, 7px) - var(--fpistil, 3px)) / 2);
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--fpistil, 3px);
+  height: var(--fpistil, 3px);
+  background: rgba(255,255,255,0.62);
+  pointer-events: none;
 }
 /* Milestone message */
 .garden-vase-msg {
@@ -7270,7 +7283,8 @@ body.dark-mode .garden-plant--bud {
   cursor: pointer;
   transition: filter 0.12s ease;
 }
-.garden-vase-flower:hover::before {
+.garden-vase-flower:hover::before,
+.garden-vase-flower:hover::after {
   filter: brightness(1.25);
 }
 
