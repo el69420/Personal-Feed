@@ -6642,21 +6642,24 @@ const w95Apps = {};
   const GARDEN_ITEM_DECOR = {
     // ground: true  → placed bottom-edge on the grass line (bottom: 13px)
     // ground: false → placed top-edge at y% from top (sky / hanging items)
-    garden_fountain:        { emoji: '⛲', x: 10, ground: true  },
-    garden_lantern:         { emoji: '🏮', x: 87, y: 8          },
-    garden_bench:           { emoji: '🪑', x: 76, ground: true  },
-    garden_pond:            { emoji: '🐟', x: 58, ground: true  },
-    garden_gazebo:          { emoji: '⛺', x: 82, ground: true  },
-    garden_sundial:         { emoji: '🕰️', x: 30, ground: true  },
-    garden_birdhouse:       { emoji: '🏠', x: 16, y: 7          },
-    garden_bird_bath:       { emoji: '🐦', x: 65, ground: true  },
-    garden_moss_path:       { emoji: '🌿', x: 45, ground: true  },
-    garden_hanging_basket:  { emoji: '🌺', x: 85, y: 5          },
-    garden_pot_terracotta:  { emoji: '🪴', x: 5,  ground: true  },
-    garden_stepping_stones: { emoji: '🪨', x: 42, ground: true  },
-    garden_windchimes:      { emoji: '🎐', x: 94, y: 9          },
-    garden_butterflies:     { emoji: '🦋', x: 40, y: 22, float: true },
-    garden_frogs:           { emoji: '🐸', x: 22, ground: true  },
+    // Left zone (natural/organic) — x: 5–13%
+    garden_pot_terracotta:  { emoji: '🪴', x:  5, ground: true  },
+    garden_frogs:           { emoji: '🐸', x:  6, ground: true  },
+    garden_birdhouse:       { emoji: '🏠', x:  7, y: 7          },
+    garden_moss_path:       { emoji: '🌿', x:  9, ground: true  },
+    garden_pond:            { emoji: '🐟', x: 10, ground: true  },
+    garden_fountain:        { emoji: '⛲', x: 11, ground: true  },
+    garden_stepping_stones: { emoji: '🪨', x: 13, ground: true  },
+    // Center float
+    garden_butterflies:     { emoji: '🦋', x: 50, y: 22, float: true },
+    // Right zone (structural/built) — x: 87–96%
+    garden_sundial:         { emoji: '🕰️', x: 87, ground: true  },
+    garden_bench:           { emoji: '🪑', x: 88, ground: true  },
+    garden_bird_bath:       { emoji: '🐦', x: 90, ground: true  },
+    garden_lantern:         { emoji: '🏮', x: 91, y: 8          },
+    garden_gazebo:          { emoji: '⛺', x: 93, ground: true  },
+    garden_hanging_basket:  { emoji: '🌺', x: 94, y: 5          },
+    garden_windchimes:      { emoji: '🎐', x: 96, y: 9          },
     garden_rain:            { overlay: 'rain' },
     garden_fairy_lights:    { overlay: 'fireflies' },
   };
