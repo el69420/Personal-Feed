@@ -7231,53 +7231,125 @@ const w95Apps = {};
     tilesRowEl.querySelectorAll('.garden-decoration').forEach(el => el.remove());
     win.querySelectorAll('.garden-persistent-overlay').forEach(el => el.remove());
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    // Handle overlay items (rain, fireflies) — unchanged
     for (const id of _activeItems) {
       const decor = GARDEN_ITEM_DECOR[id];
-      if (!decor) continue;
-      if (decor.overlay) {
-        const overlay = document.createElement('div');
-        overlay.className = `garden-xp-overlay garden-xp-overlay--${decor.overlay} garden-persistent-overlay`;
-        if (decor.overlay === 'rain') {
-          for (let i = 0; i < 40; i++) {
-            const d = document.createElement('div');
-            d.className = 'garden-rain-drop';
-            d.style.left              = (Math.random() * 110 - 5) + '%';
-            d.style.animationDelay    = (Math.random() * 1.5) + 's';
-            d.style.animationDuration = (0.35 + Math.random() * 0.35) + 's';
-            overlay.appendChild(d);
-          }
-        } else if (decor.overlay === 'fireflies') {
-          for (let i = 0; i < 14; i++) {
-            const ff = document.createElement('div');
-            ff.className = 'garden-firefly';
-            ff.style.left              = (8 + Math.random() * 84) + '%';
-            ff.style.top               = (15 + Math.random() * 65) + '%';
-            ff.style.animationDelay    = (Math.random() * 3) + 's';
-            ff.style.animationDuration = (1.8 + Math.random() * 2.2) + 's';
-            overlay.appendChild(ff);
-          }
+      if (!decor || !decor.overlay) continue;
+      const overlay = document.createElement('div');
+      overlay.className = `garden-xp-overlay garden-xp-overlay--${decor.overlay} garden-persistent-overlay`;
+      if (decor.overlay === 'rain') {
+        for (let i = 0; i < 40; i++) {
+          const d = document.createElement('div');
+          d.className = 'garden-rain-drop';
+          d.style.left              = (Math.random() * 110 - 5) + '%';
+          d.style.animationDelay    = (Math.random() * 1.5) + 's';
+          d.style.animationDuration = (0.35 + Math.random() * 0.35) + 's';
+          overlay.appendChild(d);
         }
-        win.appendChild(overlay);
+      } else if (decor.overlay === 'fireflies') {
+        for (let i = 0; i < 14; i++) {
+          const ff = document.createElement('div');
+          ff.className = 'garden-firefly';
+          ff.style.left              = (8 + Math.random() * 84) + '%';
+          ff.style.top               = (15 + Math.random() * 65) + '%';
+          ff.style.animationDelay    = (Math.random() * 3) + 's';
+          ff.style.animationDuration = (1.8 + Math.random() * 2.2) + 's';
+          overlay.appendChild(ff);
+        }
+      }
+      win.appendChild(overlay);
+    }
+
+    // Collect SVG items grouped by zone and layer
+    const leftGround = [], leftSky = [], rightGround = [], rightSky = [], floatItems = [];
+    for (const id of _activeItems) {
+      const decor = GARDEN_ITEM_DECOR[id];
+      if (!decor || decor.overlay) continue;
+      const svgInfo = GARDEN_DECOR_SVG[id];
+      if (!svgInfo) continue;
+      const item = { id, decor, svgInfo };
+      if (decor.float) {
+        floatItems.push(item);
+      } else if (decor.x <= 50) {
+        (decor.ground ? leftGround : leftSky).push(item);
       } else {
-        const svgInfo = GARDEN_DECOR_SVG[id];
-        if (!svgInfo) continue;
+        (decor.ground ? rightGround : rightSky).push(item);
+      }
+    }
+
+    // Sort: left zones left-to-right, right zones right-to-left from their edge
+    leftGround.sort((a, b) => a.decor.x - b.decor.x);
+    leftSky.sort((a, b) => a.decor.x - b.decor.x);
+    rightGround.sort((a, b) => b.decor.x - a.decor.x);
+    rightSky.sort((a, b) => b.decor.x - a.decor.x);
+
+    const rowW = tilesRowEl.offsetWidth || 400;
+    const EDGE_PAD = 4;
+    const ITEM_GAP = 4;
+    // Each side zone is 20% of the row width (minus edge padding)
+    const sideZoneW = Math.max(30, Math.round(rowW * 0.20)) - EDGE_PAD;
+
+    // Scale factor needed for a group to fit within the side zone
+    function neededScale(items) {
+      if (!items.length) return 1;
+      const totalW = items.reduce((s, i) => s + i.svgInfo.w, 0);
+      const gaps   = ITEM_GAP * (items.length - 1);
+      return totalW + gaps <= sideZoneW ? 1 : Math.max(0.15, (sideZoneW - gaps) / totalW);
+    }
+
+    // Use the same scale across all zones so items are sized relative to each other
+    const scale = Math.min(...[leftGround, leftSky, rightGround, rightSky].map(neededScale));
+
+    function placeGroup(items, startX, dir, isSky) {
+      // dir: 1 = left-to-right from startX, -1 = right-to-left from startX
+      let cursor = startX;
+      for (const { decor, svgInfo } of items) {
+        const w  = Math.max(4, Math.round(svgInfo.w * scale));
+        const h  = Math.max(4, Math.round(svgInfo.h * scale));
+        // CSS .garden-decoration applies translateX(-50%), so left = visual centre
+        const cx = dir > 0 ? cursor + w / 2 : cursor - w / 2;
+
         const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         el.setAttribute('viewBox', svgInfo.vb);
-        el.setAttribute('width',   svgInfo.w);
-        el.setAttribute('height',  svgInfo.h);
+        el.setAttribute('width',   w);
+        el.setAttribute('height',  h);
         el.setAttribute('aria-hidden', 'true');
         el.setAttribute('class', 'garden-decoration' +
-          (decor.float  ? ' garden-decoration--float'  : '') +
-          (decor.ground ? ' garden-decoration--ground' : ''));
+          (decor.ground ? ' garden-decoration--ground' : '') +
+          (isSky        ? ' garden-decoration--sky'    : ''));
         el.innerHTML = svgInfo.d;
-        el.style.left = decor.x + '%';
+        el.style.left = cx + 'px';
         if (decor.ground) {
           el.style.bottom = '13px';
         } else {
           el.style.top = decor.y + '%';
         }
         tilesRowEl.appendChild(el);
+
+        cursor += dir * (w + ITEM_GAP);
       }
+    }
+
+    placeGroup(leftGround,  EDGE_PAD,        1,  false);
+    placeGroup(leftSky,     EDGE_PAD,        1,  true);
+    placeGroup(rightGround, rowW - EDGE_PAD, -1, false);
+    placeGroup(rightSky,    rowW - EDGE_PAD, -1, true);
+
+    // Float items keep their original percentage position
+    for (const { decor, svgInfo } of floatItems) {
+      const w = Math.max(4, Math.round(svgInfo.w * scale));
+      const h = Math.max(4, Math.round(svgInfo.h * scale));
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      el.setAttribute('viewBox', svgInfo.vb);
+      el.setAttribute('width',   w);
+      el.setAttribute('height',  h);
+      el.setAttribute('aria-hidden', 'true');
+      el.setAttribute('class', 'garden-decoration garden-decoration--float');
+      el.innerHTML = svgInfo.d;
+      el.style.left = decor.x + '%';
+      el.style.top  = decor.y + '%';
+      tilesRowEl.appendChild(el);
     }
   }
 
