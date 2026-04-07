@@ -7287,8 +7287,9 @@ const w95Apps = {};
     const rowW = tilesRowEl.offsetWidth || 400;
     const EDGE_PAD = 4;
     const ITEM_GAP = 4;
-    // Each side zone is 20% of the row width (minus edge padding)
-    const sideZoneW = Math.max(30, Math.round(rowW * 0.20)) - EDGE_PAD;
+    // Each side zone spans 45% of the row width so items fill the background scene
+    // (left items cover left half, right items cover right half)
+    const sideZoneW = Math.max(30, Math.round(rowW * 0.45)) - EDGE_PAD;
 
     // Scale factor needed for a group to fit within the side zone
     function neededScale(items) {

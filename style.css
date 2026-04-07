@@ -6547,7 +6547,9 @@ body.dark-mode .garden-section-hdr{
   user-select:none;
   z-index:2; /* ground layer — behind flower tile columns */
   transform:translateX(-50%);
-  filter:drop-shadow(1px 2px 4px rgba(0,0,0,0.5));
+  /* Slightly muted to reinforce depth — items appear to recede into the background */
+  opacity:0.80;
+  filter:drop-shadow(1px 2px 3px rgba(0,0,0,0.35)) saturate(0.85);
   overflow:visible;
 }
 .garden-decoration--sky{
@@ -6555,6 +6557,8 @@ body.dark-mode .garden-section-hdr{
 }
 .garden-decoration--float{
   z-index:5; /* butterflies float above everything */
+  opacity:1;
+  filter:drop-shadow(1px 2px 4px rgba(0,0,0,0.4));
   animation:garden-decor-float 3s ease-in-out infinite;
 }
 @keyframes garden-decor-float{
