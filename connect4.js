@@ -1,5 +1,5 @@
 import { database, ref, onValue, set, update, remove, runTransaction } from './firebase.js';
-import { w95Mgr, w95Apps, w95Layout } from './window-manager.js';
+import { w95Mgr, w95Apps, w95Layout, makeDraggable } from './window-manager.js';
 import { ctx } from './ctx.js';
 import { launchConfetti } from './confetti.js';
 
@@ -58,7 +58,7 @@ import { launchConfetti } from './confetti.js';
             if (result === 'draw') data.draws = (data.draws || 0) + 1;
             return data;
         });
-        if (result === 'win') await unlockAchievement('c4_online_win');
+        if (result === 'win') await ctx.unlock('c4_online_win');
     }
 
     function renderLeaderboard() {
@@ -362,11 +362,11 @@ import { launchConfetti } from './confetti.js';
                     saveC4Stats(stats);
                     const mc = moveCount;
                     (async () => {
-                        await unlockAchievement('c4_first_win');
-                        if (stats.aiWins >= 5)  await unlockAchievement('c4_ai_wins_5');
-                        if (stats.aiWins >= 10) await unlockAchievement('c4_ai_wins_10');
-                        if (stats.aiWins >= 25) await unlockAchievement('c4_ai_wins_25');
-                        if (mc <= 15)           await unlockAchievement('c4_speed_win');
+                        await ctx.unlock('c4_first_win');
+                        if (stats.aiWins >= 5)  await ctx.unlock('c4_ai_wins_5');
+                        if (stats.aiWins >= 10) await ctx.unlock('c4_ai_wins_10');
+                        if (stats.aiWins >= 25) await ctx.unlock('c4_ai_wins_25');
+                        if (mc <= 15)           await ctx.unlock('c4_speed_win');
                         renderLeaderboard();
                     })();
                 } else {
@@ -394,7 +394,7 @@ import { launchConfetti } from './confetti.js';
                 saveC4Stats(stats);
                 saveC4AIGame();
                 (async () => {
-                    await unlockAchievement('c4_first_draw');
+                    await ctx.unlock('c4_first_draw');
                     renderLeaderboard();
                 })();
             }
@@ -576,7 +576,7 @@ import { launchConfetti } from './confetti.js';
         });
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow('w95-win-connect4');
-        if (wasHidden) _trackWindowOpen('connect4');
+        if (wasHidden) ctx.trackWindowOpen('connect4');
     }
 
     function hide() {
@@ -605,28 +605,7 @@ import { launchConfetti } from './confetti.js';
         }
     });
 
-    // Drag support
-    let dragging = false, startX = 0, startY = 0, winStartX = 0, winStartY = 0;
-    handle.addEventListener('mousedown', (e) => {
-        if (e.target.closest('button')) return;
-        if (w95Mgr.isMaximised('w95-win-connect4')) return;
-        dragging = true;
-        startX = e.clientX; startY = e.clientY;
-        const rect = win.getBoundingClientRect();
-        winStartX = rect.left; winStartY = rect.top;
-        e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-        if (!dragging) return;
-        const taskbarH = 40;
-        const maxX = document.documentElement.clientWidth - win.offsetWidth;
-        const maxY = document.documentElement.clientHeight - win.offsetHeight - taskbarH;
-        win.style.left = Math.max(0, Math.min(maxX, winStartX + (e.clientX - startX))) + 'px';
-        win.style.top  = Math.max(0, Math.min(maxY, winStartY + (e.clientY - startY))) + 'px';
-    });
-    window.addEventListener('mouseup', () => {
-        if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-connect4'); }
-    });
+    makeDraggable(win, handle, 'w95-win-connect4');
 
     w95Apps['connect4'] = { open: () => {
         if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow('w95-win-connect4');

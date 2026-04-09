@@ -20143,6 +20143,7 @@ document.addEventListener('click', (e) => {
     // ---- Populate shared context for screensaver and game modules ----
     ctx.getUser             = () => currentUser;
     ctx.unlock              = (id) => unlockAchievement(id);
+    ctx.trackWindowOpen     = (key) => _trackWindowOpen(key);
     ctx.sparkSound          = (type, cat) => sparkSound(type, cat);
     ctx.acCache             = _acCache;
     ctx.prefetchAlbumCovers = () => prefetchAlbumCovers();
