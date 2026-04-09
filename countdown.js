@@ -176,7 +176,30 @@ import { ctx } from './ctx.js';
             const cls = diff === 0 ? 'cd-val-exact' : diff <= 10 ? 'cd-val-close' : '';
             const row = document.createElement('div');
             row.className = 'cd-step-row';
-            row.innerHTML = `<span>${step.a} ${opDisplay(step.op)} ${step.b} =</span> <span class="cd-step-result${cls ? ' ' + cls : ''}">${step.result}</span>`;
+
+            const leftSpan = document.createElement('span');
+            leftSpan.textContent = `${step.a} ${opDisplay(step.op)} ${step.b} =`;
+
+            const resultSpan = document.createElement('span');
+            resultSpan.className = `cd-step-result${cls ? ' ' + cls : ''}`;
+            resultSpan.textContent = String(step.result);
+
+            // Make result clickable if it is still in the pool and usable
+            const resultItem = pool.find(p => p.id === step.resultId);
+            let canClick = !!resultItem && !gameOver &&
+                           !(pendingA && pendingA.id === step.resultId) &&
+                           (stepState === 'pickA' || stepState === 'pickB');
+            if (canClick && stepState === 'pickB' && pendingOp) {
+                if (pendingOp === '/' && (resultItem.value === 0 || pendingA.value % resultItem.value !== 0)) canClick = false;
+                if (pendingOp === '-' && resultItem.value >= pendingA.value) canClick = false;
+            }
+            if (canClick) {
+                resultSpan.style.cursor = 'pointer';
+                resultSpan.addEventListener('click', () => onNumberClick(resultItem));
+            }
+
+            row.appendChild(leftSpan);
+            row.appendChild(resultSpan);
             stepsLog.appendChild(row);
         });
 
@@ -192,8 +215,15 @@ import { ctx } from './ctx.js';
 
     function updateTileDisabled() {
         numbersEl.querySelectorAll('.cd-num-btn').forEach(btn => {
-            if (gameOver) { btn.disabled = true; return; }
             const id = parseInt(btn.dataset.poolId, 10);
+            btn.classList.remove('is-pressed');
+            if (gameOver) { btn.disabled = true; return; }
+            // Pending A tile: show as selected (pressed) and disabled
+            if (pendingA && pendingA.id === id) {
+                btn.disabled = true;
+                btn.classList.add('is-pressed');
+                return;
+            }
             const item = pool.find(p => p.id === id);
             if (!item) { btn.disabled = true; return; }
             if (stepState === 'pickA') {
@@ -393,15 +423,15 @@ import { ctx } from './ctx.js';
         if (gameOver) return;
         if (stepState === 'pickA') {
             pendingA = item;
-            pool = pool.filter(p => p.id !== item.id);
+            // Keep item in pool — tile stays in place, just greys out via updateTileDisabled
             stepState = 'pickOp';
-            buildNumberTiles();
             updateDisplay();
             updateControls();
         } else if (stepState === 'pickB') {
             const result = compute(pendingA.value, pendingOp, item.value);
             if (result === null) return;
-            pool = pool.filter(p => p.id !== item.id);
+            // Remove both operands from pool now that the step is complete
+            pool = pool.filter(p => p.id !== item.id && p.id !== pendingA.id);
             const resultId = nextPoolId++;
             steps.push({
                 aId: pendingA.id, bId: item.id,
@@ -437,17 +467,15 @@ import { ctx } from './ctx.js';
                 const lastResult = pool.find(p => p.id === lastResultId);
                 if (!lastResult) return;
                 pendingA = lastResult;
-                pool = pool.filter(p => p.id !== lastResult.id);
+                // Keep in pool — tile stays put, greys out via updateTileDisabled
                 pendingOp = btn.dataset.op;
                 stepState = 'pickB';
-                buildNumberTiles();
             } else if (stepState === 'pickOp') {
                 pendingOp = btn.dataset.op;
                 stepState = 'pickB';
             } else if (stepState === 'pickB') {
-                // Change operator — ignore the previously selected one
+                // Change operator — re-validate tiles via updateControls below
                 pendingOp = btn.dataset.op;
-                buildNumberTiles(); // re-validate tiles for new op constraints
             } else {
                 return;
             }
@@ -459,8 +487,7 @@ import { ctx } from './ctx.js';
     undoBtn?.addEventListener('click', () => {
         if (gameOver) return;
         if (stepState === 'pickOp') {
-            // Cancel A selection, return to pool
-            pool.push(pendingA);
+            // Cancel A selection — tile was never removed from pool, just clear selection
             pendingA = null;
             stepState = 'pickA';
         } else if (stepState === 'pickB') {
@@ -468,13 +495,13 @@ import { ctx } from './ctx.js';
             pendingOp = null;
             stepState = 'pickOp';
         } else if (steps.length > 0) {
-            // Undo last completed step
+            // Undo last completed step — pool structure changes, rebuild tiles
             const step = steps.pop();
             pool = pool.filter(p => p.id !== step.resultId);
             pool.push({ id: step.aId, value: step.a, isResult: step.aIsResult });
             pool.push({ id: step.bId, value: step.b, isResult: step.bIsResult });
+            buildNumberTiles();
         }
-        buildNumberTiles();
         updateDisplay();
         updateControls();
     });

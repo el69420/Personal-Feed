@@ -2627,6 +2627,11 @@ body.dark-mode .cd-current-step {
   cursor: default;
   filter: none;
 }
+/* Selected-as-A tile: keep full opacity so it's clearly visible as "chosen" */
+.cd-num-btn.is-pressed:disabled {
+  opacity: 1;
+  cursor: default;
+}
 .cd-num-result {
   background: linear-gradient(180deg, #d0f0d0 0%, #90d890 100%);
   border-top-color: #c0ffc0;
