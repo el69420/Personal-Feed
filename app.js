@@ -19236,37 +19236,61 @@ document.addEventListener('click', (e) => {
         return 'interested' + user;
     }
 
-    // ---- Poster fetching via iTunes Search API (free, no key, CORS-enabled) ----
+    // ---- Poster fetching (iTunes → Wikipedia fallback) ----
+    const _posterFetching = new Set(); // in-progress lock (prevents duplicate fetches)
+    const _posterRetried  = new Set(); // items retried this session (prevents infinite loops)
+
     async function fetchAndStorePoster(itemId, title, type, year) {
+        if (_posterFetching.has(itemId)) return;
+        _posterFetching.add(itemId);
         set(ref(database, `watchlist/${itemId}/posterSearched`), true);
         try {
+            // --- iTunes (good for modern content) ---
             const media  = type === 'tv' ? 'tvShow' : 'movie';
             const entity = type === 'tv' ? 'tvShow' : 'movie';
             const term   = encodeURIComponent(year ? `${title} ${year}` : title);
-            const res    = await fetch(`https://itunes.apple.com/search?term=${term}&media=${media}&entity=${entity}&limit=5`);
-            if (!res.ok) return;
-            const data = await res.json();
-            if (!data.results?.length) return;
-            const lower = title.toLowerCase();
-            const match = data.results.find(r => {
-                const t = (r.trackName || r.collectionName || '').toLowerCase();
-                return t === lower || t.startsWith(lower);
-            }) || data.results[0];
-            const raw = match.artworkUrl100 || match.artworkUrl60 || '';
-            if (!raw) return;
-            // Apple CDN supports swapping the size token for a larger image
-            const artwork = raw.replace(/\d+x\d+bb/, '300x300bb');
-            await set(ref(database, `watchlist/${itemId}/poster`), artwork);
+            const itunesRes = await fetch(`https://itunes.apple.com/search?term=${term}&media=${media}&entity=${entity}&limit=5`);
+            if (itunesRes.ok) {
+                const data = await itunesRes.json();
+                if (data.results?.length) {
+                    const lower = title.toLowerCase();
+                    const match = data.results.find(r => {
+                        const t = (r.trackName || r.collectionName || '').toLowerCase();
+                        return t === lower || t.startsWith(lower);
+                    }) || data.results[0];
+                    const raw = match.artworkUrl100 || match.artworkUrl60 || '';
+                    if (raw) {
+                        const artwork = raw.replace(/\d+x\d+bb/, '300x300bb');
+                        await set(ref(database, `watchlist/${itemId}/poster`), artwork);
+                        return;
+                    }
+                }
+            }
+            // --- Wikipedia fallback (covers classic / older titles not on iTunes) ---
+            const wikiSlug = encodeURIComponent(title.replace(/\s+/g, '_'));
+            const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${wikiSlug}`);
+            if (wikiRes.ok) {
+                const wikiData = await wikiRes.json();
+                const thumbnail = wikiData.thumbnail?.source;
+                if (thumbnail) {
+                    await set(ref(database, `watchlist/${itemId}/poster`), thumbnail);
+                }
+            }
         } catch { /* poster is optional — fail silently */ }
+        finally { _posterFetching.delete(itemId); }
     }
 
     // ---- Firebase ----
     onValue(watchlistRef, snap => {
         allItems = snap.val() || {};
-        // Kick off poster fetch for any item that hasn't been searched yet
         Object.entries(allItems).forEach(([id, item]) => {
             if (!item.posterSearched && item.title) {
+                // Normal first-time fetch
                 fetchAndStorePoster(id, item.title, item.type, item.year);
+            } else if (item.posterSearched && !item.poster && !_posterRetried.has(id) && item.title) {
+                // Was searched before but no poster found — retry once with updated sources
+                _posterRetried.add(id);
+                remove(ref(database, `watchlist/${id}/posterSearched`));
             }
         });
         if (!win.classList.contains('is-hidden')) renderItems();
