@@ -1,6 +1,6 @@
 import { database, auth, googleProvider, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect, runTransaction, serverTimestamp, onAuthStateChanged, signInWithPopup, signOut, postsRef, chatRef, boardsRef, boardItemsRef, boardDeleteRequestsRef, lettersRef, linkMetaRef, recycleBinRef, categoriesRef, wishlistBoardsRef, wishlistItemsRef, foodDiaryRef, painJournalRef, painPatternNotesRef, moodJournalRef, shoppingListsRef, watchlistRef } from './firebase.js';
 import { ctx } from './ctx.js';
-import { w95Mgr, w95Apps, w95Layout, makeDraggable, makeResizable } from './window-manager.js';
+import { w95Mgr, w95Apps, w95Layout, makeDraggable, makeResizable, peekTopZ, nextTopZ } from './window-manager.js';
 import { prefersReducedMotion, safeText, timeAgo, exactTimestamp, detectSource, getYouTubeId, youtubeThumb, burstEmoji } from './ui-utils.js';
 import { fetchLinkMeta, hydrateLinkPreviews, hydrateRichCards, hydrateYouTubeMeta } from './link-preview.js';
 import { openW95Dialog, openW95Prompt, openW95Notepad } from './win95-dialogs.js';
@@ -2978,7 +2978,7 @@ function toggleNotifPanel() {
         closeNotifPanel();
     } else {
         // Ensure notification panel appears above all open windows
-        panel.style.zIndex = (w95TopZ + 1);
+        panel.style.zIndex = (peekTopZ() + 1);
         panel.classList.remove('is-hidden');
         _markAllNotifsRead();
         _renderNotifPanel();
@@ -12618,13 +12618,13 @@ function openFolderWindow(folderItem) {
     // Remove any pre-existing window for this folder so double-open just re-focuses
     const winId = 'fwin-' + folderItem.id;
     const existing = document.getElementById(winId);
-    if (existing) { existing.style.zIndex = ++w95TopZ; return; }
+    if (existing) { existing.style.zIndex = nextTopZ(); return; }
 
     const win = document.createElement('div');
     win.id = winId;
     win.className = 'w95-window';
     win.style.cssText = 'position:fixed;width:480px;max-width:95vw;height:360px;display:flex;flex-direction:column;left:140px;top:90px;';
-    win.style.zIndex = ++w95TopZ;
+    win.style.zIndex = nextTopZ();
 
     win.innerHTML = `
         <div class="w95-titlebar window--active" id="${winId}-handle">
@@ -12664,7 +12664,7 @@ function openFolderWindow(folderItem) {
     win.querySelector('.w95-control-close').addEventListener('click', cleanup);
 
     // Bring to front on click
-    win.addEventListener('mousedown', () => { win.style.zIndex = ++w95TopZ; });
+    win.addEventListener('mousedown', () => { win.style.zIndex = nextTopZ(); });
 
     // Drag
     const handle = document.getElementById(`${winId}-handle`);
@@ -15565,7 +15565,7 @@ function initPixelCat() {
         giftMsgEl.textContent   = type.msg;
         giftWin.style.left = `${Math.round((window.innerWidth  - 240) / 2)}px`;
         giftWin.style.top  = `${Math.round((window.innerHeight - 180) / 2 - 30)}px`;
-        giftWin.style.zIndex = ++w95TopZ;
+        giftWin.style.zIndex = nextTopZ();
         giftWin.classList.remove('is-hidden');
     }
 

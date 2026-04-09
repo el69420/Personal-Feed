@@ -275,4 +275,9 @@ window.addEventListener('mouseup', () => {
 });
 
 
-export { w95Mgr, w95Apps, w95Layout, makeDraggable, makeResizable };
+/** Read current top z without incrementing — use for overlays that should float above all windows */
+function peekTopZ() { return w95TopZ; }
+/** Claim the next z-index slot (increments the counter) — use when a new window/layer needs focus */
+function nextTopZ() { return ++w95TopZ; }
+
+export { w95Mgr, w95Apps, w95Layout, makeDraggable, makeResizable, peekTopZ, nextTopZ };
