@@ -1,4 +1,322 @@
 /* ============================================================
+   Sticky Notes
+   ============================================================ */
+
+#w95-win-stickynotes .w95-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  background: #c0c0c0;
+  position: relative;
+}
+
+/* Tabs */
+.sn-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px 4px 0;
+  background: #c0c0c0;
+  border-bottom: 2px solid #808080;
+  flex-shrink: 0;
+}
+
+.sn-tab {
+  padding: 3px 12px;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  background: #c0c0c0;
+  border-top:   2px solid #fff;
+  border-left:  2px solid #fff;
+  border-right: 2px solid #808080;
+  border-bottom: none;
+  margin-bottom: -2px;
+  color: #000;
+  position: relative;
+  z-index: 1;
+}
+
+.sn-tab.active {
+  background: #c0c0c0;
+  border-bottom: 2px solid #c0c0c0;
+  z-index: 2;
+}
+
+.sn-tab:not(.active) {
+  margin-top: 2px;
+}
+
+/* Panels */
+.sn-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Draw panel */
+.sn-canvas-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#sn-canvas {
+  cursor: crosshair;
+  touch-action: none;
+  max-width: 100%;
+  max-height: 100%;
+  border-top:    2px solid #808080;
+  border-left:   2px solid #808080;
+  border-bottom: 2px solid #fff;
+  border-right:  2px solid #fff;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.25);
+  display: block;
+}
+
+/* Toolbar */
+.sn-toolbar {
+  flex-shrink: 0;
+  border-top: 2px solid #808080;
+  background: #c0c0c0;
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sn-colors {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.sn-color-btn {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #808080;
+  cursor: pointer;
+  border-radius: 2px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.sn-color-btn.active {
+  outline: 2px solid #000080;
+  outline-offset: 1px;
+}
+
+.sn-eraser-btn {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  color: #444;
+}
+
+.sn-divider {
+  width: 2px;
+  height: 20px;
+  background: #808080;
+  flex-shrink: 0;
+}
+
+.sn-sizes {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.sn-size-btn {
+  width: 26px;
+  height: 22px;
+  border-top:    2px solid #fff;
+  border-left:   2px solid #fff;
+  border-bottom: 2px solid #808080;
+  border-right:  2px solid #808080;
+  background: #c0c0c0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  color: #000;
+}
+
+.sn-size-btn.active {
+  border-top:    2px solid #808080;
+  border-left:   2px solid #808080;
+  border-bottom: 2px solid #fff;
+  border-right:  2px solid #fff;
+  background: #b8b8b8;
+}
+
+.sn-actions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.sn-send-btn {
+  background: #000080 !important;
+  color: #fff !important;
+  font-weight: bold;
+}
+
+.sn-send-btn:disabled {
+  background: #808080 !important;
+  color: #c0c0c0 !important;
+  cursor: default;
+}
+
+/* Inbox panel */
+.sn-inbox-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  padding: 10px;
+  overflow-y: auto;
+  flex: 1;
+  align-content: start;
+}
+
+.sn-note-thumb {
+  background: #FFED6B;
+  border-top:    2px solid #fff;
+  border-left:   2px solid #fff;
+  border-bottom: 2px solid #808080;
+  border-right:  2px solid #808080;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.08s;
+}
+
+.sn-note-thumb:hover {
+  transform: scale(1.04);
+}
+
+.sn-note-thumb.sn-note-unread {
+  outline: 2px solid #ff4444;
+  outline-offset: 1px;
+}
+
+.sn-note-thumb img {
+  width: 100%;
+  display: block;
+}
+
+.sn-note-meta {
+  font-size: 10px;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  color: #555;
+  text-align: center;
+  padding: 2px 4px;
+  background: rgba(0,0,0,0.06);
+}
+
+.sn-empty {
+  text-align: center;
+  color: #555;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 12px;
+  padding: 24px 12px;
+  grid-column: 1 / -1;
+}
+
+/* Unread tab badge */
+.sn-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ff4444;
+  color: #fff;
+  border-radius: 9px;
+  min-width: 16px;
+  height: 16px;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 0 3px;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+
+.sn-badge.is-hidden { display: none; }
+
+/* Desktop icon badge */
+.sn-desktop-badge {
+  position: absolute;
+  top: -3px;
+  right: 8px;
+  background: #ff4444;
+  color: #fff;
+  border-radius: 9px;
+  min-width: 17px;
+  height: 17px;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 0 3px;
+  pointer-events: none;
+}
+
+/* Full-note modal */
+.sn-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.sn-modal.is-hidden { display: none; }
+
+.sn-modal-inner {
+  background: #c0c0c0;
+  border-top:   3px solid #fff;
+  border-left:  3px solid #fff;
+  border-bottom: 3px solid #404040;
+  border-right: 3px solid #404040;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 90%;
+}
+
+.sn-modal-inner img {
+  max-width: 340px;
+  max-height: 340px;
+  display: block;
+  border-top:    2px solid #808080;
+  border-left:   2px solid #808080;
+  border-bottom: 2px solid #fff;
+  border-right:  2px solid #fff;
+}
+
+/* Desktop icon needs relative positioning for the badge */
+[data-app="stickynotes"] {
+  position: relative;
+}
+
+/* ============================================================
    Wishlist Window
    ============================================================ */
 

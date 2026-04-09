@@ -29,3 +29,4 @@ export const painPatternNotesRef  = ref(database, 'painPatternNotes');
 export const moodJournalRef       = ref(database, 'moodJournal');
 export const shoppingListsRef     = ref(database, 'shoppingLists');
 export const watchlistRef         = ref(database, 'watchlist');
+export const stickyNotesRef       = ref(database, 'stickyNotes');

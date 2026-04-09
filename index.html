@@ -69,6 +69,10 @@
             <div class="desktop-icon-img">&#128290;</div>
             <div class="desktop-icon-label">Countdown</div>
         </div>
+        <div class="w95-desktop-icon" data-app="stickynotes" tabindex="0">
+            <div class="desktop-icon-img">&#9999;</div>
+            <div class="desktop-icon-label">Sticky Notes</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -1820,6 +1824,74 @@
   </div>
 </div>
 
+<!-- Sticky Notes Window -->
+<div id="w95-win-stickynotes" class="w95-window is-hidden" style="left:240px;top:70px;width:390px;height:470px;">
+  <div class="w95-titlebar" id="w95-stickynotes-handle">
+    <div class="w95-title">&#9999; Sticky Notes.exe</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-stickynotes-min"   type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-stickynotes-max"   type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-stickynotes-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body" id="w95-stickynotes-body">
+
+    <!-- Tabs -->
+    <div class="sn-tabs">
+      <button class="sn-tab active" id="sn-tab-draw" type="button">&#9999; Draw</button>
+      <button class="sn-tab" id="sn-tab-inbox" type="button">
+        &#128236; Inbox
+        <span class="sn-badge is-hidden" id="sn-unread-badge">0</span>
+      </button>
+    </div>
+
+    <!-- Draw panel -->
+    <div class="sn-panel" id="sn-draw-panel">
+      <div class="sn-canvas-wrap">
+        <canvas id="sn-canvas" width="320" height="285"></canvas>
+      </div>
+      <div class="sn-toolbar">
+        <!-- Colour palette -->
+        <div class="sn-colors">
+          <button class="sn-color-btn active" data-color="#222222" style="background:#222222" title="Black"  type="button"></button>
+          <button class="sn-color-btn"        data-color="#d92b2b" style="background:#d92b2b" title="Red"    type="button"></button>
+          <button class="sn-color-btn"        data-color="#1a60cc" style="background:#1a60cc" title="Blue"   type="button"></button>
+          <button class="sn-color-btn"        data-color="#1e9e45" style="background:#1e9e45" title="Green"  type="button"></button>
+          <button class="sn-color-btn"        data-color="#c040b0" style="background:#c040b0" title="Pink"   type="button"></button>
+          <button class="sn-color-btn"        data-color="#e07800" style="background:#e07800" title="Orange" type="button"></button>
+          <button class="sn-color-btn sn-eraser-btn" data-color="#FFED6B" style="background:#FFED6B" title="Eraser" type="button">&#9003;</button>
+        </div>
+        <div class="sn-divider"></div>
+        <!-- Brush sizes -->
+        <div class="sn-sizes">
+          <button class="sn-size-btn"        data-size="2"  title="Fine"   type="button">&#183;</button>
+          <button class="sn-size-btn active" data-size="5"  title="Medium" type="button">&#8226;</button>
+          <button class="sn-size-btn"        data-size="13" title="Thick"  type="button">&#9679;</button>
+        </div>
+        <!-- Actions -->
+        <div class="sn-actions">
+          <button class="w95-btn" id="sn-clear-btn" type="button">Clear</button>
+          <button class="w95-btn sn-send-btn" id="sn-send-btn" type="button">Send Note &#9993;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inbox panel -->
+    <div class="sn-panel is-hidden" id="sn-inbox-panel">
+      <div class="sn-inbox-list" id="sn-inbox-list"></div>
+    </div>
+
+    <!-- Full-note modal -->
+    <div class="sn-modal is-hidden" id="sn-note-modal">
+      <div class="sn-modal-inner">
+        <img id="sn-note-modal-img" src="" alt="Sticky note">
+        <button class="w95-btn" id="sn-note-modal-close" type="button">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- Boot screen (D) — shown once per session -->
 <div id="boot-screen">
   <div class="boot-logo">&#128187; Windows 95</div>
@@ -1840,6 +1912,7 @@
     <script type="module" src="battleships.js"></script>
     <script type="module" src="connect4.js"></script>
     <script type="module" src="countdown.js"></script>
+    <script type="module" src="sticky-notes.js"></script>
 </body>
 </html>
 
