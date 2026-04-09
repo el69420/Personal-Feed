@@ -4,6 +4,7 @@
 export const ctx = {
     getUser:             () => null,
     unlock:              (_id) => {},
+    trackWindowOpen:     (_key) => {},
     sparkSound:          (_type, _cat) => {},
     acCache:             null,           // { tracks, images } — album-cover preload cache
     prefetchAlbumCovers: () => Promise.resolve(),

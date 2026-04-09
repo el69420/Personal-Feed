@@ -1,5 +1,5 @@
 import { database, ref, push, onValue, set, update, remove, get, runTransaction } from './firebase.js';
-import { w95Mgr, w95Apps, w95Layout } from './window-manager.js';
+import { w95Mgr, w95Apps, w95Layout, makeDraggable } from './window-manager.js';
 import { ctx } from './ctx.js';
 import { launchConfetti } from './confetti.js';
 
@@ -53,7 +53,8 @@ import { launchConfetti } from './confetti.js';
     let bsUnsub    = null;
     let onlineResultDone = false;
     let bsScoresCache    = null;
-    let loggedShotsCount = 0; // tracks how many shots have been added to log
+    let loggedShotsCount = 0;
+    let _statusTimer     = null;
 
     // ---- helpers ----
     function key(r, c) { return r + ',' + c; }
@@ -583,7 +584,6 @@ import { launchConfetti } from './confetti.js';
         renderLeaderboard();
     }
 
-    let _statusTimer = null;
     function setStatus(msg) {
         if (!statusEl) return;
         statusEl.textContent = msg;
@@ -648,7 +648,7 @@ import { launchConfetti } from './confetti.js';
         });
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow('w95-win-battleships');
-        if (wasHidden) _trackWindowOpen('battleships');
+        if (wasHidden) ctx.trackWindowOpen('battleships');
     }
     function hide() {
         win.classList.add('is-hidden');
@@ -664,23 +664,7 @@ import { launchConfetti } from './confetti.js';
     maxBtn?.addEventListener('click',  e => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-battleships'); });
     closeBtn?.addEventListener('click', e => { e.stopPropagation(); closeWin(); });
 
-    let dragging = false, sx = 0, sy = 0, wx = 0, wy = 0;
-    handle.addEventListener('mousedown', e => {
-        if (e.target.closest('button') || w95Mgr.isMaximised('w95-win-battleships')) return;
-        dragging = true; sx = e.clientX; sy = e.clientY;
-        const rect = win.getBoundingClientRect(); wx = rect.left; wy = rect.top;
-        e.preventDefault();
-    });
-    window.addEventListener('mousemove', e => {
-        if (!dragging) return;
-        const maxX = document.documentElement.clientWidth - win.offsetWidth;
-        const maxY = document.documentElement.clientHeight - win.offsetHeight - 40;
-        win.style.left = Math.max(0, Math.min(maxX, wx + e.clientX - sx)) + 'px';
-        win.style.top  = Math.max(0, Math.min(maxY, wy + e.clientY - sy)) + 'px';
-    });
-    window.addEventListener('mouseup', () => {
-        if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-battleships'); }
-    });
+    makeDraggable(win, handle, 'w95-win-battleships');
 
     w95Apps['battleships'] = { open: () => {
         if (win.classList.contains('is-hidden')) show();

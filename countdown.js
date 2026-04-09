@@ -1,5 +1,5 @@
 import { database, ref, push, onValue, runTransaction } from './firebase.js';
-import { w95Mgr, w95Apps, w95Layout } from './window-manager.js';
+import { w95Mgr, w95Apps, w95Layout, makeDraggable } from './window-manager.js';
 import { ctx } from './ctx.js';
 
 (() => {
@@ -541,22 +541,18 @@ import { ctx } from './ctx.js';
         document.getElementById('cd-again-btn')?.addEventListener('click', resetToPick);
 
         // Save score to Firebase
-        if (ctx.getUser() && pts > 0) {
+        if (ctx.getUser()) {
             const userScoreRef = ref(database, 'countdown_scores/' + ctx.getUser());
             runTransaction(userScoreRef, cur => {
                 if (!cur) return { total: pts, games: 1 };
                 return { total: (cur.total || 0) + pts, games: (cur.games || 0) + 1 };
             }).catch(() => {});
-            push(ref(database, 'countdown_games/' + ctx.getUser()), {
-                pts, numbers: gameNumbers, target, method: playerMethod,
-                timeTaken, timestamp: Date.now()
-            }).catch(() => {});
-        } else if (ctx.getUser()) {
-            const userScoreRef = ref(database, 'countdown_scores/' + ctx.getUser());
-            runTransaction(userScoreRef, cur => {
-                if (!cur) return { total: 0, games: 1 };
-                return { total: (cur.total || 0), games: (cur.games || 0) + 1 };
-            }).catch(() => {});
+            if (pts > 0) {
+                push(ref(database, 'countdown_games/' + ctx.getUser()), {
+                    pts, numbers: gameNumbers, target, method: playerMethod,
+                    timeTaken, timestamp: Date.now()
+                }).catch(() => {});
+            }
         }
     }
 
@@ -606,7 +602,7 @@ import { ctx } from './ctx.js';
         }).join('');
 
         sbRowsEl.querySelectorAll('.cd-lb-clickable').forEach(row => {
-            row.addEventListener('click', async () => {
+            row.addEventListener('click', () => {
                 const user = row.dataset.user;
                 if (sbDetailUser === user && sbDetailEl.style.display !== 'none') {
                     sbDetailEl.style.display = 'none';
@@ -615,32 +611,26 @@ import { ctx } from './ctx.js';
                 }
                 sbDetailUser = user;
                 sbDetailEl.style.display = 'block';
-                sbDetailEl.innerHTML = '<em>Loading…</em>';
-                try {
-                    const gSnap = await get(ref(database, 'countdown_games/' + user));
-                    const gData = gSnap.val();
-                    if (!gData) {
-                        sbDetailEl.innerHTML = `<strong>${user}</strong> — no detailed records yet.`;
-                        return;
-                    }
-                    const entries = Object.values(gData)
-                        .filter(g => g.timeTaken != null)
-                        .sort((a, b) => a.timeTaken - b.timeTaken)
-                        .slice(0, 5);
-                    sbDetailEl.innerHTML = `<strong>${user}'s recent games:</strong>` +
-                        entries.map(g => {
-                            const nums = (g.numbers || []).join(', ');
-                            const timeStr = g.timeTaken != null ? ` in ${g.timeTaken}s` : '';
-                            const method = g.method || 'N/A';
-                            return `<div style="margin-top:3px;padding-top:3px;border-top:1px solid #ddd;">
-                                <b>${g.pts}pts</b> — Target: <b>${g.target}</b>${timeStr}<br>
-                                Numbers: [${nums}]<br>
-                                Method: ${method}
-                            </div>`;
-                        }).join('');
-                } catch (_) {
-                    sbDetailEl.innerHTML = '<em>Could not load game details.</em>';
+                const gData = cdLatestGames[user];
+                if (!gData) {
+                    sbDetailEl.innerHTML = `<strong>${user}</strong> — no detailed records yet.`;
+                    return;
                 }
+                const entries = Object.values(gData)
+                    .filter(g => g.timeTaken != null)
+                    .sort((a, b) => a.timeTaken - b.timeTaken)
+                    .slice(0, 5);
+                sbDetailEl.innerHTML = `<strong>${user}'s recent games:</strong>` +
+                    entries.map(g => {
+                        const nums = (g.numbers || []).join(', ');
+                        const timeStr = g.timeTaken != null ? ` in ${g.timeTaken}s` : '';
+                        const method = g.method || 'N/A';
+                        return `<div style="margin-top:3px;padding-top:3px;border-top:1px solid #ddd;">
+                            <b>${g.pts}pts</b> — Target: <b>${g.target}</b>${timeStr}<br>
+                            Numbers: [${nums}]<br>
+                            Method: ${method}
+                        </div>`;
+                    }).join('');
             });
         });
     }
@@ -663,7 +653,7 @@ import { ctx } from './ctx.js';
         });
         win.classList.remove('is-hidden');
         w95Mgr.focusWindow('w95-win-countdown');
-        if (wasHidden) _trackWindowOpen('countdown');
+        if (wasHidden) ctx.trackWindowOpen('countdown');
     }
     function hide() {
         win.classList.add('is-hidden');
@@ -680,23 +670,7 @@ import { ctx } from './ctx.js';
     maxBtn?.addEventListener('click',  e => { e.stopPropagation(); w95Mgr.toggleMaximise(win, 'w95-win-countdown'); });
     closeBtn?.addEventListener('click', e => { e.stopPropagation(); closeWin(); });
 
-    let dragging = false, sx = 0, sy = 0, wx = 0, wy = 0;
-    handle.addEventListener('mousedown', e => {
-        if (e.target.closest('button') || w95Mgr.isMaximised('w95-win-countdown')) return;
-        dragging = true; sx = e.clientX; sy = e.clientY;
-        const rect = win.getBoundingClientRect(); wx = rect.left; wy = rect.top;
-        e.preventDefault();
-    });
-    window.addEventListener('mousemove', e => {
-        if (!dragging) return;
-        const maxX = document.documentElement.clientWidth - win.offsetWidth;
-        const maxY = document.documentElement.clientHeight - win.offsetHeight - 40;
-        win.style.left = Math.max(0, Math.min(maxX, wx + e.clientX - sx)) + 'px';
-        win.style.top  = Math.max(0, Math.min(maxY, wy + e.clientY - sy)) + 'px';
-    });
-    window.addEventListener('mouseup', () => {
-        if (dragging) { dragging = false; w95Layout.save(win, 'w95-win-countdown'); }
-    });
+    makeDraggable(win, handle, 'w95-win-countdown');
 
     w95Apps['countdown'] = { open: () => {
         if (win.classList.contains('is-hidden')) show();
