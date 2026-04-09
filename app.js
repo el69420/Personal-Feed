@@ -19226,19 +19226,49 @@ document.addEventListener('click', (e) => {
     if (!win || !handle || !body) return;
 
     let btn      = null;
-    let allItems = {};  // { itemId: { title, type, addedBy, addedAt, interestedEl, interestedTero, downloaded, watched } }
+    let allItems = {};
 
     function _esc(s) {
         return String(s || '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
     function _interestKey(user) {
-        return 'interested' + user; // e.g. 'interestedEl', 'interestedTero'
+        return 'interested' + user;
+    }
+
+    // ---- Poster fetching via iTunes Search API (free, no key, CORS-enabled) ----
+    async function fetchAndStorePoster(itemId, title, type, year) {
+        set(ref(database, `watchlist/${itemId}/posterSearched`), true);
+        try {
+            const media  = type === 'tv' ? 'tvShow' : 'movie';
+            const entity = type === 'tv' ? 'tvShow' : 'movie';
+            const term   = encodeURIComponent(year ? `${title} ${year}` : title);
+            const res    = await fetch(`https://itunes.apple.com/search?term=${term}&media=${media}&entity=${entity}&limit=5`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data.results?.length) return;
+            const lower = title.toLowerCase();
+            const match = data.results.find(r => {
+                const t = (r.trackName || r.collectionName || '').toLowerCase();
+                return t === lower || t.startsWith(lower);
+            }) || data.results[0];
+            const raw = match.artworkUrl100 || match.artworkUrl60 || '';
+            if (!raw) return;
+            // Apple CDN supports swapping the size token for a larger image
+            const artwork = raw.replace(/\d+x\d+bb/, '300x300bb');
+            await set(ref(database, `watchlist/${itemId}/poster`), artwork);
+        } catch { /* poster is optional — fail silently */ }
     }
 
     // ---- Firebase ----
     onValue(watchlistRef, snap => {
         allItems = snap.val() || {};
+        // Kick off poster fetch for any item that hasn't been searched yet
+        Object.entries(allItems).forEach(([id, item]) => {
+            if (!item.posterSearched && item.title) {
+                fetchAndStorePoster(id, item.title, item.type, item.year);
+            }
+        });
         if (!win.classList.contains('is-hidden')) renderItems();
     });
 
@@ -19248,6 +19278,7 @@ document.addEventListener('click', (e) => {
             <div class="wl-layout">
                 <div class="wl-add-row">
                     <input id="wl-title-input" class="wl-title-input" type="text" placeholder="Film or TV show title…" autocomplete="off" maxlength="200">
+                    <input id="wl-year-input" class="wl-year-input" type="number" placeholder="Year" min="1888" max="2030" autocomplete="off">
                     <select id="wl-type-select" class="wl-type-select">
                         <option value="film">🎬 Film</option>
                         <option value="tv">📺 TV</option>
@@ -19305,30 +19336,43 @@ document.addEventListener('click', (e) => {
 
             const dlChecked = item.downloaded ? 'checked' : '';
             const wtChecked = item.watched    ? 'checked' : '';
+            const yearStr   = item.year ? ` <span class="wl-item-year">(${_esc(String(item.year))})</span>` : '';
+
+            let posterEl;
+            if (item.poster) {
+                posterEl = `<img class="wl-poster" src="${_esc(item.poster)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'wl-poster wl-poster-none\\'>${typeIcon}</div>'">`;
+            } else if (!item.posterSearched) {
+                posterEl = `<div class="wl-poster wl-poster-loading"></div>`;
+            } else {
+                posterEl = `<div class="wl-poster wl-poster-none">${typeIcon}</div>`;
+            }
 
             return `
             <div class="wl-item${item.watched ? ' wl-item-watched' : ''}">
-                <div class="wl-item-header">
-                    <span class="wl-type-badge">${typeIcon} ${_esc(typeLabel)}</span>
-                    <span class="wl-item-title">${_esc(item.title)}</span>
-                    <span class="wl-item-by">by ${_esc(item.addedBy)}</span>
-                    <button class="wl-del" data-action="delete-item" data-item-id="${_esc(item.id)}" type="button" title="Remove">×</button>
-                </div>
-                <div class="wl-item-footer">
-                    <span class="wl-interests">
-                        ${myInterestEl}
-                        ${otherInterestEl}
-                    </span>
-                    <span class="wl-checks">
-                        <label class="wl-check-label">
-                            <input type="checkbox" class="wl-check-input" data-action="toggle-downloaded" data-item-id="${_esc(item.id)}" ${dlChecked}>
-                            Downloaded
-                        </label>
-                        <label class="wl-check-label">
-                            <input type="checkbox" class="wl-check-input" data-action="toggle-watched" data-item-id="${_esc(item.id)}" ${wtChecked}>
-                            Watched
-                        </label>
-                    </span>
+                ${posterEl}
+                <div class="wl-item-content">
+                    <div class="wl-item-header">
+                        <span class="wl-type-badge">${typeIcon} ${_esc(typeLabel)}</span>
+                        <span class="wl-item-title">${_esc(item.title)}${yearStr}</span>
+                        <span class="wl-item-by">by ${_esc(item.addedBy)}</span>
+                        <button class="wl-del" data-action="delete-item" data-item-id="${_esc(item.id)}" type="button" title="Remove">×</button>
+                    </div>
+                    <div class="wl-item-footer">
+                        <span class="wl-interests">
+                            ${myInterestEl}
+                            ${otherInterestEl}
+                        </span>
+                        <span class="wl-checks">
+                            <label class="wl-check-label">
+                                <input type="checkbox" class="wl-check-input" data-action="toggle-downloaded" data-item-id="${_esc(item.id)}" ${dlChecked}>
+                                Downloaded
+                            </label>
+                            <label class="wl-check-label">
+                                <input type="checkbox" class="wl-check-input" data-action="toggle-watched" data-item-id="${_esc(item.id)}" ${wtChecked}>
+                                Watched
+                            </label>
+                        </span>
+                    </div>
                 </div>
             </div>`;
         }).join('');
@@ -19338,21 +19382,28 @@ document.addEventListener('click', (e) => {
     async function addItem() {
         if (!currentUser) return;
         const input  = document.getElementById('wl-title-input');
+        const yearEl = document.getElementById('wl-year-input');
         const select = document.getElementById('wl-type-select');
         const title  = (input?.value || '').trim();
         if (!title) return;
         const type = select?.value || 'film';
+        const year = yearEl?.value ? parseInt(yearEl.value, 10) : null;
         input.value = '';
+        if (yearEl) yearEl.value = '';
         const interestKey = _interestKey(currentUser);
-        await push(watchlistRef, {
+        const newRef = push(watchlistRef);
+        const itemData = {
             title,
             type,
             addedBy: currentUser,
             addedAt: Date.now(),
             downloaded: false,
             watched: false,
+            posterSearched: false,
             [interestKey]: true,
-        });
+        };
+        if (year) itemData.year = year;
+        await set(newRef, itemData);
         input.focus();
     }
 

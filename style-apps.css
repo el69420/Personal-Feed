@@ -2895,6 +2895,25 @@ body.dark-mode .cd-scoreboard {
   color: var(--text-primary, #111);
   cursor: pointer;
 }
+.wl-year-input {
+  width: 62px;
+  padding: 5px 6px;
+  font-size: 13px;
+  border: 1px solid var(--input-border, rgba(0,0,0,0.2));
+  border-radius: 3px;
+  background: var(--input-bg, #fff);
+  color: var(--text-primary, #111);
+  outline: none;
+  flex-shrink: 0;
+}
+.wl-year-input:focus {
+  border-color: rgba(0,120,200,0.5);
+  box-shadow: 0 0 0 2px rgba(0,120,200,0.12);
+}
+/* hide the number spinner arrows */
+.wl-year-input::-webkit-inner-spin-button,
+.wl-year-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.wl-year-input[type=number] { -moz-appearance: textfield; }
 .wl-add-btn {
   padding: 5px 14px;
   font-size: 12px;
@@ -2919,6 +2938,9 @@ body.dark-mode .cd-scoreboard {
   font-size: 12px;
 }
 .wl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   border: 1px solid var(--card-border, rgba(0,0,0,0.1));
   border-radius: 4px;
   padding: 7px 10px;
@@ -2928,6 +2950,37 @@ body.dark-mode .cd-scoreboard {
 .wl-item-watched {
   opacity: 0.5;
   background: var(--surface-alt, #f5f5f5);
+}
+/* Poster thumbnail */
+.wl-poster {
+  width: 54px;
+  height: 54px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--card-border, rgba(0,0,0,0.1));
+  display: block;
+}
+.wl-poster-loading {
+  background: linear-gradient(90deg, rgba(0,0,0,0.06) 25%, rgba(0,0,0,0.12) 50%, rgba(0,0,0,0.06) 75%);
+  background-size: 200% 100%;
+  animation: wl-shimmer 1.4s infinite;
+}
+@keyframes wl-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.wl-poster-none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--surface-alt, #f0f0f0);
+  color: var(--text-secondary, #999);
+}
+.wl-item-content {
+  flex: 1;
+  min-width: 0;
 }
 .wl-item-header {
   display: flex;
@@ -2952,6 +3005,11 @@ body.dark-mode .cd-scoreboard {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.wl-item-year {
+  font-size: 11px;
+  color: var(--text-secondary, #888);
+  font-weight: 400;
 }
 .wl-item-by {
   font-size: 11px;
@@ -3050,4 +3108,14 @@ body.dark-mode .wl-item-watched {
 body.dark-mode .wl-int-btn.wl-int-active {
   background: rgba(255,255,255,0.1);
   border-color: rgba(255,255,255,0.2);
+}
+body.dark-mode .wl-poster {
+  border-color: rgba(255,255,255,0.12);
+}
+body.dark-mode .wl-poster-loading {
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+}
+body.dark-mode .wl-poster-none {
+  background: rgba(255,255,255,0.07);
 }
