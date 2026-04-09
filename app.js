@@ -19361,6 +19361,7 @@ document.addEventListener('click', (e) => {
             const dlChecked = item.downloaded ? 'checked' : '';
             const wtChecked = item.watched    ? 'checked' : '';
             const yearStr   = item.year ? ` <span class="wl-item-year">(${_esc(String(item.year))})</span>` : '';
+            const lbUrl     = `https://letterboxd.com/search/films/${encodeURIComponent(item.title)}/`;
 
             let posterEl;
             if (item.poster) {
@@ -19377,7 +19378,7 @@ document.addEventListener('click', (e) => {
                 <div class="wl-item-content">
                     <div class="wl-item-header">
                         <span class="wl-type-badge">${typeIcon} ${_esc(typeLabel)}</span>
-                        <span class="wl-item-title">${_esc(item.title)}${yearStr}</span>
+                        <a class="wl-item-title" href="${_esc(lbUrl)}" target="_blank" rel="noopener noreferrer">${_esc(item.title)}${yearStr}</a>
                         <span class="wl-item-by">by ${_esc(item.addedBy)}</span>
                         <button class="wl-del" data-action="delete-item" data-item-id="${_esc(item.id)}" type="button" title="Remove">×</button>
                     </div>

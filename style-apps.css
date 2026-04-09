@@ -3005,6 +3005,10 @@ body.dark-mode .cd-scoreboard {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-decoration: none;
+}
+.wl-item-title:hover {
+  text-decoration: underline;
 }
 .wl-item-year {
   font-size: 11px;
