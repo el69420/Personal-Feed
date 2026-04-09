@@ -1,4 +1,4 @@
-import { database, auth, googleProvider, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect, runTransaction, serverTimestamp, onAuthStateChanged, signInWithPopup, signOut, postsRef, chatRef, boardsRef, boardItemsRef, boardDeleteRequestsRef, lettersRef, linkMetaRef, recycleBinRef, categoriesRef, wishlistBoardsRef, wishlistItemsRef, foodDiaryRef, painJournalRef, painPatternNotesRef, moodJournalRef, shoppingListsRef } from './firebase.js';
+import { database, auth, googleProvider, ref, push, onValue, remove, update, set, get, child, limitToLast, query, onDisconnect, runTransaction, serverTimestamp, onAuthStateChanged, signInWithPopup, signOut, postsRef, chatRef, boardsRef, boardItemsRef, boardDeleteRequestsRef, lettersRef, linkMetaRef, recycleBinRef, categoriesRef, wishlistBoardsRef, wishlistItemsRef, foodDiaryRef, painJournalRef, painPatternNotesRef, moodJournalRef, shoppingListsRef, watchlistRef } from './firebase.js';
 import { ctx } from './ctx.js';
 import { w95Mgr, w95Apps, w95Layout, makeDraggable, makeResizable } from './window-manager.js';
 import { prefersReducedMotion, safeText, timeAgo, exactTimestamp, detectSource, getYouTubeId, youtubeThumb, burstEmoji } from './ui-utils.js';
@@ -12407,6 +12407,7 @@ const ICON_DEFAULTS = {
     wishlist:     { x: 104, y: 436 },
     fooddiary:    { x: 104, y: 520 },
     shoplist:     { x: 104, y: 604 },
+    watchlist:    { x: 192, y: 16  },
 };
 
 // ===== Snap-to-grid + Arrange =====
@@ -12544,6 +12545,7 @@ const SHORTCUTABLE_APPS = [
     { app: 'painjournal',  icon: '🩹', name: 'Pain Journal' },
     { app: 'moodjournal',  icon: '📔', name: 'Mood Journal' },
     { app: 'shoplist',     icon: '🛒', name: 'Shopping List' },
+    { app: 'watchlist',   icon: '🎬', name: 'Watchlist' },
     { app: 'fooddiary',    icon: '🍽️', name: 'Food Diary' },
     { app: 'connect4',     icon: '🟡', name: 'Connect 4' },
     { app: 'battleships',  icon: '⚓', name: 'Battleships' },
@@ -19208,6 +19210,227 @@ document.addEventListener('click', (e) => {
     if (localStorage.getItem('w95_shoplist_open') === '1') show();
 
     w95Apps['shoplist'] = { open: () => {
+        if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow(WIN_ID);
+    }};
+})();
+
+// ===== Watchlist.exe =====
+(() => {
+    const WIN_ID   = 'w95-win-watchlist';
+    const win      = document.getElementById(WIN_ID);
+    const handle   = document.getElementById('w95-watchlist-handle');
+    const minBtn   = document.getElementById('w95-watchlist-min');
+    const maxBtn   = document.getElementById('w95-watchlist-max');
+    const closeBtn = document.getElementById('w95-watchlist-close');
+    const body     = document.getElementById('w95-watchlist-body');
+    if (!win || !handle || !body) return;
+
+    let btn      = null;
+    let allItems = {};  // { itemId: { title, type, addedBy, addedAt, interestedEl, interestedTero, downloaded, watched } }
+
+    function _esc(s) {
+        return String(s || '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function _interestKey(user) {
+        return 'interested' + user; // e.g. 'interestedEl', 'interestedTero'
+    }
+
+    // ---- Firebase ----
+    onValue(watchlistRef, snap => {
+        allItems = snap.val() || {};
+        if (!win.classList.contains('is-hidden')) renderItems();
+    });
+
+    // ---- Render ----
+    function render() {
+        body.innerHTML = `
+            <div class="wl-layout">
+                <div class="wl-add-row">
+                    <input id="wl-title-input" class="wl-title-input" type="text" placeholder="Film or TV show title…" autocomplete="off" maxlength="200">
+                    <select id="wl-type-select" class="wl-type-select">
+                        <option value="film">🎬 Film</option>
+                        <option value="tv">📺 TV</option>
+                    </select>
+                    <button class="wl-add-btn" data-action="add-item" type="button">Add</button>
+                </div>
+                <div class="wl-items-list" id="wl-items-list"></div>
+            </div>`;
+        renderItems();
+    }
+
+    function renderItems() {
+        const list = document.getElementById('wl-items-list');
+        if (!list) return;
+
+        const other = _otherUser();
+        const sorted = Object.entries(allItems)
+            .map(([id, item]) => ({ id, ...item }))
+            .sort((a, b) => {
+                if (!!a.watched !== !!b.watched) return a.watched ? 1 : -1;
+                return (a.addedAt || 0) - (b.addedAt || 0);
+            });
+
+        if (sorted.length === 0) {
+            list.innerHTML = '<div class="wl-empty">Nothing on the watchlist yet — add something above!</div>';
+            return;
+        }
+
+        list.innerHTML = sorted.map(item => {
+            const typeIcon  = item.type === 'tv' ? '📺' : '🎬';
+            const typeLabel = item.type === 'tv' ? 'TV'  : 'Film';
+
+            const myKey      = currentUser ? _interestKey(currentUser) : null;
+            const myInterest = myKey ? item[myKey] : undefined;
+
+            const otherKey      = (other && other !== 'you') ? _interestKey(other) : null;
+            const otherInterest = otherKey ? item[otherKey] : undefined;
+
+            const myIntYes = myInterest === true  ? ' wl-int-active' : '';
+            const myIntNo  = myInterest === false ? ' wl-int-active' : '';
+
+            const myInterestEl = currentUser ? `
+                <span class="wl-interest-mine">
+                    <span class="wl-int-label">${_esc(currentUser)}:</span>
+                    <button class="wl-int-btn wl-int-yes${myIntYes}" data-action="set-interest" data-item-id="${_esc(item.id)}" data-value="true" type="button" title="Interested">👍</button>
+                    <button class="wl-int-btn wl-int-no${myIntNo}" data-action="set-interest" data-item-id="${_esc(item.id)}" data-value="false" type="button" title="Not interested">👎</button>
+                </span>` : '';
+
+            let otherInterestEl = '';
+            if (other && other !== 'you') {
+                const otherIcon  = otherInterest === true ? '👍' : otherInterest === false ? '👎' : '?';
+                const otherClass = otherInterest === true ? ' wl-int-other-yes' : otherInterest === false ? ' wl-int-other-no' : ' wl-int-other-undecided';
+                otherInterestEl = `<span class="wl-interest-other${otherClass}"><span class="wl-int-label">${_esc(other)}:</span> ${otherIcon}</span>`;
+            }
+
+            const dlChecked = item.downloaded ? 'checked' : '';
+            const wtChecked = item.watched    ? 'checked' : '';
+
+            return `
+            <div class="wl-item${item.watched ? ' wl-item-watched' : ''}">
+                <div class="wl-item-header">
+                    <span class="wl-type-badge">${typeIcon} ${_esc(typeLabel)}</span>
+                    <span class="wl-item-title">${_esc(item.title)}</span>
+                    <span class="wl-item-by">by ${_esc(item.addedBy)}</span>
+                    <button class="wl-del" data-action="delete-item" data-item-id="${_esc(item.id)}" type="button" title="Remove">×</button>
+                </div>
+                <div class="wl-item-footer">
+                    <span class="wl-interests">
+                        ${myInterestEl}
+                        ${otherInterestEl}
+                    </span>
+                    <span class="wl-checks">
+                        <label class="wl-check-label">
+                            <input type="checkbox" class="wl-check-input" data-action="toggle-downloaded" data-item-id="${_esc(item.id)}" ${dlChecked}>
+                            Downloaded
+                        </label>
+                        <label class="wl-check-label">
+                            <input type="checkbox" class="wl-check-input" data-action="toggle-watched" data-item-id="${_esc(item.id)}" ${wtChecked}>
+                            Watched
+                        </label>
+                    </span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ---- Actions ----
+    async function addItem() {
+        if (!currentUser) return;
+        const input  = document.getElementById('wl-title-input');
+        const select = document.getElementById('wl-type-select');
+        const title  = (input?.value || '').trim();
+        if (!title) return;
+        const type = select?.value || 'film';
+        input.value = '';
+        const interestKey = _interestKey(currentUser);
+        await push(watchlistRef, {
+            title,
+            type,
+            addedBy: currentUser,
+            addedAt: Date.now(),
+            downloaded: false,
+            watched: false,
+            [interestKey]: true,
+        });
+        input.focus();
+    }
+
+    // ---- Event delegation ----
+    body.addEventListener('click', e => {
+        const el     = e.target.closest('[data-action]');
+        if (!el) return;
+        const action = el.dataset.action;
+        const itemId = el.dataset.itemId;
+
+        if (action === 'add-item') {
+            addItem();
+        } else if (action === 'delete-item') {
+            remove(ref(database, `watchlist/${itemId}`));
+        } else if (action === 'set-interest') {
+            if (!currentUser || !itemId) return;
+            const val = el.dataset.value === 'true';
+            const key = _interestKey(currentUser);
+            const current = allItems[itemId]?.[key];
+            if (current === val) {
+                remove(ref(database, `watchlist/${itemId}/${key}`));
+            } else {
+                set(ref(database, `watchlist/${itemId}/${key}`), val);
+            }
+        }
+    });
+
+    body.addEventListener('change', e => {
+        const el     = e.target.closest('[data-action]');
+        if (!el) return;
+        const action = el.dataset.action;
+        const itemId = el.dataset.itemId;
+        if (action === 'toggle-downloaded') {
+            set(ref(database, `watchlist/${itemId}/downloaded`), el.checked);
+        } else if (action === 'toggle-watched') {
+            set(ref(database, `watchlist/${itemId}/watched`), el.checked);
+        }
+    });
+
+    body.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && e.target.id === 'wl-title-input') addItem();
+    });
+
+    // ---- Window controls ----
+    function show() {
+        if (!btn) btn = w95Mgr.addTaskbarBtn(WIN_ID, 'WATCHLIST', () => {
+            if (win.classList.contains('is-hidden')) show(); else hide();
+        });
+        win.classList.remove('is-hidden');
+        w95Mgr.focusWindow(WIN_ID);
+        localStorage.setItem('w95_watchlist_open', '1');
+        render();
+    }
+
+    function hide() {
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_watchlist_open', '0');
+    }
+
+    function closeWin() {
+        if (w95Mgr.isMaximised(WIN_ID)) w95Mgr.toggleMaximise(win, WIN_ID);
+        win.classList.add('is-hidden');
+        if (w95Mgr.isActiveWin(WIN_ID)) w95Mgr.focusWindow(null);
+        localStorage.setItem('w95_watchlist_open', '0');
+        if (btn) { btn.remove(); btn = null; }
+    }
+
+    win.addEventListener('mousedown', () => w95Mgr.focusWindow(WIN_ID));
+    if (minBtn)   minBtn.onclick   = (e) => { e.stopPropagation(); hide(); };
+    if (maxBtn)   maxBtn.onclick   = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(win, WIN_ID); };
+    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeWin(); };
+    makeDraggable(win, handle, WIN_ID);
+    makeResizable(win, WIN_ID);
+
+    if (localStorage.getItem('w95_watchlist_open') === '1') show();
+
+    w95Apps['watchlist'] = { open: () => {
         if (win.classList.contains('is-hidden')) show(); else w95Mgr.focusWindow(WIN_ID);
     }};
 })();
