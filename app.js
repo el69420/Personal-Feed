@@ -2954,7 +2954,15 @@ window.openAchievementFromNotif = function(notifId, achievementId) {
 
 window.openActivityItemFromNotif = function(postId) {
     closeNotifPanel();
-    openPostWindow(postId);
+    scrollToPost(postId);
+    // Highlight the post so it's obvious which one you landed on
+    setTimeout(() => {
+        const el = document.querySelector(`[data-post-id="${postId}"]`);
+        if (!el) return;
+        document.querySelectorAll('.post-focused').forEach(c => c.classList.remove('post-focused'));
+        el.classList.add('post-focused');
+        focusedPostId = postId;
+    }, 120);
 };
 
 function showC4InvitePopup(from) {
