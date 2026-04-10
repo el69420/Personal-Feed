@@ -307,8 +307,8 @@ body.dark-mode::before {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 5px;
-    border-radius: 8px;
+    padding: 6px;
+    border-radius: 10px;
     color: var(--text-secondary);
     transition: all 0.15s;
     display: flex;
@@ -406,27 +406,31 @@ body.dark-mode #scrollTopBtn {
 .post-card {
     transition: transform 0.25s ease, box-shadow 0.25s ease;
     background: var(--card-bg);
-    border-radius: 14px;
+    border-radius: 18px;
     overflow: hidden;
-    box-shadow: 0 2px 16px rgba(0, 128, 128, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 20px rgba(0, 128, 128, 0.14), 0 1px 4px rgba(0, 0, 0, 0.07);
     border: 1px solid var(--card-border);
     position: relative;
     z-index: 10;
 }
 
 .post-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 32px rgba(0, 128, 128, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 36px rgba(0, 128, 128, 0.22), 0 3px 10px rgba(0, 0, 0, 0.09);
 }
 
 .post-header {
-    padding: 6px 12px;
-    background: var(--section-bg);
+    padding: 10px 14px;
+    background: linear-gradient(to right, rgba(0, 180, 180, 0.11), rgba(0, 160, 160, 0.06));
     border-bottom: 1px solid var(--card-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+}
+
+body.dark-mode .post-header {
+    background: linear-gradient(to right, rgba(0, 180, 180, 0.14), rgba(0, 160, 160, 0.08));
 }
 
 .post-author-row {
@@ -437,9 +441,9 @@ body.dark-mode #scrollTopBtn {
 }
 
 .post-note {
-    padding: 6px 12px;
-    background: linear-gradient(to right, rgba(0, 128, 128, 0.07), rgba(0, 160, 160, 0.05));
-    border-left: 3px solid #008080;
+    padding: 10px 14px;
+    background: linear-gradient(to right, rgba(0, 128, 128, 0.08), rgba(0, 160, 160, 0.04));
+    border-left: 3px solid rgba(0, 160, 160, 0.7);
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -466,13 +470,13 @@ body.dark-mode #scrollTopBtn {
 .link-preview {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 14px;
+    gap: 12px;
+    padding: 12px 16px;
     text-decoration: none;
     transition: background 0.18s ease;
 }
 
-.link-preview:hover { background: rgba(0, 128, 128, 0.04); }
+.link-preview:hover { background: rgba(0, 128, 128, 0.06); }
 
 .yt-embed {
     display: block;
@@ -498,9 +502,9 @@ body.dark-mode #scrollTopBtn {
 .yt-embed:hover .yt-play-overlay { background: rgba(0,0,0,0.28); }
 
 .link-favicon {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
     background: linear-gradient(135deg, #e6fafa, #f0ffff);
     display: flex;
     align-items: center;
@@ -508,7 +512,7 @@ body.dark-mode #scrollTopBtn {
     flex-shrink: 0;
     overflow: hidden;
     border: 1px solid rgba(0, 180, 180, 0.18);
-    font-size: 14px;
+    font-size: 15px;
 }
 
 body.dark-mode .link-favicon {
@@ -521,7 +525,7 @@ body.dark-mode .link-favicon {
 .link-info { flex: 1; min-width: 0; }
 
 .link-domain {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 900;
     color: #007070;
     white-space: nowrap;
@@ -551,7 +555,7 @@ body.dark-mode .link-domain { color: #00cccc; }
 }
 
 .yt-meta {
-    padding: 9px 14px 4px;
+    padding: 12px 16px 4px;
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -581,7 +585,7 @@ body.dark-mode .yt-title { color: #00cccc; }
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 2px 14px 8px;
+    padding: 2px 16px 12px;
 }
 
 .yt-watch-btn {
@@ -629,7 +633,7 @@ body.dark-mode .yt-title { color: #00cccc; }
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 14px;
+    padding: 12px 16px;
     text-decoration: none;
     color: inherit;
     transition: background 0.18s ease;
@@ -719,7 +723,7 @@ body.dark-mode .rcp-x      { color: #AAAAAA; }
     font-weight: 900;
     font-family: 'Nunito', sans-serif;
     text-decoration: none;
-    padding: 0 14px 9px 82px; /* indented past the art+gap */
+    padding: 0 16px 12px 84px; /* indented past the art+gap */
     transition: opacity 0.15s;
 }
 .rcp-spotify-btn { color: #1DB954; }
@@ -746,7 +750,7 @@ body.dark-mode .rcp-x      { color: #AAAAAA; }
 }
 
 .reactions-bar {
-    padding: 6px 14px;
+    padding: 8px 14px;
     background: var(--section-bg);
     border-top: 1px solid var(--card-border);
     display: flex;
@@ -831,7 +835,7 @@ body.dark-mode .reaction-btn.active { color: #00cccc; }
 body.dark-mode .comment-reaction-btn.active { color: #00cccc; }
 
 .reply-section {
-    padding: 8px 14px;
+    padding: 12px 14px;
     background: var(--section-bg);
     border-top: 1px solid var(--card-border);
 }
@@ -958,10 +962,11 @@ body.dark-mode .watch-later-btn.active {
     font-size: 13px;
     font-family: 'Nunito', sans-serif;
     border: 1.5px solid var(--input-border);
-    border-radius: 20px;
+    border-radius: 16px;
     background: var(--input-bg);
     color: var(--text-primary);
     outline: none;
+    resize: none;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -992,7 +997,7 @@ body.dark-mode .watch-later-btn.active {
 }
 
 .post-actions {
-    padding: 5px 12px;
+    padding: 8px 14px;
     background: var(--section-bg);
     border-top: 1px solid var(--card-border);
     display: flex;
@@ -2737,7 +2742,7 @@ body.dark-mode .plant-picker-modal-content .type-picker-hint {
 /* ---- IMAGE POST ---- */
 .post-image {
     width: 100%;
-    border-radius: 12px;
+    border-radius: 0;
     display: block;
     height: auto;
 }
@@ -3387,7 +3392,7 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 
 /* Text post content in feed */
 .post-text-content {
-    padding: 10px 14px 8px;
+    padding: 14px 16px 12px;
 }
 .post-text-heading {
     font-family: 'Nunito', sans-serif;
@@ -3583,7 +3588,7 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
    ============================================================ */
 .post-header-actions {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     align-items: center;
 }
 .post-meta-dot {
@@ -3699,6 +3704,11 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 .feed-container {
     position: relative;
     z-index: 10;
+}
+
+/* Slightly more generous gap between post cards */
+#postsContainer > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 16px;
 }
 
 /* ============================================================
