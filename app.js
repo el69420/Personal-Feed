@@ -2954,15 +2954,7 @@ window.openAchievementFromNotif = function(notifId, achievementId) {
 
 window.openActivityItemFromNotif = function(postId) {
     closeNotifPanel();
-    scrollToPost(postId);
-    // Highlight the post so it's obvious which one you landed on
-    setTimeout(() => {
-        const el = document.querySelector(`[data-post-id="${postId}"]`);
-        if (!el) return;
-        document.querySelectorAll('.post-focused').forEach(c => c.classList.remove('post-focused'));
-        el.classList.add('post-focused');
-        focusedPostId = postId;
-    }, 120);
+    openPostWindow(postId);
 };
 
 function showC4InvitePopup(from) {
@@ -3381,7 +3373,9 @@ window.toggleReaction = async function(postId, emoji, btn) {
     }
 
     // In-place DOM update — avoids a full loadPosts() rebuild and scroll shift.
-    const rxEl = document.getElementById(`post-rx-${postId}`);
+    // Scope to the containing post card so this works in both the feed and the post window.
+    const _card = btn?.closest('[data-post-id]');
+    const rxEl = _card ? _card.querySelector(`#post-rx-${postId}`) : document.getElementById(`post-rx-${postId}`);
     if (rxEl) {
         const reactionEmojis = ['<3', 'xD', 'O_O', '*_*', '!!', '(y)', 'T_T', ';_;'];
         rxEl.innerHTML = reactionEmojis.map(e => {
@@ -3451,8 +3445,9 @@ window.toggleCommentReaction = async function(postId, replyId, emoji, btn) {
 };
 
 // ---- REPLIES ----
-window.addReply = async function(postId) {
-    const input = document.getElementById(`reply-${postId}`);
+window.addReply = async function(postId, triggerEl) {
+    const _card = triggerEl?.closest('[data-post-id]');
+    const input = _card ? _card.querySelector(`#reply-${postId}`) : document.getElementById(`reply-${postId}`);
     const text  = input.value.trim();
     if (!text) return;
 
@@ -3478,19 +3473,21 @@ window.addReply = async function(postId) {
     _afterReply();
 };
 
-window.openInlineReply = function(postId, replyId) {
-    const form = document.getElementById(`inline-reply-${postId}-${replyId}`);
+window.openInlineReply = function(postId, replyId, triggerEl) {
+    const _card = triggerEl?.closest('[data-post-id]') || document;
+    const form = _card.querySelector(`#inline-reply-${postId}-${replyId}`);
     if (!form) return;
     const isHidden = form.classList.contains('hidden');
-    document.querySelectorAll(`[id^="inline-reply-${postId}-"]`).forEach(el => el.classList.add('hidden'));
+    _card.querySelectorAll(`[id^="inline-reply-${postId}-"]`).forEach(el => el.classList.add('hidden'));
     if (isHidden) {
         form.classList.remove('hidden');
-        document.getElementById(`inline-input-${postId}-${replyId}`)?.focus({ preventScroll: true });
+        _card.querySelector(`#inline-input-${postId}-${replyId}`)?.focus({ preventScroll: true });
     }
 };
 
-window.submitInlineReply = async function(postId, replyToId) {
-    const input  = document.getElementById(`inline-input-${postId}-${replyToId}`);
+window.submitInlineReply = async function(postId, replyToId, triggerEl) {
+    const _card = triggerEl?.closest('[data-post-id]') || document;
+    const input  = _card.querySelector(`#inline-input-${postId}-${replyToId}`);
     const raw    = input.value;
     const text   = raw.trim();
     if (!text) return;
@@ -3512,7 +3509,7 @@ window.submitInlineReply = async function(postId, replyToId) {
 
     await update(ref(database, `posts/${postId}`), { replies });
     input.value = '';
-    document.getElementById(`inline-reply-${postId}-${replyToId}`).classList.add('hidden');
+    _card.querySelector(`#inline-reply-${postId}-${replyToId}`)?.classList.add('hidden');
     showToast('Reply added');
     sparkSound('reply');
     _afterReply();
@@ -3562,7 +3559,7 @@ function renderReplies(postId, replies) {
                     </div>
 
                     <div class="reply-action-btns">
-                        <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}')">↩ Reply</button>
+                        <button class="reply-btn" onclick="openInlineReply('${postId}','${reply.id}', this)">↩ Reply</button>
                         ${reply.author === currentUser ? `
                             <button class="reply-btn" onclick="openEditComment('${postId}','${reply.id}')" title="Edit">✏️</button>
                             <button class="reply-btn" onclick="openDeleteModal({type:'reply', postId:'${postId}', replyId:'${reply.id}'})" title="Delete">✕</button>
@@ -3588,7 +3585,7 @@ function renderReplies(postId, replies) {
                         rows="2"
                         placeholder="Reply..."
                         onkeydown="handleReplyKey(event,'${postId}','${reply.id}', true)"></textarea>
-                    <button onclick="submitInlineReply('${postId}','${reply.id}')" class="reply-send-btn" title="Send">
+                    <button onclick="submitInlineReply('${postId}','${reply.id}', this)" class="reply-send-btn" title="Send">
                         <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
@@ -3620,7 +3617,8 @@ function renderReplies(postId, replies) {
 }
 
 window.toggleComments = function(collapseId, btn, count) {
-    const el = document.getElementById(collapseId);
+    const _card = btn?.closest('[data-post-id]');
+    const el = _card ? _card.querySelector(`#${collapseId}`) : document.getElementById(collapseId);
     if (!el) return;
     const isNowHidden = el.classList.toggle('hidden');
     btn.textContent = isNowHidden
@@ -3632,7 +3630,7 @@ window.handleReplyKey = function(e, postId, replyToId, isInline) {
     if (e.key !== 'Enter') return;
     if (e.shiftKey) return;
     e.preventDefault();
-    if (isInline) submitInlineReply(postId, replyToId);
+    if (isInline) submitInlineReply(postId, replyToId, e.target);
     else addReply(postId);
 };
 
@@ -4046,7 +4044,7 @@ function createPostCard(post) {
                         class="reply-input"
                         rows="2"
                         onkeydown="handleReplyKey(event,'${post.id}',null,false)"></textarea>
-                    <button onclick="addReply('${post.id}')" class="reply-send-btn" title="Send">
+                    <button onclick="addReply('${post.id}', this)" class="reply-send-btn" title="Send">
                         <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
