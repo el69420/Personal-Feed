@@ -3699,16 +3699,55 @@ body.dark-mode .mode-btn.active { color: #00cccc; }
 }
 
 /* ============================================================
-   FEED CONTAINER (z-index wrapper)
+   FEED CONTAINER — scalable, responsive to window size
    ============================================================ */
 .feed-container {
     position: relative;
     z-index: 10;
+    padding: 0 20px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-/* Slightly more generous gap between post cards */
+/* ---- Controls area: keep centred and capped at a readable width ---- */
+.feed-controls-area {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Slightly more generous gap between post cards (single-column) */
 #postsContainer > :not([hidden]) ~ :not([hidden]) {
     margin-top: 16px;
+}
+
+/* ---- 2-column post grid at wider window sizes ---- */
+/* .w95-window has container-type:inline-size, so these respond to window width */
+@container (min-width: 740px) {
+    #postsContainer,
+    #boardDetailPosts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        align-items: start;
+    }
+
+    /* Zero out Tailwind space-y and our own margin-top override in grid mode */
+    #postsContainer > *,
+    #boardDetailPosts > * {
+        margin-top: 0 !important;
+    }
+
+    #boardsList {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    #boardsList .board-card {
+        margin-bottom: 0;
+    }
 }
 
 /* ============================================================
