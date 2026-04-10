@@ -2954,7 +2954,7 @@ window.openAchievementFromNotif = function(notifId, achievementId) {
 
 window.openActivityItemFromNotif = function(postId) {
     closeNotifPanel();
-    scrollToPost(postId);
+    openPostWindow(postId);
 };
 
 function showC4InvitePopup(from) {
