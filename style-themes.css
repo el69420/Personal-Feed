@@ -948,7 +948,7 @@ body.dark-mode[data-theme="theme_glass"] .pj-history-label  { color: #5070a0 !im
     bottom: 44px; /* sits just above the taskbar */
     right: 52px;
     width: 280px;
-    max-height: 340px;
+    max-height: 440px;
     background: #c0c0c0;
     border-top: 2px solid #fff;
     border-left: 2px solid #fff;
@@ -987,6 +987,20 @@ body.dark-mode[data-theme="theme_glass"] .pj-history-label  { color: #5070a0 !im
 .notif-panel-list {
     overflow-y: auto;
     flex: 1;
+}
+.notif-section-label {
+    padding: 3px 10px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #555;
+    background: #d4d0c8;
+    border-bottom: 1px solid #aaa;
+    letter-spacing: 0.4px;
+    flex-shrink: 0;
+}
+.notif-section-label-sep {
+    border-top: 2px solid #808080;
 }
 .notif-panel-empty {
     padding: 16px;

@@ -713,14 +713,6 @@
         </svg>
     </button>
 
-    <!-- Activity panel (content for What's New window; moved into w95-win-new by JS) -->
-    <div id="activityPanel" class="activity-panel">
-        <div class="activity-header">
-            <div class="activity-title">** what's new</div>
-        </div>
-        <div id="activityBody" class="activity-body"></div>
-    </div>
-
     <!-- Chat widget -->
 
     <div id="chatPanel" class="chat-panel">
@@ -897,7 +889,6 @@
             <div class="w95-start-submenu" role="menu">
                 <button class="w95-start-item" data-app="feed" type="button">&#128240; Feed.exe</button>
                 <button class="w95-start-item" data-app="chat" type="button">&#128172; Chat.exe</button>
-                <button class="w95-start-item" data-app="new" type="button">&#10024; What's New</button>
                 <button class="w95-start-item" data-app="mailbox" type="button">&#9993; Mailbox.exe</button>
                 <button class="w95-start-item" data-app="scrapbook" type="button">&#128204; Scrapbook.exe</button>
                 <button class="w95-start-item" data-app="wishlist" type="button">&#127873; Wishlist.exe</button>
@@ -1106,19 +1097,6 @@
     </div>
   </div>
   <div class="w95-body" id="w95-chat-body"></div>
-</div>
-
-<!-- What’s New window wrapper -->
-<div id="w95-win-new" class="w95-window is-hidden" style="left:20px; top:60px; width:360px; height:380px;">
-  <div class="w95-titlebar" id="w95-new-handle">
-    <div class="w95-title">What’s New</div>
-    <div class="w95-controls">
-      <button class="w95-control" id="w95-new-min" type="button" aria-label="Minimise">_</button>
-      <button class="w95-control" id="w95-new-max" type="button" aria-label="Maximise">&#9633;</button>
-      <button class="w95-control w95-control-close" id="w95-new-close" type="button" aria-label="Close">X</button>
-    </div>
-  </div>
-  <div class="w95-body" id="w95-new-body"></div>
 </div>
 
 <!-- Achievements window -->

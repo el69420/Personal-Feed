@@ -1835,9 +1835,9 @@ function setupDBListeners() {
             loadPosts();
         }
         updateNewCount();
-        updateActivityBadge();
-        if (!document.getElementById('w95-win-new')?.classList.contains('is-hidden')) {
-            renderActivityPanel();
+        _updateBellBadge();
+        if (!document.getElementById('notif-panel')?.classList.contains('is-hidden')) {
+            _renderNotifPanel();
         }
         updateSyncStatus('Synced');
         setTimeout(() => updateSyncStatus('Live'), 2000);
@@ -2047,7 +2047,6 @@ function closeEverything() {
     const notifM = document.getElementById('notifPermModal');
     if (notifM?.classList.contains('show')) closeNotifPermModal();
     if (chatOpen) toggleChat();
-    closeActivityPanel();
     // Clear focused post highlight
     document.querySelectorAll('.post-focused').forEach(c => c.classList.remove('post-focused'));
     focusedPostId = null;
@@ -2767,8 +2766,7 @@ function addInAppNotification({ postId, post }) {
         timestamp: Date.now(),
         read: false,
     };
-    _inAppNotifs.unshift(notif);
-    _saveInAppNotifs();
+    // Don't persist to _inAppNotifs — activity section in the bell panel covers post/reply listings
     _updateBellBadge();
     _renderNotifPanel();
     _showNotifPopup(notif);
@@ -2824,15 +2822,21 @@ function _updateBellBadge() {
     const badge = document.getElementById('notifBadge');
     const bell = document.getElementById('tray-bell');
     if (!badge) return;
-    const unread = _inAppNotifs.filter(n => !n.read).length;
-    badge.textContent = unread > 9 ? '9+' : String(unread);
-    badge.classList.toggle('hidden', unread === 0);
-    bell?.classList.toggle('bell-has-notif', unread > 0);
+    const unreadNotifs = _inAppNotifs.filter(n => !n.read && n.type !== 'post').length;
+    const unseenActivity = currentUser ? computeActivity().filter(i => !i.seen).length : 0;
+    const total = unreadNotifs + unseenActivity;
+    badge.textContent = total > 9 ? '9+' : String(total);
+    badge.classList.toggle('hidden', total === 0);
+    bell?.classList.toggle('bell-has-notif', total > 0);
 }
 
 function _markAllNotifsRead() {
     _inAppNotifs.forEach(n => { n.read = true; });
     _saveInAppNotifs();
+    if (currentUser) {
+        activitySeenTs = Date.now();
+        localStorage.setItem(`activitySeenTs-${currentUser}`, String(activitySeenTs));
+    }
     _updateBellBadge();
     _renderNotifPanel();
 }
@@ -2840,45 +2844,69 @@ function _markAllNotifsRead() {
 function _renderNotifPanel() {
     const list = document.getElementById('notifPanelList');
     if (!list) return;
-    if (_inAppNotifs.length === 0) {
+
+    const activityItems = currentUser ? computeActivity() : [];
+    const notifItems = _inAppNotifs.filter(n => n.type !== 'post');
+
+    if (activityItems.length === 0 && notifItems.length === 0) {
         list.innerHTML = '<div class="notif-panel-empty">No notifications yet.</div>';
         return;
     }
+
     const SIX_HOURS = 6 * 60 * 60 * 1000;
     const now = Date.now();
-    list.innerHTML = _inAppNotifs.map(n => {
-        const ago = timeAgo(n.timestamp);
-        const isAged = (n.type === 'achievement' || n.type === 'command') && (now - n.timestamp) > SIX_HOURS;
-        const agedClass = isAged ? ' notif-aged' : '';
-        const readClass = n.read ? ' notif-read' : '';
+    let html = '';
 
-        if (n.type === 'achievement') {
-            const tierClass = `notif-tier-${n.tier || 'bronze'}`;
-            const achId = n.achievementId || n.id.replace(/^ach_/, '').replace(/_\d{13}$/, '');
-            const achClick = achId ? ` onclick="openAchievementFromNotif('${n.id}', '${achId}')" style="cursor:pointer"` : '';
-            return `<div class="notif-panel-item notif-achievement${readClass}${agedClass}"${achClick}>
-                <div class="notif-item-author"><span class="notif-ach-icon">${safeText(n.icon)}</span> ${safeText(n.title)}</div>
-                <div class="notif-item-snippet">Achievement unlocked${n.xp ? ` · +${n.xp} XP` : ''} <span class="notif-tier-badge ${tierClass}">${n.tier || 'bronze'}</span></div>
-                <div class="notif-item-time">${safeText(ago)}</div>
+    if (activityItems.length > 0) {
+        html += '<div class="notif-section-label">Recent Activity</div>';
+        html += activityItems.slice(0, 20).map(item => {
+            const emoji = AUTHOR_EMOJI[item.author] || '';
+            const action = item.type === 'post' ? 'shared a post' : 'commented';
+            const preview = (item.preview || '').slice(0, 90);
+            const readClass = item.seen ? ' notif-read' : '';
+            return `<div class="notif-panel-item${readClass}" onclick="openActivityItemFromNotif('${item.postId}')" title="${safeText(exactTimestamp(item.timestamp))}">
+                <div class="notif-item-author">${emoji ? safeText(emoji) + ' ' : ''}<strong>${safeText(item.author)}</strong> ${action}</div>
+                ${preview ? `<div class="notif-item-snippet">${safeText(preview)}</div>` : ''}
+                <div class="notif-item-time">${safeText(timeAgo(item.timestamp))}</div>
             </div>`;
-        }
+        }).join('');
+    }
 
-        if (n.type === 'command') {
-            const cmdList = (n.commands || []).map(c => `/${c.name}`).join(', ');
-            const firstDesc = n.commands?.[0]?.description || '';
-            return `<div class="notif-panel-item notif-command${readClass}${agedClass}">
-                <div class="notif-item-author">🔓 Command${(n.commands?.length || 0) > 1 ? 's' : ''} Unlocked</div>
-                <div class="notif-item-snippet"><strong>${safeText(cmdList)}</strong>${firstDesc ? ` — ${safeText(firstDesc)}` : ''}</div>
-                <div class="notif-item-time">${safeText(ago)}</div>
-            </div>`;
+    if (notifItems.length > 0) {
+        if (activityItems.length > 0) {
+            html += '<div class="notif-section-label notif-section-label-sep">Achievements &amp; Unlocks</div>';
         }
+        html += notifItems.map(n => {
+            const ago = timeAgo(n.timestamp);
+            const isAged = (now - n.timestamp) > SIX_HOURS;
+            const agedClass = isAged ? ' notif-aged' : '';
+            const readClass = n.read ? ' notif-read' : '';
 
-        return `<div class="notif-panel-item${readClass}" onclick="openPostFromNotif('${n.id}')">
-            <div class="notif-item-author">${safeText(n.author)}</div>
-            <div class="notif-item-snippet">${safeText(n.snippet)}</div>
-            <div class="notif-item-time">${safeText(ago)}</div>
-        </div>`;
-    }).join('');
+            if (n.type === 'achievement') {
+                const tierClass = `notif-tier-${n.tier || 'bronze'}`;
+                const achId = n.achievementId || n.id.replace(/^ach_/, '').replace(/_\d{13}$/, '');
+                const achClick = achId ? ` onclick="openAchievementFromNotif('${n.id}', '${achId}')" style="cursor:pointer"` : '';
+                return `<div class="notif-panel-item notif-achievement${readClass}${agedClass}"${achClick}>
+                    <div class="notif-item-author"><span class="notif-ach-icon">${safeText(n.icon)}</span> ${safeText(n.title)}</div>
+                    <div class="notif-item-snippet">Achievement unlocked${n.xp ? ` · +${n.xp} XP` : ''} <span class="notif-tier-badge ${tierClass}">${n.tier || 'bronze'}</span></div>
+                    <div class="notif-item-time">${safeText(ago)}</div>
+                </div>`;
+            }
+
+            if (n.type === 'command') {
+                const cmdList = (n.commands || []).map(c => `/${c.name}`).join(', ');
+                const firstDesc = n.commands?.[0]?.description || '';
+                return `<div class="notif-panel-item notif-command${readClass}${agedClass}">
+                    <div class="notif-item-author">&#128275; Command${(n.commands?.length || 0) > 1 ? 's' : ''} Unlocked</div>
+                    <div class="notif-item-snippet"><strong>${safeText(cmdList)}</strong>${firstDesc ? ` — ${safeText(firstDesc)}` : ''}</div>
+                    <div class="notif-item-time">${safeText(ago)}</div>
+                </div>`;
+            }
+            return '';
+        }).join('');
+    }
+
+    list.innerHTML = html;
 }
 
 function _showNotifPopup(notif) {
@@ -2922,6 +2950,11 @@ window.openAchievementFromNotif = function(notifId, achievementId) {
     if (notif) { notif.read = true; _saveInAppNotifs(); _updateBellBadge(); _renderNotifPanel(); }
     closeNotifPanel();
     openAchievementsAndHighlight(achievementId);
+};
+
+window.openActivityItemFromNotif = function(postId) {
+    closeNotifPanel();
+    scrollToPost(postId);
 };
 
 function showC4InvitePopup(from) {
@@ -5781,8 +5814,6 @@ document.getElementById('scrollTopBtn')?.addEventListener('click', () => {
     else window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
-// Activity panel
-document.getElementById('activityFab')?.addEventListener('click', () => toggleActivityPanel());
 
 // Chat
 document.getElementById('chatFab')?.addEventListener('click', () => toggleChat());
@@ -8009,57 +8040,46 @@ function openSystemPropertiesDialog() {
 
 (() => {
   const chatPanel = document.getElementById('chatPanel');
-  const activityPanel = document.getElementById('activityPanel');
 
   const chatBodyW = document.getElementById('w95-chat-body');
-  const newBodyW = document.getElementById('w95-new-body');
 
   const winChat = document.getElementById('w95-win-chat');
-  const winNew = document.getElementById('w95-win-new');
 
-  let btnChat = null, btnNew = null;
+  let btnChat = null;
 
   const minChat = document.getElementById('w95-chat-min');
-  const minNew  = document.getElementById('w95-new-min');
   const maxChat = document.getElementById('w95-chat-max');
-  const maxNew  = document.getElementById('w95-new-max');
   const closeBtnChat = document.getElementById('w95-chat-close');
-  const closeBtnNew  = document.getElementById('w95-new-close');
 
-  if (!chatPanel || !activityPanel || !chatBodyW || !newBodyW || !winChat || !winNew || !minChat || !minNew) return;
+  if (!chatPanel || !chatBodyW || !winChat || !minChat) return;
 
   // Hide the old floating FABs — taskbar buttons replace them
   const fabChat = document.getElementById('chatFab');
-  const fabActivity = document.getElementById('activityFab');
   if (fabChat) fabChat.style.display = 'none';
-  if (fabActivity) fabActivity.style.display = 'none';
 
-  // Move existing panels into Win95 windows (keeps their current JS bindings)
+  // Move chat panel into Win95 window (keeps its current JS bindings)
   chatBodyW.appendChild(chatPanel);
-  newBodyW.appendChild(activityPanel);
 
-  // Reset panel styles so they fill their W95 window body as flex columns
-  for (const panel of [chatPanel, activityPanel]) {
-    panel.style.position = 'static';
-    panel.style.display = 'flex';
-    panel.style.flex = '1';
-    panel.style.opacity = '1';
-    panel.style.visibility = 'visible';
-    panel.style.pointerEvents = 'auto';
-    panel.style.transform = 'none';
-    panel.style.transition = 'none';
-    panel.style.width = '100%';
-    panel.style.height = '100%';
-    panel.style.maxHeight = '100%';
-    panel.style.zIndex = '';
-    panel.style.borderRadius = '0';
-    panel.style.boxShadow = 'none';
-    panel.style.border = 'none';
-    panel.style.bottom = '';
-    panel.style.right = '';
-    panel.style.left = '';
-    panel.style.top = '';
-  }
+  // Reset panel styles so it fills the W95 window body as a flex column
+  chatPanel.style.position = 'static';
+  chatPanel.style.display = 'flex';
+  chatPanel.style.flex = '1';
+  chatPanel.style.opacity = '1';
+  chatPanel.style.visibility = 'visible';
+  chatPanel.style.pointerEvents = 'auto';
+  chatPanel.style.transform = 'none';
+  chatPanel.style.transition = 'none';
+  chatPanel.style.width = '100%';
+  chatPanel.style.height = '100%';
+  chatPanel.style.maxHeight = '100%';
+  chatPanel.style.zIndex = '';
+  chatPanel.style.borderRadius = '0';
+  chatPanel.style.boxShadow = 'none';
+  chatPanel.style.border = 'none';
+  chatPanel.style.bottom = '';
+  chatPanel.style.right = '';
+  chatPanel.style.left = '';
+  chatPanel.style.top = '';
 
   function snap(win, corner) {
     const margin = 16;
@@ -8113,48 +8133,17 @@ function openSystemPropertiesDialog() {
     if (btnChat) { btnChat.remove(); btnChat = null; }
   }
 
-  function showNew() {
-    const wasHidden = winNew.classList.contains('is-hidden');
-    if (!btnNew) btnNew = w95Mgr.addTaskbarBtn('w95-win-new', 'NEW', () => {
-      if (winNew.classList.contains('is-hidden')) showNew(); else hideNew();
-    });
-    winNew.classList.remove('is-hidden');
-    w95Mgr.focusWindow('w95-win-new');
-    localStorage.setItem('w95_new_open', '1');
-    if (wasHidden) { snap(winNew, 'bl'); _trackWindowOpen('new'); }
-    renderActivityPanel();
-  }
-
-  function hideNew() {
-    winNew.classList.add('is-hidden');
-    if (w95Mgr.isActiveWin('w95-win-new')) w95Mgr.focusWindow(null);
-    localStorage.setItem('w95_new_open', '0');
-  }
-
-  function closeNewWin() {
-    if (w95Mgr.isMaximised('w95-win-new')) w95Mgr.toggleMaximise(winNew, 'w95-win-new');
-    winNew.classList.add('is-hidden');
-    localStorage.setItem('w95_new_open', '0');
-    if (btnNew) { btnNew.remove(); btnNew = null; }
-  }
-
   minChat.onclick = (e) => { e.stopPropagation(); hideChat(); };
-  minNew.onclick  = (e) => { e.stopPropagation(); hideNew(); };
   if (maxChat) maxChat.onclick = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(winChat, 'w95-win-chat'); };
-  if (maxNew)  maxNew.onclick  = (e) => { e.stopPropagation(); w95Mgr.toggleMaximise(winNew,  'w95-win-new'); };
   if (closeBtnChat) closeBtnChat.onclick = (e) => { e.stopPropagation(); closeChatWin(); };
-  if (closeBtnNew)  closeBtnNew.onclick  = (e) => { e.stopPropagation(); closeNewWin(); };
 
   w95Apps['chat'] = { open: () => { if (winChat.classList.contains('is-hidden')) showChat(); else w95Mgr.focusWindow('w95-win-chat'); } };
-  w95Apps['new']  = { open: () => { if (winNew.classList.contains('is-hidden'))  showNew();  else w95Mgr.focusWindow('w95-win-new'); } };
 
   // Restore open state — default closed if no preference stored
   if (localStorage.getItem('w95_chat_open') === '1') showChat();
-  if (localStorage.getItem('w95_new_open')  === '1') showNew();
 
-  // Drag support for both windows
+  // Drag support
   makeDraggable(winChat, document.getElementById('w95-chat-handle'), 'w95-win-chat');
-  makeDraggable(winNew,  document.getElementById('w95-new-handle'),  'w95-win-new');
 })();
 
 // ===== Profiles.exe Window =====
