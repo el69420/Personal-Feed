@@ -10,13 +10,13 @@ window.CURSOR_TRAIL = true;
 (function () {
     'use strict';
 
-    var SYMBOLS = ['✦', '☆', '·', '+', '·', '✦', '☆'];
-    var COLORS  = ['#e91e8c', '#c8a0e8', '#ffffff', '#ff69b4', '#a855f7', '#00c896'];
-    var THROTTLE_MS = 38;   /* ~26 spawns/sec max */
-    var lastSpawn = 0;
+    const SYMBOLS     = ['✦', '☆', '·', '+', '·', '✦', '☆'];
+    const COLORS      = ['#e91e8c', '#c8a0e8', '#ffffff', '#ff69b4', '#a855f7', '#00c896'];
+    const THROTTLE_MS = 38;   /* ~26 spawns/sec max */
+    let lastSpawn     = 0;
 
     /* Inject keyframes once */
-    var styleEl = document.createElement('style');
+    const styleEl = document.createElement('style');
     styleEl.textContent =
         '@keyframes _mkTrail {' +
         '  0%   { opacity:1;   transform: translateY(0)    scale(1);   }' +
@@ -25,13 +25,13 @@ window.CURSOR_TRAIL = true;
     document.head.appendChild(styleEl);
 
     function spawn(x, y) {
-        var el   = document.createElement('span');
-        var sym  = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-        var col  = COLORS [Math.floor(Math.random() * COLORS.length)];
-        var size = 10 + Math.floor(Math.random() * 9);   /* 10–18 px */
-        var dx   = (Math.random() - 0.5) * 18;
-        var dy   = (Math.random() - 0.5) * 12;
-        var dur  = 700 + Math.floor(Math.random() * 400); /* 700–1100 ms */
+        const el   = document.createElement('span');
+        const sym  = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+        const col  = COLORS[Math.floor(Math.random() * COLORS.length)];
+        const size = 10 + Math.floor(Math.random() * 9);   /* 10–18 px */
+        const dx   = (Math.random() - 0.5) * 18;
+        const dy   = (Math.random() - 0.5) * 12;
+        const dur  = 700 + Math.floor(Math.random() * 400); /* 700–1100 ms */
 
         el.textContent  = sym;
         el.style.cssText =
@@ -53,7 +53,7 @@ window.CURSOR_TRAIL = true;
 
     document.addEventListener('mousemove', function (e) {
         if (!window.CURSOR_TRAIL) return;
-        var now = Date.now();
+        const now = Date.now();
         if (now - lastSpawn < THROTTLE_MS) return;
         lastSpawn = now;
         spawn(e.clientX, e.clientY);

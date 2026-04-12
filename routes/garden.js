@@ -15,6 +15,12 @@ const GARDEN_COOP_UNLOCKS = [
 const GARDEN_COOP_USERS   = ['el', 'tero'];
 const GARDEN_VALID_PLANTS = ['sunflower', 'daisy', 'tulip', 'rose', 'orchid', 'lavender', 'twocolourbloom', 'mint', 'fern', 'wildflower'];
 
+const MS_HOUR            = 3_600_000;
+const MS_DAY             = 86_400_000;
+const WILT_AGE_HRS       = 24;  // plant must be at least this old before wilting can apply
+const WILT_DRY_HRS       = 48;  // hours without water before a plant wilts
+const MUSHROOM_WILT_DAYS = 7;   // days wilted before a mushroom tile event fires
+
 // POST /api/garden/water
 router.post('/api/garden/water', (req, res) => {
     const {
@@ -30,8 +36,7 @@ router.post('/api/garden/water', (req, res) => {
         lastWateredByUser = {},
     } = req.body || {};
 
-    const now     = Date.now();
-    const MS_HOUR = 3600000;
+    const now = Date.now();
 
     // Server date in UTC
     const today     = new Date(now).toISOString().slice(0, 10);
@@ -40,7 +45,7 @@ router.post('/api/garden/water', (req, res) => {
     // ---- Individual streak ----
     const ageHrs        = plantedAt ? (now - plantedAt) / MS_HOUR : 0;
     const wateredHrsAgo = lastWatered ? (now - lastWatered) / MS_HOUR : Infinity;
-    const isWilted      = ageHrs >= 24 && wateredHrsAgo >= 48;
+    const isWilted      = ageHrs >= WILT_AGE_HRS && wateredHrsAgo >= WILT_DRY_HRS;
 
     let newStreak;
     if (isWilted || lastStreakDay === null) {
@@ -93,9 +98,9 @@ router.post('/api/garden/water', (req, res) => {
     // Mushroom: plant wilted for 7+ days
     if (isWilted) {
         const wiltedSince = lastWatered
-            ? lastWatered + 48 * MS_HOUR
-            : (plantedAt ? plantedAt + 24 * MS_HOUR : null);
-        if (wiltedSince && (now - wiltedSince) >= 7 * 86400000) events.push('mushroom');
+            ? lastWatered + WILT_DRY_HRS * MS_HOUR
+            : (plantedAt ? plantedAt + WILT_AGE_HRS * MS_HOUR : null);
+        if (wiltedSince && (now - wiltedSince) >= MUSHROOM_WILT_DAYS * MS_DAY) events.push('mushroom');
     }
 
     // moonflowerVariant: watered between 00:00 and 01:00 UTC, ~30% chance

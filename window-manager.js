@@ -1,5 +1,8 @@
 import { ctx } from './ctx.js';
 
+const TASKBAR_H = 40;  // height of the Win95 taskbar in px
+const MIN_VIS   = 60;  // minimum px of a window that must remain on-screen
+
 let w95TopZ = 2000;
 
 // ===== Win95 shared window manager =====
@@ -91,9 +94,6 @@ const w95Mgr = (() => {
 
 // ===== Window layout persistence (size / position / max state) =====
 const w95Layout = (() => {
-  const TASKBAR_H = 40;
-  const MIN_VIS   = 60; // px of window that must remain on-screen
-
   function _key(winId)  { return 'w95_layout_' + winId; }
   function _load(winId) {
     try { return JSON.parse(localStorage.getItem(_key(winId))); } catch (e) { return null; }
@@ -195,10 +195,8 @@ function makeDraggable(winEl, handleEl, winId) {
   });
   window.addEventListener('mousemove', (e) => {
     if (!dragging) return;
-    const MIN_VIS = 60;
-    const taskbarH = 40;
     const vw = document.documentElement.clientWidth;
-    const vh = document.documentElement.clientHeight - taskbarH;
+    const vh = document.documentElement.clientHeight - TASKBAR_H;
     winEl.style.left = Math.max(MIN_VIS - winEl.offsetWidth, Math.min(vw - MIN_VIS, winStartX + (e.clientX - startX))) + 'px';
     winEl.style.top  = Math.max(0, Math.min(vh - winEl.offsetHeight, winStartY + (e.clientY - startY))) + 'px';
   });
@@ -255,7 +253,7 @@ window.addEventListener('mousemove', (e) => {
   const dy = e.clientY - startY;
   const MIN_W = 200, MIN_H = 80;
   const MAX_W = document.documentElement.clientWidth;
-  const MAX_H = document.documentElement.clientHeight - 40;
+  const MAX_H = document.documentElement.clientHeight - TASKBAR_H;
   let newW = startW, newH = startH, newL = startL, newT = startT;
   if (dir.includes('e')) newW = Math.min(MAX_W, Math.max(MIN_W, startW + dx));
   if (dir.includes('s')) newH = Math.min(MAX_H - startT, Math.max(MIN_H, startH + dy));
