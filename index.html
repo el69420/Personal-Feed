@@ -73,6 +73,10 @@
             <div class="desktop-icon-img">&#9999;</div>
             <div class="desktop-icon-label">Sticky Notes</div>
         </div>
+        <div class="w95-desktop-icon" data-app="reminders" tabindex="0">
+            <div class="desktop-icon-img">&#128276;</div>
+            <div class="desktop-icon-label">Reminders</div>
+        </div>
     </div>
 
     <!-- Login Overlay -->
@@ -1874,6 +1878,28 @@
   </div>
 </div>
 
+<!-- Reminders Window -->
+<div id="w95-win-reminders" class="w95-window is-hidden" style="left:220px;top:65px;width:360px;">
+  <div class="w95-titlebar" id="w95-reminders-handle">
+    <div class="w95-title">&#128276; Reminders.exe</div>
+    <div class="w95-controls">
+      <button class="w95-control" id="w95-reminders-min" type="button" aria-label="Minimise">_</button>
+      <button class="w95-control" id="w95-reminders-max" type="button" aria-label="Maximise">&#9633;</button>
+      <button class="w95-control w95-control-close" id="w95-reminders-close" type="button" aria-label="Close">X</button>
+    </div>
+  </div>
+  <div class="w95-body rm-body" id="w95-reminders-body">
+    <div class="rm-form">
+      <input type="text" class="rm-input" id="rm-text-input" placeholder="Reminder text..." maxlength="200" autocomplete="off">
+      <input type="datetime-local" class="rm-input" id="rm-date-input">
+      <button class="w95-btn rm-add-btn" id="rm-add-btn" type="button">Add Reminder</button>
+    </div>
+    <div class="rm-list" id="rm-list">
+      <div class="rm-empty">No reminders set.</div>
+    </div>
+  </div>
+</div>
+
 <!-- Boot screen (D) — shown once per session -->
 <div id="boot-screen">
   <div class="boot-logo">&#128187; Windows 95</div>
@@ -1895,6 +1921,7 @@
     <script type="module" src="connect4.js"></script>
     <script type="module" src="countdown.js"></script>
     <script type="module" src="sticky-notes.js"></script>
+    <script type="module" src="reminders.js"></script>
 </body>
 </html>
 
